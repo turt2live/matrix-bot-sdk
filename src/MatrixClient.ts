@@ -42,6 +42,29 @@ export class MatrixClient extends EventEmitter {
     }
 
     /**
+     * Adds a new room alias to the room directory
+     * @param {string} alias The alias to add (eg: "#my-room:matrix.org")
+     * @param {string} roomId The room ID to add the alias to
+     * @returns {Promise} resolves when the alias has been added
+     */
+    public createRoomAlias(alias: string, roomId: string): Promise<any> {
+        alias = encodeURIComponent(alias);
+        return this.do("PUT", "/_matrix/client/r0/directory/room/" + alias,null, {
+            "room_id": roomId,
+        });
+    }
+
+    /**
+     * Removes a room alias from the room directory
+     * @param {string} alias The alias to remove
+     * @returns {Promise} resolves when the alias has been deleted
+     */
+    public deleteRoomAlias(alias: string): Promise<any> {
+        alias = encodeURIComponent(alias);
+        return this.do("DELETE", "/_matrix/client/r0/directory/room/" + alias);
+    }
+
+    /**
      * Gets the current user ID for this client
      * @returns {Promise<string>} The user ID of this client
      */
