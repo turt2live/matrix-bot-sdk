@@ -81,7 +81,7 @@ export class MatrixClient extends EventEmitter {
                 createFilter = true;
             }
 
-            if (createFilter) {
+            if (createFilter && filter) {
                 console.debug("MatrixClientLite", "Creating new filter");
                 return this.do("POST", "/_matrix/client/r0/user/" + userId + "/filter", null, filter).then(response => {
                     this.filterId = response["filter_id"];
@@ -122,11 +122,13 @@ export class MatrixClient extends EventEmitter {
     private doSync(token: string): Promise<any> {
         console.info("MatrixClientLite", "Performing sync with token " + token);
         const conf = {
-            filter: this.filterId,
             full_state: false,
             timeout: 10000,
         };
-        if (token) conf["since"] = token; // synapse complains if the variable is null, so we have to have it unset instead
+        // synapse complains if the variables are null, so we have to have it unset instead
+        if (token) conf["since"] = token;
+        if (this.filterId) conf['filter'] = this.filterId;
+
         // timeout is 30s if we have a token, otherwise 10min
         return this.do("GET", "/_matrix/client/r0/sync", conf, null, (token ? 30000 : 600000));
     }
