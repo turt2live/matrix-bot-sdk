@@ -1,0 +1,40 @@
+export interface IJoinRoomStrategy {
+    joinRoom(roomIdOrAlias: string, apiCall: (roomIdOrAlias: string) => Promise<string>): Promise<string>;
+}
+
+export class SimpleRetryJoinStrategy implements IJoinRoomStrategy {
+
+    // Note: The schedule must not have duplicate values to avoid problems in positioning.
+    private schedule = [
+        0,              // Right away
+        1000,           // 1 second
+        30 * 1000,      // 30 seconds
+        5 * 60 * 1000,  // 5 minutes
+        15 * 60 * 1000, // 15 minutes
+    ];
+
+    public joinRoom(roomIdOrAlias: string, apiCall: (roomIdOrAlias: string) => Promise<string>): Promise<string> {
+        let currentSchedule = this.schedule[0];
+
+        const doJoin = () => waitPromise(currentSchedule).then(() => apiCall(roomIdOrAlias));
+        const errorHandler = err => {
+            console.error(err);
+            const idx = this.schedule.indexOf(currentSchedule);
+            if (idx === this.schedule.length - 1) {
+                console.warn("Failed to join room " + roomIdOrAlias);
+                return Promise.reject(err);
+            } else {
+                currentSchedule = this.schedule[idx + 1];
+                return doJoin().catch(errorHandler);
+            }
+        };
+
+        return doJoin().catch(errorHandler);
+    }
+}
+
+function waitPromise(interval: number): Promise<any> {
+    return new Promise((resolve, reject) => {
+        setTimeout(resolve, interval);
+    });
+}

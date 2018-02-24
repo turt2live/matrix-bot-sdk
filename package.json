@@ -1,0 +1,46 @@
+{
+  "name": "matrix-bot-sdk",
+  "version": "0.1.1",
+  "description": "A lightweight version of the matrix-js-sdk intended for bots",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/turt2live/matrix-js-bot-sdk.git"
+  },
+  "author": "turt2live",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/turt2live/matrix-js-bot-sdk/issues"
+  },
+  "homepage": "https://github.com/turt2live/matrix-js-bot-sdk#readme",
+  "devDependencies": {
+    "@types/node": "^9.4.6",
+    "tslint": "^5.9.1",
+    "typescript": "^2.7.2"
+  },
+  "scripts": {
+    "prepublish": "npm run build",
+    "build": "tsc",
+    "lint": "tslint --project ./tsconfig.json --type-check -t stylish"
+  },
+  "main": "./lib/index.js",
+  "typings": "./lib/index.d.ts",
+  "engines": {
+    "node": ">= 8.0.0",
+    "npm": ">= 5.0.0"
+  },
+  "dependencies": {
+    "bluebird": "^3.5.1",
+    "request": "^2.83.0"
+  },
+  "keywords": [
+    "matrix",
+    "bot",
+    "sdk",
+    "js",
+    "node",
+    "helpers",
+    "snippets",
+    "chat",
+    "modules"
+  ]
+}
