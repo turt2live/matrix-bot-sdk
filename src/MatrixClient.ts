@@ -276,9 +276,9 @@ export class MatrixClient extends EventEmitter {
      * @returns {Promise<string>} resolves to the joined room ID
      */
     public joinRoom(roomIdOrAlias: string): Promise<string> {
-        const apiCall = (roomIdOrAlias: string) => {
-            roomIdOrAlias = encodeURIComponent(roomIdOrAlias);
-            return this.do("POST", "/_matrix/client/r0/join/" + roomIdOrAlias).then(response => {
+        const apiCall = (targetIdOrAlias: string) => {
+            targetIdOrAlias = encodeURIComponent(targetIdOrAlias);
+            return this.do("POST", "/_matrix/client/r0/join/" + targetIdOrAlias).then(response => {
                 return response['room_id'];
             });
         };
@@ -367,14 +367,14 @@ export class MatrixClient extends EventEmitter {
         };
 
         return new Promise((resolve, reject) => {
-            request(params, (err, response, body) => {
+            request(params, (err, response, resBody) => {
                 if (err) {
                     console.error("MatrixLiteClient (REQ-" + requestId + ")", err);
                     reject(err);
                 } else {
-                    if (typeof(body) === 'string') {
+                    if (typeof(resBody) === 'string') {
                         try {
-                            body = JSON.parse(body);
+                            resBody = JSON.parse(resBody);
                         } catch (e) {
                         }
                     }
@@ -383,7 +383,7 @@ export class MatrixClient extends EventEmitter {
                     if (response.statusCode < 200 || response.statusCode >= 300) {
                         console.error("MatrixLiteClient (REQ-" + requestId + ")", response.body);
                         reject(response);
-                    } else resolve(raw ? response : body);
+                    } else resolve(raw ? response : resBody);
                 }
             });
         });

@@ -20,7 +20,7 @@
   "scripts": {
     "prepublish": "npm run build",
     "build": "tsc",
-    "lint": "tslint --project ./tsconfig.json --type-check -t stylish"
+    "lint": "tslint --project ./tsconfig.json -t stylish"
   },
   "main": "./lib/index.js",
   "typings": "./lib/index.d.ts",
