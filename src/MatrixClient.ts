@@ -49,7 +49,7 @@ export class MatrixClient extends EventEmitter {
      */
     public createRoomAlias(alias: string, roomId: string): Promise<any> {
         alias = encodeURIComponent(alias);
-        return this.do("PUT", "/_matrix/client/r0/directory/room/" + alias,null, {
+        return this.do("PUT", "/_matrix/client/r0/directory/room/" + alias, null, {
             "room_id": roomId,
         });
     }
@@ -74,6 +74,17 @@ export class MatrixClient extends EventEmitter {
         return this.do("GET", "/_matrix/client/r0/account/whoami").then(response => {
             this.userId = response["user_id"];
             return this.userId;
+        });
+    }
+
+    /**
+     * Gets the joined members in a room. The client must be in the room to make this request.
+     * @param {string} roomId The room ID to get the joined members of.
+     * @returns {Promise<string>} The joined user IDs in the room
+     */
+    public getJoinedRoomMembers(roomId: string): Promise<string> {
+        return this.do("GET", "/_matrix/client/r0/room/" + roomId + "/joined_members").then(response => {
+            return response['joined'];
         });
     }
 
