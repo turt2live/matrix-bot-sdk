@@ -78,17 +78,6 @@ export class MatrixClient extends EventEmitter {
     }
 
     /**
-     * Gets the joined members in a room. The client must be in the room to make this request.
-     * @param {string} roomId The room ID to get the joined members of.
-     * @returns {Promise<string>} The joined user IDs in the room
-     */
-    public getJoinedRoomMembers(roomId: string): Promise<string> {
-        return this.do("GET", "/_matrix/client/r0/rooms/" + roomId + "/joined_members").then(response => {
-            return response['joined'];
-        });
-    }
-
-    /**
      * Starts syncing the client with an optional filter
      * @param {*} filter The filter to use, or null for none
      * @returns {Promise<*>} Resolves when the client has started syncing
@@ -293,6 +282,17 @@ export class MatrixClient extends EventEmitter {
      */
     public getJoinedRooms(): Promise<string[]> {
         return this.do("GET", "/_matrix/client/r0/joined_rooms").then(response => response['joined_rooms']);
+    }
+
+    /**
+     * Gets the joined members in a room. The client must be in the room to make this request.
+     * @param {string} roomId The room ID to get the joined members of.
+     * @returns {Promise<string>} The joined user IDs in the room
+     */
+    public getJoinedRoomMembers(roomId: string): Promise<string> {
+        return this.do("GET", "/_matrix/client/r0/rooms/" + roomId + "/joined_members").then(response => {
+            return Object.keys(response['joined']);
+        });
     }
 
     /**
