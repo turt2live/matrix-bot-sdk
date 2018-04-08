@@ -49,7 +49,7 @@ export class MatrixClient extends EventEmitter {
      */
     public createRoomAlias(alias: string, roomId: string): Promise<any> {
         alias = encodeURIComponent(alias);
-        return this.do("PUT", "/_matrix/client/r0/directory/room/" + alias, null, {
+        return this.doRequest("PUT", "/_matrix/client/r0/directory/room/" + alias, null, {
             "room_id": roomId,
         });
     }
@@ -61,7 +61,7 @@ export class MatrixClient extends EventEmitter {
      */
     public deleteRoomAlias(alias: string): Promise<any> {
         alias = encodeURIComponent(alias);
-        return this.do("DELETE", "/_matrix/client/r0/directory/room/" + alias);
+        return this.doRequest("DELETE", "/_matrix/client/r0/directory/room/" + alias);
     }
 
     /**
@@ -71,7 +71,7 @@ export class MatrixClient extends EventEmitter {
     public getUserId(): Promise<string> {
         if (this.userId) return Promise.resolve(this.userId);
 
-        return this.do("GET", "/_matrix/client/r0/account/whoami").then(response => {
+        return this.doRequest("GET", "/_matrix/client/r0/account/whoami").then(response => {
             this.userId = response["user_id"];
             return this.userId;
         });
@@ -106,7 +106,7 @@ export class MatrixClient extends EventEmitter {
 
             if (createFilter && filter) {
                 console.debug("MatrixClientLite", "Creating new filter");
-                return this.do("POST", "/_matrix/client/r0/user/" + userId + "/filter", null, filter).then(response => {
+                return this.doRequest("POST", "/_matrix/client/r0/user/" + userId + "/filter", null, filter).then(response => {
                     this.filterId = response["filter_id"];
                     this.storage.setSyncToken(null);
                     this.storage.setFilter({
@@ -153,7 +153,7 @@ export class MatrixClient extends EventEmitter {
         if (this.filterId) conf['filter'] = this.filterId;
 
         // timeout is 30s if we have a token, otherwise 10min
-        return this.do("GET", "/_matrix/client/r0/sync", conf, null, (token ? 30000 : 600000));
+        return this.doRequest("GET", "/_matrix/client/r0/sync", conf, null, (token ? 30000 : 600000));
     }
 
     private processSync(raw: any) {
@@ -236,7 +236,7 @@ export class MatrixClient extends EventEmitter {
      * @returns {Promise<*[]>} resolves to the room's state
      */
     public getRoomState(roomId: string): Promise<any[]> {
-        return this.do("GET", "/_matrix/client/r0/rooms/" + roomId + "/state");
+        return this.doRequest("GET", "/_matrix/client/r0/rooms/" + roomId + "/state");
     }
 
     /**
@@ -247,7 +247,7 @@ export class MatrixClient extends EventEmitter {
      * @returns {Promise<*|*[]>} resolves to the state event(s)
      */
     public getRoomStateEvents(roomId, type, stateKey): Promise<any | any[]> {
-        return this.do("GET", "/_matrix/client/r0/rooms/" + roomId + "/state/" + type + "/" + (stateKey ? stateKey : ''));
+        return this.doRequest("GET", "/_matrix/client/r0/rooms/" + roomId + "/state/" + type + "/" + (stateKey ? stateKey : ''));
     }
 
     /**
@@ -256,7 +256,7 @@ export class MatrixClient extends EventEmitter {
      * @returns {Promise<*>} the profile of the user
      */
     public getUserProfile(userId: string): Promise<any> {
-        return this.do("GET", "/_matrix/client/r0/profile/" + userId);
+        return this.doRequest("GET", "/_matrix/client/r0/profile/" + userId);
     }
 
     /**
@@ -267,7 +267,7 @@ export class MatrixClient extends EventEmitter {
     public joinRoom(roomIdOrAlias: string): Promise<string> {
         const apiCall = (targetIdOrAlias: string) => {
             targetIdOrAlias = encodeURIComponent(targetIdOrAlias);
-            return this.do("POST", "/_matrix/client/r0/join/" + targetIdOrAlias).then(response => {
+            return this.doRequest("POST", "/_matrix/client/r0/join/" + targetIdOrAlias).then(response => {
                 return response['room_id'];
             });
         };
@@ -281,7 +281,7 @@ export class MatrixClient extends EventEmitter {
      * @returns {Promise<string[]>} resolves to a list of room IDs the client participates in
      */
     public getJoinedRooms(): Promise<string[]> {
-        return this.do("GET", "/_matrix/client/r0/joined_rooms").then(response => response['joined_rooms']);
+        return this.doRequest("GET", "/_matrix/client/r0/joined_rooms").then(response => response['joined_rooms']);
     }
 
     /**
@@ -290,7 +290,7 @@ export class MatrixClient extends EventEmitter {
      * @returns {Promise<string>} The joined user IDs in the room
      */
     public getJoinedRoomMembers(roomId: string): Promise<string> {
-        return this.do("GET", "/_matrix/client/r0/rooms/" + roomId + "/joined_members").then(response => {
+        return this.doRequest("GET", "/_matrix/client/r0/rooms/" + roomId + "/joined_members").then(response => {
             return Object.keys(response['joined']);
         });
     }
@@ -301,7 +301,7 @@ export class MatrixClient extends EventEmitter {
      * @returns {Promise<*>} resolves when left
      */
     public leaveRoom(roomId: string): Promise<any> {
-        return this.do("POST", "/_matrix/client/r0/rooms/" + roomId + "/leave");
+        return this.doRequest("POST", "/_matrix/client/r0/rooms/" + roomId + "/leave");
     }
 
     /**
@@ -311,7 +311,7 @@ export class MatrixClient extends EventEmitter {
      * @returns {Promise<*>} resolves when the receipt has been sent
      */
     public sendReadReceipt(roomId: string, eventId: string): Promise<any> {
-        return this.do("POST", "/_matrix/client/r0/rooms/" + roomId + "/receipt/m.read/" + eventId);
+        return this.doRequest("POST", "/_matrix/client/r0/rooms/" + roomId + "/receipt/m.read/" + eventId);
     }
 
     /**
@@ -322,7 +322,7 @@ export class MatrixClient extends EventEmitter {
      */
     public sendNotice(roomId: string, text: string): Promise<string> {
         const txnId = (new Date().getTime()) + "__REQ" + this.requestId;
-        return this.do("PUT", "/_matrix/client/r0/rooms/" + roomId + "/send/m.room.message/" + txnId, null, {
+        return this.doRequest("PUT", "/_matrix/client/r0/rooms/" + roomId + "/send/m.room.message/" + txnId, null, {
             body: text,
             msgtype: "m.notice"
         }).then(response => {
@@ -338,12 +338,23 @@ export class MatrixClient extends EventEmitter {
      */
     public sendMessage(roomId: string, content: any): Promise<string> {
         const txnId = (new Date().getTime()) + "__REQ" + this.requestId;
-        return this.do("PUT", "/_matrix/client/r0/rooms/" + roomId + "/send/m.room.message/" + txnId, null, content).then(response => {
+        return this.doRequest("PUT", "/_matrix/client/r0/rooms/" + roomId + "/send/m.room.message/" + txnId, null, content).then(response => {
             return response['event_id'];
         });
     }
 
-    private do(method, endpoint, qs = null, body = null, timeout = 60000, raw = false): Promise<any> {
+    /**
+     * Performs a web request to the homeserver, applying appropriate authorization headers for
+     * this client.
+     * @param {"GET"|"POST"|"PUT"|"DELETE"} method The HTTP method to use in the request
+     * @param {string} endpoint The endpoint to call. For example: "/_matrix/client/r0/account/whoami"
+     * @param {*} qs The query string to send. Optional.
+     * @param {*} body The request body to send. Optional. Will be converted to JSON.
+     * @param {number} timeout The number of milliseconds to wait before timing out.
+     * @param {boolean} raw If true, the raw response will be returned instead of the response body.
+     * @returns {Promise<*>} Resolves to the response (body), rejected if a non-2xx status code was returned.
+     */
+    public doRequest(method, endpoint, qs = null, body = null, timeout = 60000, raw = false): Promise<any> {
         if (!endpoint.startsWith('/'))
             endpoint = '/' + endpoint;
 
