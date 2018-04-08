@@ -289,7 +289,7 @@ export class MatrixClient extends EventEmitter {
      * @param {string} roomId The room ID to get the joined members of.
      * @returns {Promise<string>} The joined user IDs in the room
      */
-    public getJoinedRoomMembers(roomId: string): Promise<string> {
+    public getJoinedRoomMembers(roomId: string): Promise<string[]> {
         return this.doRequest("GET", "/_matrix/client/r0/rooms/" + roomId + "/joined_members").then(response => {
             return Object.keys(response['joined']);
         });
