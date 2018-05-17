@@ -15,6 +15,7 @@ export class MatrixClient extends EventEmitter {
     private filterId = 0;
     private stopSyncing = false;
     private lastJoinedRoomIds = [];
+    private impersonatedUserId: string;
 
     private joinStrategy: IJoinRoomStrategy = null;
 
@@ -31,6 +32,17 @@ export class MatrixClient extends EventEmitter {
             this.homeserverUrl = this.homeserverUrl.substring(0, this.homeserverUrl.length - 2);
 
         if (!this.storage) this.storage = new MemoryStorageProvider();
+    }
+
+    /**
+     * Sets a user ID to impersonate as. This will assume that the access token for this client
+     * is for an application service, and that the userId given is within the reach of the
+     * application service. Setting this to null will stop future impersonation. The user ID is
+     * assumed to already be valid
+     * @param {string} userId The user ID to masquerade as
+     */
+    public impersonateUserId(userId: string): void {
+        this.impersonatedUserId = userId;
     }
 
     /**
@@ -362,6 +374,11 @@ export class MatrixClient extends EventEmitter {
         const url = this.homeserverUrl + endpoint;
 
         console.debug("MatrixLiteClient (REQ-" + requestId + ")", method + " " + url);
+
+        if (this.impersonatedUserId) {
+            if (!qs) qs = {"user_id": this.impersonatedUserId};
+            else qs["user_id"] = this.impersonatedUserId;
+        }
 
         if (qs) console.debug("MatrixLiteClient (REQ-" + requestId + ")", "qs = " + JSON.stringify(qs));
         if (body) console.debug("MatrixLiteClient (REQ-" + requestId + ")", "body = " + JSON.stringify(body));
