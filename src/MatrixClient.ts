@@ -77,6 +77,29 @@ export class MatrixClient extends EventEmitter {
     }
 
     /**
+     * Sets the visibility of a room in the directory.
+     * @param {string} roomId The room ID to manipulate the visibility of
+     * @param {"public" | "private"} visibility The visibility to set for the room
+     * @return {Promise} resolves when the visibility has been updated
+     */
+    public setDirectoryVisibility(roomId: string, visibility: "public" | "private"): Promise<any> {
+        return this.doRequest("PUT", "/_matrix/client/r0/directory/list/room/" + roomId, null, {
+            "visibility": visibility,
+        });
+    }
+
+    /**
+     * Gets the visibility of a room in the directory.
+     * @param {string} roomId The room ID to query the visibility of
+     * @return {Promise<"public"|"private">} The visibility of the room
+     */
+    public getDirectoryVisibility(roomId: string): Promise<"public" | "private"> {
+        return this.doRequest("GET", "/_matrix/client/r0/directory/list/room/" + roomId).then(response => {
+            return response["visibility"];
+        });
+    }
+
+    /**
      * Gets the current user ID for this client
      * @returns {Promise<string>} The user ID of this client
      */
