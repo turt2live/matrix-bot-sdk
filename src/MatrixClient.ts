@@ -11,6 +11,15 @@ import { IJoinRoomStrategy } from "./strategies/JoinRoomStrategy";
 export class MatrixClient extends EventEmitter {
 
     /**
+     * The presence status to use while syncing. The valid values are "online" to set the account as online, 
+     * "offline" to set the user as offline, "unavailable" for marking the user away, and null for not setting
+     * an explicit presence (the default).
+     * 
+     * Has no effect if the client is not syncing. Does not apply until the next sync request.
+     */
+    public syncingPresence: "online"|"offline"|"unavailable"|null = null;
+    
+    /**
      * The number of milliseconds to wait for new events for on the next sync.
      * 
      * Has no effect if the client is not syncing. Does not apply until the next sync request.
@@ -193,6 +202,7 @@ export class MatrixClient extends EventEmitter {
         // synapse complains if the variables are null, so we have to have it unset instead
         if (token) conf["since"] = token;
         if (this.filterId) conf['filter'] = this.filterId;
+        if (this.syncingPresence) conf['presence'] = this.syncingPresence;
 
         // timeout is 30s if we have a token, otherwise 10min
         return this.doRequest("GET", "/_matrix/client/r0/sync", conf, null, (token ? 30000 : 600000));
