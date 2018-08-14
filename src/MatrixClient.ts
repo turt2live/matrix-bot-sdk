@@ -11,20 +11,20 @@ import { IJoinRoomStrategy } from "./strategies/JoinRoomStrategy";
 export class MatrixClient extends EventEmitter {
 
     /**
-     * The presence status to use while syncing. The valid values are "online" to set the account as online, 
+     * The presence status to use while syncing. The valid values are "online" to set the account as online,
      * "offline" to set the user as offline, "unavailable" for marking the user away, and null for not setting
      * an explicit presence (the default).
-     * 
+     *
      * Has no effect if the client is not syncing. Does not apply until the next sync request.
      */
     public syncingPresence: "online"|"offline"|"unavailable"|null = null;
-    
+
     /**
      * The number of milliseconds to wait for new events for on the next sync.
-     * 
+     *
      * Has no effect if the client is not syncing. Does not apply until the next sync request.
      */
-    public syncingTimeout: number = 10000;
+    public syncingTimeout = 10000;
 
     private userId: string;
     private requestId = 0;
