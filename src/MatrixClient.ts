@@ -10,6 +10,13 @@ import { IJoinRoomStrategy } from "./strategies/JoinRoomStrategy";
  */
 export class MatrixClient extends EventEmitter {
 
+    /**
+     * The number of milliseconds to wait for new events for on the next sync.
+     * 
+     * Has no effect if the client is not syncing. Does not apply until the next sync request.
+     */
+    public syncingTimeout: number = 10000;
+
     private userId: string;
     private requestId = 0;
     private filterId = 0;
@@ -181,7 +188,7 @@ export class MatrixClient extends EventEmitter {
         console.info("MatrixClientLite", "Performing sync with token " + token);
         const conf = {
             full_state: false,
-            timeout: 10000,
+            timeout: Math.max(0, this.syncingTimeout),
         };
         // synapse complains if the variables are null, so we have to have it unset instead
         if (token) conf["since"] = token;
