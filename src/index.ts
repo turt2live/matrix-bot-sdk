@@ -4,3 +4,5 @@ export * from "./mixins/AutojoinRoomsMixin";
 export * from "./storage/IStorageProvider";
 export * from "./storage/MemoryStorageProvider";
 export * from "./strategies/JoinRoomStrategy";
+export * from "./appservice/Appservice";
+export * from "./appservice/Intent";
