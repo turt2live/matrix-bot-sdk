@@ -4,6 +4,7 @@ import { MemoryStorageProvider } from "./storage/MemoryStorageProvider";
 import * as request from "request";
 import * as Promise from "bluebird";
 import { IJoinRoomStrategy } from "./strategies/JoinRoomStrategy";
+import { UnstableApis } from "./UnstableApis";
 
 /**
  * A client that is capable of interacting with a matrix homeserver.
@@ -48,6 +49,15 @@ export class MatrixClient extends EventEmitter {
             this.homeserverUrl = this.homeserverUrl.substring(0, this.homeserverUrl.length - 2);
 
         if (!this.storage) this.storage = new MemoryStorageProvider();
+    }
+
+    /**
+     * Gets the unstable API access class. This is generally not recommended to be
+     * used by clients.
+     * @return {UnstableApis} The unstable API access class.
+     */
+    public get unstableApis(): UnstableApis {
+        return new UnstableApis(this);
     }
 
     /**
