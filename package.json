@@ -13,9 +13,9 @@
   },
   "homepage": "https://github.com/turt2live/matrix-js-bot-sdk#readme",
   "devDependencies": {
-    "@types/node": "^9.4.6",
-    "tslint": "^5.9.1",
-    "typescript": "^2.7.2"
+    "@types/node": "^9.6.28",
+    "tslint": "^5.11.0",
+    "typescript": "^2.9.2"
   },
   "scripts": {
     "prepublish": "npm run build",
@@ -30,7 +30,7 @@
   },
   "dependencies": {
     "bluebird": "^3.5.1",
-    "request": "^2.83.0"
+    "request": "^2.88.0"
   },
   "keywords": [
     "matrix",
