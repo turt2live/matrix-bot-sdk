@@ -5,3 +5,6 @@ export * from "./storage/IStorageProvider";
 export * from "./storage/MemoryStorageProvider";
 export * from "./strategies/JoinRoomStrategy";
 export * from "./UnstableApis";
+export * from "./preprocessors/IPreprocessor";
+export * from "./preprocessors/RichRepliesPreprocessor";
+export * from "./helpers/RichReply";

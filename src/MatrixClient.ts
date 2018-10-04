@@ -2,9 +2,10 @@ import { EventEmitter } from "events";
 import { IStorageProvider } from "./storage/IStorageProvider";
 import { MemoryStorageProvider } from "./storage/MemoryStorageProvider";
 import * as request from "request";
-import * as Promise from "bluebird";
+import * as Bluebird from "bluebird";
 import { IJoinRoomStrategy } from "./strategies/JoinRoomStrategy";
 import { UnstableApis } from "./UnstableApis";
+import { IPreprocessor } from "./preprocessors/IPreprocessor";
 
 /**
  * A client that is capable of interacting with a matrix homeserver.
@@ -35,6 +36,7 @@ export class MatrixClient extends EventEmitter {
     private impersonatedUserId: string;
 
     private joinStrategy: IJoinRoomStrategy = null;
+    private eventProcessors: { [eventType: string]: IPreprocessor[] } = {};
 
     /**
      * Creates a new matrix client
@@ -77,6 +79,34 @@ export class MatrixClient extends EventEmitter {
      */
     public setJoinStrategy(strategy: IJoinRoomStrategy): void {
         this.joinStrategy = strategy;
+    }
+
+    /**
+     * Adds a preprocessor to the event pipeline. When this client encounters an event, it
+     * will try to run it through the preprocessors it can in the order they were added.
+     * @param {IPreprocessor} preprocessor the preprocessor to add
+     */
+    public addPreprocessor(preprocessor: IPreprocessor): void {
+        if (!preprocessor) throw new Error("Preprocessor cannot be null");
+
+        const eventTypes = preprocessor.getSupportedEventTypes();
+        if (!eventTypes) return; // Nothing to do
+
+        for (const eventType of eventTypes) {
+            if (!this.eventProcessors[eventType]) this.eventProcessors[eventType] = [];
+            this.eventProcessors[eventType].push(preprocessor);
+        }
+    }
+
+    private async processEvent(event: any): Promise<any> {
+        if (!event) return event;
+        if (!this.eventProcessors[event["type"]]) return event;
+
+        for (const processor of this.eventProcessors[event["type"]]) {
+            await processor.processEvent(event, this);
+        }
+
+        return event;
     }
 
     /**
@@ -185,7 +215,7 @@ export class MatrixClient extends EventEmitter {
     private startSync() {
         let token = this.storage.getSyncToken();
 
-        const promiseWhile = Promise.method(() => {
+        const promiseWhile = Bluebird.method(() => {
             if (this.stopSyncing) {
                 console.info("MatrixClientLite", "Client stop requested - stopping sync");
                 return;
@@ -218,7 +248,7 @@ export class MatrixClient extends EventEmitter {
         return this.doRequest("GET", "/_matrix/client/r0/sync", conf, null, (token ? 30000 : 600000));
     }
 
-    private processSync(raw: any) {
+    private async processSync(raw: any): Promise<any> {
         if (!raw || !raw['rooms']) return; // nothing to process
         let leftRooms = raw['rooms']['leave'] || {};
         let inviteRooms = raw['rooms']['invite'] || {};
@@ -246,6 +276,7 @@ export class MatrixClient extends EventEmitter {
                 continue;
             }
 
+            leaveEvent = await this.processEvent(leaveEvent);
             this.emit("room.leave", roomId, leaveEvent);
         }
 
@@ -272,6 +303,7 @@ export class MatrixClient extends EventEmitter {
                 continue;
             }
 
+            inviteEvent = await this.processEvent(inviteEvent);
             this.emit("room.invite", roomId, inviteEvent);
         }
 
@@ -286,10 +318,22 @@ export class MatrixClient extends EventEmitter {
             if (!room['timeline'] || !room['timeline']['events']) continue;
 
             for (let event of room['timeline']['events']) {
+                event = await this.processEvent(event);
                 if (event['type'] === 'm.room.message') this.emit("room.message", roomId, event);
                 else console.debug("MatrixClientLite", "Not handling event " + event['type']);
             }
         }
+    }
+
+    /**
+     * Gets an event for a room. Returned as a raw event.
+     * @param {string} roomId the room ID to get the event in
+     * @param {string} eventId the event ID to look up
+     * @returns {Promise<*>} resolves to the found event
+     */
+    public getEvent(roomId: string, eventId: string): Promise<any> {
+        return this.doRequest("GET", "/_matrix/client/r0/rooms/" + roomId + "/event/" + eventId)
+            .then(ev => this.processEvent(ev));
     }
 
     /**
@@ -298,7 +342,8 @@ export class MatrixClient extends EventEmitter {
      * @returns {Promise<*[]>} resolves to the room's state
      */
     public getRoomState(roomId: string): Promise<any[]> {
-        return this.doRequest("GET", "/_matrix/client/r0/rooms/" + roomId + "/state");
+        return this.doRequest("GET", "/_matrix/client/r0/rooms/" + roomId + "/state")
+            .then(state => Promise.all(state.map(ev => this.processEvent(ev))));
     }
 
     /**
@@ -309,7 +354,8 @@ export class MatrixClient extends EventEmitter {
      * @returns {Promise<*|*[]>} resolves to the state event(s)
      */
     public getRoomStateEvents(roomId, type, stateKey): Promise<any | any[]> {
-        return this.doRequest("GET", "/_matrix/client/r0/rooms/" + roomId + "/state/" + type + "/" + (stateKey ? stateKey : ''));
+        return this.doRequest("GET", "/_matrix/client/r0/rooms/" + roomId + "/state/" + type + "/" + (stateKey ? stateKey : ''))
+            .then(state => state.length ? Promise.all(state.map(ev => this.processEvent(ev))) : this.processEvent(state));
     }
 
     /**
