@@ -97,12 +97,11 @@ export class RichRepliesPreprocessor implements IPreprocessor {
                 const fbHtml = parts[0];
                 realHtml = parts[1];
 
-                const matches = fbHtml.match(/<br[ ]*[\/]{0,2}>(.*)<\/blockquote>\s*<\/mx-reply>$/is);
-                if (!matches) {
+                const results = fbHtml.match(/<br[ ]*[\/]{0,2}>(.*)<\/blockquote>\s*<\/mx-reply>$/is);
+                if (!results) {
                     lenient = true;
                 } else {
-                    console.log(matches[0]);
-                    fallbackHtml = matches[0];
+                    fallbackHtml = results[0];
                 }
             }
         }
