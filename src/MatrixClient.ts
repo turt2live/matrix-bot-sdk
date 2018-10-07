@@ -156,6 +156,34 @@ export class MatrixClient extends EventEmitter {
     }
 
     /**
+     * Resolves a room ID or alias to a room ID. If the given ID or alias looks like a room ID
+     * already, it will be returned as-is. If the room ID or alias looks like a room alias, it
+     * will be resolved to a room ID if possible. If the room ID or alias is neither, an error
+     * will be raised.
+     * @param {string} roomIdOrAlias the room ID or alias to resolve to a room ID
+     * @returns {Promise<string>} resolves to the room ID
+     */
+    public async resolveRoom(roomIdOrAlias: string): Promise<string> {
+        if (roomIdOrAlias.startsWith("!")) return roomIdOrAlias; // probably
+        if (roomIdOrAlias.startsWith("#")) return this.lookupRoomAlias(roomIdOrAlias).then(r => r.roomId);
+        throw new Error("Invalid room ID or alias");
+    }
+
+    /**
+     * Does a room directory lookup for a given room alias
+     * @param {string} roomAlias the room alias to look up in the room directory
+     * @returns {Promise<RoomDirectoryLookupResponse>} resolves to the room's information
+     */
+    public lookupRoomAlias(roomAlias: string): Promise<RoomDirectoryLookupResponse> {
+        return this.doRequest("GET", "/_matrix/client/r0/directory/room/" + encodeURIComponent(roomAlias)).then(response => {
+            return {
+                roomId: response["room_id"],
+                residentServers: response["servers"],
+            };
+        });
+    }
+
+    /**
      * Gets the current user ID for this client
      * @returns {Promise<string>} The user ID of this client
      */
@@ -512,4 +540,9 @@ export class MatrixClient extends EventEmitter {
             });
         });
     }
+}
+
+export interface RoomDirectoryLookupResponse {
+    roomId: string;
+    residentServers: string[];
 }
