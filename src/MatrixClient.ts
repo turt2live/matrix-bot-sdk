@@ -490,7 +490,7 @@ export class MatrixClient extends EventEmitter {
     public sendStateEvent(roomId: string, type: string, stateKey: string, content: any): Promise<string> {
         return this.doRequest("PUT", "/_matrix/client/r0/rooms/" + roomId + "/state/" + type + "/" + stateKey, null, content).then(response => {
             return response['event_id'];
-        })
+        });
     }
 
     /**
