@@ -494,6 +494,31 @@ export class MatrixClient extends EventEmitter {
     }
 
     /**
+     * Checks if a given user has a required power level
+     * @param {string} userId the user ID to check the power level of
+     * @param {string} roomId the room ID to check the power level in
+     * @param {string} eventType the event type to look for in the `events` property of the power levels
+     * @param {boolean} isState true to indicate the event is intended to be a state event
+     * @returns {Promise<boolean>} resolves to true if the user has the required power level, resolves to false otherwise
+     */
+    public async userHasPowerLevelFor(userId: string, roomId: string, eventType: string, isState: boolean): Promise<boolean> {
+        const powerLevelsEvent = await this.getRoomStateEvents(roomId, "m.room.power_levels", "");
+        if (!powerLevelsEvent || typeof(powerLevelsEvent) !== "object") {
+            throw new Error("Unexpected power level event: none in room or multiple returned");
+        }
+
+        let requiredPower = isState ? 50 : 0;
+        if (isState && powerLevelsEvent["state_default"]) requiredPower = powerLevelsEvent["state_default"];
+        if (!isState && powerLevelsEvent["users_default"]) requiredPower = powerLevelsEvent["users_default"];
+        if (powerLevelsEvent["events"] && powerLevelsEvent["events"][eventType]) requiredPower = powerLevelsEvent["events"][eventType];
+
+        let userPower = 0;
+        if (powerLevelsEvent["users"] && powerLevelsEvent["users"][userId]) userPower = powerLevelsEvent["users"][userId];
+
+        return userPower >= requiredPower;
+    }
+
+    /**
      * Performs a web request to the homeserver, applying appropriate authorization headers for
      * this client.
      * @param {"GET"|"POST"|"PUT"|"DELETE"} method The HTTP method to use in the request
