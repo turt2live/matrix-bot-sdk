@@ -480,6 +480,20 @@ export class MatrixClient extends EventEmitter {
     }
 
     /**
+     * Sends a state event to the given room
+     * @param {string} roomId the room ID to send the event to
+     * @param {string} type the event type to send
+     * @param {string} stateKey the state key to send, should not be null
+     * @param {string} content the event body to send
+     * @returns {Promise<string>} resolves to the event ID that represents the message
+     */
+    public sendStateEvent(roomId: string, type: string, stateKey: string, content: any): Promise<string> {
+        return this.doRequest("PUT", "/_matrix/client/r0/rooms/" + roomId + "/state/" + type + "/" + stateKey, null, content).then(response => {
+            return response['event_id'];
+        })
+    }
+
+    /**
      * Performs a web request to the homeserver, applying appropriate authorization headers for
      * this client.
      * @param {"GET"|"POST"|"PUT"|"DELETE"} method The HTTP method to use in the request
