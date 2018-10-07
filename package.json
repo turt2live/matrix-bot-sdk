@@ -13,7 +13,7 @@
   },
   "homepage": "https://github.com/turt2live/matrix-js-bot-sdk#readme",
   "scripts": {
-    "preinstall": "node scripts/try_build.js",
+    "postinstall": "node scripts/try_build.js",
     "prepublish": "npm run build",
     "build": "tsc",
     "lint": "tslint --project ./tsconfig.json -t stylish"
