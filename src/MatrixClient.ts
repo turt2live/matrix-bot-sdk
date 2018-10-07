@@ -348,7 +348,7 @@ export class MatrixClient extends EventEmitter {
             for (let event of room['timeline']['events']) {
                 event = await this.processEvent(event);
                 if (event['type'] === 'm.room.message') this.emit("room.message", roomId, event);
-                else console.debug("MatrixClientLite", "Not handling event " + event['type']);
+                else this.emit("room.event", roomId, event);
             }
         }
     }
