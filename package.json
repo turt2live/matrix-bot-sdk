@@ -12,13 +12,9 @@
     "url": "https://github.com/turt2live/matrix-js-bot-sdk/issues"
   },
   "homepage": "https://github.com/turt2live/matrix-js-bot-sdk#readme",
-  "devDependencies": {
-    "@types/node": "^10.11.4",
-    "tslint": "^5.11.0",
-    "typescript": "^3.1.1"
-  },
   "scripts": {
-    "prepublish": "npm run build",
+    "prepare": "node scripts/try_build.js",
+    "prepublishOnly": "npm run build",
     "build": "tsc",
     "lint": "tslint --project ./tsconfig.json -t stylish"
   },
@@ -29,8 +25,11 @@
     "npm": ">= 5.0.0"
   },
   "dependencies": {
+    "@types/node": "^8.10.34",
     "bluebird": "^3.5.2",
-    "request": "^2.88.0"
+    "request": "^2.88.0",
+    "tslint": "^5.11.0",
+    "typescript": "^3.1.1"
   },
   "keywords": [
     "matrix",
@@ -42,5 +41,10 @@
     "snippets",
     "chat",
     "modules"
+  ],
+  "files": [
+    "src/*",
+    "lib/*",
+    "scripts/*"
   ]
 }

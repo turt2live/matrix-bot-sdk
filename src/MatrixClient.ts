@@ -156,6 +156,34 @@ export class MatrixClient extends EventEmitter {
     }
 
     /**
+     * Resolves a room ID or alias to a room ID. If the given ID or alias looks like a room ID
+     * already, it will be returned as-is. If the room ID or alias looks like a room alias, it
+     * will be resolved to a room ID if possible. If the room ID or alias is neither, an error
+     * will be raised.
+     * @param {string} roomIdOrAlias the room ID or alias to resolve to a room ID
+     * @returns {Promise<string>} resolves to the room ID
+     */
+    public async resolveRoom(roomIdOrAlias: string): Promise<string> {
+        if (roomIdOrAlias.startsWith("!")) return roomIdOrAlias; // probably
+        if (roomIdOrAlias.startsWith("#")) return this.lookupRoomAlias(roomIdOrAlias).then(r => r.roomId);
+        throw new Error("Invalid room ID or alias");
+    }
+
+    /**
+     * Does a room directory lookup for a given room alias
+     * @param {string} roomAlias the room alias to look up in the room directory
+     * @returns {Promise<RoomDirectoryLookupResponse>} resolves to the room's information
+     */
+    public lookupRoomAlias(roomAlias: string): Promise<RoomDirectoryLookupResponse> {
+        return this.doRequest("GET", "/_matrix/client/r0/directory/room/" + encodeURIComponent(roomAlias)).then(response => {
+            return {
+                roomId: response["room_id"],
+                residentServers: response["servers"],
+            };
+        });
+    }
+
+    /**
      * Gets the current user ID for this client
      * @returns {Promise<string>} The user ID of this client
      */
@@ -320,7 +348,7 @@ export class MatrixClient extends EventEmitter {
             for (let event of room['timeline']['events']) {
                 event = await this.processEvent(event);
                 if (event['type'] === 'm.room.message') this.emit("room.message", roomId, event);
-                else console.debug("MatrixClientLite", "Not handling event " + event['type']);
+                else this.emit("room.event", roomId, event);
             }
         }
     }
@@ -452,6 +480,45 @@ export class MatrixClient extends EventEmitter {
     }
 
     /**
+     * Sends a state event to the given room
+     * @param {string} roomId the room ID to send the event to
+     * @param {string} type the event type to send
+     * @param {string} stateKey the state key to send, should not be null
+     * @param {string} content the event body to send
+     * @returns {Promise<string>} resolves to the event ID that represents the message
+     */
+    public sendStateEvent(roomId: string, type: string, stateKey: string, content: any): Promise<string> {
+        return this.doRequest("PUT", "/_matrix/client/r0/rooms/" + roomId + "/state/" + type + "/" + stateKey, null, content).then(response => {
+            return response['event_id'];
+        });
+    }
+
+    /**
+     * Checks if a given user has a required power level
+     * @param {string} userId the user ID to check the power level of
+     * @param {string} roomId the room ID to check the power level in
+     * @param {string} eventType the event type to look for in the `events` property of the power levels
+     * @param {boolean} isState true to indicate the event is intended to be a state event
+     * @returns {Promise<boolean>} resolves to true if the user has the required power level, resolves to false otherwise
+     */
+    public async userHasPowerLevelFor(userId: string, roomId: string, eventType: string, isState: boolean): Promise<boolean> {
+        const powerLevelsEvent = await this.getRoomStateEvents(roomId, "m.room.power_levels", "");
+        if (!powerLevelsEvent || typeof(powerLevelsEvent) !== "object") {
+            throw new Error("Unexpected power level event: none in room or multiple returned");
+        }
+
+        let requiredPower = isState ? 50 : 0;
+        if (isState && powerLevelsEvent["state_default"]) requiredPower = powerLevelsEvent["state_default"];
+        if (!isState && powerLevelsEvent["users_default"]) requiredPower = powerLevelsEvent["users_default"];
+        if (powerLevelsEvent["events"] && powerLevelsEvent["events"][eventType]) requiredPower = powerLevelsEvent["events"][eventType];
+
+        let userPower = 0;
+        if (powerLevelsEvent["users"] && powerLevelsEvent["users"][userId]) userPower = powerLevelsEvent["users"][userId];
+
+        return userPower >= requiredPower;
+    }
+
+    /**
      * Performs a web request to the homeserver, applying appropriate authorization headers for
      * this client.
      * @param {"GET"|"POST"|"PUT"|"DELETE"} method The HTTP method to use in the request
@@ -512,4 +579,9 @@ export class MatrixClient extends EventEmitter {
             });
         });
     }
+}
+
+export interface RoomDirectoryLookupResponse {
+    roomId: string;
+    residentServers: string[];
 }
