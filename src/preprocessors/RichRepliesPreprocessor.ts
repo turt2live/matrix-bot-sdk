@@ -107,14 +107,16 @@ export class RichRepliesPreprocessor implements IPreprocessor {
         }
 
         let lastLine = "";
+        let processedFallback = false;
         const body = event["content"]["body"] || "";
         for (const line of body.split("\n")) {
-            if (line.startsWith("> ") && lastLine !== "\n") {
+            if (line.startsWith("> ") && !processedFallback) {
                 fallbackText += line.substring(2) + "\n";
                 lastLine = line;
-            } else if (line === "\n") {
+            } else if (!processedFallback) {
                 lastLine = line;
                 realText = "";
+                processedFallback = true;
             } else {
                 realText += line + "\n";
             }
