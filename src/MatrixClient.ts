@@ -546,7 +546,7 @@ export class MatrixClient extends EventEmitter {
         if (qs) console.debug("MatrixLiteClient (REQ-" + requestId + ")", "qs = " + JSON.stringify(qs));
         if (body) console.debug("MatrixLiteClient (REQ-" + requestId + ")", "body = " + JSON.stringify(body));
         
-        const params = {
+        const params: {[k: string]: any} = {
             url: url,
             method: method,
             qs: qs,
