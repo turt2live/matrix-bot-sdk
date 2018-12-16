@@ -519,6 +519,19 @@ export class MatrixClient extends EventEmitter {
     }
 
     /**
+     * Uploads data to the homeserver's media repository.
+     * @param {Buffer} data the content to upload.
+     * @param {string} contentType the content type of the file. Defaults to application/octet-stream
+     * @param {string} filename the name of the file. Optional.
+     * @returns {Promise<string>} resolves to the MXC URI of the content
+     */
+    public uploadContent(data: Buffer, contentType = "application/octet-stream", filename: string = null): Promise<string> {
+        // TODO: Make doRequest take an object for options
+        return this.doRequest("POST", "/_matrix/media/r0/upload", {filename: filename}, data, 60000, false, contentType)
+            .then(response => response["content_uri"]);
+    }
+
+    /**
      * Performs a web request to the homeserver, applying appropriate authorization headers for
      * this client.
      * @param {"GET"|"POST"|"PUT"|"DELETE"} method The HTTP method to use in the request
