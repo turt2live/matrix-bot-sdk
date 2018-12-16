@@ -524,7 +524,7 @@ export class MatrixClient extends EventEmitter {
      * @param {"GET"|"POST"|"PUT"|"DELETE"} method The HTTP method to use in the request
      * @param {string} endpoint The endpoint to call. For example: "/_matrix/client/r0/account/whoami"
      * @param {*} qs The query string to send. Optional.
-     * @param {*} body The request body to send. Optional. Will be converted to JSON.
+     * @param {*} body The request body to send. Optional. Will be converted to JSON unless the type is a Buffer.
      * @param {number} timeout The number of milliseconds to wait before timing out.
      * @param {boolean} raw If true, the raw response will be returned instead of the response body.
      * @returns {Promise<*>} Resolves to the response (body), rejected if a non-2xx status code was returned.
@@ -545,17 +545,22 @@ export class MatrixClient extends EventEmitter {
 
         if (qs) console.debug("MatrixLiteClient (REQ-" + requestId + ")", "qs = " + JSON.stringify(qs));
         if (body) console.debug("MatrixLiteClient (REQ-" + requestId + ")", "body = " + JSON.stringify(body));
-
-        const params = {
+        
+        const params: {[k: string]: any} = {
             url: url,
             method: method,
-            json: body,
             qs: qs,
             timeout: timeout,
             headers: {
                 "Authorization": "Bearer " + this.accessToken,
             }
         };
+        
+        if (Buffer.isBuffer(body)) {
+            params.body = body;
+        } else {
+            params.json = body;
+        }
 
         return new Promise((resolve, reject) => {
             request(params, (err, response, resBody) => {
