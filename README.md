@@ -22,17 +22,24 @@ const AutojoinRoomsMixin = require("matrix-bot-sdk").AutojoinRoomsMixin;
 const client = new MatrixClient("https://matrix.org", "your_access_token_here");
 AutojoinRoomsMixin.setupOnClient(client);
 
-client.on("room.message", (event) => {
+// To listen for room messages (m.room.message) only:
+client.on("room.message", (roomId, event) => {
     if (!event["content"]) return;
     console.log(event["sender"] + " says " + event["content"]["body"]);
-    
-    client.sendMessage(event["room_id"], {
+
+    client.sendMessage(roomId, {
         "msgtype": "m.notice",
         "body": "hello!",
     });
-    
+
     // or...
-    client.sendNotice(event["room_id"], "hello!");
+    client.sendNotice(roomId, "hello!");
+});
+
+// Or to listen for any event that happens in a room:
+client.on("room.event", (roomId, event) => {
+    if (!event["content"]) return;
+    console.log(event["sender"] + " sent " + event["type"]);
 });
 
 client.start().then(() => console.log("Client started!"));
@@ -68,12 +75,12 @@ const RichReply = require("matrix-bot-sdk").RichReply;
 const client = new MatrixClient("https://matrix.org", "your_access_token_here");
 AutojoinRoomsMixin.setupOnClient(client);
 
-client.on("room.message", (event) => {
+client.on("room.message", (roomId, event) => {
     if (!event["content"]) return;
-    
+
     const newEvent = RichReply.createFor(event, "Hello!", "<b>Hello!</b>");
     newEvent["msgtype"] = "m.notice";
-    client.sendMessage(event["room_id"], newEvent);
+    client.sendMessage(roomId, newEvent);
 });
 
 client.start().then(() => console.log("Client started!"));
