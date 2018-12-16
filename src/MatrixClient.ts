@@ -348,7 +348,7 @@ export class MatrixClient extends EventEmitter {
             for (let event of room['timeline']['events']) {
                 event = await this.processEvent(event);
                 if (event['type'] === 'm.room.message') this.emit("room.message", roomId, event);
-                else this.emit("room.event", roomId, event);
+                this.emit("room.event", roomId, event);
             }
         }
     }
@@ -545,7 +545,7 @@ export class MatrixClient extends EventEmitter {
 
         if (qs) console.debug("MatrixLiteClient (REQ-" + requestId + ")", "qs = " + JSON.stringify(qs));
         if (body) console.debug("MatrixLiteClient (REQ-" + requestId + ")", "body = " + JSON.stringify(body));
-        
+
         const params: {[k: string]: any} = {
             url: url,
             method: method,
@@ -555,7 +555,7 @@ export class MatrixClient extends EventEmitter {
                 "Authorization": "Bearer " + this.accessToken,
             }
         };
-        
+
         if (Buffer.isBuffer(body)) {
             params.body = body;
         } else {
