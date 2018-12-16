@@ -527,9 +527,10 @@ export class MatrixClient extends EventEmitter {
      * @param {*} body The request body to send. Optional. Will be converted to JSON unless the type is a Buffer.
      * @param {number} timeout The number of milliseconds to wait before timing out.
      * @param {boolean} raw If true, the raw response will be returned instead of the response body.
+     * @param {string} contentType The content type to send. Only used if the `body` is a Buffer.
      * @returns {Promise<*>} Resolves to the response (body), rejected if a non-2xx status code was returned.
      */
-    public doRequest(method, endpoint, qs = null, body = null, timeout = 60000, raw = false): Promise<any> {
+    public doRequest(method, endpoint, qs = null, body = null, timeout = 60000, raw = false, contentType = "application/json"): Promise<any> {
         if (!endpoint.startsWith('/'))
             endpoint = '/' + endpoint;
 
@@ -557,6 +558,7 @@ export class MatrixClient extends EventEmitter {
         };
 
         if (Buffer.isBuffer(body)) {
+            params.headers["Content-Type"] = contentType;
             params.body = body;
         } else {
             params.json = body;
