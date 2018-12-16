@@ -8,3 +8,4 @@ export * from "./UnstableApis";
 export * from "./preprocessors/IPreprocessor";
 export * from "./preprocessors/RichRepliesPreprocessor";
 export * from "./helpers/RichReply";
+export * from "./storage/SimpleFsStorageProvider";

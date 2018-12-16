@@ -27,6 +27,7 @@
   "dependencies": {
     "@types/node": "^8.10.34",
     "bluebird": "^3.5.2",
+    "lowdb": "^1.0.0",
     "request": "^2.88.0",
     "tslint": "^5.11.0",
     "typescript": "^3.1.1"
