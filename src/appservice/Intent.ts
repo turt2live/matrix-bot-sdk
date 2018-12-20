@@ -10,19 +10,21 @@ import { IAppserviceStorageProvider } from "../storage/IAppserviceStorageProvide
  */
 export class Intent {
 
-    private client: MatrixClient;
+    private readonly client: MatrixClient;
+    private readonly storage: IAppserviceStorageProvider;
+
     private knownJoinedRooms: string[] = [];
 
     /**
      * Creates a new intent. Intended to be created by application services.
      * @param {IAppserviceOptions} options The options for the application service.
-     * @param {IAppserviceRegistration} registration The registration for the application service.
-     * @param {IAppserviceStorageProvider} storage The storage mechanism the application service is using.
      * @param {string} impersonateUserId The user ID to impersonate.
      */
-    constructor(options: IAppserviceOptions, registration: IAppserviceRegistration, private storage: IAppserviceStorageProvider, private impersonateUserId: string) {
-        this.client = new MatrixClient(options.homeserverUrl, registration.as_token);
+    constructor(options: IAppserviceOptions, private impersonateUserId: string) {
+        this.storage = options.storage;
+        this.client = new MatrixClient(options.homeserverUrl, options.registration.as_token);
         this.client.impersonateUserId(impersonateUserId);
+        if (options.joinStrategy) this.client.setJoinStrategy(options.joinStrategy);
     }
 
     /**
@@ -37,6 +39,16 @@ export class Intent {
      */
     public get underlyingClient(): MatrixClient {
         return this.client;
+    }
+
+    /**
+     * Joins the given room
+     * @param {string} roomIdOrAlias the room ID or alias to join
+     * @returns {Promise<string>} resolves to the joined room ID
+     */
+    public async joinRoom(roomIdOrAlias: string): Promise<string> {
+        await this.ensureRegistered();
+        return this.client.joinRoom(roomIdOrAlias);
     }
 
     /**

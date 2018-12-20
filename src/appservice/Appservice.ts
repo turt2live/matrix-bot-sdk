@@ -1,6 +1,8 @@
 import * as express from "express";
 import { Intent } from "./Intent";
 import { IAppserviceStorageProvider } from "../storage/IAppserviceStorageProvider";
+import { EventEmitter } from "events";
+import { IJoinRoomStrategy, MemoryStorageProvider } from "..";
 
 /**
  * Represents an application service's registration file. This is expected to be
@@ -105,39 +107,60 @@ export interface IAppserviceOptions {
      * The URL to the homeserver's client server API (eg: "https://matrix.org")
      */
     homeserverUrl: string;
+
+    /**
+     * The storage provider to use for this application service.
+     */
+    storage?: IAppserviceStorageProvider,
+
+    /**
+     * The registration for this application service.
+     */
+    registration: IAppserviceRegistration,
+
+    /**
+     * The join strategy to use for all intents, if any.
+     */
+    joinStrategy?: IJoinRoomStrategy,
 }
 
 /**
  * Represents an application service. This provides helper utilities such as tracking
- * of user intents (clients that are aware of their membership in rooms). 
+ * of user intents (clients that are aware of their membership in rooms).
  */
-export class Appservice {
+export class Appservice extends EventEmitter {
+
+    private readonly userPrefix: string;
+    private readonly registration: IAppserviceRegistration;
+    private readonly storage: IAppserviceStorageProvider;
 
     private app = express();
-    private userPrefix: string;
     private intents: { [userId: string]: Intent } = {};
 
     /**
      * Creates a new application service.
      * @param {IAppserviceOptions} options The options for the application service.
-     * @param {IAppserviceRegistration} registration The registration for the application service.
-     * @param {IAppserviceStorageProvider} storage The storage provider for the application service.
      */
-    constructor(private options: IAppserviceOptions, protected registration: IAppserviceRegistration, private storage: IAppserviceStorageProvider) {
+    constructor(private options: IAppserviceOptions) {
+        super();
+
+        this.registration = options.registration;
+        this.storage = options.storage || new MemoryStorageProvider();
+
         this.app.put("/transactions/:txnId", this.onTransaction);
         this.app.put("/_matrix/app/v1/transactions/:txnId", this.onTransaction);
         // Everything else can 404
 
         // TODO: Should we permit other user namespaces and instead error when trying to use doSomethingBySuffix()?
 
-        if (!registration.namespaces || !registration.namespaces.users || registration.namespaces.users.length === 0) {
+        if (!this.registration.namespaces || !this.registration.namespaces.users || this.registration.namespaces.users.length === 0) {
             throw new Error("No user namespaces in registration");
         }
-        if (registration.namespaces.users.length !== 1) {
+        if (this.registration.namespaces.users.length !== 1) {
             throw new Error("Too many user namespaces registered: expecting exactly one");
         }
 
-        this.userPrefix = (registration.namespaces.users[0].regex || "").split(":")[0];
+        this.userPrefix = (this.registration.namespaces.users[0].regex || "").split(":")[0];
         if (!this.userPrefix.endsWith(".*")) {
             throw new Error("Expected user namespace to be a prefix");
         }
@@ -210,14 +233,23 @@ export class Appservice {
 
     /**
      * Gets an Intent for a given user ID.
-     * @param {string} userId The user ID to get an Intent for,
+     * @param {string} userId The user ID to get an Intent for.
      * @returns {Intent} An Intent for the user.
      */
     public getIntentForUserId(userId: string): Intent {
         if (!this.intents[userId]) {
-            this.intents[userId] = new Intent(this.options, this.registration, this.storage, userId);
+            this.intents[userId] = new Intent(this.options, userId);
         }
         return this.intents[userId];
+    }
+
+    /**
+     * Determines if a given user ID is namespaced by this application service.
+     * @param {string} userId The user ID to check
+     * @returns {boolean} true if the user is namespaced, false otherwise
+     */
+    public isNamespacedUser(userId: string): boolean {
+        return userId.startsWith("@" + this.userPrefix) && userId.endsWith(":" + this.options.homeserverName);
     }
 
     private onTransaction(req, res): void {
