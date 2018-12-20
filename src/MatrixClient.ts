@@ -184,6 +184,46 @@ export class MatrixClient extends EventEmitter {
     }
 
     /**
+     * Kicks a user from a room.
+     * @param {string} userId the user ID to kick
+     * @param {string} roomId the room ID to kick the user in
+     * @param {string?} reason optional reason for the kick
+     * @returns {Promise<*>} resolves when completed
+     */
+    public kickUser(userId, roomId, reason=null) {
+        return this.doRequest("POST", "/_matrix/client/r0/rooms/" + encodeURIComponent(roomId) + "/kick", null, {
+            user_id: userId,
+            reason: reason,
+        });
+    }
+
+    /**
+     * Bans a user from a room.
+     * @param {string} userId the user ID to ban
+     * @param {string} roomId the room ID to set the ban in
+     * @param {string?} reason optional reason for the ban
+     * @returns {Promise<*>} resolves when completed
+     */
+    public banUser(userId, roomId, reason=null) {
+        return this.doRequest("POST", "/_matrix/client/r0/rooms/" + encodeURIComponent(roomId) + "/ban", null, {
+            user_id: userId,
+            reason: reason,
+        });
+    }
+
+    /**
+     * Unbans a user in a room.
+     * @param {string} userId the user ID to unban
+     * @param {string} roomId the room ID to lift the ban in
+     * @returns {Promise<*>} resolves when completed
+     */
+    public unbanUser(userId, roomId) {
+        return this.doRequest("POST", "/_matrix/client/r0/rooms/" + encodeURIComponent(roomId) + "/unban", null, {
+            user_id: userId,
+        });
+    }
+
+    /**
      * Gets the current user ID for this client
      * @returns {Promise<string>} The user ID of this client
      */
