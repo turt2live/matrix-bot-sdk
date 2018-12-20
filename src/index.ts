@@ -9,3 +9,6 @@ export * from "./preprocessors/IPreprocessor";
 export * from "./preprocessors/RichRepliesPreprocessor";
 export * from "./helpers/RichReply";
 export * from "./storage/SimpleFsStorageProvider";
+export * from "./appservice/Appservice";
+export * from "./appservice/Intent";
+export * from "./strategies/AppserviceJoinRoomStrategy";

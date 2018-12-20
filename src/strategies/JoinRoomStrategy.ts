@@ -1,5 +1,5 @@
 export interface IJoinRoomStrategy {
-    joinRoom(roomIdOrAlias: string, apiCall: (roomIdOrAlias: string) => Promise<string>): Promise<string>;
+    joinRoom(roomIdOrAlias: string, userId: string, apiCall: (roomIdOrAlias: string) => Promise<string>): Promise<string>;
 }
 
 export class SimpleRetryJoinStrategy implements IJoinRoomStrategy {
@@ -13,7 +13,7 @@ export class SimpleRetryJoinStrategy implements IJoinRoomStrategy {
         15 * 60 * 1000, // 15 minutes
     ];
 
-    public joinRoom(roomIdOrAlias: string, apiCall: (roomIdOrAlias: string) => Promise<string>): Promise<string> {
+    public joinRoom(roomIdOrAlias: string, userId: string, apiCall: (roomIdOrAlias: string) => Promise<string>): Promise<string> {
         let currentSchedule = this.schedule[0];
 
         const doJoin = () => waitPromise(currentSchedule).then(() => apiCall(roomIdOrAlias));
