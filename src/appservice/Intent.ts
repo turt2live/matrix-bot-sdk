@@ -1,5 +1,5 @@
 import { Appservice, MatrixClient } from "..";
-import { IAppserviceOptions } from "./appservice";
+import { IAppserviceOptions } from "./Appservice";
 import { IAppserviceStorageProvider } from "../storage/IAppserviceStorageProvider";
 
 /**
