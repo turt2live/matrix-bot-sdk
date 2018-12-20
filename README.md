@@ -20,7 +20,7 @@ Here's an example of a very simple bot written using this library. It will auto-
 import {
     MatrixClient,
     SimpleFsStorageProvider,
-    AutoJoinRoomsMixin,
+    AutojoinRoomsMixin,
     RichReply,
 } from "matrix-bot-sdk";
 
@@ -37,7 +37,7 @@ const storage = new SimpleFsStorageProvider("hello-bot.json");
 
 // Now we can create the client and set it up to automatically join rooms.
 const client = new MatrixClient(homeserverUrl, accessToken, storage);
-AutoJoinRoomsMixin.setupOnClient(client);
+AutojoinRoomsMixin.setupOnClient(client);
 
 // We also want to make sure we can receive events - this is where we will
 // handle our command.
