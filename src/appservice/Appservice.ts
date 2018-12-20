@@ -1,5 +1,6 @@
 import * as express from "express";
 import { Intent } from "./Intent";
+import { IAppserviceStorageProvider } from "../storage/IAppserviceStorageProvider";
 
 /**
  * Represents an application service's registration file. This is expected to be
@@ -120,6 +121,7 @@ export class Appservice {
      * Creates a new application service.
      * @param {IAppserviceOptions} options The options for the application service.
      * @param {IAppserviceRegistration} registration The registration for the application service.
+     * @param {IAppserviceStorageProvider} storage The storage provider for the application service.
      */
     constructor(private options: IAppserviceOptions, protected registration: IAppserviceRegistration, private storage: IAppserviceStorageProvider) {
         this.app.put("/transactions/:txnId", this.onTransaction);
@@ -209,7 +211,7 @@ export class Appservice {
      */
     public getIntentForUserId(userId: string): Intent {
         if (!this.intents[userId]) {
-            this.intents[userId] = new Intent(this.options, this.registration, userId);
+            this.intents[userId] = new Intent(this.options, this.registration, this.storage, userId);
         }
         return this.intents[userId];
     }
