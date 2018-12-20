@@ -295,7 +295,10 @@ export class MatrixClient extends EventEmitter {
                 console.info("MatrixClientLite", "Received sync. Next token: " + token);
 
                 this.processSync(response);
-            }, () => null).then(promiseWhile.bind(this)); // errors are already reported, so suppress them here.
+            }, (e) => {
+                console.error(e);
+                return null;
+            }).then(promiseWhile.bind(this));
         });
 
         promiseWhile(); // start the loop
