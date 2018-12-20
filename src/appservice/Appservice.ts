@@ -5,7 +5,7 @@ import { Intent } from "./Intent";
  * Represents an application service's registration file. This is expected to be
  * loaded from another source, such as a YAML file.
  */
-export interface AppserviceRegistration {
+export interface IAppserviceRegistration {
     /**
      * The token the application service uses to communicate with the homeserver.
      */
@@ -84,7 +84,7 @@ export interface AppserviceRegistration {
 /**
  * General options for the application service
  */
-export interface AppserviceOptions {
+export interface IAppserviceOptions {
     /**
      * The port to listen for requests from the homeserver on.
      */
@@ -118,10 +118,10 @@ export class Appservice {
 
     /**
      * Creates a new application service.
-     * @param options The options for the application service.
-     * @param registration The registration for the application service.
+     * @param {IAppserviceOptions} options The options for the application service.
+     * @param {IAppserviceRegistration} registration The registration for the application service.
      */
-    constructor(private options: AppserviceOptions, protected registration: AppserviceRegistration) {
+    constructor(private options: IAppserviceOptions, protected registration: IAppserviceRegistration, private storage: IAppserviceStorageProvider) {
         this.app.put("/transactions/:txnId", this.onTransaction);
         // Everything else can 404
 

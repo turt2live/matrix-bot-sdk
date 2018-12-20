@@ -1,5 +1,5 @@
 import { MatrixClient } from "..";
-import { AppserviceRegistration, AppserviceOptions } from "./appservice";
+import { IAppserviceRegistration, IAppserviceOptions } from "./appservice";
 import { IAppserviceStorageProvider } from "../storage/IAppserviceStorageProvider";
 
 /**
@@ -15,12 +15,12 @@ export class Intent {
 
     /**
      * Creates a new intent. Intended to be created by application services.
-     * @param {AppserviceOptions} options The options for the application service.
-     * @param {AppserviceRegistration} registration The registration for the application service.
+     * @param {IAppserviceOptions} options The options for the application service.
+     * @param {IAppserviceRegistration} registration The registration for the application service.
      * @param {IAppserviceStorageProvider} storage The storage mechanism the application service is using.
      * @param {string} impersonateUserId The user ID to impersonate.
      */
-    constructor(options: AppserviceOptions, registration: AppserviceRegistration, private storage: IAppserviceStorageProvider, private impersonateUserId: string) {
+    constructor(options: IAppserviceOptions, registration: IAppserviceRegistration, private storage: IAppserviceStorageProvider, private impersonateUserId: string) {
         this.client = new MatrixClient(options.homeserverUrl, registration.as_token);
         this.client.impersonateUserId(impersonateUserId);
     }
