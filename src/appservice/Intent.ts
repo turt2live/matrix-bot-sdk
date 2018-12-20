@@ -1,5 +1,5 @@
-import { MatrixClient } from "..";
-import { IAppserviceRegistration, IAppserviceOptions } from "./appservice";
+import { Appservice, MatrixClient } from "..";
+import { IAppserviceOptions } from "./appservice";
 import { IAppserviceStorageProvider } from "../storage/IAppserviceStorageProvider";
 
 /**
@@ -19,11 +19,12 @@ export class Intent {
      * Creates a new intent. Intended to be created by application services.
      * @param {IAppserviceOptions} options The options for the application service.
      * @param {string} impersonateUserId The user ID to impersonate.
+     * @param {Appservice} appservice The application service itself.
      */
-    constructor(options: IAppserviceOptions, private impersonateUserId: string) {
+    constructor(options: IAppserviceOptions, private impersonateUserId: string, private appservice: Appservice) {
         this.storage = options.storage;
         this.client = new MatrixClient(options.homeserverUrl, options.registration.as_token);
-        this.client.impersonateUserId(impersonateUserId);
+        if (impersonateUserId !== appservice.botUserId) this.client.impersonateUserId(impersonateUserId);
         if (options.joinStrategy) this.client.setJoinStrategy(options.joinStrategy);
     }
 
@@ -59,7 +60,7 @@ export class Intent {
      * @returns {Promise<string>} Resolves to the event ID of the sent message.
      */
     public async sendText(roomId: string, body: string, msgtype: "m.text" | "m.emote" | "m.notice" = "m.text"): Promise<string> {
-        return this.sendEvent(roomId, { body: body, msgtype: msgtype });
+        return this.sendEvent(roomId, {body: body, msgtype: msgtype});
     }
 
     /**
@@ -73,12 +74,22 @@ export class Intent {
         return this.client.sendMessage(roomId, content);
     }
 
-    private async ensureRegisteredAndJoined(roomId: string) {
+    /**
+     * Ensures the user is registered and joined to the given room.
+     * @param {string} roomId The room ID to join
+     * @returns {Promise<*>} Resolves when complete
+     */
+    public async ensureRegisteredAndJoined(roomId: string) {
         await this.ensureRegistered();
         await this.ensureJoined(roomId);
     }
 
-    private async ensureJoined(roomId: string) {
+    /**
+     * Ensures the user is joined to the given room
+     * @param {string} roomId The room ID to join
+     * @returns {Promise<*>} Resolves when complete
+     */
+    public async ensureJoined(roomId: string) {
         if (this.knownJoinedRooms.indexOf(roomId) !== -1) {
             return;
         }
@@ -92,18 +103,26 @@ export class Intent {
             return;
         }
 
-        // TODO: Set the join strategy to retry and then rely on the appservice bot user to invite, if possible.
         return this.client.joinRoom(roomId);
     }
 
-    private async ensureRegistered() {
+    /**
+     * Ensures the user is registered
+     * @returns {Promise<*>} Resolves when complete
+     */
+    public async ensureRegistered() {
         if (!this.storage.isUserRegistered(this.userId)) {
             await this.client.doRequest("POST", "/_matrix/client/r0/register", null, {
                 type: "m.login.application_service",
                 username: this.userId.substring(1).split(":")[0],
             }).catch(err => {
-                console.error("Encountered error registering user: ");
-                console.error(err);
+                if (err.body && err.body["errcode"] === "M_USER_IN_USE") {
+                    if (this.userId === this.appservice.botUserId) return null;
+                    else console.error("Error registering user: User ID is in use");
+                } else {
+                    console.error("Encountered error registering user: ");
+                    console.error(err);
+                }
                 return null; // swallow error
             });
 

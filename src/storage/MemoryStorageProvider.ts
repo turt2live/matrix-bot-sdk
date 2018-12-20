@@ -5,13 +5,14 @@ import { IAppserviceStorageProvider } from "./IAppserviceStorageProvider";
 export class MemoryStorageProvider implements IStorageProvider, IAppserviceStorageProvider {
 
     private syncToken: string;
-    private appserviceUsers: {[userId:string]:{registered: boolean}} = {};
+    private appserviceUsers: { [userId: string]: { registered: boolean } } = {};
+    private appserviceTransactions: { [txnId: string]: boolean } = {};
 
-    setSyncToken(token: string|null): void {
+    setSyncToken(token: string | null): void {
         this.syncToken = token;
     }
 
-    getSyncToken(): string|null {
+    getSyncToken(): string | null {
         return this.syncToken;
     }
 
@@ -31,5 +32,13 @@ export class MemoryStorageProvider implements IStorageProvider, IAppserviceStora
 
     isUserRegistered(userId: string): boolean {
         return this.appserviceUsers[userId] && this.appserviceUsers[userId].registered;
+    }
+
+    isTransactionCompleted(transactionId: string): boolean {
+        return !!this.appserviceTransactions[transactionId];
+    }
+
+    setTransactionCompleted(transactionId: string) {
+        this.appserviceTransactions[transactionId] = true;
     }
 }

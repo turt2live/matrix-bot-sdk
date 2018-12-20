@@ -11,3 +11,4 @@ export * from "./helpers/RichReply";
 export * from "./storage/SimpleFsStorageProvider";
 export * from "./appservice/Appservice";
 export * from "./appservice/Intent";
+export * from "./strategies/AppserviceJoinRoomStrategy";

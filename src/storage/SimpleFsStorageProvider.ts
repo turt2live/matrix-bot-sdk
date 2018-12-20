@@ -17,14 +17,15 @@ export class SimpleFsStorageProvider implements IStorageProvider, IAppserviceSto
             syncToken: null,
             filter: null,
             appserviceUsers: {}, // userIdHash => { data }
+            appserviceTransactions: {}, // txnIdHash => { data }
         }).write();
     }
 
-    setSyncToken(token: string|null): void {
+    setSyncToken(token: string | null): void {
         this.db.set('syncToken', token).write();
     }
 
-    getSyncToken(): string|null {
+    getSyncToken(): string | null {
         return this.db.get('syncToken').value();
     }
 
@@ -47,5 +48,18 @@ export class SimpleFsStorageProvider implements IStorageProvider, IAppserviceSto
     isUserRegistered(userId: string): boolean {
         const key = sha512().update(userId).digest('hex');
         return this.db.get(`appserviceUsers.${key}.registered`).value();
+    }
+
+    isTransactionCompleted(transactionId: string): boolean {
+        const key = sha512().update(transactionId).digest('hex');
+        return this.db.get(`appserviceTransactions.${key}.completed`).value();
+    }
+
+    setTransactionCompleted(transactionId: string) {
+        const key = sha512().update(transactionId).digest('hex');
+        this.db
+            .update(`appserviceTransactions.${key}.txnId`, transactionId)
+            .update(`appserviceTransactions.${key}.completed`, true)
+            .write();
     }
 }

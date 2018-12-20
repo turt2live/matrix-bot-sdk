@@ -7,7 +7,7 @@
     "target": "es2015",
     "noImplicitAny": false,
     "sourceMap": false,
-    "outDir": "./lib/examples",
+    "outDir": "./lib",
     "declaration": true,
     "types": [
       "node"

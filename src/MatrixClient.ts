@@ -184,6 +184,18 @@ export class MatrixClient extends EventEmitter {
     }
 
     /**
+     * Invites a user to a room.
+     * @param {string} userId the user ID to invite
+     * @param {string} roomId the room ID to invite the user to
+     * @returns {Promise<*>} resolves when completed
+     */
+    public inviteUser(userId, roomId) {
+        return this.doRequest("POST", "/_matrix/client/r0/rooms/" + encodeURIComponent(roomId) + "/invite", null, {
+            user_id: userId,
+        });
+    }
+
+    /**
      * Kicks a user from a room.
      * @param {string} userId the user ID to kick
      * @param {string} roomId the room ID to kick the user in
@@ -333,7 +345,7 @@ export class MatrixClient extends EventEmitter {
             let leaveEvent = null;
             for (let event of room['timeline']['events']) {
                 if (event['type'] !== 'm.room.member') continue;
-                if (event['state_key'] !== this.userId) continue;
+                if (event['state_key'] !== await this.getUserId()) continue;
 
                 const oldAge = leaveEvent && leaveEvent['unsigned'] && leaveEvent['unsigned']['age'] ? leaveEvent['unsigned']['age'] : 0;
                 const newAge = event['unsigned'] && event['unsigned']['age'] ? event['unsigned']['age'] : 0;
@@ -359,7 +371,7 @@ export class MatrixClient extends EventEmitter {
             let inviteEvent = null;
             for (let event of room['invite_state']['events']) {
                 if (event['type'] !== 'm.room.member') continue;
-                if (event['state_key'] !== this.userId) continue;
+                if (event['state_key'] !== await this.getUserId()) continue;
                 if (event['membership'] !== "invite") continue;
 
                 const oldAge = inviteEvent && inviteEvent['unsigned'] && inviteEvent['unsigned']['age'] ? inviteEvent['unsigned']['age'] : 0;
@@ -439,11 +451,35 @@ export class MatrixClient extends EventEmitter {
     }
 
     /**
+     * Sets a new display name for the user.
+     * @param {string} displayName the new display name for the user, or null to clear
+     * @returns {Promise<*>} resolves when complete
+     */
+    public async setDisplayName(displayName: string): Promise<any> {
+        const userId = encodeURIComponent(await this.getUserId());
+        return this.doRequest("PUT", "/_matrix/client/r0/profile/" + userId + "/displayname", null, {
+            displayname: displayName,
+        });
+    }
+
+    /**
+     * Sets a new avatar url for the user.
+     * @param {string} avatarUrl the new avatar URL for the user, in the form of a Matrix Content URI
+     * @returns {Promise<*>} resolves when complete
+     */
+    public async setAvatarUrl(avatarUrl: string): Promise<any> {
+        const userId = encodeURIComponent(await this.getUserId());
+        return this.doRequest("PUT", "/_matrix/client/r0/profile/" + userId + "/avatar_url", null, {
+            avatar_url: avatarUrl,
+        });
+    }
+
+    /**
      * Joins the given room
      * @param {string} roomIdOrAlias the room ID or alias to join
      * @returns {Promise<string>} resolves to the joined room ID
      */
-    public joinRoom(roomIdOrAlias: string): Promise<string> {
+    public async joinRoom(roomIdOrAlias: string): Promise<string> {
         const apiCall = (targetIdOrAlias: string) => {
             targetIdOrAlias = encodeURIComponent(targetIdOrAlias);
             return this.doRequest("POST", "/_matrix/client/r0/join/" + targetIdOrAlias).then(response => {
@@ -451,7 +487,8 @@ export class MatrixClient extends EventEmitter {
             });
         };
 
-        if (this.joinStrategy) return this.joinStrategy.joinRoom(roomIdOrAlias, apiCall);
+        const userId = await this.getUserId();
+        if (this.joinStrategy) return this.joinStrategy.joinRoom(roomIdOrAlias, userId, apiCall);
         else return apiCall(roomIdOrAlias);
     }
 
@@ -604,7 +641,7 @@ export class MatrixClient extends EventEmitter {
         if (body && !Buffer.isBuffer(body)) console.debug("MatrixLiteClient (REQ-" + requestId + ")", "body = " + JSON.stringify(body));
         if (body && Buffer.isBuffer(body)) console.debug("MatrixLiteClient (REQ-" + requestId + ")", "body = <Buffer>");
 
-        const params: {[k: string]: any} = {
+        const params: { [k: string]: any } = {
             url: url,
             method: method,
             qs: qs,

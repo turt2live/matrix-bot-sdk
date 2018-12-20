@@ -17,7 +17,6 @@
     "prepublishOnly": "npm run build",
     "build": "tsc",
     "lint": "tslint --project ./tsconfig.json -t stylish",
-
     "build:examples": "tsc -p tsconfig-examples.json",
     "example:appservice": "npm run build:examples && node lib/examples/appservice.js"
   },
@@ -33,6 +32,7 @@
     "express": "^4.16.4",
     "hash.js": "^1.1.7",
     "lowdb": "^1.0.0",
+    "morgan": "^1.9.1",
     "request": "^2.88.0",
     "tslint": "^5.11.0",
     "typescript": "^3.1.1"
