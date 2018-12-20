@@ -19,7 +19,7 @@ export class SimpleFsStorageProvider implements IStorageProvider {
     }
 
     getSyncToken(): string|null {
-        return this.db.get('syncToken');
+        return this.db.get('syncToken').value();
     }
 
     setFilter(filter: IFilterInfo): void {
@@ -27,6 +27,6 @@ export class SimpleFsStorageProvider implements IStorageProvider {
     }
 
     getFilter(): IFilterInfo {
-        return this.db.get('filter');
+        return this.db.get('filter').value();
     }
 }
