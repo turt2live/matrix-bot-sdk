@@ -125,6 +125,7 @@ export class Appservice {
      */
     constructor(private options: IAppserviceOptions, protected registration: IAppserviceRegistration, private storage: IAppserviceStorageProvider) {
         this.app.put("/transactions/:txnId", this.onTransaction);
+        this.app.put("/_matrix/app/v1/transactions/:txnId", this.onTransaction);
         // Everything else can 404
 
         // TODO: Should we permit other user namespaces and instead error when trying to use doSomethingBySuffix()?
@@ -159,9 +160,12 @@ export class Appservice {
 
     /**
      * Starts the application service, opening the bind address to begin processing requests.
+     * @returns {Promise<*>} resolves when started
      */
-    public begin(): void {
-        this.app.listen(this.options.port, this.options.bindAddress);
+    public begin(): Promise<any> {
+        return new Promise((resolve, reject) => {
+            this.app.listen(this.options.port, this.options.bindAddress, () => resolve());
+        });
     }
 
     /**
@@ -218,6 +222,7 @@ export class Appservice {
 
     private onTransaction(req, res): void {
         console.log(req.body);
+        console.log(JSON.stringify(req.body));
         res.status(200).send({});
     }
 }
