@@ -190,7 +190,7 @@ export class MatrixClient extends EventEmitter {
      * @param {string?} reason optional reason for the kick
      * @returns {Promise<*>} resolves when completed
      */
-    public kickUser(userId, roomId, reason=null) {
+    public kickUser(userId, roomId, reason = null) {
         return this.doRequest("POST", "/_matrix/client/r0/rooms/" + encodeURIComponent(roomId) + "/kick", null, {
             user_id: userId,
             reason: reason,
@@ -204,7 +204,7 @@ export class MatrixClient extends EventEmitter {
      * @param {string?} reason optional reason for the ban
      * @returns {Promise<*>} resolves when completed
      */
-    public banUser(userId, roomId, reason=null) {
+    public banUser(userId, roomId, reason = null) {
         return this.doRequest("POST", "/_matrix/client/r0/rooms/" + encodeURIComponent(roomId) + "/ban", null, {
             user_id: userId,
             reason: reason,
