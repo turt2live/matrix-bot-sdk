@@ -2,8 +2,10 @@ import { EventEmitter } from "events";
 import { IStorageProvider } from "./storage/IStorageProvider";
 import { MemoryStorageProvider } from "./storage/MemoryStorageProvider";
 import * as request from "request";
-import * as Promise from "bluebird";
+import * as Bluebird from "bluebird";
 import { IJoinRoomStrategy } from "./strategies/JoinRoomStrategy";
+import { UnstableApis } from "./UnstableApis";
+import { IPreprocessor } from "./preprocessors/IPreprocessor";
 
 /**
  * A client that is capable of interacting with a matrix homeserver.
@@ -17,7 +19,7 @@ export class MatrixClient extends EventEmitter {
      *
      * Has no effect if the client is not syncing. Does not apply until the next sync request.
      */
-    public syncingPresence: "online"|"offline"|"unavailable"|null = null;
+    public syncingPresence: "online" | "offline" | "unavailable" | null = null;
 
     /**
      * The number of milliseconds to wait for new events for on the next sync.
@@ -34,6 +36,7 @@ export class MatrixClient extends EventEmitter {
     private impersonatedUserId: string;
 
     private joinStrategy: IJoinRoomStrategy = null;
+    private eventProcessors: { [eventType: string]: IPreprocessor[] } = {};
 
     /**
      * Creates a new matrix client
@@ -48,6 +51,15 @@ export class MatrixClient extends EventEmitter {
             this.homeserverUrl = this.homeserverUrl.substring(0, this.homeserverUrl.length - 2);
 
         if (!this.storage) this.storage = new MemoryStorageProvider();
+    }
+
+    /**
+     * Gets the unstable API access class. This is generally not recommended to be
+     * used by clients.
+     * @return {UnstableApis} The unstable API access class.
+     */
+    public get unstableApis(): UnstableApis {
+        return new UnstableApis(this);
     }
 
     /**
@@ -67,6 +79,34 @@ export class MatrixClient extends EventEmitter {
      */
     public setJoinStrategy(strategy: IJoinRoomStrategy): void {
         this.joinStrategy = strategy;
+    }
+
+    /**
+     * Adds a preprocessor to the event pipeline. When this client encounters an event, it
+     * will try to run it through the preprocessors it can in the order they were added.
+     * @param {IPreprocessor} preprocessor the preprocessor to add
+     */
+    public addPreprocessor(preprocessor: IPreprocessor): void {
+        if (!preprocessor) throw new Error("Preprocessor cannot be null");
+
+        const eventTypes = preprocessor.getSupportedEventTypes();
+        if (!eventTypes) return; // Nothing to do
+
+        for (const eventType of eventTypes) {
+            if (!this.eventProcessors[eventType]) this.eventProcessors[eventType] = [];
+            this.eventProcessors[eventType].push(preprocessor);
+        }
+    }
+
+    private async processEvent(event: any): Promise<any> {
+        if (!event) return event;
+        if (!this.eventProcessors[event["type"]]) return event;
+
+        for (const processor of this.eventProcessors[event["type"]]) {
+            await processor.processEvent(event, this);
+        }
+
+        return event;
     }
 
     /**
@@ -112,6 +152,74 @@ export class MatrixClient extends EventEmitter {
     public getDirectoryVisibility(roomId: string): Promise<"public" | "private"> {
         return this.doRequest("GET", "/_matrix/client/r0/directory/list/room/" + roomId).then(response => {
             return response["visibility"];
+        });
+    }
+
+    /**
+     * Resolves a room ID or alias to a room ID. If the given ID or alias looks like a room ID
+     * already, it will be returned as-is. If the room ID or alias looks like a room alias, it
+     * will be resolved to a room ID if possible. If the room ID or alias is neither, an error
+     * will be raised.
+     * @param {string} roomIdOrAlias the room ID or alias to resolve to a room ID
+     * @returns {Promise<string>} resolves to the room ID
+     */
+    public async resolveRoom(roomIdOrAlias: string): Promise<string> {
+        if (roomIdOrAlias.startsWith("!")) return roomIdOrAlias; // probably
+        if (roomIdOrAlias.startsWith("#")) return this.lookupRoomAlias(roomIdOrAlias).then(r => r.roomId);
+        throw new Error("Invalid room ID or alias");
+    }
+
+    /**
+     * Does a room directory lookup for a given room alias
+     * @param {string} roomAlias the room alias to look up in the room directory
+     * @returns {Promise<RoomDirectoryLookupResponse>} resolves to the room's information
+     */
+    public lookupRoomAlias(roomAlias: string): Promise<RoomDirectoryLookupResponse> {
+        return this.doRequest("GET", "/_matrix/client/r0/directory/room/" + encodeURIComponent(roomAlias)).then(response => {
+            return {
+                roomId: response["room_id"],
+                residentServers: response["servers"],
+            };
+        });
+    }
+
+    /**
+     * Kicks a user from a room.
+     * @param {string} userId the user ID to kick
+     * @param {string} roomId the room ID to kick the user in
+     * @param {string?} reason optional reason for the kick
+     * @returns {Promise<*>} resolves when completed
+     */
+    public kickUser(userId, roomId, reason = null) {
+        return this.doRequest("POST", "/_matrix/client/r0/rooms/" + encodeURIComponent(roomId) + "/kick", null, {
+            user_id: userId,
+            reason: reason,
+        });
+    }
+
+    /**
+     * Bans a user from a room.
+     * @param {string} userId the user ID to ban
+     * @param {string} roomId the room ID to set the ban in
+     * @param {string?} reason optional reason for the ban
+     * @returns {Promise<*>} resolves when completed
+     */
+    public banUser(userId, roomId, reason = null) {
+        return this.doRequest("POST", "/_matrix/client/r0/rooms/" + encodeURIComponent(roomId) + "/ban", null, {
+            user_id: userId,
+            reason: reason,
+        });
+    }
+
+    /**
+     * Unbans a user in a room.
+     * @param {string} userId the user ID to unban
+     * @param {string} roomId the room ID to lift the ban in
+     * @returns {Promise<*>} resolves when completed
+     */
+    public unbanUser(userId, roomId) {
+        return this.doRequest("POST", "/_matrix/client/r0/rooms/" + encodeURIComponent(roomId) + "/unban", null, {
+            user_id: userId,
         });
     }
 
@@ -175,7 +283,7 @@ export class MatrixClient extends EventEmitter {
     private startSync() {
         let token = this.storage.getSyncToken();
 
-        const promiseWhile = Promise.method(() => {
+        const promiseWhile = Bluebird.method(() => {
             if (this.stopSyncing) {
                 console.info("MatrixClientLite", "Client stop requested - stopping sync");
                 return;
@@ -187,7 +295,10 @@ export class MatrixClient extends EventEmitter {
                 console.info("MatrixClientLite", "Received sync. Next token: " + token);
 
                 this.processSync(response);
-            }, () => null).then(promiseWhile.bind(this)); // errors are already reported, so suppress them here.
+            }, (e) => {
+                console.error(e);
+                return null;
+            }).then(promiseWhile.bind(this));
         });
 
         promiseWhile(); // start the loop
@@ -208,7 +319,7 @@ export class MatrixClient extends EventEmitter {
         return this.doRequest("GET", "/_matrix/client/r0/sync", conf, null, (token ? 30000 : 600000));
     }
 
-    private processSync(raw: any) {
+    private async processSync(raw: any): Promise<any> {
         if (!raw || !raw['rooms']) return; // nothing to process
         let leftRooms = raw['rooms']['leave'] || {};
         let inviteRooms = raw['rooms']['invite'] || {};
@@ -236,6 +347,7 @@ export class MatrixClient extends EventEmitter {
                 continue;
             }
 
+            leaveEvent = await this.processEvent(leaveEvent);
             this.emit("room.leave", roomId, leaveEvent);
         }
 
@@ -262,6 +374,7 @@ export class MatrixClient extends EventEmitter {
                 continue;
             }
 
+            inviteEvent = await this.processEvent(inviteEvent);
             this.emit("room.invite", roomId, inviteEvent);
         }
 
@@ -276,10 +389,22 @@ export class MatrixClient extends EventEmitter {
             if (!room['timeline'] || !room['timeline']['events']) continue;
 
             for (let event of room['timeline']['events']) {
+                event = await this.processEvent(event);
                 if (event['type'] === 'm.room.message') this.emit("room.message", roomId, event);
-                else console.debug("MatrixClientLite", "Not handling event " + event['type']);
+                this.emit("room.event", roomId, event);
             }
         }
+    }
+
+    /**
+     * Gets an event for a room. Returned as a raw event.
+     * @param {string} roomId the room ID to get the event in
+     * @param {string} eventId the event ID to look up
+     * @returns {Promise<*>} resolves to the found event
+     */
+    public getEvent(roomId: string, eventId: string): Promise<any> {
+        return this.doRequest("GET", "/_matrix/client/r0/rooms/" + roomId + "/event/" + eventId)
+            .then(ev => this.processEvent(ev));
     }
 
     /**
@@ -288,7 +413,8 @@ export class MatrixClient extends EventEmitter {
      * @returns {Promise<*[]>} resolves to the room's state
      */
     public getRoomState(roomId: string): Promise<any[]> {
-        return this.doRequest("GET", "/_matrix/client/r0/rooms/" + roomId + "/state");
+        return this.doRequest("GET", "/_matrix/client/r0/rooms/" + roomId + "/state")
+            .then(state => Promise.all(state.map(ev => this.processEvent(ev))));
     }
 
     /**
@@ -299,7 +425,8 @@ export class MatrixClient extends EventEmitter {
      * @returns {Promise<*|*[]>} resolves to the state event(s)
      */
     public getRoomStateEvents(roomId, type, stateKey): Promise<any | any[]> {
-        return this.doRequest("GET", "/_matrix/client/r0/rooms/" + roomId + "/state/" + type + "/" + (stateKey ? stateKey : ''));
+        return this.doRequest("GET", "/_matrix/client/r0/rooms/" + roomId + "/state/" + type + "/" + (stateKey ? stateKey : ''))
+            .then(state => state.length ? Promise.all(state.map(ev => this.processEvent(ev))) : this.processEvent(state));
     }
 
     /**
@@ -396,17 +523,70 @@ export class MatrixClient extends EventEmitter {
     }
 
     /**
+     * Sends a state event to the given room
+     * @param {string} roomId the room ID to send the event to
+     * @param {string} type the event type to send
+     * @param {string} stateKey the state key to send, should not be null
+     * @param {string} content the event body to send
+     * @returns {Promise<string>} resolves to the event ID that represents the message
+     */
+    public sendStateEvent(roomId: string, type: string, stateKey: string, content: any): Promise<string> {
+        return this.doRequest("PUT", "/_matrix/client/r0/rooms/" + roomId + "/state/" + type + "/" + stateKey, null, content).then(response => {
+            return response['event_id'];
+        });
+    }
+
+    /**
+     * Checks if a given user has a required power level
+     * @param {string} userId the user ID to check the power level of
+     * @param {string} roomId the room ID to check the power level in
+     * @param {string} eventType the event type to look for in the `events` property of the power levels
+     * @param {boolean} isState true to indicate the event is intended to be a state event
+     * @returns {Promise<boolean>} resolves to true if the user has the required power level, resolves to false otherwise
+     */
+    public async userHasPowerLevelFor(userId: string, roomId: string, eventType: string, isState: boolean): Promise<boolean> {
+        const powerLevelsEvent = await this.getRoomStateEvents(roomId, "m.room.power_levels", "");
+        if (!powerLevelsEvent || typeof(powerLevelsEvent) !== "object") {
+            throw new Error("Unexpected power level event: none in room or multiple returned");
+        }
+
+        let requiredPower = isState ? 50 : 0;
+        if (isState && powerLevelsEvent["state_default"]) requiredPower = powerLevelsEvent["state_default"];
+        if (!isState && powerLevelsEvent["users_default"]) requiredPower = powerLevelsEvent["users_default"];
+        if (powerLevelsEvent["events"] && powerLevelsEvent["events"][eventType]) requiredPower = powerLevelsEvent["events"][eventType];
+
+        let userPower = 0;
+        if (powerLevelsEvent["users"] && powerLevelsEvent["users"][userId]) userPower = powerLevelsEvent["users"][userId];
+
+        return userPower >= requiredPower;
+    }
+
+    /**
+     * Uploads data to the homeserver's media repository.
+     * @param {Buffer} data the content to upload.
+     * @param {string} contentType the content type of the file. Defaults to application/octet-stream
+     * @param {string} filename the name of the file. Optional.
+     * @returns {Promise<string>} resolves to the MXC URI of the content
+     */
+    public uploadContent(data: Buffer, contentType = "application/octet-stream", filename: string = null): Promise<string> {
+        // TODO: Make doRequest take an object for options
+        return this.doRequest("POST", "/_matrix/media/r0/upload", {filename: filename}, data, 60000, false, contentType)
+            .then(response => response["content_uri"]);
+    }
+
+    /**
      * Performs a web request to the homeserver, applying appropriate authorization headers for
      * this client.
      * @param {"GET"|"POST"|"PUT"|"DELETE"} method The HTTP method to use in the request
      * @param {string} endpoint The endpoint to call. For example: "/_matrix/client/r0/account/whoami"
      * @param {*} qs The query string to send. Optional.
-     * @param {*} body The request body to send. Optional. Will be converted to JSON.
+     * @param {*} body The request body to send. Optional. Will be converted to JSON unless the type is a Buffer.
      * @param {number} timeout The number of milliseconds to wait before timing out.
      * @param {boolean} raw If true, the raw response will be returned instead of the response body.
+     * @param {string} contentType The content type to send. Only used if the `body` is a Buffer.
      * @returns {Promise<*>} Resolves to the response (body), rejected if a non-2xx status code was returned.
      */
-    public doRequest(method, endpoint, qs = null, body = null, timeout = 60000, raw = false): Promise<any> {
+    public doRequest(method, endpoint, qs = null, body = null, timeout = 60000, raw = false, contentType = "application/json"): Promise<any> {
         if (!endpoint.startsWith('/'))
             endpoint = '/' + endpoint;
 
@@ -421,18 +601,25 @@ export class MatrixClient extends EventEmitter {
         }
 
         if (qs) console.debug("MatrixLiteClient (REQ-" + requestId + ")", "qs = " + JSON.stringify(qs));
-        if (body) console.debug("MatrixLiteClient (REQ-" + requestId + ")", "body = " + JSON.stringify(body));
+        if (body && !Buffer.isBuffer(body)) console.debug("MatrixLiteClient (REQ-" + requestId + ")", "body = " + JSON.stringify(body));
+        if (body && Buffer.isBuffer(body)) console.debug("MatrixLiteClient (REQ-" + requestId + ")", "body = <Buffer>");
 
-        const params = {
+        const params: {[k: string]: any} = {
             url: url,
             method: method,
-            json: body,
             qs: qs,
             timeout: timeout,
             headers: {
                 "Authorization": "Bearer " + this.accessToken,
             }
         };
+
+        if (Buffer.isBuffer(body)) {
+            params.headers["Content-Type"] = contentType;
+            params.body = body;
+        } else {
+            params.json = body;
+        }
 
         return new Promise((resolve, reject) => {
             request(params, (err, response, resBody) => {
@@ -456,4 +643,9 @@ export class MatrixClient extends EventEmitter {
             });
         });
     }
+}
+
+export interface RoomDirectoryLookupResponse {
+    roomId: string;
+    residentServers: string[];
 }
