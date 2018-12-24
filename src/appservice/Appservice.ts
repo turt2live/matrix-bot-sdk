@@ -11,6 +11,17 @@ import * as morgan from "morgan";
  */
 export interface IAppserviceRegistration {
     /**
+     * Optional ID for the appplication service. Used by homeservers to track which application
+     * service registers what.
+     */
+    id?: string;
+
+    /**
+     * Optional URL at which the application service can be contacted.
+     */
+    url?: string;
+
+    /**
      * The token the application service uses to communicate with the homeserver.
      */
     as_token: string;
