@@ -40,8 +40,8 @@ export class SimpleFsStorageProvider implements IStorageProvider, IAppserviceSto
     addRegisteredUser(userId: string) {
         const key = sha512().update(userId).digest('hex');
         this.db
-            .update(`appserviceUsers.${key}.userId`, userId)
-            .update(`appserviceUsers.${key}.registered`, true)
+            .set(`appserviceUsers.${key}.userId`, userId)
+            .set(`appserviceUsers.${key}.registered`, true)
             .write();
     }
 
@@ -58,8 +58,8 @@ export class SimpleFsStorageProvider implements IStorageProvider, IAppserviceSto
     setTransactionCompleted(transactionId: string) {
         const key = sha512().update(transactionId).digest('hex');
         this.db
-            .update(`appserviceTransactions.${key}.txnId`, transactionId)
-            .update(`appserviceTransactions.${key}.completed`, true)
+            .set(`appserviceTransactions.${key}.txnId`, transactionId)
+            .set(`appserviceTransactions.${key}.completed`, true)
             .write();
     }
 }
