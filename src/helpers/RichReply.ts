@@ -1,3 +1,5 @@
+import * as sanitizeHtml from "sanitize-html";
+
 /**
  * Helper for creating rich replies.
  */
@@ -16,7 +18,10 @@ export class RichReply {
      */
     public static createFor(roomId: string, event: any, withText: string, withHtml: string): any {
         const originalBody = (event["content"] ? event["content"]["body"] : "") || "";
-        const originalHtml = (event["content"] ? event["content"]["formatted_body"] : "") || "";
+        let originalHtml = (event["content"] ? event["content"]["formatted_body"] : "") || null;
+        if (originalHtml === null) {
+            originalHtml = sanitizeHtml(originalBody);
+        }
 
         const fallbackText = "> <" + event["sender"] + "> " + originalBody.split("\n").join("\n> ");
         const fallbackHtml = "<mx-reply><blockquote>"

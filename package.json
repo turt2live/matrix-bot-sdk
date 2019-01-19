@@ -17,6 +17,7 @@
     "prepublishOnly": "npm run build",
     "build": "tsc",
     "lint": "tslint --project ./tsconfig.json -t stylish",
+    "test": "ts-mocha --project ./tsconfig.json test/**/*.ts",
     "build:examples": "tsc -p tsconfig-examples.json",
     "example:appservice": "npm run build:examples && node lib/examples/appservice.js"
   },
@@ -34,6 +35,7 @@
     "lowdb": "^1.0.0",
     "morgan": "^1.9.1",
     "request": "^2.88.0",
+    "sanitize-html": "^1.20.0",
     "tslint": "^5.11.0",
     "typescript": "^3.1.1"
   },
@@ -52,5 +54,12 @@
     "src/*",
     "lib/*",
     "scripts/*"
-  ]
+  ],
+  "devDependencies": {
+    "@types/expect": "^1.20.3",
+    "@types/mocha": "^5.2.5",
+    "expect": "^23.6.0",
+    "mocha": "^5.2.0",
+    "ts-mocha": "^2.0.0"
+  }
 }

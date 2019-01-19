@@ -19,3 +19,6 @@ jobs:
   - name: Linter
     script: npm run lint
     node_js: 10
+  - name: Tests
+    script: npm run test
+    node_js: 10
