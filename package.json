@@ -59,7 +59,9 @@
     "@types/expect": "^1.20.3",
     "@types/mocha": "^5.2.5",
     "expect": "^23.6.0",
+    "matrix-mock-request": "turt2live/matrix-mock-request#travis/build-1",
     "mocha": "^5.2.0",
+    "simple-mock": "^0.8.0",
     "ts-mocha": "^2.0.0"
   }
 }
