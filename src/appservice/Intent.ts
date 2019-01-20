@@ -112,19 +112,32 @@ export class Intent {
      */
     public async ensureRegistered() {
         if (!this.storage.isUserRegistered(this.userId)) {
-            await this.client.doRequest("POST", "/_matrix/client/r0/register", null, {
-                type: "m.login.application_service",
-                username: this.userId.substring(1).split(":")[0],
-            }).catch(err => {
+            try {
+                const result = await this.client.doRequest("POST", "/_matrix/client/r0/register", null, {
+                    type: "m.login.application_service",
+                    username: this.userId.substring(1).split(":")[0],
+                });
+
+                // HACK: Workaround for unit tests
+                if (result['errcode']) {
+                    // noinspection ExceptionCaughtLocallyJS
+                    throw {body: result};
+                }
+            } catch (err) {
                 if (err.body && err.body["errcode"] === "M_USER_IN_USE") {
-                    if (this.userId === this.appservice.botUserId) return null;
-                    else console.error("Error registering user: User ID is in use");
+                    this.storage.addRegisteredUser(this.userId);
+                    if (this.userId === this.appservice.botUserId) {
+                        return null;
+                    } else {
+                        console.error("Error registering user: User ID is in use");
+                        return null;
+                    }
                 } else {
                     console.error("Encountered error registering user: ");
                     console.error(err);
                 }
-                return null; // swallow error
-            });
+                throw err;
+            }
 
             this.storage.addRegisteredUser(this.userId);
         }

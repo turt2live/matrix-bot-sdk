@@ -82,7 +82,7 @@ describe('SimpleRetryJoinStrategy', () => {
             await strategy.joinRoom(roomId, userId, apiCallSpy);
 
             // noinspection ExceptionCaughtLocallyJS
-            throw new Error("Join succeeeded when it should have failed");
+            throw new Error("Join succeeded when it should have failed");
         } catch (e) {
             expect(e.message).toEqual("Simulated failure");
         }
