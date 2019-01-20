@@ -6,15 +6,22 @@ export class AppserviceJoinRoomStrategy implements IJoinRoomStrategy {
     constructor(private underlyingStrategy: IJoinRoomStrategy, private appservice: Appservice) {
     }
 
-    public joinRoom(roomIdOrAlias: string, userId: string, apiCall: (roomIdOrAlias: string) => Promise<string>): Promise<string> {
-        return apiCall(roomIdOrAlias).catch(async (err) => {
+    public async joinRoom(roomIdOrAlias: string, userId: string, apiCall: (roomIdOrAlias: string) => Promise<string>): Promise<string> {
+        try {
+            await apiCall(roomIdOrAlias);
+        } catch (err) {
             console.error(err);
             if (userId !== this.appservice.botUserId) {
                 const client = this.appservice.botIntent.underlyingClient;
                 const roomId = await client.resolveRoom(roomIdOrAlias);
-                return client.inviteUser(userId, roomId);
+                return client.inviteUser(userId, roomId).then(() => {
+                    if (this.underlyingStrategy) return this.underlyingStrategy.joinRoom(roomId, userId, apiCall);
+                    else return apiCall(roomId);
+                });
+            } else if (this.underlyingStrategy) {
+                return this.underlyingStrategy.joinRoom(roomIdOrAlias, userId, apiCall);
             }
-            return err;
-        }).then(() => this.underlyingStrategy ? this.underlyingStrategy.joinRoom(roomIdOrAlias, userId, apiCall) : apiCall(roomIdOrAlias));
+            throw err;
+        }
     }
 }
