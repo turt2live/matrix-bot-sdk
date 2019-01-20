@@ -30,7 +30,7 @@ export class SimpleFsStorageProvider implements IStorageProvider, IAppserviceSto
     }
 
     setFilter(filter: IFilterInfo): void {
-        this.db.set('filter', filter);
+        this.db.set('filter', filter).write();
     }
 
     getFilter(): IFilterInfo {

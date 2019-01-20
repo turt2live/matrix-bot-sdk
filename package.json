@@ -62,6 +62,7 @@
     "matrix-mock-request": "turt2live/matrix-mock-request#travis/build-1",
     "mocha": "^5.2.0",
     "simple-mock": "^0.8.0",
+    "tmp": "0.0.33",
     "ts-mocha": "^2.0.0"
   }
 }
