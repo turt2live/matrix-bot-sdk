@@ -147,6 +147,7 @@ export class Appservice extends EventEmitter {
     private readonly storage: IAppserviceStorageProvider;
 
     private app = express();
+    private appServer: any;
     private intents: { [userId: string]: Intent } = {};
     private eventProcessors: { [eventType: string]: IPreprocessor[] } = {};
     private pendingTransactions: { [txnId: string]: Promise<any> } = {};
@@ -209,8 +210,16 @@ export class Appservice extends EventEmitter {
      */
     public begin(): Promise<any> {
         return new Promise((resolve, reject) => {
-            this.app.listen(this.options.port, this.options.bindAddress, () => resolve());
+            this.appServer = this.app.listen(this.options.port, this.options.bindAddress, () => resolve());
         }).then(() => this.botIntent.ensureRegistered());
+    }
+
+    /**
+     * Stops the application service, freeing the web server.
+     */
+    public stop(): void {
+        if (!this.appServer) return;
+        this.appServer.close();
     }
 
     /**
@@ -275,7 +284,7 @@ export class Appservice extends EventEmitter {
     }
 
     /**
-     * Adds a preprocessor to the event pipeline. When this client encounters an event, it
+     * Adds a preprocessor to the event pipeline. When this appservice encounters an event, it
      * will try to run it through the preprocessors it can in the order they were added.
      * @param {IPreprocessor} preprocessor the preprocessor to add
      */
@@ -331,7 +340,7 @@ export class Appservice extends EventEmitter {
             res.status(401).send({errcode: "AUTH_FAILED", error: "Authentication failed"});
         }
 
-        if (typeof(req.body) !== "object") {
+        if (typeof (req.body) !== "object") {
             res.status(400).send({errcode: "BAD_REQUEST", error: "Expected JSON"});
             return;
         }
@@ -350,6 +359,7 @@ export class Appservice extends EventEmitter {
         if (this.pendingTransactions[txnId]) {
             try {
                 await this.pendingTransactions[txnId];
+                res.status(200).send({});
             } catch (e) {
                 console.error(e);
                 res.status(500).send({});
@@ -373,6 +383,7 @@ export class Appservice extends EventEmitter {
 
         try {
             await this.pendingTransactions[txnId];
+            this.storage.setTransactionCompleted(txnId);
             res.status(200).send({});
         } catch (e) {
             console.error(e);
@@ -395,7 +406,7 @@ export class Appservice extends EventEmitter {
                 await intent.ensureRegistered();
                 if (result.display_name) await intent.underlyingClient.setDisplayName(result.display_name);
                 if (result.avatar_mxc) await intent.underlyingClient.setAvatarUrl(result.avatar_mxc);
-                res.status(200).send({});
+                res.status(200).send(result); // return result for debugging + testing
             }
         });
     }

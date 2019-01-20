@@ -71,6 +71,7 @@ export class MatrixClient extends EventEmitter {
      */
     public impersonateUserId(userId: string): void {
         this.impersonatedUserId = userId;
+        this.userId = userId;
     }
 
     /**
