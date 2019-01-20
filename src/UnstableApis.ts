@@ -52,7 +52,7 @@ export class UnstableApis {
      *  homeserver accepted/rejected the invite right away.
      */
     public async inviteUserToGroup(groupId: string, userId: string): Promise<"join" | "invite" | "reject"> {
-        const response = await this.client.doRequest("PUT", `/_matrix/client/r0/groups/${groupId}/admin/users/invite/${userId}`, null, {});
+        const response = await this.client.doRequest("PUT", `/_matrix/client/r0/groups/${encodeURIComponent(groupId)}/admin/users/invite/${encodeURIComponent(userId)}`, null, {});
         return response["state"];
     }
 
@@ -63,7 +63,7 @@ export class UnstableApis {
      * @return {Promise<*>} Resolves when completed.
      */
     public async setGroupProfile(groupId: string, profile: GroupProfile): Promise<any> {
-        return this.client.doRequest("POST", `/_matrix/client/r0/groups/${groupId}/profile`, null, profile);
+        return this.client.doRequest("POST", `/_matrix/client/r0/groups/${encodeURIComponent(groupId)}/profile`, null, profile);
     }
 
     /**
@@ -74,7 +74,7 @@ export class UnstableApis {
      * @return {Promise<*>} Resolves when completed.
      */
     public async setGroupJoinPolicy(groupId: string, policy: "open" | "invite"): Promise<any> {
-        return this.client.doRequest("PUT", `/_matrix/client/r0/groups/${groupId}/settings/m.join_policy`, null, {
+        return this.client.doRequest("PUT", `/_matrix/client/r0/groups/${encodeURIComponent(groupId)}/settings/m.join_policy`, null, {
             "m.join_policy": {
                 "type": policy,
             },
