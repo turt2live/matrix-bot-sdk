@@ -6,6 +6,7 @@ import { IJoinRoomStrategy } from "./strategies/JoinRoomStrategy";
 import { UnstableApis } from "./UnstableApis";
 import { IPreprocessor } from "./preprocessors/IPreprocessor";
 import { getRequestFn } from "./request";
+import { LogService } from "./logging/LogService";
 
 /**
  * A client that is capable of interacting with a matrix homeserver.
@@ -266,7 +267,7 @@ export class MatrixClient extends EventEmitter {
     public start(filter: any = null): Promise<any> {
         this.stopSyncing = false;
         if (!filter || typeof (filter) !== "object") {
-            console.debug("MatrixClientLite", "No filter given or invalid object - using defaults.");
+            LogService.debug("MatrixClientLite", "No filter given or invalid object - using defaults.");
             filter = null;
         }
 
@@ -275,9 +276,9 @@ export class MatrixClient extends EventEmitter {
 
             let existingFilter = this.storage.getFilter();
             if (existingFilter) {
-                console.debug("MatrixClientLite", "Found existing filter. Checking consistency with given filter");
+                LogService.debug("MatrixClientLite", "Found existing filter. Checking consistency with given filter");
                 if (JSON.stringify(existingFilter.filter) === JSON.stringify(filter)) {
-                    console.debug("MatrixClientLite", "Filters match");
+                    LogService.debug("MatrixClientLite", "Filters match");
                     this.filterId = existingFilter.id;
                 } else {
                     createFilter = true;
@@ -287,7 +288,7 @@ export class MatrixClient extends EventEmitter {
             }
 
             if (createFilter && filter) {
-                console.debug("MatrixClientLite", "Creating new filter");
+                LogService.debug("MatrixClientLite", "Creating new filter");
                 return this.doRequest("POST", "/_matrix/client/r0/user/" + encodeURIComponent(userId) + "/filter", null, filter).then(response => {
                     this.filterId = response["filter_id"];
                     this.storage.setSyncToken(null);
@@ -298,7 +299,7 @@ export class MatrixClient extends EventEmitter {
                 });
             }
         }).then(() => {
-            console.debug("MatrixClientLite", "Starting sync with filter ID " + this.filterId);
+            LogService.debug("MatrixClientLite", "Starting sync with filter ID " + this.filterId);
             this.startSync();
         });
     }
@@ -308,18 +309,18 @@ export class MatrixClient extends EventEmitter {
 
         const promiseWhile = Bluebird.method(() => {
             if (this.stopSyncing) {
-                console.info("MatrixClientLite", "Client stop requested - stopping sync");
+                LogService.info("MatrixClientLite", "Client stop requested - stopping sync");
                 return;
             }
 
             return this.doSync(token).then(response => {
                 token = response["next_batch"];
                 this.storage.setSyncToken(token);
-                console.info("MatrixClientLite", "Received sync. Next token: " + token);
+                LogService.info("MatrixClientLite", "Received sync. Next token: " + token);
 
                 this.processSync(response);
             }, (e) => {
-                console.error(e);
+                LogService.error("MatrixClientLite", e);
                 return null;
             }).then(promiseWhile.bind(this));
         });
@@ -328,7 +329,7 @@ export class MatrixClient extends EventEmitter {
     }
 
     private doSync(token: string): Promise<any> {
-        console.info("MatrixClientLite", "Performing sync with token " + token);
+        LogService.info("MatrixClientLite", "Performing sync with token " + token);
         const conf = {
             full_state: false,
             timeout: Math.max(0, this.syncingTimeout),
@@ -366,7 +367,7 @@ export class MatrixClient extends EventEmitter {
             }
 
             if (!leaveEvent) {
-                console.warn("MatrixClientLite", "Left room " + roomId + " without receiving an event");
+                LogService.warn("MatrixClientLite", "Left room " + roomId + " without receiving an event");
                 continue;
             }
 
@@ -393,7 +394,7 @@ export class MatrixClient extends EventEmitter {
             }
 
             if (!inviteEvent) {
-                console.warn("MatrixClientLite", "Invited to room " + roomId + " without receiving an event");
+                LogService.warn("MatrixClientLite", "Invited to room " + roomId + " without receiving an event");
                 continue;
             }
 
@@ -775,16 +776,16 @@ export class MatrixClient extends EventEmitter {
         const requestId = ++this.requestId;
         const url = this.homeserverUrl + endpoint;
 
-        console.debug("MatrixLiteClient (REQ-" + requestId + ")", method + " " + url);
+        LogService.debug("MatrixLiteClient (REQ-" + requestId + ")", method + " " + url);
 
         if (this.impersonatedUserId) {
             if (!qs) qs = {"user_id": this.impersonatedUserId};
             else qs["user_id"] = this.impersonatedUserId;
         }
 
-        if (qs) console.debug("MatrixLiteClient (REQ-" + requestId + ")", "qs = " + JSON.stringify(qs));
-        if (body && !Buffer.isBuffer(body)) console.debug("MatrixLiteClient (REQ-" + requestId + ")", "body = " + JSON.stringify(body));
-        if (body && Buffer.isBuffer(body)) console.debug("MatrixLiteClient (REQ-" + requestId + ")", "body = <Buffer>");
+        if (qs) LogService.debug("MatrixLiteClient (REQ-" + requestId + ")", "qs = " + JSON.stringify(qs));
+        if (body && !Buffer.isBuffer(body)) LogService.debug("MatrixLiteClient (REQ-" + requestId + ")", "body = " + JSON.stringify(body));
+        if (body && Buffer.isBuffer(body)) LogService.debug("MatrixLiteClient (REQ-" + requestId + ")", "body = <Buffer>");
 
         const params: { [k: string]: any } = {
             uri: url,
@@ -807,7 +808,7 @@ export class MatrixClient extends EventEmitter {
         return new Promise((resolve, reject) => {
             getRequestFn()(params, (err, response, resBody) => {
                 if (err) {
-                    console.error("MatrixLiteClient (REQ-" + requestId + ")", err);
+                    LogService.error("MatrixLiteClient (REQ-" + requestId + ")", err);
                     reject(err);
                 } else {
                     if (typeof (resBody) === 'string') {
@@ -817,9 +818,9 @@ export class MatrixClient extends EventEmitter {
                         }
                     }
 
-                    console.debug("MatrixLiteClient (REQ-" + requestId + " RESP-H" + response.statusCode + ")", response.body);
+                    LogService.debug("MatrixLiteClient (REQ-" + requestId + " RESP-H" + response.statusCode + ")", response.body);
                     if (response.statusCode < 200 || response.statusCode >= 300) {
-                        console.error("MatrixLiteClient (REQ-" + requestId + ")", response.body);
+                        LogService.error("MatrixLiteClient (REQ-" + requestId + ")", response.body);
                         reject(response);
                     } else resolve(raw ? response : resBody);
                 }

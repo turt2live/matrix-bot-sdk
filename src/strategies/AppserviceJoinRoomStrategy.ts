@@ -1,5 +1,5 @@
 import { IJoinRoomStrategy } from "./JoinRoomStrategy";
-import { Appservice } from "..";
+import { Appservice, LogService } from "..";
 
 export class AppserviceJoinRoomStrategy implements IJoinRoomStrategy {
 
@@ -10,7 +10,7 @@ export class AppserviceJoinRoomStrategy implements IJoinRoomStrategy {
         try {
             await apiCall(roomIdOrAlias);
         } catch (err) {
-            console.error(err);
+            LogService.error("AppserviceJoinRoomStrategy", err);
             if (userId !== this.appservice.botUserId) {
                 const client = this.appservice.botIntent.underlyingClient;
                 const roomId = await client.resolveRoom(roomIdOrAlias);

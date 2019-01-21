@@ -1,4 +1,4 @@
-import { Appservice, IAppserviceStorageProvider, MatrixClient } from "..";
+import { Appservice, IAppserviceStorageProvider, LogService, MatrixClient } from "..";
 import { IAppserviceOptions } from "./Appservice";
 
 /**
@@ -128,12 +128,12 @@ export class Intent {
                     if (this.userId === this.appservice.botUserId) {
                         return null;
                     } else {
-                        console.error("Error registering user: User ID is in use");
+                        LogService.error("Appservice", "Error registering user: User ID is in use");
                         return null;
                     }
                 } else {
-                    console.error("Encountered error registering user: ");
-                    console.error(err);
+                    LogService.error("Appservice", "Encountered error registering user: ");
+                    LogService.error("Appservice", err);
                 }
                 throw err;
             }

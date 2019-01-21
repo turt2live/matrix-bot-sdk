@@ -5,6 +5,7 @@ import {
     IAppserviceStorageProvider,
     IJoinRoomStrategy,
     IPreprocessor,
+    LogService,
     MemoryStorageProvider
 } from "..";
 import { EventEmitter } from "events";
@@ -366,15 +367,15 @@ export class Appservice extends EventEmitter {
                 await this.pendingTransactions[txnId];
                 res.status(200).send({});
             } catch (e) {
-                console.error(e);
+                LogService.error("Appservice", e);
                 res.status(500).send({});
             }
         }
 
-        console.log("Processing transaction " + txnId);
+        LogService.info("Appservice", "Processing transaction " + txnId);
         this.pendingTransactions[txnId] = new Promise(async (resolve, reject) => {
             for (let event of req.body["events"]) {
-                console.log(`Processing event of type ${event["type"]}`);
+                LogService.info("Appservice", `Processing event of type ${event["type"]}`);
                 event = await this.processEvent(event);
                 this.emit("room.event", event["room_id"], event);
                 if (event['type'] === 'm.room.message') {
@@ -399,7 +400,7 @@ export class Appservice extends EventEmitter {
             this.storage.setTransactionCompleted(txnId);
             res.status(200).send({});
         } catch (e) {
-            console.error(e);
+            LogService.error("Appservice", e);
             res.status(500).send({});
         }
     }
