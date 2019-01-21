@@ -646,6 +646,117 @@ export class MatrixClient extends EventEmitter {
     }
 
     /**
+     * Determines the upgrade history for a given room as a doubly-linked list styled structure. Given
+     * a room ID in the history of upgrades, the resulting `previous` array will hold any rooms which
+     * are older than the given room. The resulting `newer` array will hold any rooms which are newer
+     * versions of the room. Both arrays will be defined, but may be empty individually. Element zero
+     * of each will always be the nearest to the given room ID and the last element will be the furthest
+     * from the room. The given room will never be in either array.
+     * @param {string} roomId the room ID to get the history of
+     * @returns {Promise<{previous: RoomReference[], newer: RoomReference[]}>} Resolves to the room's
+     * upgrade history
+     */
+    public async getRoomUpgradeHistory(roomId: string): Promise<{ previous: RoomReference[], newer: RoomReference[], current: RoomReference }> {
+        const result = {previous: [], newer: [], current: null};
+
+        const chaseCreates = async (findRoomId) => {
+            try {
+                const createEvent = await this.getRoomStateEvent(findRoomId, "m.room.create", "");
+                if (!createEvent) return;
+
+                if (findRoomId === roomId && !result.current) {
+                    const version = createEvent['room_version'] || '1';
+                    result.current = {
+                        roomId: roomId,
+                        version: version,
+                        refEventId: null,
+                    };
+                }
+
+                if (createEvent['predecessor'] && createEvent['predecessor']['room_id']) {
+                    const prevRoomId = createEvent['predecessor']['room_id'];
+
+                    let tombstoneEventId = null;
+                    let prevVersion = "1";
+                    try {
+                        const roomState = await this.getRoomState(prevRoomId);
+                        const tombstone = roomState.find(e => e['type'] === 'm.room.tombstone' && e['state_key'] === '');
+                        const create = roomState.find(e => e['type'] === 'm.room.create' && e['state_key'] === '');
+
+                        if (tombstone) {
+                            if (!tombstone['content']) tombstone['content'] = {};
+                            const tombstoneRefRoomId = tombstone['content']['replacement_room'];
+                            if (tombstoneRefRoomId === findRoomId) tombstoneEventId = tombstone['event_id'];
+                        }
+
+                        if (create) {
+                            if (!create['content']) create['content'] = {};
+                            prevVersion = create['content']['room_version'] || "1";
+                        }
+                    } catch (e) {
+                        // state not available
+                    }
+
+                    result.previous.push({
+                        roomId: prevRoomId,
+                        version: prevVersion,
+                        refEventId: tombstoneEventId,
+                    });
+
+                    return chaseCreates(prevRoomId);
+                }
+            } catch (e) {
+                // no create event - that's fine
+            }
+        };
+
+        const chaseTombstones = async (findRoomId) => {
+            try {
+                const tombstoneEvent = await this.getRoomStateEvent(findRoomId, "m.room.tombstone", "");
+                if (!tombstoneEvent) return;
+                if (!tombstoneEvent['replacement_room']) return;
+
+                const newRoomId = tombstoneEvent['replacement_room'];
+
+                let newRoomVersion = "1";
+                let createEventId = null;
+                try {
+                    const roomState = await this.getRoomState(newRoomId);
+                    const create = roomState.find(e => e['type'] === 'm.room.create' && e['state_key'] === '');
+
+                    if (create) {
+                        if (!create['content']) create['content'] = {};
+
+                        const predecessor = create['content']['predecessor'] || {};
+                        const refPrevRoomId = predecessor['room_id'];
+                        if (refPrevRoomId === findRoomId) {
+                            createEventId = create['event_id'];
+                        }
+
+                        newRoomVersion = create['content']['room_version'] || "1";
+                    }
+                } catch (e) {
+                    // state not available
+                }
+
+                result.newer.push({
+                    roomId: newRoomId,
+                    version: newRoomVersion,
+                    refEventId: createEventId,
+                });
+
+                return await chaseTombstones(newRoomId);
+            } catch (e) {
+                // no tombstone - that's fine
+            }
+        };
+
+        await chaseCreates(roomId);
+        await chaseTombstones(roomId);
+        return result;
+    }
+
+    /**
      * Performs a web request to the homeserver, applying appropriate authorization headers for
      * this client.
      * @param {"GET"|"POST"|"PUT"|"DELETE"} method The HTTP method to use in the request
@@ -720,4 +831,23 @@ export class MatrixClient extends EventEmitter {
 export interface RoomDirectoryLookupResponse {
     roomId: string;
     residentServers: string[];
+}
+
+export interface RoomReference {
+    /**
+     * The room ID being referenced
+     */
+    roomId: string;
+
+    /**
+     * The version of the room at the time
+     */
+    version: string;
+
+    /**
+     * If going backwards, the tombstone event ID, otherwise the creation
+     * event. If the room can't be verified, this will be null. Will be
+     * null if this reference is to the current room.
+     */
+    refEventId: string;
 }
