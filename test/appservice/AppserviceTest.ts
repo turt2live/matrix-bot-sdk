@@ -858,6 +858,96 @@ describe('Appservice', () => {
     });
 
     // @ts-ignore
+    it('should handle room upgrade events in transactions', async () => {
+        const port = await getPort();
+        const hsToken = "s3cret_token";
+        const appservice = new Appservice({
+            port: port,
+            bindAddress: '127.0.0.1',
+            homeserverName: 'example.org',
+            homeserverUrl: 'https://localhost',
+            registration: {
+                as_token: "",
+                hs_token: hsToken,
+                sender_localpart: "_bot_",
+                namespaces: {
+                    users: [{exclusive: true, regex: "@_prefix_.*:.+"}],
+                    rooms: [],
+                    aliases: [],
+                },
+            },
+        });
+        appservice.botIntent.ensureRegistered = () => {
+            return null;
+        };
+
+        await appservice.begin();
+
+        try {
+            const txnBody = {
+                events: [
+                    {
+                        type: "m.room.tombstone",
+                        content: {body: "hello world 1"},
+                        state_key: "",
+                        room_id: "!a:example.org",
+                    },
+                    {
+                        type: "m.room.create",
+                        content: {predecessor: {room_id: "!old:example.org"}},
+                        state_key: "",
+                        room_id: "!b:example.org",
+                    },
+                ],
+            };
+
+            const archiveSpy = simple.stub().callFn((rid, ev) => {
+                expect(rid).toEqual(txnBody.events[0].room_id);
+                expect(ev).toMatchObject(txnBody.events[0]);
+            });
+            const upgradeSpy = simple.stub().callFn((rid, ev) => {
+                expect(rid).toEqual(txnBody.events[1].room_id);
+                expect(ev).toMatchObject(txnBody.events[1]);
+            });
+            const eventSpy = simple.stub().callFn((rid, ev) => {
+                if (ev['type'] === 'm.room.tombstone') {
+                    expect(rid).toEqual(txnBody.events[0].room_id);
+                    expect(ev).toMatchObject(txnBody.events[0]);
+                } else {
+                    expect(rid).toEqual(txnBody.events[1].room_id);
+                    expect(ev).toMatchObject(txnBody.events[1]);
+                }
+            });
+
+            appservice.on("room.archived", archiveSpy);
+            appservice.on("room.upgraded", upgradeSpy);
+            appservice.on("room.event", eventSpy);
+
+            async function doCall(route: string, opts: any = {}) {
+                const res = await requestPromise({
+                    uri: `http://localhost:${port}${route}`,
+                    method: "PUT",
+                    qs: {access_token: hsToken},
+                    ...opts,
+                });
+                expect(res).toMatchObject({});
+
+                expect(archiveSpy.callCount).toBe(1);
+                expect(upgradeSpy.callCount).toBe(1);
+                expect(eventSpy.callCount).toBe(2);
+                archiveSpy.callCount = 0;
+                upgradeSpy.callCount = 0;
+                eventSpy.callCount = 0;
+            }
+
+            await doCall("/transactions/1", {json: txnBody});
+            await doCall("/_matrix/app/v1/transactions/2", {json: txnBody});
+        } finally {
+            appservice.stop();
+        }
+    });
+
+    // @ts-ignore
     it('should emit while querying users', async () => {
         const port = await getPort();
         const hsToken = "s3cret_token";

@@ -372,9 +372,17 @@ export class Appservice extends EventEmitter {
                 console.log(`Processing event of type ${event["type"]}`);
                 event = await this.processEvent(event);
                 this.emit("room.event", event["room_id"], event);
-                if (event['type'] === 'm.room.message') this.emit("room.message", event["room_id"], event);
+                if (event['type'] === 'm.room.message') {
+                    this.emit("room.message", event["room_id"], event);
+                }
                 if (event['type'] === 'm.room.member' && this.isNamespacedUser(event['state_key'])) {
                     this.processMembershipEvent(event);
+                }
+                if (event['type'] === 'm.room.tombstone' && event['state_key'] === '') {
+                    this.emit("room.archived", event['room_id'], event);
+                }
+                if (event['type'] === 'm.room.create' && event['state_key'] === '' && event['content'] && event['content']['predecessor']) {
+                    this.emit("room.upgraded", event['room_id'], event);
                 }
             }
 
