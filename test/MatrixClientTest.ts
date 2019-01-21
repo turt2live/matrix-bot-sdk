@@ -1260,6 +1260,106 @@ describe('MatrixClient', () => {
         });
 
         // @ts-ignore
+        it('should process tombstone events', async () => {
+            const {client: realClient} = createTestClient();
+            const client = <ProcessSyncClient>(<any>realClient);
+
+            const userId = "@syncing:example.org";
+            const roomId = "!testing:example.org";
+            const events = [
+                {
+                    type: "m.room.tombstone",
+                    content: {body: "hello world 1"},
+                    state_key: "",
+                },
+                {
+                    type: "m.room.create",
+                    content: {predecessor: {room_id: "!old:example.org"}},
+                    state_key: "",
+                },
+            ];
+
+            client.userId = userId;
+
+            const joinSpy = simple.stub();
+            const inviteSpy = simple.stub();
+            const leaveSpy = simple.stub();
+            const archiveSpy = simple.stub().callFn((rid, ev) => {
+                expect(rid).toEqual(roomId);
+                expect(events).toContain(ev);
+                expect(ev["type"]).toEqual("m.room.tombstone");
+            });
+            const eventSpy = simple.stub().callFn((rid, ev) => {
+                expect(rid).toEqual(roomId);
+                expect(events).toContain(ev);
+            });
+            realClient.on("room.join", joinSpy);
+            realClient.on("room.invite", inviteSpy);
+            realClient.on("room.leave", leaveSpy);
+            realClient.on("room.archived", archiveSpy);
+            realClient.on("room.event", eventSpy);
+
+            const roomsObj = {};
+            roomsObj[roomId] = {timeline: {events: events}, invite_state: {events: events}};
+            await client.processSync({rooms: {join: roomsObj, leave: roomsObj, invite: roomsObj}});
+            expect(joinSpy.callCount).toBe(1); // We'll technically be joining the room for the first time
+            expect(inviteSpy.callCount).toBe(0);
+            expect(leaveSpy.callCount).toBe(0);
+            expect(archiveSpy.callCount).toBe(1);
+            expect(eventSpy.callCount).toBe(2);
+        });
+
+        // @ts-ignore
+        it('should process create events with a predecessor', async () => {
+            const {client: realClient} = createTestClient();
+            const client = <ProcessSyncClient>(<any>realClient);
+
+            const userId = "@syncing:example.org";
+            const roomId = "!testing:example.org";
+            const events = [
+                {
+                    type: "m.room.tombstone",
+                    content: {body: "hello world 1"},
+                    state_key: "",
+                },
+                {
+                    type: "m.room.create",
+                    content: {predecessor: {room_id: "!old:example.org"}},
+                    state_key: "",
+                },
+            ];
+
+            client.userId = userId;
+
+            const joinSpy = simple.stub();
+            const inviteSpy = simple.stub();
+            const leaveSpy = simple.stub();
+            const upgradedSpy = simple.stub().callFn((rid, ev) => {
+                expect(rid).toEqual(roomId);
+                expect(events).toContain(ev);
+                expect(ev["type"]).toEqual("m.room.create");
+            });
+            const eventSpy = simple.stub().callFn((rid, ev) => {
+                expect(rid).toEqual(roomId);
+                expect(events).toContain(ev);
+            });
+            realClient.on("room.join", joinSpy);
+            realClient.on("room.invite", inviteSpy);
+            realClient.on("room.leave", leaveSpy);
+            realClient.on("room.upgraded", upgradedSpy);
+            realClient.on("room.event", eventSpy);
+
+            const roomsObj = {};
+            roomsObj[roomId] = {timeline: {events: events}, invite_state: {events: events}};
+            await client.processSync({rooms: {join: roomsObj, leave: roomsObj, invite: roomsObj}});
+            expect(joinSpy.callCount).toBe(1); // We'll technically be joining the room for the first time
+            expect(inviteSpy.callCount).toBe(0);
+            expect(leaveSpy.callCount).toBe(0);
+            expect(upgradedSpy.callCount).toBe(1);
+            expect(eventSpy.callCount).toBe(2);
+        });
+
+        // @ts-ignore
         it('should send events through a processor', async () => {
             const {client: realClient} = createTestClient();
             const client = <ProcessSyncClient>(<any>realClient);
