@@ -1,9 +1,15 @@
-import { Appservice, IAppserviceOptions, IJoinRoomStrategy, Intent, MemoryStorageProvider } from "../../src";
+import {
+    Appservice,
+    IAppserviceOptions,
+    IAppserviceStorageProvider,
+    IJoinRoomStrategy,
+    Intent,
+    MemoryStorageProvider,
+    setRequestFn
+} from "../../src";
 import * as expect from "expect";
 import * as simple from "simple-mock";
 import * as MockHttpBackend from 'matrix-mock-request';
-import { setRequestFn } from "../../src/request";
-import { IAppserviceStorageProvider } from "../../src/storage/IAppserviceStorageProvider";
 
 // @ts-ignore
 describe('Intent', () => {

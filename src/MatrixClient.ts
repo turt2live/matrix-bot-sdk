@@ -508,12 +508,15 @@ export class MatrixClient extends EventEmitter {
     /**
      * Joins the given room
      * @param {string} roomIdOrAlias the room ID or alias to join
+     * @param {string[]} viaServers the server names to try and join through
      * @returns {Promise<string>} resolves to the joined room ID
      */
-    public async joinRoom(roomIdOrAlias: string): Promise<string> {
+    public async joinRoom(roomIdOrAlias: string, viaServers: string[] = []): Promise<string> {
         const apiCall = (targetIdOrAlias: string) => {
             targetIdOrAlias = encodeURIComponent(targetIdOrAlias);
-            return this.doRequest("POST", "/_matrix/client/r0/join/" + targetIdOrAlias).then(response => {
+            const qs = {};
+            if (viaServers.length > 0) qs['server_name'] = viaServers;
+            return this.doRequest("POST", "/_matrix/client/r0/join/" + targetIdOrAlias, qs).then(response => {
                 return response['room_id'];
             });
         };

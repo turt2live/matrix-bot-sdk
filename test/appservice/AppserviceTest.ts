@@ -1,10 +1,9 @@
-import { Appservice, IPreprocessor } from "../../src";
+import { Appservice, IPreprocessor, setRequestFn } from "../../src";
 import * as expect from "expect";
 import * as getPort from "get-port";
 import * as requestPromise from "request-promise";
 import * as simple from "simple-mock";
 import * as MockHttpBackend from 'matrix-mock-request';
-import { setRequestFn } from "../../src/request";
 
 // @ts-ignore
 describe('Appservice', () => {

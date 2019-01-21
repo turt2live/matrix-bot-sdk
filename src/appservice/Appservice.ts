@@ -1,8 +1,13 @@
 import * as express from "express";
 import { Intent } from "./Intent";
-import { IAppserviceStorageProvider } from "../storage/IAppserviceStorageProvider";
+import {
+    AppserviceJoinRoomStrategy,
+    IAppserviceStorageProvider,
+    IJoinRoomStrategy,
+    IPreprocessor,
+    MemoryStorageProvider
+} from "..";
 import { EventEmitter } from "events";
-import { AppserviceJoinRoomStrategy, IJoinRoomStrategy, IPreprocessor, MemoryStorageProvider } from "..";
 import * as morgan from "morgan";
 
 /**

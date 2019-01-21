@@ -1,6 +1,12 @@
 import * as expect from "expect";
-import { setRequestFn } from "../src/request";
-import { IJoinRoomStrategy, IPreprocessor, IStorageProvider, MatrixClient, MemoryStorageProvider } from "../src";
+import {
+    IJoinRoomStrategy,
+    IPreprocessor,
+    IStorageProvider,
+    MatrixClient,
+    MemoryStorageProvider,
+    setRequestFn
+} from "../src";
 import * as simple from "simple-mock";
 import * as MockHttpBackend from 'matrix-mock-request';
 
@@ -1817,6 +1823,29 @@ describe('MatrixClient', () => {
 
             http.flushAllExpected();
             const result = await client.joinRoom(roomId);
+            expect(result).toEqual(roomId);
+        });
+
+        // @ts-ignore
+        it('should call the right endpoint with server names', async () => {
+            const {client, http, hsUrl} = createTestClient();
+
+            const roomId = "!testing:example.org";
+            const serverNames = ['example.org', 'localhost'];
+
+            (<any>client).userId = "@joins:example.org"; // avoid /whoami lookup
+
+            http.when("POST", "/_matrix/client/r0/join").respond(200, (path, content, req) => {
+                expect(path).toEqual(`${hsUrl}/_matrix/client/r0/join/${encodeURIComponent(roomId)}`);
+                expect(req.opts.qs['server_name'].length).toEqual(serverNames.length);
+                for (let i = 0; i < serverNames.length; i++) {
+                    expect(req.opts.qs['server_name'][i]).toEqual(serverNames[i]);
+                }
+                return {room_id: roomId};
+            });
+
+            http.flushAllExpected();
+            const result = await client.joinRoom(roomId, serverNames);
             expect(result).toEqual(roomId);
         });
 

@@ -1,6 +1,5 @@
-import * as origRequestFn from "request";
 import * as expect from "expect";
-import { getRequestFn, setRequestFn } from "../src/request";
+import { getRequestFn, setRequestFn } from "../src";
 
 // @ts-ignore
 describe('request', () => {
