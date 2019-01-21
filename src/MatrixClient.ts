@@ -609,6 +609,19 @@ export class MatrixClient extends EventEmitter {
     }
 
     /**
+     * Creates a room. This does not break out the various options for creating a room
+     * due to the large number of possibilities. See the /createRoom endpoint in the
+     * spec for more information on what to provide for `properties`.
+     * @param {*} properties the properties of the room. See the spec for more information
+     * @returns {Promise<string>} resolves to the room ID that represents the room
+     */
+    public createRoom(properties: any = {}): Promise<string> {
+        return this.doRequest("POST", "/_matrix/client/r0/createRoom", null, properties).then(response => {
+            return response['room_id'];
+        });
+    }
+
+    /**
      * Checks if a given user has a required power level
      * @param {string} userId the user ID to check the power level of
      * @param {string} roomId the room ID to check the power level in

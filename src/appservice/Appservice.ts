@@ -174,8 +174,10 @@ export class Appservice extends EventEmitter {
         this.app.use(morgan("combined"));
 
         this.app.get("/users/:userId", this.onUser.bind(this));
+        this.app.get("/rooms/:roomAlias", this.onRoomAlias.bind(this));
         this.app.put("/transactions/:txnId", this.onTransaction.bind(this));
         this.app.get("/_matrix/app/v1/users/:userId", this.onUser.bind(this));
+        this.app.get("/_matrix/app/v1/rooms/:roomAlias", this.onRoomAlias.bind(this));
         this.app.put("/_matrix/app/v1/transactions/:txnId", this.onTransaction.bind(this));
         // Everything else can 404
 
@@ -420,6 +422,28 @@ export class Appservice extends EventEmitter {
                 await intent.ensureRegistered();
                 if (result.display_name) await intent.underlyingClient.setDisplayName(result.display_name);
                 if (result.avatar_mxc) await intent.underlyingClient.setAvatarUrl(result.avatar_mxc);
+                res.status(200).send(result); // return result for debugging + testing
+            }
+        });
+    }
+
+    private async onRoomAlias(req, res): Promise<any> {
+        if (!this.isAuthed(req)) {
+            res.status(401).send({errcode: "AUTH_FAILED", error: "Authentication failed"});
+        }
+
+        const roomAlias = req.params["roomAlias"];
+        this.emit("query.room", roomAlias, async (result) => {
+            if (result.then) result = await result;
+            if (result === false) {
+                res.status(404).send({errcode: "ROOM_DOES_NOT_EXIST", error: "Room not created"});
+            } else {
+                const intent = this.botIntent;
+                await intent.ensureRegistered();
+
+                result["room_alias_name"] = roomAlias.substring(1).split(':')[0];
+                result["__roomId"] = await intent.underlyingClient.createRoom(result);
+
                 res.status(200).send(result); // return result for debugging + testing
             }
         });

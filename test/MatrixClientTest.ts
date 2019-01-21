@@ -1763,6 +1763,45 @@ describe('MatrixClient', () => {
     });
 
     // @ts-ignore
+    describe('createRoom', () => {
+        // @ts-ignore
+        it('should call the right endpoint', async () => {
+            const {client, http} = createTestClient();
+
+            const roomId = "!something:example.org";
+
+            http.when("POST", "/_matrix/client/r0/createRoom").respond(200, (path, content) => {
+                expect(content).toMatchObject({});
+                return {room_id: roomId};
+            });
+
+            http.flushAllExpected();
+            const result = await client.createRoom();
+            expect(result).toEqual(roomId);
+        });
+
+        // @ts-ignore
+        it('should call the right endpoint with all the provided properties', async () => {
+            const {client, http} = createTestClient();
+
+            const roomId = "!something:example.org";
+            const properties = {
+                hello: "world",
+                preset: "public_chat",
+            };
+
+            http.when("POST", "/_matrix/client/r0/createRoom").respond(200, (path, content) => {
+                expect(content).toMatchObject(properties);
+                return {room_id: roomId};
+            });
+
+            http.flushAllExpected();
+            const result = await client.createRoom(properties);
+            expect(result).toEqual(roomId);
+        });
+    });
+
+    // @ts-ignore
     describe('setDisplayName', () => {
         // @ts-ignore
         it('should call the right endpoint', async () => {

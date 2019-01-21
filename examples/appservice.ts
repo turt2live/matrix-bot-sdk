@@ -70,6 +70,23 @@ appservice.on("query.user", (userId, createUser) => {
     });
 });
 
+appservice.on("query.room", (roomAlias, createRoom) => {
+    // This is called when the homeserver queries to find out if a room alias exists. At
+    // this point, a room should be created and associated with the room alias. To do
+    // that, given an object or Promise of an object in the form below to the createRoom
+    // function (as shown). To prevent creation of a room, pass false to createRoom like
+    // so: createRoom(false); The object (with minor modifications) will be passed to
+    // the /createRoom API.
+    console.log(`Received query for alias ${roomAlias}`);
+    createRoom({
+        name: "Hello World",
+        topic: "This is an example room",
+        invite: [appservice.botUserId],
+        visibility: "public",
+        preset: "public_chat",
+    });
+});
+
 // Note: The following 3 handlers only fire for appservice users! These will NOT be fired
 // for everyone.
 

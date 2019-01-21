@@ -353,8 +353,10 @@ describe('Appservice', () => {
             }
 
             await verifyAuth("GET", "/users/@_prefix_sample:example.org");
+            await verifyAuth("GET", "/rooms/" + encodeURIComponent("#_prefix_sample:example.org"));
             await verifyAuth("PUT", "/transactions/txnId");
             await verifyAuth("GET", "/_matrix/app/v1/users/@_prefix_sample:example.org");
+            await verifyAuth("GET", "/_matrix/app/v1/rooms/" + encodeURIComponent("#_prefix_sample:example.org"));
             await verifyAuth("PUT", "/_matrix/app/v1/transactions/txnId");
         } finally {
             appservice.stop();
@@ -1350,6 +1352,381 @@ describe('Appservice', () => {
 
             await doCall("/users/" + encodeURIComponent(userId));
             await doCall("/_matrix/app/v1/users/" + encodeURIComponent(userId));
+        } finally {
+            appservice.stop();
+        }
+    });
+
+    // @ts-ignore
+    it('should emit while querying rooms', async () => {
+        const port = await getPort();
+        const hsToken = "s3cret_token";
+        const appservice = new Appservice({
+            port: port,
+            bindAddress: '127.0.0.1',
+            homeserverName: 'example.org',
+            homeserverUrl: 'https://localhost',
+            registration: {
+                as_token: "",
+                hs_token: hsToken,
+                sender_localpart: "_bot_",
+                namespaces: {
+                    users: [{exclusive: true, regex: "@_prefix_.*:.+"}],
+                    rooms: [],
+                    aliases: [],
+                },
+            },
+        });
+        appservice.botIntent.ensureRegistered = () => {
+            return null;
+        };
+
+        await appservice.begin();
+
+        try {
+            const roomOptions = {};
+            const roomAlias = "#_prefix_test:example.org";
+            const roomId = "!something:example.org";
+
+            const expected = Object.assign({}, roomOptions, {
+                __roomId: roomId,
+                room_alias_name: roomAlias.substring(1).split(':')[0],
+            });
+
+            const createRoomSpy = simple.mock(appservice.botIntent.underlyingClient, "createRoom").callFn((opts) => {
+                expect(opts).toMatchObject(roomOptions);
+                return Promise.resolve(roomId);
+            });
+
+            const roomSpy = simple.stub().callFn((ralias, fn) => {
+                expect(ralias).toEqual(roomAlias);
+                fn(roomOptions);
+            });
+
+            appservice.on("query.room", roomSpy);
+
+            async function doCall(route: string, opts: any = {}) {
+                const res = await requestPromise({
+                    uri: `http://localhost:${port}${route}`,
+                    method: "GET",
+                    qs: {access_token: hsToken},
+                    json: true,
+                    ...opts,
+                });
+                expect(res).toMatchObject(expected);
+
+                expect(createRoomSpy.callCount).toBe(1);
+                expect(roomSpy.callCount).toBe(1);
+                createRoomSpy.callCount = 0;
+                roomSpy.callCount = 0;
+            }
+
+            await doCall("/rooms/" + encodeURIComponent(roomAlias));
+            await doCall("/_matrix/app/v1/rooms/" + encodeURIComponent(roomAlias));
+        } finally {
+            appservice.stop();
+        }
+    });
+
+    // @ts-ignore
+    it('should handle options while querying rooms', async () => {
+        const port = await getPort();
+        const hsToken = "s3cret_token";
+        const appservice = new Appservice({
+            port: port,
+            bindAddress: '127.0.0.1',
+            homeserverName: 'example.org',
+            homeserverUrl: 'https://localhost',
+            registration: {
+                as_token: "",
+                hs_token: hsToken,
+                sender_localpart: "_bot_",
+                namespaces: {
+                    users: [{exclusive: true, regex: "@_prefix_.*:.+"}],
+                    rooms: [],
+                    aliases: [],
+                },
+            },
+        });
+        appservice.botIntent.ensureRegistered = () => {
+            return null;
+        };
+
+        await appservice.begin();
+
+        try {
+            const roomOptions = {preset: "public_chat"};
+            const roomAlias = "#_prefix_test:example.org";
+            const roomId = "!something:example.org";
+
+            const expected = Object.assign({}, roomOptions, {
+                __roomId: roomId,
+                room_alias_name: roomAlias.substring(1).split(':')[0],
+            });
+
+            const createRoomSpy = simple.mock(appservice.botIntent.underlyingClient, "createRoom").callFn((opts) => {
+                expect(opts).toMatchObject(roomOptions);
+                return Promise.resolve(roomId);
+            });
+
+            const roomSpy = simple.stub().callFn((ralias, fn) => {
+                expect(ralias).toEqual(roomAlias);
+                fn(roomOptions);
+            });
+
+            appservice.on("query.room", roomSpy);
+
+            async function doCall(route: string, opts: any = {}) {
+                const res = await requestPromise({
+                    uri: `http://localhost:${port}${route}`,
+                    method: "GET",
+                    qs: {access_token: hsToken},
+                    json: true,
+                    ...opts,
+                });
+                expect(res).toMatchObject(expected);
+
+                expect(createRoomSpy.callCount).toBe(1);
+                expect(roomSpy.callCount).toBe(1);
+                createRoomSpy.callCount = 0;
+                roomSpy.callCount = 0;
+            }
+
+            await doCall("/rooms/" + encodeURIComponent(roomAlias));
+            await doCall("/_matrix/app/v1/rooms/" + encodeURIComponent(roomAlias));
+        } finally {
+            appservice.stop();
+        }
+    });
+
+    // @ts-ignore
+    it('should handle promises for options while querying rooms', async () => {
+        const port = await getPort();
+        const hsToken = "s3cret_token";
+        const appservice = new Appservice({
+            port: port,
+            bindAddress: '127.0.0.1',
+            homeserverName: 'example.org',
+            homeserverUrl: 'https://localhost',
+            registration: {
+                as_token: "",
+                hs_token: hsToken,
+                sender_localpart: "_bot_",
+                namespaces: {
+                    users: [{exclusive: true, regex: "@_prefix_.*:.+"}],
+                    rooms: [],
+                    aliases: [],
+                },
+            },
+        });
+        appservice.botIntent.ensureRegistered = () => {
+            return null;
+        };
+
+        await appservice.begin();
+
+        try {
+            const roomOptions = {preset: "public_chat"};
+            const roomAlias = "#_prefix_test:example.org";
+            const roomId = "!something:example.org";
+
+            const expected = Object.assign({}, roomOptions, {
+                __roomId: roomId,
+                room_alias_name: roomAlias.substring(1).split(':')[0],
+            });
+
+            const createRoomSpy = simple.mock(appservice.botIntent.underlyingClient, "createRoom").callFn((opts) => {
+                expect(opts).toMatchObject(roomOptions);
+                return Promise.resolve(roomId);
+            });
+
+            const roomSpy = simple.stub().callFn((ralias, fn) => {
+                expect(ralias).toEqual(roomAlias);
+                fn(Promise.resolve(roomOptions));
+            });
+
+            appservice.on("query.room", roomSpy);
+
+            async function doCall(route: string, opts: any = {}) {
+                const res = await requestPromise({
+                    uri: `http://localhost:${port}${route}`,
+                    method: "GET",
+                    qs: {access_token: hsToken},
+                    json: true,
+                    ...opts,
+                });
+                expect(res).toMatchObject(expected);
+
+                expect(createRoomSpy.callCount).toBe(1);
+                expect(roomSpy.callCount).toBe(1);
+                createRoomSpy.callCount = 0;
+                roomSpy.callCount = 0;
+            }
+
+            await doCall("/rooms/" + encodeURIComponent(roomAlias));
+            await doCall("/_matrix/app/v1/rooms/" + encodeURIComponent(roomAlias));
+        } finally {
+            appservice.stop();
+        }
+    });
+
+    // @ts-ignore
+    it('should return room not found when a room is not created', async () => {
+        const port = await getPort();
+        const hsToken = "s3cret_token";
+        const appservice = new Appservice({
+            port: port,
+            bindAddress: '127.0.0.1',
+            homeserverName: 'example.org',
+            homeserverUrl: 'https://localhost',
+            registration: {
+                as_token: "",
+                hs_token: hsToken,
+                sender_localpart: "_bot_",
+                namespaces: {
+                    users: [{exclusive: true, regex: "@_prefix_.*:.+"}],
+                    rooms: [],
+                    aliases: [],
+                },
+            },
+        });
+        appservice.botIntent.ensureRegistered = () => {
+            return null;
+        };
+
+        await appservice.begin();
+
+        try {
+            const roomOptions = {preset: "public_chat"};
+            const roomAlias = "#_prefix_test:example.org";
+            const roomId = "!something:example.org";
+
+            const expected = Object.assign({}, roomOptions, {
+                __roomId: roomId,
+                room_alias_name: roomAlias.substring(1).split(':')[0],
+            });
+
+            const createRoomSpy = simple.mock(appservice.botIntent.underlyingClient, "createRoom").callFn((opts) => {
+                expect(opts).toMatchObject(roomOptions);
+                return Promise.resolve(roomId);
+            });
+
+            const roomSpy = simple.stub().callFn((ralias, fn) => {
+                expect(ralias).toEqual(roomAlias);
+                fn(false);
+            });
+
+            appservice.on("query.room", roomSpy);
+
+            async function doCall(route: string, opts: any = {}) {
+                try {
+                    await requestPromise({
+                        uri: `http://localhost:${port}${route}`,
+                        method: "GET",
+                        qs: {access_token: hsToken},
+                        json: true,
+                        ...opts,
+                    });
+
+                    // noinspection ExceptionCaughtLocallyJS
+                    throw new Error("Request finished when it should not have");
+                } catch (e) {
+                    expect(e.error).toMatchObject({
+                        errcode: "ROOM_DOES_NOT_EXIST",
+                        error: "Room not created",
+                    });
+                    expect(e.statusCode).toBe(404);
+                }
+
+                expect(createRoomSpy.callCount).toBe(0);
+                expect(roomSpy.callCount).toBe(1);
+                createRoomSpy.callCount = 0;
+                roomSpy.callCount = 0;
+            }
+
+            await doCall("/rooms/" + encodeURIComponent(roomAlias));
+            await doCall("/_matrix/app/v1/rooms/" + encodeURIComponent(roomAlias));
+        } finally {
+            appservice.stop();
+        }
+    });
+
+    // @ts-ignore
+    it('should return room not found when a promise to not create a room is seen', async () => {
+        const port = await getPort();
+        const hsToken = "s3cret_token";
+        const appservice = new Appservice({
+            port: port,
+            bindAddress: '127.0.0.1',
+            homeserverName: 'example.org',
+            homeserverUrl: 'https://localhost',
+            registration: {
+                as_token: "",
+                hs_token: hsToken,
+                sender_localpart: "_bot_",
+                namespaces: {
+                    users: [{exclusive: true, regex: "@_prefix_.*:.+"}],
+                    rooms: [],
+                    aliases: [],
+                },
+            },
+        });
+        appservice.botIntent.ensureRegistered = () => {
+            return null;
+        };
+
+        await appservice.begin();
+
+        try {
+            const roomOptions = {preset: "public_chat"};
+            const roomAlias = "#_prefix_test:example.org";
+            const roomId = "!something:example.org";
+
+            const expected = Object.assign({}, roomOptions, {
+                __roomId: roomId,
+                room_alias_name: roomAlias.substring(1).split(':')[0],
+            });
+
+            const createRoomSpy = simple.mock(appservice.botIntent.underlyingClient, "createRoom").callFn((opts) => {
+                expect(opts).toMatchObject(roomOptions);
+                return Promise.resolve(roomId);
+            });
+
+            const roomSpy = simple.stub().callFn((ralias, fn) => {
+                expect(ralias).toEqual(roomAlias);
+                fn(Promise.resolve(false));
+            });
+
+            appservice.on("query.room", roomSpy);
+
+            async function doCall(route: string, opts: any = {}) {
+                try {
+                    await requestPromise({
+                        uri: `http://localhost:${port}${route}`,
+                        method: "GET",
+                        qs: {access_token: hsToken},
+                        json: true,
+                        ...opts,
+                    });
+
+                    // noinspection ExceptionCaughtLocallyJS
+                    throw new Error("Request finished when it should not have");
+                } catch (e) {
+                    expect(e.error).toMatchObject({
+                        errcode: "ROOM_DOES_NOT_EXIST",
+                        error: "Room not created",
+                    });
+                    expect(e.statusCode).toBe(404);
+                }
+
+                expect(createRoomSpy.callCount).toBe(0);
+                expect(roomSpy.callCount).toBe(1);
+                createRoomSpy.callCount = 0;
+                roomSpy.callCount = 0;
+            }
+
+            await doCall("/rooms/" + encodeURIComponent(roomAlias));
+            await doCall("/_matrix/app/v1/rooms/" + encodeURIComponent(roomAlias));
         } finally {
             appservice.stop();
         }
