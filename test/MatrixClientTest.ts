@@ -959,7 +959,7 @@ describe('MatrixClient', () => {
                     type: "m.room.member",
                     state_key: userId,
                     unsigned: {age: 0},
-                    membership: "invite",
+                    content: {membership: "invite"},
                 },
             ];
 
@@ -990,19 +990,19 @@ describe('MatrixClient', () => {
                     type: "m.room.member",
                     state_key: userId,
                     unsigned: {age: 2},
-                    membership: "invite",
+                    content: {membership: "invite"},
                 },
                 {
                     type: "m.room.member",
                     state_key: userId,
                     unsigned: {age: 1},
-                    membership: "invite",
+                    content: {membership: "invite"},
                 },
                 {
                     type: "m.room.member",
                     state_key: userId,
                     unsigned: {age: 3},
-                    membership: "invite",
+                    content: {membership: "invite"},
                 },
             ];
 
@@ -1033,19 +1033,19 @@ describe('MatrixClient', () => {
                     type: "m.room.not_member",
                     state_key: userId,
                     unsigned: {age: 0},
-                    membership: "invite",
+                    content: {membership: "invite"},
                 },
                 {
                     type: "m.room.member",
                     state_key: userId,
                     unsigned: {age: 0},
-                    membership: "invite",
+                    content: {membership: "invite"},
                 },
                 {
                     type: "m.room.member",
                     state_key: userId + "_wrong_member",
                     unsigned: {age: 0},
-                    membership: "invite",
+                    content: {membership: "invite"},
                 },
             ];
 
@@ -1076,20 +1076,20 @@ describe('MatrixClient', () => {
                     type: "m.room.not_member",
                     state_key: userId,
                     unsigned: {age: 0},
-                    membership: "invite",
+                    content: {membership: "invite"},
                 },
                 // Intentionally don't send a membership event
                 // {
                 //     type: "m.room.member",
                 //     state_key: userId,
                 //     unsigned: {age: 0},
-                //     membership: "invite",
+                //     content: {membership: "invite"},
                 // },
                 {
                     type: "m.room.member",
                     state_key: userId + "_wrong_member",
                     unsigned: {age: 0},
-                    membership: "invite",
+                    content: {membership: "invite"},
                 },
             ];
 
@@ -1120,7 +1120,7 @@ describe('MatrixClient', () => {
                     type: "m.room.member",
                     state_key: userId,
                     unsigned: {age: 0},
-                    membership: "invite",
+                    content: {membership: "invite"},
                 },
             ];
 
@@ -1384,17 +1384,17 @@ describe('MatrixClient', () => {
                 },
                 {
                     type: "m.room.member",
-                    membership: "invite",
+                    content: {membership: "invite"},
                     state_key: userId,
                 },
                 {
                     type: "m.room.member",
-                    membership: "join",
+                    content: {membership: "join"},
                     state_key: userId,
                 },
                 {
                     type: "m.room.member",
-                    membership: "leave",
+                    content: {membership: "leave"},
                     state_key: userId,
                 },
             ];
@@ -1466,17 +1466,17 @@ describe('MatrixClient', () => {
                 },
                 {
                     type: "m.room.member",
-                    membership: "invite",
+                    content: {membership: "invite"},
                     state_key: userId,
                 },
                 {
                     type: "m.room.member",
-                    membership: "join",
+                    content: {membership: "join"},
                     state_key: userId,
                 },
                 {
                     type: "m.room.member",
-                    membership: "leave",
+                    content: {membership: "leave"},
                     state_key: userId,
                 },
             ];
