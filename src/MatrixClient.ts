@@ -384,7 +384,8 @@ export class MatrixClient extends EventEmitter {
             for (let event of room['invite_state']['events']) {
                 if (event['type'] !== 'm.room.member') continue;
                 if (event['state_key'] !== await this.getUserId()) continue;
-                if (event['membership'] !== "invite") continue;
+                if (!event['content']) continue;
+                if (event['content']['membership'] !== "invite") continue;
 
                 const oldAge = inviteEvent && inviteEvent['unsigned'] && inviteEvent['unsigned']['age'] ? inviteEvent['unsigned']['age'] : 0;
                 const newAge = event['unsigned'] && event['unsigned']['age'] ? event['unsigned']['age'] : 0;
