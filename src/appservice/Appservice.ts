@@ -1,8 +1,14 @@
 import * as express from "express";
 import { Intent } from "./Intent";
-import { IAppserviceStorageProvider } from "../storage/IAppserviceStorageProvider";
+import {
+    AppserviceJoinRoomStrategy,
+    IAppserviceStorageProvider,
+    IJoinRoomStrategy,
+    IPreprocessor,
+    LogService,
+    MemoryStorageProvider
+} from "..";
 import { EventEmitter } from "events";
-import { AppserviceJoinRoomStrategy, IJoinRoomStrategy, IPreprocessor, MemoryStorageProvider } from "..";
 import * as morgan from "morgan";
 
 /**
@@ -147,6 +153,7 @@ export class Appservice extends EventEmitter {
     private readonly storage: IAppserviceStorageProvider;
 
     private app = express();
+    private appServer: any;
     private intents: { [userId: string]: Intent } = {};
     private eventProcessors: { [eventType: string]: IPreprocessor[] } = {};
     private pendingTransactions: { [txnId: string]: Promise<any> } = {};
@@ -167,8 +174,10 @@ export class Appservice extends EventEmitter {
         this.app.use(morgan("combined"));
 
         this.app.get("/users/:userId", this.onUser.bind(this));
+        this.app.get("/rooms/:roomAlias", this.onRoomAlias.bind(this));
         this.app.put("/transactions/:txnId", this.onTransaction.bind(this));
         this.app.get("/_matrix/app/v1/users/:userId", this.onUser.bind(this));
+        this.app.get("/_matrix/app/v1/rooms/:roomAlias", this.onRoomAlias.bind(this));
         this.app.put("/_matrix/app/v1/transactions/:txnId", this.onTransaction.bind(this));
         // Everything else can 404
 
@@ -209,8 +218,16 @@ export class Appservice extends EventEmitter {
      */
     public begin(): Promise<any> {
         return new Promise((resolve, reject) => {
-            this.app.listen(this.options.port, this.options.bindAddress, () => resolve());
+            this.appServer = this.app.listen(this.options.port, this.options.bindAddress, () => resolve());
         }).then(() => this.botIntent.ensureRegistered());
+    }
+
+    /**
+     * Stops the application service, freeing the web server.
+     */
+    public stop(): void {
+        if (!this.appServer) return;
+        this.appServer.close();
     }
 
     /**
@@ -275,7 +292,7 @@ export class Appservice extends EventEmitter {
     }
 
     /**
-     * Adds a preprocessor to the event pipeline. When this client encounters an event, it
+     * Adds a preprocessor to the event pipeline. When this appservice encounters an event, it
      * will try to run it through the preprocessors it can in the order they were added.
      * @param {IPreprocessor} preprocessor the preprocessor to add
      */
@@ -331,7 +348,7 @@ export class Appservice extends EventEmitter {
             res.status(401).send({errcode: "AUTH_FAILED", error: "Authentication failed"});
         }
 
-        if (typeof(req.body) !== "object") {
+        if (typeof (req.body) !== "object") {
             res.status(400).send({errcode: "BAD_REQUEST", error: "Expected JSON"});
             return;
         }
@@ -350,21 +367,30 @@ export class Appservice extends EventEmitter {
         if (this.pendingTransactions[txnId]) {
             try {
                 await this.pendingTransactions[txnId];
+                res.status(200).send({});
             } catch (e) {
-                console.error(e);
+                LogService.error("Appservice", e);
                 res.status(500).send({});
             }
         }
 
-        console.log("Processing transaction " + txnId);
+        LogService.info("Appservice", "Processing transaction " + txnId);
         this.pendingTransactions[txnId] = new Promise(async (resolve, reject) => {
             for (let event of req.body["events"]) {
-                console.log(`Processing event of type ${event["type"]}`);
+                LogService.info("Appservice", `Processing event of type ${event["type"]}`);
                 event = await this.processEvent(event);
                 this.emit("room.event", event["room_id"], event);
-                if (event['type'] === 'm.room.message') this.emit("room.message", event["room_id"], event);
+                if (event['type'] === 'm.room.message') {
+                    this.emit("room.message", event["room_id"], event);
+                }
                 if (event['type'] === 'm.room.member' && this.isNamespacedUser(event['state_key'])) {
                     this.processMembershipEvent(event);
+                }
+                if (event['type'] === 'm.room.tombstone' && event['state_key'] === '') {
+                    this.emit("room.archived", event['room_id'], event);
+                }
+                if (event['type'] === 'm.room.create' && event['state_key'] === '' && event['content'] && event['content']['predecessor']) {
+                    this.emit("room.upgraded", event['room_id'], event);
                 }
             }
 
@@ -373,9 +399,10 @@ export class Appservice extends EventEmitter {
 
         try {
             await this.pendingTransactions[txnId];
+            this.storage.setTransactionCompleted(txnId);
             res.status(200).send({});
         } catch (e) {
-            console.error(e);
+            LogService.error("Appservice", e);
             res.status(500).send({});
         }
     }
@@ -395,7 +422,29 @@ export class Appservice extends EventEmitter {
                 await intent.ensureRegistered();
                 if (result.display_name) await intent.underlyingClient.setDisplayName(result.display_name);
                 if (result.avatar_mxc) await intent.underlyingClient.setAvatarUrl(result.avatar_mxc);
-                res.status(200).send({});
+                res.status(200).send(result); // return result for debugging + testing
+            }
+        });
+    }
+
+    private async onRoomAlias(req, res): Promise<any> {
+        if (!this.isAuthed(req)) {
+            res.status(401).send({errcode: "AUTH_FAILED", error: "Authentication failed"});
+        }
+
+        const roomAlias = req.params["roomAlias"];
+        this.emit("query.room", roomAlias, async (result) => {
+            if (result.then) result = await result;
+            if (result === false) {
+                res.status(404).send({errcode: "ROOM_DOES_NOT_EXIST", error: "Room not created"});
+            } else {
+                const intent = this.botIntent;
+                await intent.ensureRegistered();
+
+                result["room_alias_name"] = roomAlias.substring(1).split(':')[0];
+                result["__roomId"] = await intent.underlyingClient.createRoom(result);
+
+                res.status(200).send(result); // return result for debugging + testing
             }
         });
     }

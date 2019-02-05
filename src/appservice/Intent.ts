@@ -1,6 +1,5 @@
-import { Appservice, MatrixClient } from "..";
+import { Appservice, IAppserviceStorageProvider, LogService, MatrixClient } from "..";
 import { IAppserviceOptions } from "./Appservice";
-import { IAppserviceStorageProvider } from "../storage/IAppserviceStorageProvider";
 
 /**
  * An Intent is an intelligent client that tracks things like the user's membership
@@ -112,19 +111,32 @@ export class Intent {
      */
     public async ensureRegistered() {
         if (!this.storage.isUserRegistered(this.userId)) {
-            await this.client.doRequest("POST", "/_matrix/client/r0/register", null, {
-                type: "m.login.application_service",
-                username: this.userId.substring(1).split(":")[0],
-            }).catch(err => {
-                if (err.body && err.body["errcode"] === "M_USER_IN_USE") {
-                    if (this.userId === this.appservice.botUserId) return null;
-                    else console.error("Error registering user: User ID is in use");
-                } else {
-                    console.error("Encountered error registering user: ");
-                    console.error(err);
+            try {
+                const result = await this.client.doRequest("POST", "/_matrix/client/r0/register", null, {
+                    type: "m.login.application_service",
+                    username: this.userId.substring(1).split(":")[0],
+                });
+
+                // HACK: Workaround for unit tests
+                if (result['errcode']) {
+                    // noinspection ExceptionCaughtLocallyJS
+                    throw {body: result};
                 }
-                return null; // swallow error
-            });
+            } catch (err) {
+                if (err.body && err.body["errcode"] === "M_USER_IN_USE") {
+                    this.storage.addRegisteredUser(this.userId);
+                    if (this.userId === this.appservice.botUserId) {
+                        return null;
+                    } else {
+                        LogService.error("Appservice", "Error registering user: User ID is in use");
+                        return null;
+                    }
+                } else {
+                    LogService.error("Appservice", "Encountered error registering user: ");
+                    LogService.error("Appservice", err);
+                }
+                throw err;
+            }
 
             this.storage.addRegisteredUser(this.userId);
         }

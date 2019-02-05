@@ -1,6 +1,6 @@
 {
   "name": "matrix-bot-sdk",
-  "version": "0.2.4",
+  "version": "0.3.0-beta-1",
   "description": "A lightweight version of the matrix-js-sdk intended for bots",
   "repository": {
     "type": "git",
@@ -17,6 +17,7 @@
     "prepublishOnly": "npm run build",
     "build": "tsc",
     "lint": "tslint --project ./tsconfig.json -t stylish",
+    "test": "ts-mocha --project ./tsconfig.json test/**/*.ts",
     "build:examples": "tsc -p tsconfig-examples.json",
     "example:appservice": "npm run build:examples && node lib/examples/appservice.js"
   },
@@ -34,6 +35,8 @@
     "lowdb": "^1.0.0",
     "morgan": "^1.9.1",
     "request": "^2.88.0",
+    "request-promise": "^4.2.2",
+    "sanitize-html": "^1.20.0",
     "tslint": "^5.11.0",
     "typescript": "^3.1.1"
   },
@@ -52,5 +55,16 @@
     "src/*",
     "lib/*",
     "scripts/*"
-  ]
+  ],
+  "devDependencies": {
+    "@types/expect": "^1.20.3",
+    "@types/mocha": "^5.2.5",
+    "expect": "^23.6.0",
+    "get-port": "^4.1.0",
+    "matrix-mock-request": "turt2live/matrix-mock-request#travis/build-1",
+    "mocha": "^5.2.0",
+    "simple-mock": "^0.8.0",
+    "tmp": "0.0.33",
+    "ts-mocha": "^2.0.0"
+  }
 }

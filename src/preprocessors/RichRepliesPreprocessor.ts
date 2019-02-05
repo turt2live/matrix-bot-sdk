@@ -1,5 +1,6 @@
 import { MatrixClient } from "../MatrixClient";
 import { IPreprocessor } from "./IPreprocessor";
+import { LogService } from "..";
 
 /**
  * Metadata for a rich reply. Usually stored under the "mx_richreply"
@@ -97,11 +98,11 @@ export class RichRepliesPreprocessor implements IPreprocessor {
                 const fbHtml = parts[0];
                 realHtml = parts[1];
 
-                const results = fbHtml.match(/<br[ ]*[\/]{0,2}>(.*)<\/blockquote>\s*<\/mx-reply>$/i);
+                const results = fbHtml.match(/<br[ ]*[\/]{0,2}>(.*)<\/blockquote>\s*$/i);
                 if (!results) {
                     lenient = true;
                 } else {
-                    fallbackHtml = results[0];
+                    fallbackHtml = results[1];
                 }
             }
         }
@@ -127,15 +128,15 @@ export class RichRepliesPreprocessor implements IPreprocessor {
         if (!matches) {
             lenient = true;
         } else {
-            fallbackSender = matches[0];
+            fallbackSender = matches[1];
         }
 
         const metadata: IRichReplyMetadata = {
             wasLenient: lenient,
-            fallbackHtmlBody: fallbackHtml ? fallbackHtml : "",
-            fallbackPlainBody: fallbackText ? fallbackText : "",
-            fallbackSender: fallbackSender ? fallbackSender : "",
-            parentEventId: parentEventId ? parentEventId : "",
+            fallbackHtmlBody: fallbackHtml ? fallbackHtml.trim() : "",
+            fallbackPlainBody: fallbackText ? fallbackText.trim() : "",
+            fallbackSender: fallbackSender ? fallbackSender.trim() : "",
+            parentEventId: parentEventId ? parentEventId.trim() : "",
             realEvent: null,
         };
 
@@ -143,15 +144,15 @@ export class RichRepliesPreprocessor implements IPreprocessor {
             try {
                 metadata.realEvent = await client.getEvent(event["room_id"], parentEventId);
             } catch (e) {
-                console.error("Failed to fetch real event:");
-                console.error(e);
+                LogService.error("RichRepliesPreprocessor", "Failed to fetch real event:");
+                LogService.error("RichRepliesPreprocessor", e);
                 metadata.wasLenient = true; // failed to fetch event
             }
         }
 
         event["mx_richreply"] = metadata;
-        event["content"]["body"] = realText;
-        event["content"]["formatted_body"] = realHtml;
+        event["content"]["body"] = realText.trim();
+        event["content"]["formatted_body"] = realHtml.trim();
         return event;
     }
 }

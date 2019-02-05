@@ -5,6 +5,7 @@ import { IAppserviceStorageProvider } from "./IAppserviceStorageProvider";
 export class MemoryStorageProvider implements IStorageProvider, IAppserviceStorageProvider {
 
     private syncToken: string;
+    private filter: IFilterInfo;
     private appserviceUsers: { [userId: string]: { registered: boolean } } = {};
     private appserviceTransactions: { [txnId: string]: boolean } = {};
 
@@ -17,11 +18,11 @@ export class MemoryStorageProvider implements IStorageProvider, IAppserviceStora
     }
 
     setFilter(filter: IFilterInfo): void {
-        // Do nothing
+        this.filter = filter;
     }
 
     getFilter(): IFilterInfo {
-        return null;
+        return this.filter;
     }
 
     addRegisteredUser(userId: string) {
