@@ -805,6 +805,10 @@ export class MatrixClient extends EventEmitter {
             uri: url,
             method: method,
             qs: qs,
+            userQuerystring: true,
+            qsStringifyOptions: {
+                options: {arrayFormat: 'repeat'},
+            },
             timeout: timeout,
             headers: {
                 "Authorization": "Bearer " + this.accessToken,
