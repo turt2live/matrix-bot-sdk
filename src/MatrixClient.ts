@@ -421,7 +421,8 @@ export class MatrixClient extends EventEmitter {
                 if (event['type'] === 'm.room.tombstone' && event['state_key'] === '') {
                     this.emit("room.archived", roomId, event);
                 }
-                if (event['type'] === 'm.room.create' && event['state_key'] === '' && event['content'] && event['content']['predecessor']) {
+                if (event['type'] === 'm.room.create' && event['state_key'] === '' && event['content']
+                    && event['content']['predecessor'] && event['content']['predecessor']['room_id']) {
                     this.emit("room.upgraded", roomId, event);
                 }
                 this.emit("room.event", roomId, event);
