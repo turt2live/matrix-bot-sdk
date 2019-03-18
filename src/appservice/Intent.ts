@@ -123,6 +123,7 @@ export class Intent {
                     throw {body: result};
                 }
             } catch (err) {
+                if (typeof(err.body) === "string") err.body = JSON.parse(err.body);
                 if (err.body && err.body["errcode"] === "M_USER_IN_USE") {
                     this.storage.addRegisteredUser(this.userId);
                     if (this.userId === this.appservice.botUserId) {
