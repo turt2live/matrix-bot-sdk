@@ -112,6 +112,56 @@ export class MatrixClient extends EventEmitter {
     }
 
     /**
+     * Retrieves content from account data.
+     * @param {string} eventType The type of account data to retrieve.
+     * @returns {Promise<*>} Resolves to the content of that account data.
+     */
+    public async getAccountData(eventType: string): Promise<any> {
+        const userId = encodeURIComponent(await this.getUserId());
+        eventType = encodeURIComponent(eventType);
+        return this.doRequest("GET", "/_matrix/client/r0/user/" + userId + "/account_data/" + eventType);
+    }
+
+    /**
+     * Retrieves content from room account data.
+     * @param {string} eventType The type of room account data to retrieve.
+     * @param {string} roomId The room to read the account data from
+     * @returns {Promise<*>} Resolves to the content of that account data.
+     */
+    public async getRoomAccountData(eventType: string, roomId: string): Promise<any> {
+        const userId = encodeURIComponent(await this.getUserId());
+        eventType = encodeURIComponent(eventType);
+        roomId = encodeURIComponent(roomId);
+        return this.doRequest("GET", "/_matrix/client/r0/user/" + userId + "/rooms/" + roomId + "/account_data/" + eventType);
+    }
+
+    /**
+     * Sets account data.
+     * @param {string} eventType The type of account data to set
+     * @param {*} content The content to set
+     * @returns {Promise<*>} Resolves when updated
+     */
+    public async setAccountData(eventType: string, content: any): Promise<any> {
+        const userId = encodeURIComponent(await this.getUserId());
+        eventType = encodeURIComponent(eventType);
+        return this.doRequest("PUT", "/_matrix/client/r0/user/" + userId + "/account_data/" + eventType, null, content);
+    }
+
+    /**
+     * Sets room account data.
+     * @param {string} eventType The type of room account data to set
+     * @param {string} roomId The room to set account data in
+     * @param {*} content The content to set
+     * @returns {Promise<*>} Resolves when updated
+     */
+    public async setRoomAccountData(eventType: string, roomId: string, content: any): Promise<any> {
+        const userId = encodeURIComponent(await this.getUserId());
+        eventType = encodeURIComponent(eventType);
+        roomId = encodeURIComponent(roomId);
+        return this.doRequest("PUT", "/_matrix/client/r0/user/" + userId + "/rooms/" + roomId + "/account_data/" + eventType, null, content);
+    }
+
+    /**
      * Adds a new room alias to the room directory
      * @param {string} alias The alias to add (eg: "#my-room:matrix.org")
      * @param {string} roomId The room ID to add the alias to

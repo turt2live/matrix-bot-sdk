@@ -208,6 +208,96 @@ describe('MatrixClient', () => {
     });
 
     // @ts-ignore
+    describe('getAccountData', () => {
+        // @ts-ignore
+        it('should call the right endpoint', async () => {
+            const {client, http, hsUrl} = createTestClient();
+
+            const eventType = "io.t2bot.test.data";
+            const userId = "@test:example.org";
+
+            client.getUserId = () => Promise.resolve(userId);
+
+            http.when("GET", "/_matrix/client/r0/user").respond(200, (path) => {
+                expect(path).toEqual(`${hsUrl}/_matrix/client/r0/user/${encodeURIComponent(userId)}/account_data/${encodeURIComponent(eventType)}`);
+                return {};
+            });
+
+            http.flushAllExpected();
+            await client.getAccountData(eventType);
+        });
+    });
+
+    // @ts-ignore
+    describe('getRoomAccountData', () => {
+        // @ts-ignore
+        it('should call the right endpoint', async () => {
+            const {client, http, hsUrl} = createTestClient();
+
+            const eventType = "io.t2bot.test.data";
+            const roomId = "!test:example.org";
+            const userId = "@test:example.org";
+
+            client.getUserId = () => Promise.resolve(userId);
+
+            http.when("GET", "/_matrix/client/r0/user").respond(200, (path) => {
+                expect(path).toEqual(`${hsUrl}/_matrix/client/r0/user/${encodeURIComponent(userId)}/rooms/${encodeURIComponent(roomId)}/account_data/${encodeURIComponent(eventType)}`);
+                return {};
+            });
+
+            http.flushAllExpected();
+            await client.getRoomAccountData(eventType, roomId);
+        });
+    });
+
+    // @ts-ignore
+    describe('setAccountData', () => {
+        // @ts-ignore
+        it('should call the right endpoint', async () => {
+            const {client, http, hsUrl} = createTestClient();
+
+            const eventType = "io.t2bot.test.data";
+            const userId = "@test:example.org";
+            const eventContent = {test: 123};
+
+            client.getUserId = () => Promise.resolve(userId);
+
+            http.when("PUT", "/_matrix/client/r0/user").respond(200, (path, content) => {
+                expect(path).toEqual(`${hsUrl}/_matrix/client/r0/user/${encodeURIComponent(userId)}/account_data/${encodeURIComponent(eventType)}`);
+                expect(content).toMatchObject(eventContent);
+                return {};
+            });
+
+            http.flushAllExpected();
+            await client.setAccountData(eventType, eventContent);
+        });
+    });
+
+    // @ts-ignore
+    describe('setRoomAccountData', () => {
+        // @ts-ignore
+        it('should call the right endpoint', async () => {
+            const {client, http, hsUrl} = createTestClient();
+
+            const eventType = "io.t2bot.test.data";
+            const roomId = "!test:example.org";
+            const userId = "@test:example.org";
+            const eventContent = {test: 123};
+
+            client.getUserId = () => Promise.resolve(userId);
+
+            http.when("PUT", "/_matrix/client/r0/user").respond(200, (path, content) => {
+                expect(path).toEqual(`${hsUrl}/_matrix/client/r0/user/${encodeURIComponent(userId)}/rooms/${encodeURIComponent(roomId)}/account_data/${encodeURIComponent(eventType)}`);
+                expect(content).toMatchObject(eventContent);
+                return {};
+            });
+
+            http.flushAllExpected();
+            await client.setRoomAccountData(eventType, roomId, eventContent);
+        });
+    });
+
+    // @ts-ignore
     describe('createRoomAlias', () => {
         // @ts-ignore
         it('should call the right endpoint', async () => {
