@@ -48,7 +48,7 @@ client.on("room.message", handleCommand);
 client.start().then(() => console.log("Client started!"));
 
 // This is our event handler for dealing with the `!hello` command.
-async function handleCommand(roomId, event, client) {
+async function handleCommand(roomId, event) {
     // Don't handle events that don't have contents (they were probably redacted)
     if (!event["content"]) return;
 
