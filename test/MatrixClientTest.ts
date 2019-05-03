@@ -2153,16 +2153,19 @@ describe('MatrixClient', () => {
 
             const roomId = "!testing:example.org";
             const userId = "@test:example.com";
+            const typing = true;
+            const timeout = 15000; // ms
+            
             client.getUserId = () => Promise.resolve(userId);
 
             http.when("POST", "/_matrix/client/r0/rooms").respond(200, (path, content) => {
                 expect(path).toEqual(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/typing/${encodeURIComponent(userId)}`);
-                expect(content).toMatchObject({typing: true, timeout: 15000});
+                expect(content).toMatchObject({typing: typing, timeout: timeout});
                 return {};
             });
 
             http.flushAllExpected();
-            await client.setTyping(roomId, true, 15000);
+            await client.setTyping(roomId, typing, timeout);
         });
     });
 
