@@ -624,7 +624,7 @@ export class MatrixClient extends EventEmitter {
      * @param {number} timeout how long should the server preserve the typing state
      * @returns {Promise<*>} resolves when the typing state has been set
      */
-    public setTyping(roomId: string, typing: boolean, timeout: number = 30000): Promise<any> {
+    public async setTyping(roomId: string, typing: boolean, timeout: number = 30000): Promise<any> {
         const userId = await this.getUserId();
         return this.doRequest("POST", "/_matrix/client/r0/rooms/" + encodeURIComponent(roomId) + "/typing/" + encodeURIComponent(userId), null, {
             typing,
