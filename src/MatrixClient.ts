@@ -621,7 +621,7 @@ export class MatrixClient extends EventEmitter {
      * Sets the typing status of the current user in a room
      * @param {string} roomId the room ID the user is typing in
      * @param {boolean} typing is the user currently typing
-     * @param {number} timeout how long should the server preserve the typing state
+     * @param {number} timeout how long should the server preserve the typing state, in milliseconds
      * @returns {Promise<*>} resolves when the typing state has been set
      */
     public async setTyping(roomId: string, typing: boolean, timeout = 30000): Promise<any> {
