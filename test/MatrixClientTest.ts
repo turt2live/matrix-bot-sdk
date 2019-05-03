@@ -2153,7 +2153,7 @@ describe('MatrixClient', () => {
 
             const roomId = "!testing:example.org";
             const userId = "@test:example.com";
-            client.impersonateUserId(userId);
+            client.getUserId = () => Promise.resolve(userId);
 
             http.when("POST", "/_matrix/client/r0/rooms").respond(200, (path, content) => {
                 expect(path).toEqual(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/typing/${encodeURIComponent(userId)}`);
