@@ -2144,6 +2144,28 @@ describe('MatrixClient', () => {
             await client.sendReadReceipt(roomId, eventId);
         });
     });
+    
+    // @ts-ignore
+    describe('setTyping', () => {
+        // @ts-ignore
+        it('should call the right endpoint', async () => {
+            const {client, http, hsUrl} = createTestClient();
+
+            const roomId = "!testing:example.org";
+            const userId = "@test:example.com";
+            client.impersonateUserId(userId);
+
+            http.when("POST", "/_matrix/client/r0/rooms").respond(200, (path, content) => {
+                expect(path).toEqual(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/typing/${encodeURIComponent(userId)}`);
+                expect(content).toMatchObject({typing: true, timeout: 15000});
+                return {};
+            });
+
+            http.flushAllExpected();
+            await client.setTyping(roomId, true, 15000);
+        });
+    });
+
 
     // @ts-ignore
     describe('sendNotice', () => {
