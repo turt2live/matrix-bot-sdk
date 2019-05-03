@@ -618,6 +618,21 @@ export class MatrixClient extends EventEmitter {
     }
 
     /**
+     * Sets the typing status of the current user in a room
+     * @param {string} roomId the room ID the user is typing in
+     * @param {boolean} typing is the user currently typing
+     * @param {number} timeout how long should the server preserve the typing state, in milliseconds
+     * @returns {Promise<*>} resolves when the typing state has been set
+     */
+    public async setTyping(roomId: string, typing: boolean, timeout = 30000): Promise<any> {
+        const userId = await this.getUserId();
+        return this.doRequest("POST", "/_matrix/client/r0/rooms/" + encodeURIComponent(roomId) + "/typing/" + encodeURIComponent(userId), null, {
+            typing,
+            timeout,
+        });
+    }
+
+    /**
      * Sends a notice to the given room
      * @param {string} roomId the room ID to send the notice to
      * @param {string} text the text to send
