@@ -11,7 +11,9 @@ import { LogService } from "./logging/LogService";
 /**
  * A client that is capable of interacting with a matrix homeserver.
  */
+
 export class MatrixClient extends EventEmitter {
+
 
     /**
      * The presence status to use while syncing. The valid values are "online" to set the account as online,
@@ -676,6 +678,20 @@ export class MatrixClient extends EventEmitter {
     }
 
     /**
+     * Redact an event in a given room
+     * @param {string} roomId the room ID to send the redaction to
+     * @param {string} eventId the event ID to redact
+     * @returns {Promise<string>} resolves to the event ID that represents the redaction
+     */
+    public redactEvent(roomId: string, eventId: string, reason: string|null = null): Promise<string> {
+        const txnId = (new Date().getTime()) + "__REQ" + this.requestId;
+        const content = reason !== null ? {reason} : {};
+        return this.doRequest("PUT", `/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/redact/${encodeURIComponent(eventId)}/${txnId}`, null, content).then(response => {
+            return response['event_id'];
+        });
+    }
+
+    /**
      * Creates a room. This does not break out the various options for creating a room
      * due to the large number of possibilities. See the /createRoom endpoint in the
      * spec for more information on what to provide for `properties`.
@@ -729,12 +745,16 @@ export class MatrixClient extends EventEmitter {
     /**
      * Download content from the homeserver's media repository.
      * @param {string} mxcUrl the mxcUrl URL.
-     * @param {string} contentType the content type of the file. Defaults to application/octet-stream.
+     * @param {string} allowRemote Indicates to the server that it should not attempt to fetch the media if it is deemed remote. This is to prevent routing loops where the server contacts itself. Defaults to true if not provided.
      * @returns {Promise<Buffer>} resolves to a Buffer containing the content
      */
-    public downloadMedia(mxcUrl: string, contentType = "application/octet-stream", allowRemote: boolean = true): Promise<Buffer> {
+    public async downloadContent(mxcUrl: string, allowRemote = true): Promise<{data: Buffer, contentType: string}> {
         const urlParts = mxcUrl.substr("mxc://".length).split("/");
-        return this.doRequest("GET", `/_matrix/media/r0/download/${urlParts[0]}/${urlParts[1]}`, {allow_remote: allowRemote}, null, null, true, contentType);
+        const res = await this.doRequest("GET", `/_matrix/media/r0/download/${urlParts[0]}/${urlParts[1]}`, {allow_remote: allowRemote}, null, null, true, null, true);
+        return {
+            data: res.body,
+            contentType: res.headers["content-type"],
+        };
     }
 
     /**
@@ -858,9 +878,10 @@ export class MatrixClient extends EventEmitter {
      * @param {number} timeout The number of milliseconds to wait before timing out.
      * @param {boolean} raw If true, the raw response will be returned instead of the response body.
      * @param {string} contentType The content type to send. Only used if the `body` is a Buffer.
+     * @param {string} noEncoding Set to true to disable encoding, and return a Buffer. Defaults to false
      * @returns {Promise<*>} Resolves to the response (body), rejected if a non-2xx status code was returned.
      */
-    public doRequest(method, endpoint, qs = null, body = null, timeout = 60000, raw = false, contentType = "application/json"): Promise<any> {
+    public doRequest(method, endpoint, qs = null, body = null, timeout = 60000, raw = false, contentType = "application/json", noEncoding = false): Promise<any> {
         if (!endpoint.startsWith('/'))
             endpoint = '/' + endpoint;
 
@@ -882,6 +903,8 @@ export class MatrixClient extends EventEmitter {
             uri: url,
             method: method,
             qs: qs,
+            // If this is undefined, then a string will be returned. If it's null, a Buffer will be returned.
+            encoding: noEncoding === false ? undefined : null,
             userQuerystring: true,
             qsStringifyOptions: {
                 options: {arrayFormat: 'repeat'},
