@@ -727,6 +727,17 @@ export class MatrixClient extends EventEmitter {
     }
 
     /**
+     * Download content from the homeserver's media repository.
+     * @param {string} mxcUrl the mxcUrl URL.
+     * @param {string} contentType the content type of the file. Defaults to application/octet-stream.
+     * @returns {Promise<Buffer>} resolves to a Buffer containing the content
+     */
+    public downloadMedia(mxcUrl: string, contentType = "application/octet-stream", allowRemote: boolean = true): Promise<Buffer> {
+        const urlParts = mxcUrl.substr("mxc://".length).split("/");
+        return this.doRequest("GET", `/_matrix/media/r0/download/${urlParts[0]}/${urlParts[1]}`, {allow_remote: allowRemote}, null, null, true, contentType);
+    }
+
+    /**
      * Determines the upgrade history for a given room as a doubly-linked list styled structure. Given
      * a room ID in the history of upgrades, the resulting `previous` array will hold any rooms which
      * are older than the given room. The resulting `newer` array will hold any rooms which are newer
