@@ -2279,6 +2279,29 @@ describe('MatrixClient', () => {
     });
 
     // @ts-ignore
+    describe('redactEvent', () => {
+        // @ts-ignore
+        it('should call the right endpoint', async () => {
+            const {client, http, hsUrl} = createTestClient();
+
+            const roomId = "!testing:example.org";
+            const eventId = "$something:example.org";
+            const reason =  "Zvarri!";
+
+            http.when("PUT", "/_matrix/client/r0/rooms").respond(200, (path, content) => {
+                const idx = path.indexOf(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/redact/${encodeURIComponent(eventId)}/`);
+                expect(idx).toBe(0);
+                expect(content).toMatchObject({reason});
+                return {event_id: eventId};
+            });
+
+            http.flushAllExpected();
+            const result = await client.redactEvent(roomId, eventId, reason);
+            expect(result).toEqual(eventId);
+        });
+    });
+
+    // @ts-ignore
     describe('userHasPowerLevelFor', () => {
         // @ts-ignore
         it('throws when a power level event cannot be located', async () => {

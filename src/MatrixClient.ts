@@ -676,6 +676,20 @@ export class MatrixClient extends EventEmitter {
     }
 
     /**
+     * Redact an event in a given room
+     * @param {string} roomId the room ID to send the redaction to
+     * @param {string} eventId the event ID to redact
+     * @returns {Promise<string>} resolves to the event ID that represents the redaction
+     */
+    public redactEvent(roomId: string, eventId: string, reason: string|null = null): Promise<string> {
+        const txnId = (new Date().getTime()) + "__REQ" + this.requestId;
+        const content = reason !== null ? {reason} : {};
+        return this.doRequest("PUT", `/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/redact/${encodeURIComponent(eventId)}/${txnId}`, null, content).then(response => {
+            return response['event_id'];
+        });
+    }
+
+    /**
      * Creates a room. This does not break out the various options for creating a room
      * due to the large number of possibilities. See the /createRoom endpoint in the
      * spec for more information on what to provide for `properties`.
