@@ -11,9 +11,7 @@ import { LogService } from "./logging/LogService";
 /**
  * A client that is capable of interacting with a matrix homeserver.
  */
-
 export class MatrixClient extends EventEmitter {
-
 
     /**
      * The presence status to use while syncing. The valid values are "online" to set the account as online,
