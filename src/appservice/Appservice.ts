@@ -169,6 +169,7 @@ export class Appservice extends EventEmitter {
 
         this.registration = options.registration;
         this.storage = options.storage || new MemoryStorageProvider();
+        options.storage = this.storage;
 
         this.app.use(express.json());
         this.app.use(morgan("combined"));
