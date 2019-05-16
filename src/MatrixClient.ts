@@ -639,24 +639,45 @@ export class MatrixClient extends EventEmitter {
      * @returns {Promise<string>} resolves to the event ID that represents the message
      */
     public sendNotice(roomId: string, text: string): Promise<string> {
-        const txnId = (new Date().getTime()) + "__REQ" + this.requestId;
-        return this.doRequest("PUT", "/_matrix/client/r0/rooms/" + encodeURIComponent(roomId) + "/send/m.room.message/" + encodeURIComponent(txnId), null, {
+        return this.sendMessage(roomId, {
             body: text,
-            msgtype: "m.notice"
-        }).then(response => {
-            return response['event_id'];
+            msgtype: "m.notice",
+        });
+    }
+
+    /**
+     * Sends a text message to the given room
+     * @param {string} roomId the room ID to send the text to
+     * @param {string} text the text to send
+     * @returns {Promise<string>} resolves to the event ID that represents the message
+     */
+    public sendText(roomId: string, text: string): Promise<string> {
+        return this.sendMessage(roomId, {
+            body: text,
+            msgtype: "m.text",
         });
     }
 
     /**
      * Sends a message to the given room
-     * @param {string} roomId the room ID to send the notice to
-     * @param {string} content the event body to send
+     * @param {string} roomId the room ID to send the message to
+     * @param {object} content the event content to send
      * @returns {Promise<string>} resolves to the event ID that represents the message
      */
     public sendMessage(roomId: string, content: any): Promise<string> {
+        return this.sendEvent(roomId, "m.room.message", content);
+    }
+
+    /**
+     * Sends an event to the given room
+     * @param {string} roomId the room ID to send the event to
+     * @param {string} eventType the type of event to send
+     * @param {string} content the event body to send
+     * @returns {Promise<string>} resolves to the event ID that represents the event
+     */
+    public sendEvent(roomId: string, eventType: string, content: any): Promise<string> {
         const txnId = (new Date().getTime()) + "__REQ" + this.requestId;
-        return this.doRequest("PUT", "/_matrix/client/r0/rooms/" + encodeURIComponent(roomId) + "/send/m.room.message/" + encodeURIComponent(txnId), null, content).then(response => {
+        return this.doRequest("PUT", "/_matrix/client/r0/rooms/" + encodeURIComponent(roomId) + "/send/" + encodeURIComponent(eventType) + "/" + encodeURIComponent(txnId), null, content).then(response => {
             return response['event_id'];
         });
     }
