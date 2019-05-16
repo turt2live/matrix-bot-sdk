@@ -679,6 +679,7 @@ export class MatrixClient extends EventEmitter {
      * Redact an event in a given room
      * @param {string} roomId the room ID to send the redaction to
      * @param {string} eventId the event ID to redact
+     * @param {String} reason an optional reason for redacting the event
      * @returns {Promise<string>} resolves to the event ID that represents the redaction
      */
     public redactEvent(roomId: string, eventId: string, reason: string|null = null): Promise<string> {
