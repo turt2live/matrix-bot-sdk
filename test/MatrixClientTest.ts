@@ -23,6 +23,31 @@ export function createTestClient(storage: IStorageProvider = null): { client: Ma
 // @ts-ignore
 describe('MatrixClient', () => {
     // @ts-ignore
+    describe("constructor", () => {
+        // @ts-ignore
+        it('should pass through the homeserver URL and access token', () => {
+            const homeserverUrl = "https://example.org";
+            const accessToken = "example_token";
+
+            const client = new MatrixClient(homeserverUrl, accessToken);
+
+            expect(client.homeserverUrl).toEqual(homeserverUrl);
+            expect(client.accessToken).toEqual(accessToken);
+        });
+
+        // @ts-ignore
+        it('should strip trailing slashes from the homeserver URL', () => {
+            const homeserverUrl = "https://example.org";
+            const accessToken = "example_token";
+
+            const client = new MatrixClient(homeserverUrl + "/", accessToken);
+
+            expect(client.homeserverUrl).toEqual(homeserverUrl);
+            expect(client.accessToken).toEqual(accessToken);
+        });
+    });
+
+    // @ts-ignore
     describe("doRequest", () => {
         // @ts-ignore
         it('should use the request function defined', async () => {

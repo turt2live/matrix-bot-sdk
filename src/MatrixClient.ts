@@ -45,7 +45,7 @@ export class MatrixClient extends EventEmitter {
      * @param {string} accessToken The access token for the homeserver
      * @param {IStorageProvider} storage The storage provider to use. Defaults to MemoryStorageProvider.
      */
-    constructor(private homeserverUrl: string, private accessToken: string, private storage: IStorageProvider = null) {
+    constructor(public readonly homeserverUrl: string, public readonly accessToken: string, private storage: IStorageProvider = null) {
         super();
 
         if (this.homeserverUrl.endsWith("/"))
