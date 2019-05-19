@@ -61,7 +61,7 @@
     "@types/mocha": "^5.2.5",
     "expect": "^23.6.0",
     "get-port": "^4.1.0",
-    "matrix-mock-request": "turt2live/matrix-mock-request#travis/build-1",
+    "matrix-mock-request": "^1.2.3",
     "mocha": "^5.2.0",
     "simple-mock": "^0.8.0",
     "tmp": "0.0.33",
