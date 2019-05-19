@@ -49,7 +49,7 @@ export class MatrixClient extends EventEmitter {
         super();
 
         if (this.homeserverUrl.endsWith("/"))
-            this.homeserverUrl = this.homeserverUrl.substring(0, this.homeserverUrl.length - 2);
+            this.homeserverUrl = this.homeserverUrl.substring(0, this.homeserverUrl.length - 1);
 
         if (!this.storage) this.storage = new MemoryStorageProvider();
     }
