@@ -31,5 +31,6 @@ export * from "./strategies/JoinRoomStrategy";
 // Root-level stuff
 export * from "./IFilter";
 export * from "./MatrixClient";
+export * from "./MatrixAuth";
 export * from "./UnstableApis";
 export * from "./request";

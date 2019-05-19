@@ -19,7 +19,8 @@
     "lint": "tslint --project ./tsconfig.json -t stylish",
     "test": "ts-mocha --project ./tsconfig.json test/**/*.ts",
     "build:examples": "tsc -p tsconfig-examples.json",
-    "example:appservice": "npm run build:examples && node lib/examples/appservice.js"
+    "example:appservice": "npm run build:examples && node lib/examples/appservice.js",
+    "example:login_register": "npm run build:examples && node lib/examples/login_register.js"
   },
   "main": "./lib/index.js",
   "typings": "./lib/index.d.ts",
