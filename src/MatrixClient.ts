@@ -899,6 +899,11 @@ export class MatrixClient extends EventEmitter {
             else qs["user_id"] = this.impersonatedUserId;
         }
 
+        const headers = {};
+        if (this.accessToken) {
+            headers["Authorization"] = `Bearer ${this.accessToken}`;
+        }
+
         if (qs) LogService.debug("MatrixLiteClient (REQ-" + requestId + ")", "qs = " + JSON.stringify(qs));
         if (body && !Buffer.isBuffer(body)) LogService.debug("MatrixLiteClient (REQ-" + requestId + ")", "body = " + JSON.stringify(body));
         if (body && Buffer.isBuffer(body)) LogService.debug("MatrixLiteClient (REQ-" + requestId + ")", "body = <Buffer>");
@@ -912,9 +917,7 @@ export class MatrixClient extends EventEmitter {
                 options: {arrayFormat: 'repeat'},
             },
             timeout: timeout,
-            headers: {
-                "Authorization": "Bearer " + this.accessToken,
-            }
+            headers: headers,
         };
 
         if (Buffer.isBuffer(body)) {
