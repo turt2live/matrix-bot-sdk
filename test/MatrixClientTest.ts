@@ -1490,7 +1490,7 @@ describe('MatrixClient', () => {
             ];
 
             const processor = <IPreprocessor>{
-                processEvent: (ev, client) => {
+                processEvent: (ev, procClient) => {
                     ev["processed"] = true;
                 },
                 getSupportedEventTypes: () => ["m.room.member", "m.room.message", "m.room.not_message"],
@@ -1574,13 +1574,13 @@ describe('MatrixClient', () => {
             const processedA = "A";
             const processedB = "B";
             const processorA = <IPreprocessor>{
-                processEvent: (ev, client) => {
+                processEvent: (ev, procClient) => {
                     ev["processed"] = processedA;
                 },
                 getSupportedEventTypes: () => ["m.room.message"],
             };
             const processorB = <IPreprocessor>{
-                processEvent: (ev, client) => {
+                processEvent: (ev, procClient) => {
                     ev["processed"] = processedB;
                 },
                 getSupportedEventTypes: () => ["m.room.not_message"],
@@ -1659,7 +1659,7 @@ describe('MatrixClient', () => {
             const eventId = "$example:matrix.org";
             const event = {type: "m.room.message"};
             const processor = <IPreprocessor>{
-                processEvent: (ev, client) => {
+                processEvent: (ev, procClient) => {
                     ev["processed"] = true;
                 },
                 getSupportedEventTypes: () => ["m.room.message"],
@@ -1709,7 +1709,7 @@ describe('MatrixClient', () => {
             const roomId = "!abc123:example.org";
             const events = [{type: "m.room.message"}, {type: "m.room.not_message"}];
             const processor = <IPreprocessor>{
-                processEvent: (ev, client) => {
+                processEvent: (ev, procClient) => {
                     ev["processed"] = true;
                 },
                 getSupportedEventTypes: () => ["m.room.message"],
@@ -1784,7 +1784,7 @@ describe('MatrixClient', () => {
             const eventType = "m.room.message";
             const event = {type: "m.room.message"};
             const processor = <IPreprocessor>{
-                processEvent: (ev, client) => {
+                processEvent: (ev, procClient) => {
                     ev["processed"] = true;
                 },
                 getSupportedEventTypes: () => ["m.room.message"],
@@ -1812,7 +1812,7 @@ describe('MatrixClient', () => {
             const event = {type: "m.room.message"};
             const stateKey = "testing";
             const processor = <IPreprocessor>{
-                processEvent: (ev, client) => {
+                processEvent: (ev, procClient) => {
                     ev["processed"] = true;
                 },
                 getSupportedEventTypes: () => ["m.room.message"],
@@ -2144,7 +2144,7 @@ describe('MatrixClient', () => {
             await client.sendReadReceipt(roomId, eventId);
         });
     });
-    
+
     // @ts-ignore
     describe('setTyping', () => {
         // @ts-ignore
@@ -2155,7 +2155,7 @@ describe('MatrixClient', () => {
             const userId = "@test:example.com";
             const typing = true;
             const timeout = 15000; // ms
-            
+
             client.getUserId = () => Promise.resolve(userId);
 
             http.when("POST", "/_matrix/client/r0/rooms").respond(200, (path, content) => {
@@ -2178,7 +2178,7 @@ describe('MatrixClient', () => {
 
             const roomId = "!testing:example.org";
             const eventId = "$something:example.org";
-            const content = {
+            const eventContent = {
                 body: "Hello World",
                 msgtype: "m.notice",
             };
@@ -2186,12 +2186,12 @@ describe('MatrixClient', () => {
             http.when("PUT", "/_matrix/client/r0/rooms").respond(200, (path, content) => {
                 const idx = path.indexOf(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/send/m.room.message/`);
                 expect(idx).toBe(0);
-                expect(content).toMatchObject(content);
+                expect(content).toMatchObject(eventContent);
                 return {event_id: eventId};
             });
 
             http.flushAllExpected();
-            const result = await client.sendNotice(roomId, content.body);
+            const result = await client.sendNotice(roomId, eventContent.body);
             expect(result).toEqual(eventId);
         });
     });
@@ -2204,7 +2204,7 @@ describe('MatrixClient', () => {
 
             const roomId = "!testing:example.org";
             const eventId = "$something:example.org";
-            const content = {
+            const eventContent = {
                 body: "Hello World",
                 msgtype: "m.text",
                 sample: true,
@@ -2213,12 +2213,12 @@ describe('MatrixClient', () => {
             http.when("PUT", "/_matrix/client/r0/rooms").respond(200, (path, content) => {
                 const idx = path.indexOf(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/send/m.room.message/`);
                 expect(idx).toBe(0);
-                expect(content).toMatchObject(content);
+                expect(content).toMatchObject(eventContent);
                 return {event_id: eventId};
             });
 
             http.flushAllExpected();
-            const result = await client.sendMessage(roomId, content);
+            const result = await client.sendMessage(roomId, eventContent);
             expect(result).toEqual(eventId);
         });
     });
@@ -2233,7 +2233,7 @@ describe('MatrixClient', () => {
             const eventId = "$something:example.org";
             const stateKey = "";
             const eventType = "m.room.message";
-            const content = {
+            const eventContent = {
                 body: "Hello World",
                 msgtype: "m.text",
                 sample: true,
@@ -2242,12 +2242,12 @@ describe('MatrixClient', () => {
             http.when("PUT", "/_matrix/client/r0/rooms").respond(200, (path, content) => {
                 const idx = path.indexOf(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/state/${encodeURIComponent(eventType)}/`);
                 expect(idx).toBe(0);
-                expect(content).toMatchObject(content);
+                expect(content).toMatchObject(eventContent);
                 return {event_id: eventId};
             });
 
             http.flushAllExpected();
-            const result = await client.sendStateEvent(roomId, eventType, stateKey, content);
+            const result = await client.sendStateEvent(roomId, eventType, stateKey, eventContent);
             expect(result).toEqual(eventId);
         });
 
@@ -2259,7 +2259,7 @@ describe('MatrixClient', () => {
             const eventId = "$something:example.org";
             const stateKey = "testing";
             const eventType = "m.room.message";
-            const content = {
+            const eventContent = {
                 body: "Hello World",
                 msgtype: "m.text",
                 sample: true,
@@ -2268,12 +2268,12 @@ describe('MatrixClient', () => {
             http.when("PUT", "/_matrix/client/r0/rooms").respond(200, (path, content) => {
                 const idx = path.indexOf(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/state/${encodeURIComponent(eventType)}/`);
                 expect(idx).toBe(0);
-                expect(content).toMatchObject(content);
+                expect(content).toMatchObject(eventContent);
                 return {event_id: eventId};
             });
 
             http.flushAllExpected();
-            const result = await client.sendStateEvent(roomId, eventType, stateKey, content);
+            const result = await client.sendStateEvent(roomId, eventType, stateKey, eventContent);
             expect(result).toEqual(eventId);
         });
     });
@@ -2286,7 +2286,7 @@ describe('MatrixClient', () => {
 
             const roomId = "!testing:example.org";
             const eventId = "$something:example.org";
-            const reason =  "Zvarri!";
+            const reason = "Zvarri!";
 
             http.when("PUT", "/_matrix/client/r0/rooms").respond(200, (path, content) => {
                 const idx = path.indexOf(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/redact/${encodeURIComponent(eventId)}/`);
