@@ -2222,6 +2222,32 @@ describe('MatrixClient', () => {
     });
 
     // @ts-ignore
+    describe('sendText', () => {
+        // @ts-ignore
+        it('should call the right endpoint', async () => {
+            const {client, http, hsUrl} = createTestClient();
+
+            const roomId = "!testing:example.org";
+            const eventId = "$something:example.org";
+            const eventContent = {
+                body: "Hello World",
+                msgtype: "m.text",
+            };
+
+            http.when("PUT", "/_matrix/client/r0/rooms").respond(200, (path, content) => {
+                const idx = path.indexOf(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/send/m.room.message/`);
+                expect(idx).toBe(0);
+                expect(content).toMatchObject(eventContent);
+                return {event_id: eventId};
+            });
+
+            http.flushAllExpected();
+            const result = await client.sendText(roomId, eventContent.body);
+            expect(result).toEqual(eventId);
+        });
+    });
+
+    // @ts-ignore
     describe('sendMessage', () => {
         // @ts-ignore
         it('should call the right endpoint', async () => {
@@ -2244,6 +2270,33 @@ describe('MatrixClient', () => {
 
             http.flushAllExpected();
             const result = await client.sendMessage(roomId, eventContent);
+            expect(result).toEqual(eventId);
+        });
+    });
+
+    // @ts-ignore
+    describe('sendEvent', () => {
+        // @ts-ignore
+        it('should call the right endpoint', async () => {
+            const {client, http, hsUrl} = createTestClient();
+
+            const roomId = "!testing:example.org";
+            const eventId = "$something:example.org";
+            const eventType = "io.t2bot.test";
+            const eventContent = {
+                testing: "hello world",
+                sample: true,
+            };
+
+            http.when("PUT", "/_matrix/client/r0/rooms").respond(200, (path, content) => {
+                const idx = path.indexOf(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/send/${encodeURIComponent(eventType)}/`);
+                expect(idx).toBe(0);
+                expect(content).toMatchObject(eventContent);
+                return {event_id: eventId};
+            });
+
+            http.flushAllExpected();
+            const result = await client.sendEvent(roomId, eventType, eventContent);
             expect(result).toEqual(eventId);
         });
     });
