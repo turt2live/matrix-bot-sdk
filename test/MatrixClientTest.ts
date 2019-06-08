@@ -2194,6 +2194,175 @@ describe('MatrixClient', () => {
         });
     });
 
+    // @ts-ignore
+    describe('replyText', () => {
+        // @ts-ignore
+        it('should call the right endpoint', async () => {
+            const {client, http, hsUrl} = createTestClient();
+
+            const roomId = "!testing:example.org";
+            const eventId = "$something:example.org";
+            const originalEvent = {
+                content: {
+                    body: "*Hello World*",
+                    formatted_body: "<i>Hello World</i>",
+                },
+                sender: "@abc:example.org",
+                event_id: "$abc:example.org",
+            };
+            const replyText = "<testing1234>";
+            const replyHtml = "&lt;testing1234&gt;";
+
+            const expectedContent = {
+                "m.relates_to": {
+                    "m.in_reply_to": {
+                        "event_id": originalEvent.event_id,
+                    },
+                },
+                msgtype: "m.text",
+                format: "org.matrix.custom.html",
+                body: `> <${originalEvent.sender}> ${originalEvent.content.body}\n\n${replyText}`,
+                formatted_body: `<mx-reply><blockquote><a href="https://matrix.to/#/${roomId}/${originalEvent.event_id}">In reply to</a><a href="https://matrix.to/#/${originalEvent.sender}">${originalEvent.sender}</a><br />${originalEvent.content.formatted_body}</blockquote></mx-reply>${replyHtml}`,
+            };
+
+            http.when("PUT", "/_matrix/client/r0/rooms").respond(200, (path, content) => {
+                const idx = path.indexOf(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/send/m.room.message/`);
+                expect(idx).toBe(0);
+                expect(content).toMatchObject(expectedContent);
+                return {event_id: eventId};
+            });
+
+            http.flushAllExpected();
+            const result = await client.replyText(roomId, originalEvent, replyText, replyHtml);
+            expect(result).toEqual(eventId);
+        });
+
+        // @ts-ignore
+        it('should use encoded plain text as the HTML component', async () => {
+            const {client, http, hsUrl} = createTestClient();
+
+            const roomId = "!testing:example.org";
+            const eventId = "$something:example.org";
+            const originalEvent = {
+                content: {
+                    body: "*Hello World*",
+                    formatted_body: "<i>Hello World</i>",
+                },
+                sender: "@abc:example.org",
+                event_id: "$abc:example.org",
+            };
+            const replyText = "<testing1234>";
+            const replyHtml = "&lt;testing1234&gt;";
+
+            const expectedContent = {
+                "m.relates_to": {
+                    "m.in_reply_to": {
+                        "event_id": originalEvent.event_id,
+                    },
+                },
+                msgtype: "m.text",
+                format: "org.matrix.custom.html",
+                body: `> <${originalEvent.sender}> ${originalEvent.content.body}\n\n${replyText}`,
+                formatted_body: `<mx-reply><blockquote><a href="https://matrix.to/#/${roomId}/${originalEvent.event_id}">In reply to</a><a href="https://matrix.to/#/${originalEvent.sender}">${originalEvent.sender}</a><br />${originalEvent.content.formatted_body}</blockquote></mx-reply>${replyHtml}`,
+            };
+
+            http.when("PUT", "/_matrix/client/r0/rooms").respond(200, (path, content) => {
+                const idx = path.indexOf(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/send/m.room.message/`);
+                expect(idx).toBe(0);
+                expect(content).toMatchObject(expectedContent);
+                return {event_id: eventId};
+            });
+
+            http.flushAllExpected();
+            const result = await client.replyText(roomId, originalEvent, replyText);
+            expect(result).toEqual(eventId);
+        });
+    });
+
+    // @ts-ignore
+    describe('replyNotice', () => {
+        // @ts-ignore
+        it('should call the right endpoint', async () => {
+            const {client, http, hsUrl} = createTestClient();
+
+            const roomId = "!testing:example.org";
+            const eventId = "$something:example.org";
+            const originalEvent = {
+                content: {
+                    body: "*Hello World*",
+                    formatted_body: "<i>Hello World</i>",
+                },
+                sender: "@abc:example.org",
+                event_id: "$abc:example.org",
+            };
+            const replyText = "<testing1234>";
+            const replyHtml = "&lt;testing1234&gt;";
+
+            const expectedContent = {
+                "m.relates_to": {
+                    "m.in_reply_to": {
+                        "event_id": originalEvent.event_id,
+                    },
+                },
+                msgtype: "m.notice",
+                format: "org.matrix.custom.html",
+                body: `> <${originalEvent.sender}> ${originalEvent.content.body}\n\n${replyText}`,
+                formatted_body: `<mx-reply><blockquote><a href="https://matrix.to/#/${roomId}/${originalEvent.event_id}">In reply to</a><a href="https://matrix.to/#/${originalEvent.sender}">${originalEvent.sender}</a><br />${originalEvent.content.formatted_body}</blockquote></mx-reply>${replyHtml}`,
+            };
+
+            http.when("PUT", "/_matrix/client/r0/rooms").respond(200, (path, content) => {
+                const idx = path.indexOf(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/send/m.room.message/`);
+                expect(idx).toBe(0);
+                expect(content).toMatchObject(expectedContent);
+                return {event_id: eventId};
+            });
+
+            http.flushAllExpected();
+            const result = await client.replyNotice(roomId, originalEvent, replyText, replyHtml);
+            expect(result).toEqual(eventId);
+        });
+
+        // @ts-ignore
+        it('should use encoded plain text as the HTML component', async () => {
+            const {client, http, hsUrl} = createTestClient();
+
+            const roomId = "!testing:example.org";
+            const eventId = "$something:example.org";
+            const originalEvent = {
+                content: {
+                    body: "*Hello World*",
+                    formatted_body: "<i>Hello World</i>",
+                },
+                sender: "@abc:example.org",
+                event_id: "$abc:example.org",
+            };
+            const replyText = "<testing1234>";
+            const replyHtml = "&lt;testing1234&gt;";
+
+            const expectedContent = {
+                "m.relates_to": {
+                    "m.in_reply_to": {
+                        "event_id": originalEvent.event_id,
+                    },
+                },
+                msgtype: "m.notice",
+                format: "org.matrix.custom.html",
+                body: `> <${originalEvent.sender}> ${originalEvent.content.body}\n\n${replyText}`,
+                formatted_body: `<mx-reply><blockquote><a href="https://matrix.to/#/${roomId}/${originalEvent.event_id}">In reply to</a><a href="https://matrix.to/#/${originalEvent.sender}">${originalEvent.sender}</a><br />${originalEvent.content.formatted_body}</blockquote></mx-reply>${replyHtml}`,
+            };
+
+            http.when("PUT", "/_matrix/client/r0/rooms").respond(200, (path, content) => {
+                const idx = path.indexOf(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/send/m.room.message/`);
+                expect(idx).toBe(0);
+                expect(content).toMatchObject(expectedContent);
+                return {event_id: eventId};
+            });
+
+            http.flushAllExpected();
+            const result = await client.replyNotice(roomId, originalEvent, replyText);
+            expect(result).toEqual(eventId);
+        });
+    });
 
     // @ts-ignore
     describe('sendNotice', () => {

@@ -7,6 +7,8 @@ import { UnstableApis } from "./UnstableApis";
 import { IPreprocessor } from "./preprocessors/IPreprocessor";
 import { getRequestFn } from "./request";
 import { LogService } from "./logging/LogService";
+import { htmlEncode } from "htmlencode";
+import { RichReply } from "./helpers/RichReply";
 
 /**
  * A client that is capable of interacting with a matrix homeserver.
@@ -633,6 +635,37 @@ export class MatrixClient extends EventEmitter {
     }
 
     /**
+     * Replies to a given event with the given text. The event is sent with a msgtype of m.text.
+     * @param {string} roomId the room ID to reply in
+     * @param {*} event the event to reply to
+     * @param {string} text the text to reply with
+     * @param {string} html the HTML to reply with, or falsey to use the `text`
+     * @returns {Promise<string>} resolves to the event ID which was sent
+     */
+    public replyText(roomId: string, event: any, text: string, html: string = null): Promise<string> {
+        if (!html) html = htmlEncode(text);
+
+        const reply = RichReply.createFor(roomId, event, text, html);
+        return this.sendMessage(roomId, reply);
+    }
+
+    /**
+     * Replies to a given event with the given text. The event is sent with a msgtype of m.notice.
+     * @param {string} roomId the room ID to reply in
+     * @param {*} event the event to reply to
+     * @param {string} text the text to reply with
+     * @param {string} html the HTML to reply with, or falsey to use the `text`
+     * @returns {Promise<string>} resolves to the event ID which was sent
+     */
+    public replyNotice(roomId: string, event: any, text: string, html: string = null): Promise<string> {
+        if (!html) html = htmlEncode(text);
+
+        const reply = RichReply.createFor(roomId, event, text, html);
+        reply['msgtype'] = 'm.notice';
+        return this.sendMessage(roomId, reply);
+    }
+
+    /**
      * Sends a notice to the given room
      * @param {string} roomId the room ID to send the notice to
      * @param {string} text the text to send
@@ -703,7 +736,7 @@ export class MatrixClient extends EventEmitter {
      * @param {String} reason an optional reason for redacting the event
      * @returns {Promise<string>} resolves to the event ID that represents the redaction
      */
-    public redactEvent(roomId: string, eventId: string, reason: string|null = null): Promise<string> {
+    public redactEvent(roomId: string, eventId: string, reason: string | null = null): Promise<string> {
         const txnId = (new Date().getTime()) + "__REQ" + this.requestId;
         const content = reason !== null ? {reason} : {};
         return this.doRequest("PUT", `/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/redact/${encodeURIComponent(eventId)}/${txnId}`, null, content).then(response => {

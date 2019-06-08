@@ -33,6 +33,7 @@
     "bluebird": "^3.5.2",
     "express": "^4.16.4",
     "hash.js": "^1.1.7",
+    "htmlencode": "0.0.4",
     "lowdb": "^1.0.0",
     "morgan": "^1.9.1",
     "request": "^2.88.0",
