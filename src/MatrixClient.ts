@@ -938,7 +938,7 @@ export class MatrixClient extends EventEmitter {
         }
 
         if (qs) LogService.debug("MatrixLiteClient (REQ-" + requestId + ")", "qs = " + JSON.stringify(qs));
-        if (body && !Buffer.isBuffer(body)) LogService.debug("MatrixLiteClient (REQ-" + requestId + ")", "body = " + JSON.stringify(body));
+        if (body && !Buffer.isBuffer(body)) LogService.debug("MatrixLiteClient (REQ-" + requestId + ")", "body = " + JSON.stringify(this.redactObjectForLogging(body)));
         if (body && Buffer.isBuffer(body)) LogService.debug("MatrixLiteClient (REQ-" + requestId + ")", "body = <Buffer>");
 
         const params: { [k: string]: any } = {
@@ -982,6 +982,38 @@ export class MatrixClient extends EventEmitter {
                 }
             });
         });
+    }
+
+    private redactObjectForLogging(input: any): any {
+        if (!input) return input;
+
+        const fieldsToRedact = [
+            'access_token',
+            'password',
+        ];
+
+        const redactFn = (i) => {
+            const newObj = {};
+            for (const key of Object.keys(i)) {
+                if (fieldsToRedact.indexOf(key) !== -1) {
+                    newObj[key] = "<redacted>";
+                    continue;
+                }
+
+                let val = i[key];
+                if (val) val = redactFn(val);
+                if (Array.isArray(val)) {
+                    const newArray = [];
+                    for (const v of val) {
+                        newArray.push(redactFn(v));
+                    }
+                    val = newArray;
+                }
+                newObj[key] = val;
+            }
+        };
+
+        return redactFn(input);
     }
 }
 
