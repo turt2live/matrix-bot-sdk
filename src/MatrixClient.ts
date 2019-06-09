@@ -974,9 +974,17 @@ export class MatrixClient extends EventEmitter {
                         }
                     }
 
-                    LogService.debug("MatrixLiteClient (REQ-" + requestId + " RESP-H" + response.statusCode + ")", response.body);
+                    if (typeof (response.body) === 'string') {
+                        try {
+                            response.body = JSON.parse(response.body);
+                        } catch (e) {
+                        }
+                    }
+
+                    const redactedBody = this.redactObjectForLogging(response.body);
+                    LogService.debug("MatrixLiteClient (REQ-" + requestId + " RESP-H" + response.statusCode + ")", redactedBody);
                     if (response.statusCode < 200 || response.statusCode >= 300) {
-                        LogService.error("MatrixLiteClient (REQ-" + requestId + ")", response.body);
+                        LogService.error("MatrixLiteClient (REQ-" + requestId + ")", redactedBody);
                         reject(response);
                     } else resolve(raw ? response : resBody);
                 }
@@ -993,6 +1001,8 @@ export class MatrixClient extends EventEmitter {
         ];
 
         const redactFn = (i) => {
+            if (!i) return i;
+
             const newObj = {};
             for (const key of Object.keys(i)) {
                 if (fieldsToRedact.indexOf(key) !== -1) {
@@ -1001,7 +1011,7 @@ export class MatrixClient extends EventEmitter {
                 }
 
                 let val = i[key];
-                if (val) val = redactFn(val);
+                if (val && val instanceof Object) val = redactFn(val);
                 if (Array.isArray(val)) {
                     const newArray = [];
                     for (const v of val) {
@@ -1011,6 +1021,7 @@ export class MatrixClient extends EventEmitter {
                 }
                 newObj[key] = val;
             }
+            return newObj;
         };
 
         return redactFn(input);
