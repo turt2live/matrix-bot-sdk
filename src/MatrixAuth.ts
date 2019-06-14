@@ -1,7 +1,5 @@
 import { MatrixClient } from "./MatrixClient";
 
-// TODO: Fix token/secret logging. See https://github.com/turt2live/matrix-js-bot-sdk/issues/17
-
 /**
  * Functions for interacting with Matrix prior to having an access token. Intended
  * to be used for logging in/registering to get a MatrixClient instance.
