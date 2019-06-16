@@ -10,6 +10,7 @@ import {
 import * as expect from "expect";
 import * as simple from "simple-mock";
 import * as MockHttpBackend from 'matrix-mock-request';
+import { expectArrayEquals } from "../TestUtils";
 
 // @ts-ignore
 describe('Intent', () => {
@@ -268,6 +269,50 @@ describe('Intent', () => {
             }
             expect(isRegisteredSpy.callCount).toBe(1);
             expect(addRegisteredSpy.callCount).toBe(0);
+        });
+    });
+
+    // @ts-ignore
+    describe('refreshJoinedRooms', () => {
+        // @ts-ignore
+        it('should overwrite any previously known joined rooms', async () => {
+            const userId = "@someone:example.org";
+            const botUserId = "@bot:example.org";
+            const asToken = "s3cret";
+            const hsUrl = "https://localhost";
+            const roomsPartA = ['!a:example.org', '!b:example.org'];
+            const roomsPartB = ['!c:example.org', '!d:example.org'];
+            const appservice = <Appservice>{botUserId: botUserId};
+            const storage = new MemoryStorageProvider();
+            const options = <IAppserviceOptions>{
+                homeserverUrl: hsUrl,
+                storage: <IAppserviceStorageProvider>storage,
+                registration: {
+                    as_token: asToken,
+                },
+            };
+
+            const intent = new Intent(options, userId, appservice);
+
+            // We have to do private access to ensure that the intent actually overwrites
+            // its cache.
+            const getJoinedRooms = () => (<any>intent).knownJoinedRooms;
+            const setJoinedRooms = (rooms) => (<any>intent).knownJoinedRooms = rooms;
+
+            const getJoinedSpy = simple.stub().callFn(() => {
+                return Promise.resolve(roomsPartB);
+            });
+            intent.underlyingClient.getJoinedRooms = getJoinedSpy;
+
+            // Do a quick assert to prove that our private access hooks work
+            expectArrayEquals([], getJoinedRooms());
+            setJoinedRooms(roomsPartA);
+            expectArrayEquals(roomsPartA, getJoinedRooms());
+
+            const result = await intent.refreshJoinedRooms();
+            expect(getJoinedSpy.callCount).toBe(1);
+            expectArrayEquals(roomsPartB, result);
+            expectArrayEquals(roomsPartB, getJoinedRooms());
         });
     });
 
@@ -757,18 +802,23 @@ describe('Intent', () => {
                 expect(rid).toEqual(targetRoomId);
                 return {};
             });
+            const refreshJoinedRoomsSpy = simple.mock(intent, "refreshJoinedRooms").callFn(() => {
+                return Promise.resolve();
+            });
 
             const joinRoomSpy = simple.stub().callFn((rid) => {
                 expect(rid).toEqual(targetRoomId);
                 return Promise.resolve(targetRoomId);
             });
             intent.underlyingClient.joinRoom = joinRoomSpy;
+            intent.refreshJoinedRooms = refreshJoinedRoomsSpy;
 
             const result = await intent.joinRoom(targetRoomId);
             expect(result).toEqual(targetRoomId);
             expect(joinRoomSpy.callCount).toBe(1);
             expect(registeredSpy.callCount).toBe(1);
             expect(joinSpy.callCount).toBe(0);
+            expect(refreshJoinedRoomsSpy.callCount).toBe(1);
         });
 
         // @ts-ignore
@@ -813,6 +863,99 @@ describe('Intent', () => {
                 expect(e.message).toEqual("Simulated failure");
             }
             expect(joinRoomSpy.callCount).toBe(1);
+            expect(registeredSpy.callCount).toBe(1);
+            expect(joinSpy.callCount).toBe(0);
+        });
+    });
+
+    // @ts-ignore
+    describe('leaveRoom', () => {
+        // @ts-ignore
+        it('should proxy through to the client while ensuring they are registered', async () => {
+            const userId = "@someone:example.org";
+            const botUserId = "@bot:example.org";
+            const asToken = "s3cret";
+            const hsUrl = "https://localhost";
+            const appservice = <Appservice>{botUserId: botUserId};
+            const targetRoomId = "!a:example.org";
+            const storage = new MemoryStorageProvider();
+            const options = <IAppserviceOptions>{
+                homeserverUrl: hsUrl,
+                storage: <IAppserviceStorageProvider>storage,
+                registration: {
+                    as_token: asToken,
+                },
+            };
+
+            const intent = new Intent(options, userId, appservice);
+
+            const registeredSpy = simple.mock(intent, "ensureRegistered").callFn(() => {
+                return Promise.resolve();
+            });
+            const joinSpy = simple.mock(intent, "ensureJoined").callFn((rid) => {
+                expect(rid).toEqual(targetRoomId);
+                return {};
+            });
+            const refreshJoinedRoomsSpy = simple.mock(intent, "refreshJoinedRooms").callFn(() => {
+                return Promise.resolve();
+            });
+
+            const leaveRoomSpy = simple.stub().callFn((rid) => {
+                expect(rid).toEqual(targetRoomId);
+                return Promise.resolve(targetRoomId);
+            });
+            intent.underlyingClient.leaveRoom = leaveRoomSpy;
+            intent.refreshJoinedRooms = refreshJoinedRoomsSpy;
+
+            await intent.leaveRoom(targetRoomId);
+            expect(leaveRoomSpy.callCount).toBe(1);
+            expect(registeredSpy.callCount).toBe(1);
+            expect(joinSpy.callCount).toBe(0);
+            expect(refreshJoinedRoomsSpy.callCount).toBe(1);
+        });
+
+        // @ts-ignore
+        it('should proxy errors upwards', async () => {
+            const userId = "@someone:example.org";
+            const botUserId = "@bot:example.org";
+            const asToken = "s3cret";
+            const hsUrl = "https://localhost";
+            const appservice = <Appservice>{botUserId: botUserId};
+            const targetRoomId = "!a:example.org";
+            const storage = new MemoryStorageProvider();
+            const options = <IAppserviceOptions>{
+                homeserverUrl: hsUrl,
+                storage: <IAppserviceStorageProvider>storage,
+                registration: {
+                    as_token: asToken,
+                },
+            };
+
+            const intent = new Intent(options, userId, appservice);
+
+            const registeredSpy = simple.mock(intent, "ensureRegistered").callFn(() => {
+                return Promise.resolve();
+            });
+            const joinSpy = simple.mock(intent, "ensureJoined").callFn((rid) => {
+                expect(rid).toEqual(targetRoomId);
+                return {};
+            });
+
+            const leaveRoomSpy = simple.stub().callFn((rid) => {
+                expect(rid).toEqual(targetRoomId);
+                throw new Error("Simulated failure");
+            });
+            intent.underlyingClient.leaveRoom = leaveRoomSpy;
+
+            try {
+                await intent.leaveRoom(targetRoomId);
+
+                // noinspection ExceptionCaughtLocallyJS
+                throw new Error("Request completed when it should have failed");
+            } catch (e) {
+                expect(e.message).toEqual("Simulated failure");
+            }
+            expect(leaveRoomSpy.callCount).toBe(1);
             expect(registeredSpy.callCount).toBe(1);
             expect(joinSpy.callCount).toBe(0);
         });

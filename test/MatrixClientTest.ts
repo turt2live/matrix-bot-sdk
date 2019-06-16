@@ -9,6 +9,7 @@ import {
 } from "../src";
 import * as simple from "simple-mock";
 import * as MockHttpBackend from 'matrix-mock-request';
+import { expectArrayEquals } from "./TestUtils";
 
 export function createTestClient(storage: IStorageProvider = null): { client: MatrixClient, http: MockHttpBackend, hsUrl: string, accessToken: string } {
     const http = new MockHttpBackend();
@@ -2099,11 +2100,7 @@ describe('MatrixClient', () => {
 
             http.flushAllExpected();
             const result = await client.getJoinedRooms();
-            expect(result).toBeDefined();
-            expect(result.length).toBe(roomIds.length);
-            for (let i = 0; i < result.length; i++) {
-                expect(result[i]).toEqual(roomIds[i]);
-            }
+            expectArrayEquals(roomIds, result);
         });
     });
 
@@ -2125,11 +2122,7 @@ describe('MatrixClient', () => {
 
             http.flushAllExpected();
             const result = await client.getJoinedRoomMembers(roomId);
-            expect(result).toBeDefined();
-            expect(result.length).toBe(members.length);
-            for (let i = 0; i < result.length; i++) {
-                expect(result[i]).toEqual(members[i]);
-            }
+            expectArrayEquals(members, result);
         });
     });
 
