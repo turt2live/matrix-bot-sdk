@@ -4,10 +4,10 @@ import * as tmp from "tmp";
 
 tmp.setGracefulCleanup();
 
-function createSimpleFsStorageProvider() {
+function createSimpleFsStorageProvider(inMemory = false, maxMemTransactions = 20) {
     const tmpFile = tmp.fileSync();
-    const writeProvider = new SimpleFsStorageProvider(tmpFile.name);
-    const readProviderFn = () => new SimpleFsStorageProvider(tmpFile.name);
+    const writeProvider = new SimpleFsStorageProvider(tmpFile.name, inMemory, maxMemTransactions);
+    const readProviderFn = () => new SimpleFsStorageProvider(tmpFile.name, inMemory, maxMemTransactions);
 
     return {tmpFile, writeProvider, readProviderFn};
 }
@@ -86,5 +86,50 @@ describe('SimpleFsStorageProvider', () => {
         expect(writeProvider.isTransactionCompleted(txnB)).toBeTruthy();
         expect(readProviderFn().isTransactionCompleted(txnA)).toBeTruthy();
         expect(readProviderFn().isTransactionCompleted(txnB)).toBeTruthy();
+    });
+
+    // @ts-ignore
+    it('should track a limited number of completed transactions in memory', async () => {
+        const maxTransactions = 2;
+        const {writeProvider, readProviderFn} = createSimpleFsStorageProvider(true, maxTransactions);
+
+        const txnA = "@first:example.org";
+        const txnB = "@second:example.org";
+        const txnC = "@third:example.org";
+
+        // The read provider results should always be falsey because the write provider
+        // should not be writing to disk.
+
+        expect(writeProvider.isTransactionCompleted(txnA)).toBeFalsy();
+        expect(writeProvider.isTransactionCompleted(txnB)).toBeFalsy();
+        expect(writeProvider.isTransactionCompleted(txnC)).toBeFalsy();
+        writeProvider.setTransactionCompleted(txnA);
+        expect(writeProvider.isTransactionCompleted(txnA)).toBeTruthy();
+        expect(writeProvider.isTransactionCompleted(txnB)).toBeFalsy();
+        expect(writeProvider.isTransactionCompleted(txnC)).toBeFalsy();
+        expect(readProviderFn().isTransactionCompleted(txnA)).toBeFalsy();
+        expect(readProviderFn().isTransactionCompleted(txnB)).toBeFalsy();
+        expect(readProviderFn().isTransactionCompleted(txnC)).toBeFalsy();
+        writeProvider.setTransactionCompleted(txnA); // duplicated to make sure it is safe to do so
+        expect(writeProvider.isTransactionCompleted(txnA)).toBeTruthy();
+        expect(writeProvider.isTransactionCompleted(txnB)).toBeFalsy();
+        expect(writeProvider.isTransactionCompleted(txnC)).toBeFalsy();
+        expect(readProviderFn().isTransactionCompleted(txnA)).toBeFalsy();
+        expect(readProviderFn().isTransactionCompleted(txnB)).toBeFalsy();
+        expect(readProviderFn().isTransactionCompleted(txnC)).toBeFalsy();
+        writeProvider.setTransactionCompleted(txnB);
+        expect(writeProvider.isTransactionCompleted(txnA)).toBeTruthy();
+        expect(writeProvider.isTransactionCompleted(txnB)).toBeTruthy();
+        expect(writeProvider.isTransactionCompleted(txnC)).toBeFalsy();
+        expect(readProviderFn().isTransactionCompleted(txnA)).toBeFalsy();
+        expect(readProviderFn().isTransactionCompleted(txnB)).toBeFalsy();
+        expect(readProviderFn().isTransactionCompleted(txnC)).toBeFalsy();
+        writeProvider.setTransactionCompleted(txnC);
+        expect(writeProvider.isTransactionCompleted(txnA)).toBeFalsy(); // No longer in memory
+        expect(writeProvider.isTransactionCompleted(txnB)).toBeTruthy();
+        expect(writeProvider.isTransactionCompleted(txnC)).toBeTruthy();
+        expect(readProviderFn().isTransactionCompleted(txnA)).toBeFalsy();
+        expect(readProviderFn().isTransactionCompleted(txnB)).toBeFalsy();
+        expect(readProviderFn().isTransactionCompleted(txnC)).toBeFalsy();
     });
 });
