@@ -783,6 +783,33 @@ export class MatrixClient extends EventEmitter {
     }
 
     /**
+     * Converts a MXC URI to an HTTP URL.
+     * @param {string} mxc The MXC URI to convert
+     * @returns {string} The HTTP URL for the content.
+     */
+    public mxcToHttp(mxc: string): string {
+        if (!mxc.startsWith("mxc://")) throw new Error("Not a MXC URI");
+        const parts = mxc.substring("mxc://".length).split('/');
+        const originHomeserver = parts[0];
+        const mediaId = parts.slice(1, parts.length).join('/');
+        return `${this.homeserverUrl}/_matrix/media/r0/download/${encodeURIComponent(originHomeserver)}/${encodeURIComponent(mediaId)}`;
+    }
+
+    /**
+     * Converts a MXC URI to an HTTP URL for downsizing the content.
+     * @param {string} mxc The MXC URI to convert and downsize.
+     * @param {number} width The width, as an integer, for the thumbnail.
+     * @param {number} height The height, as an intenger, for the thumbnail.
+     * @param {"crop"|"scale"} method Whether to crop or scale (preserve aspect ratio) the content.
+     * @returns {string} The HTTP URL for the downsized content.
+     */
+    public mxcToHttpThumbnail(mxc: string, width: number, height: number, method: "crop" | "scale"): string {
+        const downloadUri = this.mxcToHttp(mxc);
+        return downloadUri.replace("/_matrix/media/r0/download", "/_matrix/media/r0/thumbnail")
+            + `?width=${width}&height=${height}&method=${encodeURIComponent(method)}`;
+    }
+
+    /**
      * Uploads data to the homeserver's media repository.
      * @param {Buffer} data the content to upload.
      * @param {string} contentType the content type of the file. Defaults to application/octet-stream
@@ -793,6 +820,39 @@ export class MatrixClient extends EventEmitter {
         // TODO: Make doRequest take an object for options
         return this.doRequest("POST", "/_matrix/media/r0/upload", {filename: filename}, data, 60000, false, contentType)
             .then(response => response["content_uri"]);
+    }
+
+    /**
+     * Uploads data to the homeserver's media repository after downloading it from the
+     * provided URL.
+     * @param {string} url The URL to download content from.
+     * @returns {Promise<string>} Resolves to the MXC URI of the content
+     */
+    public uploadContentFromUrl(url: string): Promise<string> {
+        return new Promise<{ body: Buffer, contentType: string }>((resolve, reject) => {
+            const requestId = ++this.requestId;
+            const params = {
+                uri: url,
+                method: "GET",
+                encoding: null,
+            };
+            getRequestFn()(params, (err, response, resBody) => {
+                if (err) {
+                    LogService.error("MatrixLiteClient (REQ-" + requestId + ")", err);
+                    reject(err);
+                } else {
+                    const contentType = response.headers['content-type'] || "application/octet-stream";
+
+                    LogService.debug("MatrixLiteClient (REQ-" + requestId + " RESP-H" + response.statusCode + ")", "<data>");
+                    if (response.statusCode < 200 || response.statusCode >= 300) {
+                        LogService.error("MatrixLiteClient (REQ-" + requestId + ")", "<data>");
+                        reject(response);
+                    } else resolve({body: resBody, contentType: contentType});
+                }
+            });
+        }).then(obj => {
+            return this.uploadContent(obj.body, obj.contentType);
+        });
     }
 
     /**

@@ -2895,6 +2895,78 @@ describe('MatrixClient', () => {
     });
 
     // @ts-ignore
+    describe('mxcToHttp', () => {
+        // @ts-ignore
+        it('should convert to the right URL', async () => {
+            const {client, hsUrl} = createTestClient();
+
+            const domain = "example.org";
+            const mediaId = "testing/val";
+            const mxc = `mxc://${domain}/${mediaId}`;
+
+            const http = client.mxcToHttp(mxc);
+            expect(http).toBe(`${hsUrl}/_matrix/media/r0/download/${encodeURIComponent(domain)}/${encodeURIComponent(mediaId)}`);
+        });
+
+        // @ts-ignore
+        it('should error for non-MXC URIs', async () => {
+            const {client, hsUrl} = createTestClient();
+
+            const domain = "example.org";
+            const mediaId = "testing/val";
+            const mxc = `https://${domain}/${mediaId}`;
+
+            try {
+                client.mxcToHttp(mxc);
+
+                // noinspection ExceptionCaughtLocallyJS
+                throw new Error("Expected an error and didn't get one");
+            } catch (e) {
+                expect(e.message).toEqual("Not a MXC URI");
+            }
+        });
+    });
+
+    // @ts-ignore
+    describe('mxcToHttpThumbnail', () => {
+        // @ts-ignore
+        it('should convert to the right URL', async () => {
+            const {client, hsUrl} = createTestClient();
+
+            const domain = "example.org";
+            const mediaId = "testing/val";
+            const width = 240;
+            const height = 600;
+            const method = "scale";
+            const mxc = `mxc://${domain}/${mediaId}`;
+
+            const http = client.mxcToHttpThumbnail(mxc, width, height, method);
+            expect(http).toBe(`${hsUrl}/_matrix/media/r0/thumbnail/${encodeURIComponent(domain)}/${encodeURIComponent(mediaId)}?width=${width}&height=${height}&method=${encodeURIComponent(method)}`);
+        });
+
+        // @ts-ignore
+        it('should error for non-MXC URIs', async () => {
+            const {client, hsUrl} = createTestClient();
+
+            const domain = "example.org";
+            const mediaId = "testing/val";
+            const width = 240;
+            const height = 600;
+            const method = "scale";
+            const mxc = `https://${domain}/${mediaId}`;
+
+            try {
+                client.mxcToHttpThumbnail(mxc, width, height, method);
+
+                // noinspection ExceptionCaughtLocallyJS
+                throw new Error("Expected an error and didn't get one");
+            } catch (e) {
+                expect(e.message).toEqual("Not a MXC URI");
+            }
+        });
+    });
+
+    // @ts-ignore
     describe('uploadContent', () => {
         // @ts-ignore
         it('should call the right endpoint', async () => {
@@ -2941,6 +3013,36 @@ describe('MatrixClient', () => {
 
             http.flushAllExpected();
             const result = await client.uploadContent(data, contentType, filename);
+            expect(result).toEqual(uri);
+        });
+    });
+
+    // @ts-ignore
+    describe('uploadContentFromUrl', () => {
+        // @ts-ignore
+        it('should download then upload the content', async () => {
+            const {client, http, hsUrl} = createTestClient();
+
+            const data = <Buffer>(<any>`{"hello":"world"}`); // we can't use a real buffer because of the mock library
+            const uri = "mxc://example.org/testing";
+
+            Buffer.isBuffer = <any>(i => i === data);
+
+            http.when("GET", "/sample/download").respond(200, (path, content, req) => {
+                // We can't override headers, so don't bother
+                return data;
+            });
+
+            http.when("POST", "/_matrix/media/r0/upload").respond(200, (path, content, req) => {
+                expect(content).toBeDefined();
+                // HACK: We know the mock library will return JSON
+                expect(req.opts.headers["Content-Type"]).toEqual("application/json");
+                //expect(req.opts.body).toEqual(data); // XXX: We can't verify that the content was uploaded correctly
+                return {content_uri: uri};
+            });
+
+            http.flushAllExpected();
+            const result = await client.uploadContentFromUrl(`${hsUrl}/sample/download`);
             expect(result).toEqual(uri);
         });
     });
