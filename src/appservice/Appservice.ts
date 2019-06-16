@@ -199,6 +199,14 @@ export class Appservice extends EventEmitter {
     }
 
     /**
+     * Gets the express app instance which is serving requests. Not recommended for
+     * general usage, but may be used to append routes to the web server.
+     */
+    public get expressAppInstance() {
+        return this.app;
+    }
+
+    /**
      * Get the application service's "bot" user ID (the sender_localpart).
      */
     public get botUserId(): string {
