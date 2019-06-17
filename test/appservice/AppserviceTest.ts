@@ -114,6 +114,52 @@ describe('Appservice', () => {
     });
 
     // @ts-ignore
+    it('should return the express app running the webserver', async () => {
+        const appservice = new Appservice({
+            port: 0,
+            bindAddress: '127.0.0.1',
+            homeserverName: 'example.org',
+            homeserverUrl: 'https://localhost',
+            registration: {
+                as_token: "",
+                hs_token: "",
+                sender_localpart: "_bot_",
+                namespaces: {
+                    users: [{exclusive: true, regex: "@_prefix_.*:.+"}],
+                    rooms: [],
+                    aliases: [],
+                },
+            },
+        });
+
+        const instance = appservice.expressAppInstance;
+        expect(instance).toBeDefined();
+    });
+
+    // @ts-ignore
+    it('should return the bridge APIs for the appservice', async () => {
+        const appservice = new Appservice({
+            port: 0,
+            bindAddress: '127.0.0.1',
+            homeserverName: 'example.org',
+            homeserverUrl: 'https://localhost',
+            registration: {
+                as_token: "",
+                hs_token: "",
+                sender_localpart: "_bot_",
+                namespaces: {
+                    users: [{exclusive: true, regex: "@_prefix_.*:.+"}],
+                    rooms: [],
+                    aliases: [],
+                },
+            },
+        });
+
+        const instance = appservice.bridge;
+        expect(instance).toBeDefined();
+    });
+
+    // @ts-ignore
     it('should return an intent for the bot user', async () => {
         const appservice = new Appservice({
             port: 0,

@@ -1,6 +1,7 @@
 // Appservices
 export * from "./appservice/Appservice";
 export * from "./appservice/Intent";
+export * from "./appservice/MatrixBridge";
 
 // Helpers
 export * from "./helpers/RichReply";

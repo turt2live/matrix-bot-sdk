@@ -10,6 +10,7 @@ import {
 } from "..";
 import { EventEmitter } from "events";
 import * as morgan from "morgan";
+import { MatrixBridge } from "./MatrixBridge";
 
 /**
  * Represents an application service's registration file. This is expected to be
@@ -151,6 +152,7 @@ export class Appservice extends EventEmitter {
     private readonly userPrefix: string;
     private readonly registration: IAppserviceRegistration;
     private readonly storage: IAppserviceStorageProvider;
+    private readonly bridgeInstance = new MatrixBridge(this);
 
     private app = express();
     private appServer: any;
@@ -204,6 +206,13 @@ export class Appservice extends EventEmitter {
      */
     public get expressAppInstance() {
         return this.app;
+    }
+
+    /**
+     * Gets the bridge-specific APIs for this application service.
+     */
+    public get bridge(): MatrixBridge {
+        return this.bridgeInstance;
     }
 
     /**
