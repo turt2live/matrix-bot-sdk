@@ -184,6 +184,29 @@ describe('Appservice', () => {
     });
 
     // @ts-ignore
+    it('should return a client for the bot user', async () => {
+        const appservice = new Appservice({
+            port: 0,
+            bindAddress: '127.0.0.1',
+            homeserverName: 'example.org',
+            homeserverUrl: 'https://localhost',
+            registration: {
+                as_token: "",
+                hs_token: "",
+                sender_localpart: "_bot_",
+                namespaces: {
+                    users: [{exclusive: true, regex: "@_prefix_.*:.+"}],
+                    rooms: [],
+                    aliases: [],
+                },
+            },
+        });
+
+        const intent = appservice.botClient;
+        expect(intent).toBeDefined();
+    });
+
+    // @ts-ignore
     it('should be able to tell if a given user is the prefix namespace', async () => {
         const appservice = new Appservice({
             port: 0,

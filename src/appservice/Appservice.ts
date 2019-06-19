@@ -5,7 +5,7 @@ import {
     IAppserviceStorageProvider,
     IJoinRoomStrategy,
     IPreprocessor,
-    LogService,
+    LogService, MatrixClient,
     MemoryStorageProvider
 } from "..";
 import { EventEmitter } from "events";
@@ -228,6 +228,16 @@ export class Appservice extends EventEmitter {
      */
     public get botIntent(): Intent {
         return this.getIntentForUserId(this.botUserId);
+    }
+
+    /**
+     * Get the application service's "bot" MatrixClient (the sender_localpart).
+     * Normally the botIntent should be used to ensure that the bot user is safely
+     * handled.
+     * @returns {MatrixClient} The client for the application service itself.
+     */
+    public get botClient(): MatrixClient {
+        return this.botIntent.underlyingClient;
     }
 
     /**
