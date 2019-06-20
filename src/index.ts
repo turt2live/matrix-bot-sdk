@@ -35,3 +35,6 @@ export * from "./MatrixClient";
 export * from "./MatrixAuth";
 export * from "./UnstableApis";
 export * from "./request";
+
+// Models
+export * from "./models/MatrixPresence";

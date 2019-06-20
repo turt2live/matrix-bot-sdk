@@ -9,6 +9,7 @@ import { getRequestFn } from "./request";
 import { LogService } from "./logging/LogService";
 import { htmlEncode } from "htmlencode";
 import { RichReply } from "./helpers/RichReply";
+import { MatrixPresence } from "./models/MatrixPresence";
 
 /**
  * A client that is capable of interacting with a matrix homeserver.
@@ -161,6 +162,36 @@ export class MatrixClient extends EventEmitter {
         eventType = encodeURIComponent(eventType);
         roomId = encodeURIComponent(roomId);
         return this.doRequest("PUT", "/_matrix/client/r0/user/" + userId + "/rooms/" + roomId + "/account_data/" + eventType, null, content);
+    }
+
+    /**
+     * Gets the presence information for the current user.
+     * @returns {Promise<MatrixPresence>} Resolves to the presence status of the user.
+     */
+    public async getPresenceStatus(): Promise<MatrixPresence> {
+        return this.getPresenceStatusFor(await this.getUserId());
+    }
+
+    /**
+     * Gets the presence information for a given user.
+     * @param {string} userId The user ID to look up the presence of.
+     * @returns {Promise<MatrixPresence>} Resolves to the presence status of the user.
+     */
+    public async getPresenceStatusFor(userId: string): Promise<MatrixPresence> {
+        return this.doRequest("GET", "/_matrix/client/r0/presence/" + encodeURIComponent(userId) + "/status");
+    }
+
+    /**
+     * Sets the presence status for the current user.
+     * @param {"online"|"offline"|"unavailable"} presence The new presence state for the user.
+     * @param {string} statusMessage Optional status message to include with the presence.
+     * @returns {Promise<*>} Resolves when complete.
+     */
+    public async setPresenceStatus(presence: "online" | "offline" | "unavailable", statusMessage: string = null): Promise<any> {
+        return this.doRequest("PUT", "/_matrix/client/r0/presence/" + encodeURIComponent(await this.getUserId()) + "/status", null, {
+            presence: presence,
+            status_msg: statusMessage,
+        });
     }
 
     /**

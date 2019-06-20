@@ -255,6 +255,84 @@ describe('MatrixClient', () => {
     });
 
     // @ts-ignore
+    describe('getPresenceStatus', () => {
+        // @ts-ignore
+        it('should call the right endpoint', async () => {
+            const {client, http, hsUrl} = createTestClient();
+
+            const userId = "@test:example.org";
+            const presenceObj = {
+                presence: "online",
+                last_active_ago: 12,
+                status_message: "Hello world",
+                currently_active: true,
+            };
+
+            client.getUserId = () => Promise.resolve(userId);
+
+            http.when("GET", "/_matrix/client/r0/presence").respond(200, (path) => {
+                expect(path).toEqual(`${hsUrl}/_matrix/client/r0/presence/${encodeURIComponent(userId)}/status`);
+                return presenceObj;
+            });
+
+            http.flushAllExpected();
+            const result = await client.getPresenceStatus();
+            expect(result).toMatchObject(presenceObj);
+        });
+    });
+
+    // @ts-ignore
+    describe('getPresenceStatusFor', () => {
+        // @ts-ignore
+        it('should call the right endpoint', async () => {
+            const {client, http, hsUrl} = createTestClient();
+
+            const userId = "@testing:example.org";
+            const presenceObj = {
+                presence: "online",
+                last_active_ago: 12,
+                status_message: "Hello world",
+                currently_active: true,
+            };
+
+            http.when("GET", "/_matrix/client/r0/presence").respond(200, (path) => {
+                expect(path).toEqual(`${hsUrl}/_matrix/client/r0/presence/${encodeURIComponent(userId)}/status`);
+                return presenceObj;
+            });
+
+            http.flushAllExpected();
+            const result = await client.getPresenceStatusFor(userId);
+            expect(result).toMatchObject(presenceObj);
+        });
+    });
+
+    // @ts-ignore
+    describe('setPresenceStatus', () => {
+        // @ts-ignore
+        it('should call the right endpoint', async () => {
+            const {client, http, hsUrl} = createTestClient();
+
+            const userId = "@test:example.org";
+            const presence = "online";
+            const message = "Hello World";
+
+            client.getUserId = () => Promise.resolve(userId);
+
+            http.when("PUT", "/_matrix/client/r0/presence").respond(200, (path, obj) => {
+                expect(path).toEqual(`${hsUrl}/_matrix/client/r0/presence/${encodeURIComponent(userId)}/status`);
+                expect(obj).toMatchObject({
+                    presence: presence,
+                    status_msg: message,
+                });
+                return {};
+            });
+
+            http.flushAllExpected();
+            await client.setPresenceStatus(presence, message);
+        });
+    });
+
+    // @ts-ignore
     describe('getRoomAccountData', () => {
         // @ts-ignore
         it('should call the right endpoint', async () => {
