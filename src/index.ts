@@ -12,6 +12,13 @@ export * from "./logging/ConsoleLogger";
 export * from "./logging/ILogger";
 export * from "./logging/LogService";
 
+// Metrics
+export * from "./metrics/contexts";
+export * from "./metrics/names";
+export * from "./metrics/decorators";
+export * from "./metrics/IMetricListener";
+export * from "./metrics/Metrics";
+
 // Mixins
 export * from "./mixins/AutojoinRoomsMixin";
 export * from "./mixins/AutojoinUpgradedRoomsMixin";
