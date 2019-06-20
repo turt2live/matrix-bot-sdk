@@ -5,6 +5,7 @@ export * from "./appservice/MatrixBridge";
 
 // Helpers
 export * from "./helpers/RichReply";
+export * from "./helpers/MentionPill";
 
 // Logging
 export * from "./logging/ConsoleLogger";
@@ -35,6 +36,7 @@ export * from "./MatrixClient";
 export * from "./MatrixAuth";
 export * from "./UnstableApis";
 export * from "./request";
+export * from "./Permalinks";
 
 // Models
 export * from "./models/MatrixPresence";
