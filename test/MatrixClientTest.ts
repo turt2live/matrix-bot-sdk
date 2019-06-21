@@ -2183,7 +2183,7 @@ describe('MatrixClient', () => {
 
             client.getUserId = () => Promise.resolve(userId);
 
-            http.when("POST", "/_matrix/client/r0/rooms").respond(200, (path, content) => {
+            http.when("PUT", "/_matrix/client/r0/rooms").respond(200, (path, content) => {
                 expect(path).toEqual(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/typing/${encodeURIComponent(userId)}`);
                 expect(content).toMatchObject({typing: typing, timeout: timeout});
                 return {};
