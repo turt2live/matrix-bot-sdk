@@ -699,7 +699,7 @@ export class MatrixClient extends EventEmitter {
     @timedMatrixClientFunctionCall()
     public async setTyping(roomId: string, typing: boolean, timeout = 30000): Promise<any> {
         const userId = await this.getUserId();
-        return this.doRequest("POST", "/_matrix/client/r0/rooms/" + encodeURIComponent(roomId) + "/typing/" + encodeURIComponent(userId), null, {
+        return this.doRequest("PUT", "/_matrix/client/r0/rooms/" + encodeURIComponent(roomId) + "/typing/" + encodeURIComponent(userId), null, {
             typing,
             timeout,
         });
