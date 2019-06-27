@@ -1158,14 +1158,13 @@ export class MatrixClient extends EventEmitter {
                 }
 
                 let val = i[key];
-                if (val && val instanceof Object) val = redactFn(val);
                 if (Array.isArray(val)) {
                     const newArray = [];
                     for (const v of val) {
                         newArray.push(redactFn(v));
                     }
                     val = newArray;
-                }
+                } else if (val && val instanceof Object) val = redactFn(val);
                 newObj[key] = val;
             }
             return newObj;

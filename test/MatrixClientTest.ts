@@ -3618,4 +3618,119 @@ describe('MatrixClient', () => {
             expect(result).toMatchObject(expected);
         });
     });
+
+    // @ts-ignore
+    describe('redactObjectForLogging', () => {
+        // @ts-ignore
+        it('should redact multilevel objects', () => {
+           const {client} = createTestClient();
+
+           // We have to do private access to get at the function
+           const fn = (<any>client).redactObjectForLogging;
+
+           const input = {
+               "untouched_one": 1,
+               "untouched_two": "test",
+               "untouched_three": false,
+               "untouched_four": null,
+               "access_token": "REDACT ME",
+               "password": "REDACT ME",
+               "subobject": {
+                   "untouched_one": 1,
+                   "untouched_two": "test",
+                   "untouched_three": false,
+                   "untouched_four": null,
+                   "access_token": "REDACT ME",
+                   "password": "REDACT ME",
+                   "subobject": {
+                       "untouched_one": 1,
+                       "untouched_two": "test",
+                       "untouched_three": false,
+                       "untouched_four": null,
+                       "access_token": "REDACT ME",
+                       "password": "REDACT ME",
+                   },
+               },
+               "array": [
+                   {
+                       "untouched_one": 1,
+                       "untouched_two": "test",
+                       "untouched_three": false,
+                       "untouched_four": null,
+                       "access_token": "REDACT ME",
+                       "password": "REDACT ME",
+                       "subobject": {
+                           "untouched_one": 1,
+                           "untouched_two": "test",
+                           "untouched_three": false,
+                           "untouched_four": null,
+                           "access_token": "REDACT ME",
+                           "password": "REDACT ME",
+                           "subobject": {
+                               "untouched_one": 1,
+                               "untouched_two": "test",
+                               "untouched_three": false,
+                               "untouched_four": null,
+                               "access_token": "REDACT ME",
+                               "password": "REDACT ME",
+                           },
+                       },
+                   },
+               ],
+           };
+           const output = {
+               "untouched_one": 1,
+               "untouched_two": "test",
+               "untouched_three": false,
+               "untouched_four": null,
+               "access_token": "<redacted>",
+               "password": "<redacted>",
+               "subobject": {
+                   "untouched_one": 1,
+                   "untouched_two": "test",
+                   "untouched_three": false,
+                   "untouched_four": null,
+                   "access_token": "<redacted>",
+                   "password": "<redacted>",
+                   "subobject": {
+                       "untouched_one": 1,
+                       "untouched_two": "test",
+                       "untouched_three": false,
+                       "untouched_four": null,
+                       "access_token": "<redacted>",
+                       "password": "<redacted>",
+                   },
+               },
+               "array": [
+                   {
+                       "untouched_one": 1,
+                       "untouched_two": "test",
+                       "untouched_three": false,
+                       "untouched_four": null,
+                       "access_token": "<redacted>",
+                       "password": "<redacted>",
+                       "subobject": {
+                           "untouched_one": 1,
+                           "untouched_two": "test",
+                           "untouched_three": false,
+                           "untouched_four": null,
+                           "access_token": "<redacted>",
+                           "password": "<redacted>",
+                           "subobject": {
+                               "untouched_one": 1,
+                               "untouched_two": "test",
+                               "untouched_three": false,
+                               "untouched_four": null,
+                               "access_token": "<redacted>",
+                               "password": "<redacted>",
+                           },
+                       },
+                   },
+               ],
+           };
+
+           const result = fn(input);
+           expect(result).toMatchObject(output);
+        });
+    });
 });
