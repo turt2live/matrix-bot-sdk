@@ -11,6 +11,7 @@ import {
 import { EventEmitter } from "events";
 import * as morgan from "morgan";
 import { MatrixBridge } from "./MatrixBridge";
+import * as LRU from "lru-cache";
 
 /**
  * Represents an application service's registration file. This is expected to be
@@ -130,17 +131,33 @@ export interface IAppserviceOptions {
     /**
      * The storage provider to use for this application service.
      */
-    storage?: IAppserviceStorageProvider,
+    storage?: IAppserviceStorageProvider;
 
     /**
      * The registration for this application service.
      */
-    registration: IAppserviceRegistration,
+    registration: IAppserviceRegistration;
 
     /**
      * The join strategy to use for all intents, if any.
      */
-    joinStrategy?: IJoinRoomStrategy,
+    joinStrategy?: IJoinRoomStrategy;
+
+    /**
+     * Options for how Intents are handled.
+     */
+    intentOptions?: {
+        /**
+         * The maximum number of intents to keep cached. Defaults to 10 thousand.
+         */
+        maxCached?: number;
+
+        /**
+         * The maximum age in milliseconds to keep an Intent around for, provided
+         * the maximum number of intents has been reached. Defaults to 60 minutes.
+         */
+        maxAgeMs?: number;
+    };
 }
 
 /**
@@ -156,6 +173,7 @@ export class Appservice extends EventEmitter {
 
     private app = express();
     private appServer: any;
+    private intentsCache: LRU;
     private intents: { [userId: string]: Intent } = {};
     private eventProcessors: { [eventType: string]: IPreprocessor[] } = {};
     private pendingTransactions: { [txnId: string]: Promise<any> } = {};
@@ -168,6 +186,15 @@ export class Appservice extends EventEmitter {
         super();
 
         options.joinStrategy = new AppserviceJoinRoomStrategy(options.joinStrategy, this);
+
+        if (!options.intentOptions) options.intentOptions = {};
+        if (!options.intentOptions.maxAgeMs) options.intentOptions.maxAgeMs = 60 * 60 * 1000;
+        if (!options.intentOptions.maxCached) options.intentOptions.maxCached = 10000;
+
+        this.intentsCache = new LRU({
+            max: options.intentOptions.maxCached,
+            maxAge: options.intentOptions.maxAgeMs,
+        });
 
         this.registration = options.registration;
         this.storage = options.storage || new MemoryStorageProvider();
@@ -304,10 +331,12 @@ export class Appservice extends EventEmitter {
      * @returns {Intent} An Intent for the user.
      */
     public getIntentForUserId(userId: string): Intent {
-        if (!this.intents[userId]) {
-            this.intents[userId] = new Intent(this.options, userId, this);
+        let intent = this.intentsCache.get(userId);
+        if (!intent) {
+            intent = new Intent(this.options, userId, this);
+            this.intentsCache.set(userId, intent);
         }
-        return this.intents[userId];
+        return intent;
     }
 
     /**
