@@ -42,6 +42,18 @@ export class Intent {
     }
 
     /**
+     * Gets the joined rooms for the intent. Note that by working around
+     * the intent to join rooms may yield inaccurate results.
+     * @returns {Promise<string[]>} Resolves to an array of room IDs where
+     * the intent is joined.
+     */
+    public async getJoinedRooms(): Promise<string[]> {
+        await this.ensureRegistered();
+        if (this.knownJoinedRooms.length === 0) await this.refreshJoinedRooms();
+        return this.knownJoinedRooms.map(r => r); // clone
+    }
+
+    /**
      * Leaves the given room.
      * @param {string} roomId The room ID to leave
      * @returns {Promise<*>} Resolves when the room has been left.
@@ -116,7 +128,11 @@ export class Intent {
             return;
         }
 
-        return this.client.joinRoom(roomId);
+        const returnedRoomId = await this.client.joinRoom(roomId);
+        if (!this.knownJoinedRooms.includes(returnedRoomId)) {
+            this.knownJoinedRooms.push(returnedRoomId);
+        }
+        return returnedRoomId;
     }
 
     /**

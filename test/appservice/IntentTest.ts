@@ -273,6 +273,202 @@ describe('Intent', () => {
     });
 
     // @ts-ignore
+    describe('getJoinedRooms', () => {
+        // @ts-ignore
+        it('should fetch rooms if none are cached', async () => {
+            const userId = "@someone:example.org";
+            const botUserId = "@bot:example.org";
+            const asToken = "s3cret";
+            const hsUrl = "https://localhost";
+            const roomsPartA = ['!a:example.org', '!b:example.org'];
+            const appservice = <Appservice>{botUserId: botUserId};
+            const storage = new MemoryStorageProvider();
+            const options = <IAppserviceOptions>{
+                homeserverUrl: hsUrl,
+                storage: <IAppserviceStorageProvider>storage,
+                registration: {
+                    as_token: asToken,
+                },
+            };
+
+            const intent = new Intent(options, userId, appservice);
+
+            const registeredSpy = simple.mock(intent, "ensureRegistered").callFn(() => {
+                return Promise.resolve();
+            });
+
+            const getJoinedSpy = simple.stub().callFn(() => {
+                return Promise.resolve(roomsPartA);
+            });
+            intent.underlyingClient.getJoinedRooms = getJoinedSpy;
+
+            const joinedRooms = await intent.getJoinedRooms();
+            expectArrayEquals(roomsPartA, joinedRooms);
+            expect(registeredSpy.callCount).toBe(1);
+            expect(getJoinedSpy.callCount).toBe(1);
+        });
+
+        // @ts-ignore
+        it('should cache rooms on join', async () => {
+            const userId = "@someone:example.org";
+            const botUserId = "@bot:example.org";
+            const asToken = "s3cret";
+            const hsUrl = "https://localhost";
+            const roomId = "!test:example.org";
+            const appservice = <Appservice>{botUserId: botUserId};
+            const storage = new MemoryStorageProvider();
+            const options = <IAppserviceOptions>{
+                homeserverUrl: hsUrl,
+                storage: <IAppserviceStorageProvider>storage,
+                registration: {
+                    as_token: asToken,
+                },
+            };
+
+            const intent = new Intent(options, userId, appservice);
+
+            const registeredSpy = simple.mock(intent, "ensureRegistered").callFn(() => {
+                return Promise.resolve();
+            });
+
+            const getJoinedSpy = simple.stub().callFn(() => {
+                if (getJoinedSpy.callCount === 1) return Promise.resolve([]);
+                return Promise.resolve([roomId]);
+            });
+            intent.underlyingClient.getJoinedRooms = getJoinedSpy;
+
+            const joinSpy = simple.stub().callFn((rid) => {
+                expect(rid).toBe(roomId);
+                return Promise.resolve(rid);
+            });
+            intent.underlyingClient.joinRoom = joinSpy;
+
+            let joinedRooms = await intent.getJoinedRooms();
+            expectArrayEquals([], joinedRooms);
+            expect(registeredSpy.callCount).toBe(1);
+            expect(getJoinedSpy.callCount).toBe(1);
+            expect(joinSpy.callCount).toBe(0);
+
+            await intent.joinRoom(roomId);
+
+            joinedRooms = await intent.getJoinedRooms();
+            expectArrayEquals([roomId], joinedRooms);
+            expect(registeredSpy.callCount).toBe(3);
+            expect(getJoinedSpy.callCount).toBe(2);
+            expect(joinSpy.callCount).toBe(1);
+        });
+
+        // @ts-ignore
+        it('should cache rooms on leave', async () => {
+            const userId = "@someone:example.org";
+            const botUserId = "@bot:example.org";
+            const asToken = "s3cret";
+            const hsUrl = "https://localhost";
+            const roomId = "!test:example.org";
+            const appservice = <Appservice>{botUserId: botUserId};
+            const storage = new MemoryStorageProvider();
+            const options = <IAppserviceOptions>{
+                homeserverUrl: hsUrl,
+                storage: <IAppserviceStorageProvider>storage,
+                registration: {
+                    as_token: asToken,
+                },
+            };
+
+            const intent = new Intent(options, userId, appservice);
+
+            const registeredSpy = simple.mock(intent, "ensureRegistered").callFn(() => {
+                return Promise.resolve();
+            });
+
+            const getJoinedSpy = simple.stub().callFn(() => {
+                if (getJoinedSpy.callCount > 1) return Promise.resolve([]);
+                return Promise.resolve([roomId]);
+            });
+            intent.underlyingClient.getJoinedRooms = getJoinedSpy;
+
+            const leaveSpy = simple.stub().callFn((rid) => {
+                expect(rid).toBe(roomId);
+                return Promise.resolve(rid);
+            });
+            intent.underlyingClient.leaveRoom = leaveSpy;
+
+            let joinedRooms = await intent.getJoinedRooms();
+            expectArrayEquals([roomId], joinedRooms);
+            expect(registeredSpy.callCount).toBe(1);
+            expect(getJoinedSpy.callCount).toBe(1);
+            expect(leaveSpy.callCount).toBe(0);
+
+            await intent.leaveRoom(roomId);
+
+            joinedRooms = await intent.getJoinedRooms();
+            expectArrayEquals([], joinedRooms);
+            expect(registeredSpy.callCount).toBe(3);
+            expect(getJoinedSpy.callCount).toBe(3);
+            expect(leaveSpy.callCount).toBe(1);
+        });
+
+        // @ts-ignore
+        it('should cache rooms on ensureJoined', async () => {
+            const userId = "@someone:example.org";
+            const botUserId = "@bot:example.org";
+            const asToken = "s3cret";
+            const hsUrl = "https://localhost";
+            const roomId = "!test:example.org";
+            const appservice = <Appservice>{botUserId: botUserId};
+            const storage = new MemoryStorageProvider();
+            const options = <IAppserviceOptions>{
+                homeserverUrl: hsUrl,
+                storage: <IAppserviceStorageProvider>storage,
+                registration: {
+                    as_token: asToken,
+                },
+            };
+
+            const intent = new Intent(options, userId, appservice);
+
+            const registeredSpy = simple.mock(intent, "ensureRegistered").callFn(() => {
+                return Promise.resolve();
+            });
+
+            const getJoinedSpy = simple.stub().callFn(() => {
+                if (getJoinedSpy.callCount <= 2) return Promise.resolve([]);
+                return Promise.resolve([roomId]);
+            });
+            intent.underlyingClient.getJoinedRooms = getJoinedSpy;
+
+            const joinSpy = simple.stub().callFn((rid) => {
+                expect(rid).toBe(roomId);
+                return Promise.resolve(rid);
+            });
+            intent.underlyingClient.joinRoom = joinSpy;
+
+            let joinedRooms = await intent.getJoinedRooms();
+            expectArrayEquals([], joinedRooms);
+            expect(registeredSpy.callCount).toBe(1);
+            expect(getJoinedSpy.callCount).toBe(1);
+            expect(joinSpy.callCount).toBe(0);
+
+            await intent.ensureJoined(roomId);
+
+            joinedRooms = await intent.getJoinedRooms();
+            expectArrayEquals([roomId], joinedRooms);
+            expect(registeredSpy.callCount).toBe(2);
+            expect(getJoinedSpy.callCount).toBe(2);
+            expect(joinSpy.callCount).toBe(1);
+
+            // Duplicate just to prove it caches it
+            await intent.ensureJoined(roomId);
+
+            joinedRooms = await intent.getJoinedRooms();
+            expectArrayEquals([roomId], joinedRooms);
+            expect(registeredSpy.callCount).toBe(3);
+            expect(getJoinedSpy.callCount).toBe(2);
+            expect(joinSpy.callCount).toBe(1);
+        });
+    });
+
+    // @ts-ignore
     describe('refreshJoinedRooms', () => {
         // @ts-ignore
         it('should overwrite any previously known joined rooms', async () => {
@@ -298,6 +494,10 @@ describe('Intent', () => {
             // its cache.
             const getJoinedRooms = () => (<any>intent).knownJoinedRooms;
             const setJoinedRooms = (rooms) => (<any>intent).knownJoinedRooms = rooms;
+
+            const registeredSpy = simple.mock(intent, "ensureRegistered").callFn(() => {
+                return Promise.resolve();
+            });
 
             const getJoinedSpy = simple.stub().callFn(() => {
                 return Promise.resolve(roomsPartB);
