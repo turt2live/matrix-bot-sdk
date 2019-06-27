@@ -368,6 +368,62 @@ describe('Appservice', () => {
     });
 
     // @ts-ignore
+    describe('getSuffixForUserId', () => {
+        // @ts-ignore
+        it('should return a suffix for any namespaced user ID', async () => {
+            const appservice = new Appservice({
+                port: 0,
+                bindAddress: '127.0.0.1',
+                homeserverName: 'example.org',
+                homeserverUrl: 'https://localhost',
+                registration: {
+                    as_token: "",
+                    hs_token: "",
+                    sender_localpart: "_bot_",
+                    namespaces: {
+                        users: [{exclusive: true, regex: "@_prefix_.*:.+"}],
+                        rooms: [],
+                        aliases: [],
+                    },
+                },
+            });
+
+            const suffix = "testing";
+            const userId = `@_prefix_${suffix}:example.org`;
+
+            expect(appservice.getSuffixForUserId(userId)).toBe(suffix);
+        });
+
+        // @ts-ignore
+        it('should return a falsey suffix for any non-namespaced user ID', async () => {
+            const appservice = new Appservice({
+                port: 0,
+                bindAddress: '127.0.0.1',
+                homeserverName: 'example.org',
+                homeserverUrl: 'https://localhost',
+                registration: {
+                    as_token: "",
+                    hs_token: "",
+                    sender_localpart: "_bot_",
+                    namespaces: {
+                        users: [{exclusive: true, regex: "@_prefix_.*:.+"}],
+                        rooms: [],
+                        aliases: [],
+                    },
+                },
+            });
+
+            expect(appservice.getSuffixForUserId(null)).toBeFalsy();
+            expect(appservice.getSuffixForUserId(undefined)).toBeFalsy();
+            expect(appservice.getSuffixForUserId("")).toBeFalsy();
+            expect(appservice.getSuffixForUserId("@invalid")).toBeFalsy();
+            expect(appservice.getSuffixForUserId("@_prefix_invalid")).toBeFalsy();
+            expect(appservice.getSuffixForUserId("@_prefix_testing:invalid.example.org")).toBeFalsy();
+            expect(appservice.getSuffixForUserId("@_invalid_testing:example.org")).toBeFalsy();
+        });
+    });
+
+    // @ts-ignore
     it('should 401 requests with bad auth', async () => {
         const port = await getPort();
         const hsToken = "s3cret_token";

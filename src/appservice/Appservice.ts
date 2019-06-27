@@ -311,6 +311,27 @@ export class Appservice extends EventEmitter {
     }
 
     /**
+     * Gets the suffix for the provided user ID. If the user ID is not a namespaced
+     * user, this will return a falsey value.
+     * @param {string} userId The user ID to parse
+     * @returns {string} The suffix from the user ID.
+     */
+    public getSuffixForUserId(userId: string): string {
+        if (!userId || !userId.startsWith(this.userPrefix) || !userId.endsWith(`:${this.options.homeserverName}`)) {
+            // Invalid ID
+            return null;
+        }
+
+        return userId
+            .split('')
+            .slice(this.userPrefix.length)
+            .reverse()
+            .slice(this.options.homeserverName.length + 1)
+            .reverse()
+            .join('');
+    }
+
+    /**
      * Determines if a given user ID is namespaced by this application service.
      * @param {string} userId The user ID to check
      * @returns {boolean} true if the user is namespaced, false otherwise
