@@ -18,7 +18,7 @@ describe('AppserviceJoinRoomStrategy', () => {
                 namespaces: {
                     users: [{exclusive: true, regex: "@_prefix_.*:.+"}],
                     rooms: [],
-                    aliases: [],
+                    aliases: [{exclusive: true, regex: "#_prefix_.*:.+"}],
                 },
             },
         });
@@ -63,7 +63,7 @@ describe('AppserviceJoinRoomStrategy', () => {
                 namespaces: {
                     users: [{exclusive: true, regex: "@_prefix_.*:.+"}],
                     rooms: [],
-                    aliases: [],
+                    aliases: [{exclusive: true, regex: "#_prefix_.*:.+"}],
                 },
             },
         });
@@ -119,7 +119,7 @@ describe('AppserviceJoinRoomStrategy', () => {
                 namespaces: {
                     users: [{exclusive: true, regex: "@_prefix_.*:.+"}],
                     rooms: [],
-                    aliases: [],
+                    aliases: [{exclusive: true, regex: "#_prefix_.*:.+"}],
                 },
             },
         });
@@ -175,7 +175,7 @@ describe('AppserviceJoinRoomStrategy', () => {
                 namespaces: {
                     users: [{exclusive: true, regex: "@_prefix_.*:.+"}],
                     rooms: [],
-                    aliases: [],
+                    aliases: [{exclusive: true, regex: "#_prefix_.*:.+"}],
                 },
             },
         });
@@ -225,7 +225,7 @@ describe('AppserviceJoinRoomStrategy', () => {
                 namespaces: {
                     users: [{exclusive: true, regex: "@_prefix_.*:.+"}],
                     rooms: [],
-                    aliases: [],
+                    aliases: [{exclusive: true, regex: "#_prefix_.*:.+"}],
                 },
             },
         });
@@ -279,7 +279,7 @@ describe('AppserviceJoinRoomStrategy', () => {
                 namespaces: {
                     users: [{exclusive: true, regex: "@_prefix_.*:.+"}],
                     rooms: [],
-                    aliases: [],
+                    aliases: [{exclusive: true, regex: "#_prefix_.*:.+"}],
                 },
             },
         });
@@ -342,7 +342,7 @@ describe('AppserviceJoinRoomStrategy', () => {
                 namespaces: {
                     users: [{exclusive: true, regex: "@_prefix_.*:.+"}],
                     rooms: [],
-                    aliases: [],
+                    aliases: [{exclusive: true, regex: "#_prefix_.*:.+"}],
                 },
             },
         });
@@ -396,7 +396,7 @@ describe('AppserviceJoinRoomStrategy', () => {
                 namespaces: {
                     users: [{exclusive: true, regex: "@_prefix_.*:.+"}],
                     rooms: [],
-                    aliases: [],
+                    aliases: [{exclusive: true, regex: "#_prefix_.*:.+"}],
                 },
             },
         });

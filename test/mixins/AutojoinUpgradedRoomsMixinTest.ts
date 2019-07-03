@@ -44,7 +44,7 @@ describe('AutojoinUpgradedRoomsMixin', () => {
                 namespaces: {
                     users: [{exclusive: true, regex: "@_prefix_.*:.+"}],
                     rooms: [],
-                    aliases: [],
+                    aliases: [{exclusive: true, regex: "#_prefix_.*:.+"}],
                 },
             },
         });
