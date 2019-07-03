@@ -404,6 +404,16 @@ export class Appservice extends EventEmitter {
     }
 
     /**
+     * Gets the localpart of an alias for a given suffix. The prefix is automatically detected from the registration
+     * options. Useful for the createRoom endpoint.
+     * @param suffix The alias's suffix
+     * @returns {string} The alias localpart.
+     */
+    public getAliasLocalpartForSuffix(suffix: string): string {
+        return `${this.aliasPrefix.substr(1)}${suffix}`;
+    }
+
+    /**
      * Gets the suffix for the provided alias. If the alias is not a namespaced
      * alias, this will return a falsey value.
      * @param {string} alias The alias to parse

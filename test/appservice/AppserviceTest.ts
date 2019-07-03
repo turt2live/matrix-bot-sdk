@@ -578,6 +578,28 @@ describe('Appservice', () => {
     });
 
     // @ts-ignore
+    it('should return an alias localpart for any namespaced suffix', async () => {
+        const appservice = new Appservice({
+            port: 0,
+            bindAddress: '127.0.0.1',
+            homeserverName: 'example.org',
+            homeserverUrl: 'https://localhost',
+            registration: {
+                as_token: "",
+                hs_token: "",
+                sender_localpart: "_bot_",
+                namespaces: {
+                    users: [{exclusive: true, regex: "@_prefix_.*:.+"}],
+                    rooms: [],
+                    aliases: [{exclusive: true, regex: "#_prefix_.*:.+"}],
+                },
+            },
+        });
+
+        expect(appservice.getAliasLocalpartForSuffix("testing")).toEqual("_prefix_testing");
+    });
+
+    // @ts-ignore
     describe('getSuffixForAlias', () => {
         // @ts-ignore
         it('should return a suffix for any namespaced alias', async () => {
