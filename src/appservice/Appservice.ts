@@ -167,6 +167,7 @@ export interface IAppserviceOptions {
 export class Appservice extends EventEmitter {
 
     private readonly userPrefix: string;
+    private readonly aliasPrefix: string | null;
     private readonly registration: IAppserviceRegistration;
     private readonly storage: IAppserviceStorageProvider;
     private readonly bridgeInstance = new MatrixBridge(this);
@@ -225,6 +226,17 @@ export class Appservice extends EventEmitter {
             throw new Error("Expected user namespace to be a prefix");
         }
         this.userPrefix = this.userPrefix.substring(0, this.userPrefix.length - 2); // trim off the .* part
+
+        if (!this.registration.namespaces || !this.registration.namespaces.aliases || this.registration.namespaces.aliases.length === 0 || this.registration.namespaces.aliases.length !== 1) {
+            this.aliasPrefix = null;
+        } else {
+            this.aliasPrefix = (this.registration.namespaces.aliases[0].regex || "").split(":")[0];
+            if (!this.aliasPrefix.endsWith(".*")) {
+                this.aliasPrefix = null;
+            } else {
+                this.aliasPrefix = this.aliasPrefix.substring(0, this.aliasPrefix.length - 2); // trim off the .* part
+            }
+        }
     }
 
     /**
@@ -367,6 +379,78 @@ export class Appservice extends EventEmitter {
      */
     public isNamespacedUser(userId: string): boolean {
         return userId === this.botUserId || (userId.startsWith(this.userPrefix) && userId.endsWith(":" + this.options.homeserverName));
+    }
+
+    /**
+     * Gets a full alias for a given localpart. The alias will be formed with the domain name given
+     * in the constructor.
+     * @param localpart The localpart to get an alias for.
+     * @returns {string} The alias.
+     */
+    public getAlias(localpart: string): string {
+        return `#${localpart}:${this.options.homeserverName}`;
+    }
+
+    /**
+     * Gets a full alias for a given suffix. The prefix is automatically detected from the registration
+     * options.
+     * @param suffix The alias's suffix
+     * @returns {string} The alias.
+     */
+    public getAliasForSuffix(suffix: string): string {
+        if (!this.aliasPrefix) {
+            throw new Error("Invalid configured alias prefix");
+        }
+        return `${this.aliasPrefix}${suffix}:${this.options.homeserverName}`;
+    }
+
+    /**
+     * Gets the localpart of an alias for a given suffix. The prefix is automatically detected from the registration
+     * options. Useful for the createRoom endpoint.
+     * @param suffix The alias's suffix
+     * @returns {string} The alias localpart.
+     */
+    public getAliasLocalpartForSuffix(suffix: string): string {
+        if (!this.aliasPrefix) {
+            throw new Error("Invalid configured alias prefix");
+        }
+        return `${this.aliasPrefix.substr(1)}${suffix}`;
+    }
+
+    /**
+     * Gets the suffix for the provided alias. If the alias is not a namespaced
+     * alias, this will return a falsey value.
+     * @param {string} alias The alias to parse
+     * @returns {string} The suffix from the alias.
+     */
+    public getSuffixForAlias(alias: string): string {
+        if (!this.aliasPrefix) {
+            throw new Error("Invalid configured alias prefix");
+        }
+        if (!alias || !this.isNamespacedAlias(alias)) {
+            // Invalid ID
+            return null;
+        }
+
+        return alias
+            .split('')
+            .slice(this.aliasPrefix.length)
+            .reverse()
+            .slice(this.options.homeserverName.length + 1)
+            .reverse()
+            .join('');
+    }
+
+    /**
+     * Determines if a given alias is namespaced by this application service.
+     * @param {string} alias The alias to check
+     * @returns {boolean} true if the alias is namespaced, false otherwise
+     */
+    public isNamespacedAlias(alias: string): boolean {
+        if (!this.aliasPrefix) {
+            throw new Error("Invalid configured alias prefix");
+        }
+        return alias.startsWith(this.aliasPrefix) && alias.endsWith(":" + this.options.homeserverName);
     }
 
     /**
