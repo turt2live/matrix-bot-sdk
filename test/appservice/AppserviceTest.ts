@@ -22,7 +22,7 @@ describe('Appservice', () => {
                     namespaces: {
                         users: [],
                         rooms: [],
-                        aliases: [{exclusive: true, regex: "#_prefix_.*:.+"}],
+                        aliases: [],
                     },
                 },
             });
@@ -52,7 +52,7 @@ describe('Appservice', () => {
                             {exclusive: true, regex: "@.+:.+"},
                         ],
                         rooms: [],
-                        aliases: [{exclusive: true, regex: "#_prefix_.*:.+"}],
+                        aliases: [],
                     },
                 },
             });
@@ -79,33 +79,6 @@ describe('Appservice', () => {
                     namespaces: {
                         users: [{exclusive: true, regex: "@.*_suffix:.+"}],
                         rooms: [],
-                        aliases: [{exclusive: true, regex: "#_prefix_.*:.+"}],
-                    },
-                },
-            });
-
-            // noinspection ExceptionCaughtLocallyJS
-            throw new Error("Did not throw when expecting it");
-        } catch (e) {
-            expect(e.message).toEqual("Expected user namespace to be a prefix");
-        }
-    });
-
-    // @ts-ignore
-    it('should throw when there are no registered alias namespaces', async () => {
-        try {
-            new Appservice({
-                port: 0,
-                bindAddress: '127.0.0.1',
-                homeserverName: 'localhost',
-                homeserverUrl: 'https://localhost',
-                registration: {
-                    as_token: "",
-                    hs_token: "",
-                    sender_localpart: "",
-                    namespaces: {
-                        users: [{exclusive: true, regex: "@_prefix_.*:.+"}],
-                        rooms: [],
                         aliases: [],
                     },
                 },
@@ -114,64 +87,7 @@ describe('Appservice', () => {
             // noinspection ExceptionCaughtLocallyJS
             throw new Error("Did not throw when expecting it");
         } catch (e) {
-            expect(e.message).toEqual("No alias namespaces in registration");
-        }
-    });
-
-    // @ts-ignore
-    it('should throw when there are too many registered namespaces', async () => {
-        try {
-            new Appservice({
-                port: 0,
-                bindAddress: '127.0.0.1',
-                homeserverName: 'localhost',
-                homeserverUrl: 'https://localhost',
-                registration: {
-                    as_token: "",
-                    hs_token: "",
-                    sender_localpart: "",
-                    namespaces: {
-                        users: [{exclusive: true, regex: "@_prefix_.*:.+"}],
-                        rooms: [],
-                        aliases: [
-                            {exclusive: true, regex: "#.+:.+"},
-                            {exclusive: true, regex: "#.+:.+"},
-                        ],
-                    },
-                },
-            });
-
-            // noinspection ExceptionCaughtLocallyJS
-            throw new Error("Did not throw when expecting it");
-        } catch (e) {
-            expect(e.message).toEqual("Too many alias namespaces registered: expecting exactly one");
-        }
-    });
-
-    // @ts-ignore
-    it('should throw when there is no prefix namespace', async () => {
-        try {
-            new Appservice({
-                port: 0,
-                bindAddress: '127.0.0.1',
-                homeserverName: 'localhost',
-                homeserverUrl: 'https://localhost',
-                registration: {
-                    as_token: "",
-                    hs_token: "",
-                    sender_localpart: "",
-                    namespaces: {
-                        users: [{exclusive: true, regex: "@_prefix_.*:.+"}],
-                        rooms: [],
-                        aliases: [{exclusive: true, regex: "#.*_suffix:.+"}],
-                    },
-                },
-            });
-
-            // noinspection ExceptionCaughtLocallyJS
-            throw new Error("Did not throw when expecting it");
-        } catch (e) {
-            expect(e.message).toEqual("Expected alias namespace to be a prefix");
+            expect(e.message).toEqual("Expected user namespace to be a prefix");
         }
     });
 
@@ -189,7 +105,7 @@ describe('Appservice', () => {
                 namespaces: {
                     users: [{exclusive: true, regex: "@_prefix_.*:.+"}],
                     rooms: [],
-                    aliases: [{exclusive: true, regex: "#_prefix_.*:.+"}],
+                    aliases: [],
                 },
             },
         });
@@ -211,7 +127,7 @@ describe('Appservice', () => {
                 namespaces: {
                     users: [{exclusive: true, regex: "@_prefix_.*:.+"}],
                     rooms: [],
-                    aliases: [{exclusive: true, regex: "#_prefix_.*:.+"}],
+                    aliases: [],
                 },
             },
         });
@@ -234,7 +150,7 @@ describe('Appservice', () => {
                 namespaces: {
                     users: [{exclusive: true, regex: "@_prefix_.*:.+"}],
                     rooms: [],
-                    aliases: [{exclusive: true, regex: "#_prefix_.*:.+"}],
+                    aliases: [],
                 },
             },
         });
@@ -257,7 +173,7 @@ describe('Appservice', () => {
                 namespaces: {
                     users: [{exclusive: true, regex: "@_prefix_.*:.+"}],
                     rooms: [],
-                    aliases: [{exclusive: true, regex: "#_prefix_.*:.+"}],
+                    aliases: [],
                 },
             },
         });
@@ -281,7 +197,7 @@ describe('Appservice', () => {
                 namespaces: {
                     users: [{exclusive: true, regex: "@_prefix_.*:.+"}],
                     rooms: [],
-                    aliases: [{exclusive: true, regex: "#_prefix_.*:.+"}],
+                    aliases: [],
                 },
             },
         });
@@ -304,7 +220,7 @@ describe('Appservice', () => {
                 namespaces: {
                     users: [{exclusive: true, regex: "@_prefix_.*:.+"}],
                     rooms: [],
-                    aliases: [{exclusive: true, regex: "#_prefix_.*:.+"}],
+                    aliases: [],
                 },
             },
         });
@@ -331,7 +247,7 @@ describe('Appservice', () => {
                 namespaces: {
                     users: [{exclusive: true, regex: "@_prefix_.*:.+"}],
                     rooms: [],
-                    aliases: [{exclusive: true, regex: "#_prefix_.*:.+"}],
+                    aliases: [],
                 },
             },
         });
@@ -355,7 +271,7 @@ describe('Appservice', () => {
                 namespaces: {
                     users: [{exclusive: true, regex: "@_prefix_.*:.+"}],
                     rooms: [],
-                    aliases: [{exclusive: true, regex: "#_prefix_.*:.+"}],
+                    aliases: [],
                 },
             },
         });
@@ -379,7 +295,7 @@ describe('Appservice', () => {
                 namespaces: {
                     users: [{exclusive: true, regex: "@_prefix_.*:.+"}],
                     rooms: [],
-                    aliases: [{exclusive: true, regex: "#_prefix_.*:.+"}],
+                    aliases: [],
                 },
             },
         });
@@ -421,7 +337,7 @@ describe('Appservice', () => {
                 namespaces: {
                     users: [{exclusive: true, regex: "@_prefix_.*:.+"}],
                     rooms: [],
-                    aliases: [{exclusive: true, regex: "#_prefix_.*:.+"}],
+                    aliases: [],
                 },
             },
         });
@@ -443,7 +359,7 @@ describe('Appservice', () => {
                 namespaces: {
                     users: [{exclusive: true, regex: "@_prefix_.*:.+"}],
                     rooms: [],
-                    aliases: [{exclusive: true, regex: "#_prefix_.*:.+"}],
+                    aliases: [],
                 },
             },
         });
@@ -467,7 +383,7 @@ describe('Appservice', () => {
                     namespaces: {
                         users: [{exclusive: true, regex: "@_prefix_.*:.+"}],
                         rooms: [],
-                        aliases: [{exclusive: true, regex: "#_prefix_.*:.+"}],
+                        aliases: [],
                     },
                 },
             });
@@ -492,7 +408,7 @@ describe('Appservice', () => {
                     namespaces: {
                         users: [{exclusive: true, regex: "@_prefix_.*:.+"}],
                         rooms: [],
-                        aliases: [{exclusive: true, regex: "#_prefix_.*:.+"}],
+                        aliases: [],
                     },
                 },
             });
@@ -507,30 +423,63 @@ describe('Appservice', () => {
         });
     });
 
-    // @ts-ignore
-    it('should be able to tell if a given alias is the prefix namespace', async () => {
-        const appservice = new Appservice({
-            port: 0,
-            bindAddress: '127.0.0.1',
-            homeserverName: 'example.org',
-            homeserverUrl: 'https://localhost',
-            registration: {
-                as_token: "",
-                hs_token: "",
-                sender_localpart: "_bot_",
-                namespaces: {
-                    users: [{exclusive: true, regex: "@_prefix_.*:.+"}],
-                    rooms: [],
-                    aliases: [{exclusive: true, regex: "#_prefix_.*:.+"}],
-                },
-            },
+    describe('isNamespacedAlias', () => {
+        // @ts-ignore
+        it('should throw on no alias prefix set', async () => {
+            try {
+                const appservice = new Appservice({
+                    port: 0,
+                    bindAddress: '127.0.0.1',
+                    homeserverName: 'example.org',
+                    homeserverUrl: 'https://localhost',
+                    registration: {
+                        as_token: "",
+                        hs_token: "",
+                        sender_localpart: "_bot_",
+                        namespaces: {
+                            users: [{exclusive: true, regex: "@_prefix_.*:.+"}],
+                            rooms: [],
+                            aliases: [],
+                        },
+                    },
+                });
+                
+                const userA = "#_prefix_test:example.org";
+                const userB = "#alice_prefix_:example.org";
+                
+                expect(appservice.isNamespacedAlias(userA)).toBeTruthy();
+                expect(appservice.isNamespacedAlias(userB)).toBeFalsy();
+                throw new Error("Did not throw when expecting it");
+            } catch (e) {
+                expect(e.message).toEqual("Invalid configured alias prefix");
+            }
         });
 
-        const userA = "#_prefix_test:example.org";
-        const userB = "#alice_prefix_:example.org";
+        // @ts-ignore
+        it('should be able to tell if a given alias is the prefix namespace', async () => {
+            const appservice = new Appservice({
+                port: 0,
+                bindAddress: '127.0.0.1',
+                homeserverName: 'example.org',
+                homeserverUrl: 'https://localhost',
+                registration: {
+                    as_token: "",
+                    hs_token: "",
+                    sender_localpart: "_bot_",
+                    namespaces: {
+                        users: [{exclusive: true, regex: "@_prefix_.*:.+"}],
+                        rooms: [],
+                        aliases: [{exclusive: true, regex: "#_prefix_.*:.+"}],
+                    },
+                },
+            });
 
-        expect(appservice.isNamespacedAlias(userA)).toBeTruthy();
-        expect(appservice.isNamespacedAlias(userB)).toBeFalsy();
+            const userA = "#_prefix_test:example.org";
+            const userB = "#alice_prefix_:example.org";
+
+            expect(appservice.isNamespacedAlias(userA)).toBeTruthy();
+            expect(appservice.isNamespacedAlias(userB)).toBeFalsy();
+        });
     });
 
     // @ts-ignore
@@ -547,7 +496,7 @@ describe('Appservice', () => {
                 namespaces: {
                     users: [{exclusive: true, regex: "@_prefix_.*:.+"}],
                     rooms: [],
-                    aliases: [{exclusive: true, regex: "#_prefix_.*:.+"}],
+                    aliases: [],
                 },
             },
         });
@@ -555,52 +504,140 @@ describe('Appservice', () => {
         expect(appservice.getAlias("_prefix_testing")).toEqual("#_prefix_testing:example.org");
     });
 
-    // @ts-ignore
-    it('should return an alias for any namespaced suffix', async () => {
-        const appservice = new Appservice({
-            port: 0,
-            bindAddress: '127.0.0.1',
-            homeserverName: 'example.org',
-            homeserverUrl: 'https://localhost',
-            registration: {
-                as_token: "",
-                hs_token: "",
-                sender_localpart: "_bot_",
-                namespaces: {
-                    users: [{exclusive: true, regex: "@_prefix_.*:.+"}],
-                    rooms: [],
-                    aliases: [{exclusive: true, regex: "#_prefix_.*:.+"}],
-                },
-            },
+    describe('getAliasForSuffix', () => {
+        // @ts-ignore
+        if('should throw on no alias prefix set', async () => {
+            try {
+                const appservice = new Appservice({
+                    port: 0,
+                    bindAddress: '127.0.0.1',
+                    homeserverName: 'example.org',
+                    homeserverUrl: 'https://localhost',
+                    registration: {
+                        as_token: "",
+                        hs_token: "",
+                        sender_localpart: "_bot_",
+                        namespaces: {
+                            users: [{exclusive: true, regex: "@_prefix_.*:.+"}],
+                            rooms: [],
+                            aliases: [],
+                        },
+                    },
+                });
+
+                expect(appservice.getAliasForSuffix("testing")).toEqual("#_prefix_testing:example.org");
+                throw new Error("Did not throw when expecting it");
+            } catch (e) {
+                expect(e.message).toEqual("Invalid configured alias prefix");
+            }
         });
 
-        expect(appservice.getAliasForSuffix("testing")).toEqual("#_prefix_testing:example.org");
+        // @ts-ignore
+        it('should return an alias for any namespaced suffix', async () => {
+            const appservice = new Appservice({
+                port: 0,
+                bindAddress: '127.0.0.1',
+                homeserverName: 'example.org',
+                homeserverUrl: 'https://localhost',
+                registration: {
+                    as_token: "",
+                    hs_token: "",
+                    sender_localpart: "_bot_",
+                    namespaces: {
+                        users: [{exclusive: true, regex: "@_prefix_.*:.+"}],
+                        rooms: [],
+                        aliases: [{exclusive: true, regex: "#_prefix_.*:.+"}],
+                    },
+                },
+            });
+
+            expect(appservice.getAliasForSuffix("testing")).toEqual("#_prefix_testing:example.org");
+        });
     });
 
-    // @ts-ignore
-    it('should return an alias localpart for any namespaced suffix', async () => {
-        const appservice = new Appservice({
-            port: 0,
-            bindAddress: '127.0.0.1',
-            homeserverName: 'example.org',
-            homeserverUrl: 'https://localhost',
-            registration: {
-                as_token: "",
-                hs_token: "",
-                sender_localpart: "_bot_",
-                namespaces: {
-                    users: [{exclusive: true, regex: "@_prefix_.*:.+"}],
-                    rooms: [],
-                    aliases: [{exclusive: true, regex: "#_prefix_.*:.+"}],
-                },
-            },
+    describe('getAliasLocalpartForSuffix', () => {
+        // @ts-ignore
+        it('should throw on no alias prefix set', async () => {
+            try {
+                const appservice = new Appservice({
+                    port: 0,
+                    bindAddress: '127.0.0.1',
+                    homeserverName: 'example.org',
+                    homeserverUrl: 'https://localhost',
+                    registration: {
+                        as_token: "",
+                        hs_token: "",
+                        sender_localpart: "_bot_",
+                        namespaces: {
+                            users: [{exclusive: true, regex: "@_prefix_.*:.+"}],
+                            rooms: [],
+                            aliases: [],
+                        },
+                    },
+                });
+
+                expect(appservice.getAliasLocalpartForSuffix("testing")).toEqual("_prefix_testing");
+                throw new Error("Did not throw when expecting it");
+            } catch (e) {
+                expect(e.message).toEqual("Invalid configured alias prefix");
+            }
         });
 
-        expect(appservice.getAliasLocalpartForSuffix("testing")).toEqual("_prefix_testing");
+        // @ts-ignore
+        it('should return an alias localpart for any namespaced suffix', async () => {
+            const appservice = new Appservice({
+                port: 0,
+                bindAddress: '127.0.0.1',
+                homeserverName: 'example.org',
+                homeserverUrl: 'https://localhost',
+                registration: {
+                    as_token: "",
+                    hs_token: "",
+                    sender_localpart: "_bot_",
+                    namespaces: {
+                        users: [{exclusive: true, regex: "@_prefix_.*:.+"}],
+                        rooms: [],
+                        aliases: [{exclusive: true, regex: "#_prefix_.*:.+"}],
+                    },
+                },
+            });
+
+            expect(appservice.getAliasLocalpartForSuffix("testing")).toEqual("_prefix_testing");
+        });
     });
 
     // @ts-ignore
     describe('getSuffixForAlias', () => {
+        // @ts-ignore
+        it('should throw on no alias prefix set', async () => {
+            try {
+                const appservice = new Appservice({
+                    port: 0,
+                    bindAddress: '127.0.0.1',
+                    homeserverName: 'example.org',
+                    homeserverUrl: 'https://localhost',
+                    registration: {
+                        as_token: "",
+                        hs_token: "",
+                        sender_localpart: "_bot_",
+                        namespaces: {
+                            users: [{exclusive: true, regex: "@_prefix_.*:.+"}],
+                            rooms: [],
+                            aliases: [],
+                        },
+                    },
+                });
+
+                const suffix = "testing";
+                const userId = `#_prefix_${suffix}:example.org`;
+
+                expect(appservice.getSuffixForAlias(userId)).toBe(suffix);
+                throw new Error("Did not throw when expecting it");
+            } catch (e) {
+                expect(e.message).toEqual("Invalid configured alias prefix");
+            }
+        });
+
         // @ts-ignore
         it('should return a suffix for any namespaced alias', async () => {
             const appservice = new Appservice({
@@ -671,7 +708,7 @@ describe('Appservice', () => {
                 namespaces: {
                     users: [{exclusive: true, regex: "@_prefix_.*:.+"}],
                     rooms: [],
-                    aliases: [{exclusive: true, regex: "#_prefix_.*:.+"}],
+                    aliases: [],
                 },
             },
         });
@@ -736,7 +773,7 @@ describe('Appservice', () => {
                 namespaces: {
                     users: [{exclusive: true, regex: "@_prefix_.*:.+"}],
                     rooms: [],
-                    aliases: [{exclusive: true, regex: "#_prefix_.*:.+"}],
+                    aliases: [],
                 },
             },
         });
@@ -793,7 +830,7 @@ describe('Appservice', () => {
                 namespaces: {
                     users: [{exclusive: true, regex: "@_prefix_.*:.+"}],
                     rooms: [],
-                    aliases: [{exclusive: true, regex: "#_prefix_.*:.+"}],
+                    aliases: [],
                 },
             },
         });
@@ -861,7 +898,7 @@ describe('Appservice', () => {
                 namespaces: {
                     users: [{exclusive: true, regex: "@_prefix_.*:.+"}],
                     rooms: [],
-                    aliases: [{exclusive: true, regex: "#_prefix_.*:.+"}],
+                    aliases: [],
                 },
             },
         });
@@ -927,7 +964,7 @@ describe('Appservice', () => {
                 namespaces: {
                     users: [{exclusive: true, regex: "@_prefix_.*:.+"}],
                     rooms: [],
-                    aliases: [{exclusive: true, regex: "#_prefix_.*:.+"}],
+                    aliases: [],
                 },
             },
         });
@@ -1006,7 +1043,7 @@ describe('Appservice', () => {
                 namespaces: {
                     users: [{exclusive: true, regex: "@_prefix_.*:.+"}],
                     rooms: [],
-                    aliases: [{exclusive: true, regex: "#_prefix_.*:.+"}],
+                    aliases: [],
                 },
             },
         });
@@ -1105,7 +1142,7 @@ describe('Appservice', () => {
                 namespaces: {
                     users: [{exclusive: true, regex: "@_prefix_.*:.+"}],
                     rooms: [],
-                    aliases: [{exclusive: true, regex: "#_prefix_.*:.+"}],
+                    aliases: [],
                 },
             },
         });
@@ -1231,7 +1268,7 @@ describe('Appservice', () => {
                 namespaces: {
                     users: [{exclusive: true, regex: "@_prefix_.*:.+"}],
                     rooms: [],
-                    aliases: [{exclusive: true, regex: "#_prefix_.*:.+"}],
+                    aliases: [],
                 },
             },
         });
@@ -1321,7 +1358,7 @@ describe('Appservice', () => {
                 namespaces: {
                     users: [{exclusive: true, regex: "@_prefix_.*:.+"}],
                     rooms: [],
-                    aliases: [{exclusive: true, regex: "#_prefix_.*:.+"}],
+                    aliases: [],
                 },
             },
         });
@@ -1395,7 +1432,7 @@ describe('Appservice', () => {
                 namespaces: {
                     users: [{exclusive: true, regex: "@_prefix_.*:.+"}],
                     rooms: [],
-                    aliases: [{exclusive: true, regex: "#_prefix_.*:.+"}],
+                    aliases: [],
                 },
             },
         });
@@ -1480,7 +1517,7 @@ describe('Appservice', () => {
                 namespaces: {
                     users: [{exclusive: true, regex: "@_prefix_.*:.+"}],
                     rooms: [],
-                    aliases: [{exclusive: true, regex: "#_prefix_.*:.+"}],
+                    aliases: [],
                 },
             },
         });
@@ -1564,7 +1601,7 @@ describe('Appservice', () => {
                 namespaces: {
                     users: [{exclusive: true, regex: "@_prefix_.*:.+"}],
                     rooms: [],
-                    aliases: [{exclusive: true, regex: "#_prefix_.*:.+"}],
+                    aliases: [],
                 },
             },
         });
@@ -1647,7 +1684,7 @@ describe('Appservice', () => {
                 namespaces: {
                     users: [{exclusive: true, regex: "@_prefix_.*:.+"}],
                     rooms: [],
-                    aliases: [{exclusive: true, regex: "#_prefix_.*:.+"}],
+                    aliases: [],
                 },
             },
         });
@@ -1730,7 +1767,7 @@ describe('Appservice', () => {
                 namespaces: {
                     users: [{exclusive: true, regex: "@_prefix_.*:.+"}],
                     rooms: [],
-                    aliases: [{exclusive: true, regex: "#_prefix_.*:.+"}],
+                    aliases: [],
                 },
             },
         });
@@ -1801,7 +1838,7 @@ describe('Appservice', () => {
                 namespaces: {
                     users: [{exclusive: true, regex: "@_prefix_.*:.+"}],
                     rooms: [],
-                    aliases: [{exclusive: true, regex: "#_prefix_.*:.+"}],
+                    aliases: [],
                 },
             },
         });
@@ -1872,7 +1909,7 @@ describe('Appservice', () => {
                 namespaces: {
                     users: [{exclusive: true, regex: "@_prefix_.*:.+"}],
                     rooms: [],
-                    aliases: [{exclusive: true, regex: "#_prefix_.*:.+"}],
+                    aliases: [],
                 },
             },
         });
@@ -1943,7 +1980,7 @@ describe('Appservice', () => {
                 namespaces: {
                     users: [{exclusive: true, regex: "@_prefix_.*:.+"}],
                     rooms: [],
-                    aliases: [{exclusive: true, regex: "#_prefix_.*:.+"}],
+                    aliases: [],
                 },
             },
         });
@@ -2024,7 +2061,7 @@ describe('Appservice', () => {
                 namespaces: {
                     users: [{exclusive: true, regex: "@_prefix_.*:.+"}],
                     rooms: [],
-                    aliases: [{exclusive: true, regex: "#_prefix_.*:.+"}],
+                    aliases: [],
                 },
             },
         });

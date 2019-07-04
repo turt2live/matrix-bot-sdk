@@ -34,7 +34,7 @@ describe('AutojoinRoomsMixin', () => {
                 namespaces: {
                     users: [{exclusive: true, regex: "@_prefix_.*:.+"}],
                     rooms: [],
-                    aliases: [{exclusive: true, regex: "#_prefix_.*:.+"}],
+                    aliases: [],
                 },
             },
         });
@@ -76,7 +76,7 @@ describe('AutojoinRoomsMixin', () => {
                 namespaces: {
                     users: [{exclusive: true, regex: "@_prefix_.*:.+"}],
                     rooms: [],
-                    aliases: [{exclusive: true, regex: "#_prefix_.*:.+"}],
+                    aliases: [],
                 },
             },
         });
@@ -142,7 +142,7 @@ describe('AutojoinRoomsMixin', () => {
                 namespaces: {
                     users: [{exclusive: true, regex: "@_prefix_.*:.+"}],
                     rooms: [],
-                    aliases: [{exclusive: true, regex: "#_prefix_.*:.+"}],
+                    aliases: [],
                 },
             },
         });
