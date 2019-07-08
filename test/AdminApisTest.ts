@@ -1,5 +1,5 @@
 import * as expect from "expect";
-import { IStorageProvider, MatrixClient, AdminApis, AdminWhois } from "../src";
+import { AdminApis, IStorageProvider, MatrixClient, WhoisInfo } from "../src";
 import * as MockHttpBackend from 'matrix-mock-request';
 import { createTestClient } from "./MatrixClientTest";
 
@@ -15,14 +15,14 @@ export function createTestAdminClient(storage: IStorageProvider = null): { clien
 
 // @ts-ignore
 describe('AdminApis', () => {
-    //@ts-check
-    describe('getUserWhois', () => {
+    // @ts-ignore
+    describe('whoisUser', () => {
         // @ts-ignore
         it('should call the right endpoint', async () => {
-            const {client, http} = createTestAdminClient();
+            const {client, http, hsUrl} = createTestAdminClient();
 
             const userId = "@someone:example.org";
-            const response: AdminWhois = {
+            const response: WhoisInfo = {
                 user_id: userId,
                 devices: {
                     foobar: {
@@ -37,14 +37,14 @@ describe('AdminApis', () => {
                 },
             };
 
-            http.when("GET", "/_matrix/client/r0/admin/whois/" + encodeURIComponent(userId)).respond(200, (path) => {
+            http.when("GET", "/_matrix/client/r0/admin/whois").respond(200, (path, content) => {
+                expect(path).toEqual(`${hsUrl}/_matrix/client/r0/admin/whois/${encodeURIComponent(userId)}`);
                 return response;
             });
 
             http.flushAllExpected();
-            const result = await client.getUserWhois(userId);
-            expect(result.user_id).toEqual(userId);
-            expect(result).toMatchObject(response as {});
+            const result = await client.whoisUser(userId);
+            expect(result).toMatchObject(<any>response);
         });
     });
 });

@@ -1,28 +1,31 @@
 import { MatrixClient } from "./MatrixClient";
 
 /**
- * Whois information about a user. See https://matrix.org/docs/spec/client_server/r0.5.0#get-matrix-client-r0-admin-whois-userid for more information.
+ * Whois information about a user.
+ * See https://matrix.org/docs/spec/client_server/r0.5.0#get-matrix-client-r0-admin-whois-userid for more information.
  */
-export interface AdminWhois {
+export interface WhoisInfo {
     user_id: string;
     devices: {
         [device_id: string]: {
             sessions: [{
-                connections: IAdminWhoisConnection[]
+                connections: WhoisConnectionInfo[]
             }];
         }
     }
 }
 
-interface IAdminWhoisConnection {
+interface WhoisConnectionInfo {
     /**
      * Most recently seen IP address of the session.
      */
     ip: string;
+
     /**
      * Unix timestamp that the session was last active.
      */
     last_seen: number;
+
     /**
      * User agent string last seen in the session.
      */
@@ -30,7 +33,7 @@ interface IAdminWhoisConnection {
 }
 
 /**
- * Unstable APIs that shouldn't be used in most circumstances.
+ * Access to various administrative APIs.
  */
 export class AdminApis {
     constructor(private client: MatrixClient) {
@@ -39,9 +42,9 @@ export class AdminApis {
     /**
      * Gets information about a particular user.
      * @param {string} userId the user ID to lookup
-     * @returns {Promise<AdminWhois>} resolves to the whois information
+     * @returns {Promise<WhoisInfo>} resolves to the whois information
      */
-    public getUserWhois(userId: string): Promise<AdminWhois> {
+    public whoisUser(userId: string): Promise<WhoisInfo> {
         return this.client.doRequest("GET", "/_matrix/client/r0/admin/whois/" + encodeURIComponent(userId));
     }
 }

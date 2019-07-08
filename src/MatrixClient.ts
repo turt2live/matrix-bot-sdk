@@ -81,6 +81,7 @@ export class MatrixClient extends EventEmitter {
     public get adminApis(): AdminApis {
         return new AdminApis(this);
     }
+
     /**
      * Sets a user ID to impersonate as. This will assume that the access token for this client
      * is for an application service, and that the userId given is within the reach of the
