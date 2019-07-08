@@ -1,7 +1,7 @@
 import { MatrixClient } from "./MatrixClient";
 
 /**
- * From https://matrix.org/docs/spec/client_server/r0.5.0#get-matrix-client-r0-admin-whois-userid
+ * Whois information about a user. See https://matrix.org/docs/spec/client_server/r0.5.0#get-matrix-client-r0-admin-whois-userid for more information.
  */
 export interface AdminWhois {
     user_id: string;
