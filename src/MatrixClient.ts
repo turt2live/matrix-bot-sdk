@@ -12,6 +12,7 @@ import { RichReply } from "./helpers/RichReply";
 import { MatrixPresence } from "./models/MatrixPresence";
 import { Metrics } from "./metrics/Metrics";
 import { timedMatrixClientFunctionCall } from "./metrics/decorators";
+import { AdminApis } from "./AdminApis";
 
 /**
  * A client that is capable of interacting with a matrix homeserver.
@@ -71,6 +72,14 @@ export class MatrixClient extends EventEmitter {
      */
     public get unstableApis(): UnstableApis {
         return new UnstableApis(this);
+    }
+
+    /**
+     * Gets the admin API access class.
+     * @return {AdminApis} The admin API access class.
+     */
+    public get adminApis(): AdminApis {
+        return new AdminApis(this);
     }
 
     /**

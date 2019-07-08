@@ -42,6 +42,7 @@ export * from "./IFilter";
 export * from "./MatrixClient";
 export * from "./MatrixAuth";
 export * from "./UnstableApis";
+export * from "./AdminApis";
 export * from "./request";
 export * from "./Permalinks";
 
