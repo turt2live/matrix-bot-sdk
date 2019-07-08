@@ -12,7 +12,6 @@ import { RichReply } from "./helpers/RichReply";
 import { MatrixPresence } from "./models/MatrixPresence";
 import { Metrics } from "./metrics/Metrics";
 import { timedMatrixClientFunctionCall } from "./metrics/decorators";
-import { IAdminWhois } from "./structures/response/IAdminWhois";
 
 /**
  * A client that is capable of interacting with a matrix homeserver.
@@ -836,15 +835,6 @@ export class MatrixClient extends EventEmitter {
         return this.doRequest("POST", "/_matrix/client/r0/createRoom", null, properties).then(response => {
             return response['room_id'];
         });
-    }
-
-    /**
-     * Gets information about a particular user.
-     * @param {string} userId the user ID to lookup
-     * @returns {Promise<IAdminWhois>} resolves to the whois information
-     */
-    public getUserWhois(userId: string): Promise<IAdminWhois> {
-        return this.doRequest("GET", "/_matrix/client/r0/admin/whois/" + encodeURIComponent(userId));
     }
 
     /**
