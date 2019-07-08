@@ -22,30 +22,29 @@ describe('AdminApis', () => {
             const {client, http} = createTestAdminClient();
 
             const userId = "@someone:example.org";
+            const response: IAdminWhois = {
+                user_id: userId,
+                devices: {
+                    foobar: {
+                        sessions: [{
+                            connections: [{
+                                ip: "127.0.0.1",
+                                last_seen: 1000,
+                                user_agent: "FakeDevice/1.0.0",
+                            }],
+                        }],
+                    },
+                },
+            };
 
             http.when("GET", "/_matrix/client/r0/admin/whois/" + encodeURIComponent(userId)).respond(200, (path) => {
-                return {
-                    user_id: userId,
-                    devices: {
-                        foobar: {
-                            sessions: [{
-                                connections: [{
-                                    ip: "127.0.0.1",
-                                    last_seen: 1000,
-                                    user_agent: "FakeDevice/1.0.0",
-                                }],
-                            }],
-                        },
-                    },
-                } as IAdminWhois;
+                return response;
             });
 
             http.flushAllExpected();
             const result = await client.getUserWhois(userId);
             expect(result.user_id).toEqual(userId);
-            expect(result.devices.foobar.sessions[0].connections[0].ip).toEqual("127.0.0.1");
-            expect(result.devices.foobar.sessions[0].connections[0].last_seen).toEqual(1000);
-            expect(result.devices.foobar.sessions[0].connections[0].user_agent).toEqual("FakeDevice/1.0.0");
+            expect(result).toMatchObject(response as {});
         });
     });
 });
