@@ -1,5 +1,5 @@
 import * as expect from "expect";
-import { IStorageProvider, MatrixClient, AdminApis, IAdminWhois } from "../src";
+import { IStorageProvider, MatrixClient, AdminApis, AdminWhois } from "../src";
 import * as MockHttpBackend from 'matrix-mock-request';
 import { createTestClient } from "./MatrixClientTest";
 
@@ -22,7 +22,7 @@ describe('AdminApis', () => {
             const {client, http} = createTestAdminClient();
 
             const userId = "@someone:example.org";
-            const response: IAdminWhois = {
+            const response: AdminWhois = {
                 user_id: userId,
                 devices: {
                     foobar: {

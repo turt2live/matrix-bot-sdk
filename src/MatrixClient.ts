@@ -12,6 +12,7 @@ import { RichReply } from "./helpers/RichReply";
 import { MatrixPresence } from "./models/MatrixPresence";
 import { Metrics } from "./metrics/Metrics";
 import { timedMatrixClientFunctionCall } from "./metrics/decorators";
+import { AdminApis } from "./AdminApis";
 
 /**
  * A client that is capable of interacting with a matrix homeserver.
@@ -73,6 +74,13 @@ export class MatrixClient extends EventEmitter {
         return new UnstableApis(this);
     }
 
+    /**
+     * Gets the admin API access class.
+     * @return {AdminApis} The admin API access class.
+     */
+    public get adminApis(): AdminApis {
+        return new AdminApis(this);
+    }
     /**
      * Sets a user ID to impersonate as. This will assume that the access token for this client
      * is for an application service, and that the userId given is within the reach of the
