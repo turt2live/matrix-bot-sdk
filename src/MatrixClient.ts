@@ -13,6 +13,7 @@ import { MatrixPresence } from "./models/MatrixPresence";
 import { Metrics } from "./metrics/Metrics";
 import { timedMatrixClientFunctionCall } from "./metrics/decorators";
 import { AdminApis } from "./AdminApis";
+import { MatrixRoomMemberEvent, MembershipEnum } from "./models/Events";
 
 /**
  * A client that is capable of interacting with a matrix homeserver.
@@ -667,6 +668,7 @@ export class MatrixClient extends EventEmitter {
 
     /**
      * Gets the joined members in a room. The client must be in the room to make this request.
+     * This request is usually faster than getRoomMembers.
      * @param {string} roomId The room ID to get the joined members of.
      * @returns {Promise<string>} The joined user IDs in the room
      */
@@ -674,6 +676,23 @@ export class MatrixClient extends EventEmitter {
     public getJoinedRoomMembers(roomId: string): Promise<string[]> {
         return this.doRequest("GET", "/_matrix/client/r0/rooms/" + encodeURIComponent(roomId) + "/joined_members").then(response => {
             return Object.keys(response['joined']);
+        });
+    }
+
+        /**
+     * Gets the joined members in a room. The client must be in the room to make this request.
+     * @param {string} roomId The room ID to get the joined members of.
+     * @param {string} membership Get members who are of this type. Leave undefined if no filtering is needed.
+     * @param {string} notMembership Do not get members who are of this type. Leave undefined if no filtering is needed.
+     * @returns {Promise<string>} The joined user IDs in the room
+     */
+    @timedMatrixClientFunctionCall()
+    public getRoomMembers(roomId: string, membership?: MembershipEnum, notMembership?: MembershipEnum) {
+        return this.doRequest("GET", "/_matrix/client/r0/rooms/" + encodeURIComponent(roomId) + "/members", {
+            membership,
+            not_membership: notMembership,
+        }).then(response => {
+            return response['chunk'] as MatrixRoomMemberEvent[];
         });
     }
 

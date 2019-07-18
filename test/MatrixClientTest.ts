@@ -10,6 +10,7 @@ import {
 import * as simple from "simple-mock";
 import * as MockHttpBackend from 'matrix-mock-request';
 import { expectArrayEquals } from "./TestUtils";
+import { MatrixRoomMemberEvent } from "../src/models/Events";
 
 export function createTestClient(storage: IStorageProvider = null): { client: MatrixClient, http: MockHttpBackend, hsUrl: string, accessToken: string } {
     const http = new MockHttpBackend();
@@ -2200,6 +2201,47 @@ describe('MatrixClient', () => {
 
             http.flushAllExpected();
             const result = await client.getJoinedRoomMembers(roomId);
+            expectArrayEquals(members, result);
+        });
+    });
+
+    // @ts-ignore
+    describe('getRoomMembers', () => {
+        // @ts-ignore
+        it('should call the right endpoint', async () => {
+            const {client, http, hsUrl} = createTestClient();
+
+            const roomId = "!testing:example.org";
+            const members: MatrixRoomMemberEvent[] = [
+                {
+                    "content": {
+                      "membership": "join",
+                      "avatar_url": "mxc://example.org/SEsfnsuifSDFSSEF",
+                      "displayname": "Alice Margatroid"
+                    },
+                    "type": "m.room.member",
+                    "event_id": "$143273582443PhrSn:example.org",
+                    "room_id": "!636q39766251:example.com",
+                    "sender": "@example:example.org",
+                    "origin_server_ts": 1432735824653,
+                    "unsigned": {
+                      "age": 1234
+                    },
+                    "state_key": "@alice:example.org"
+                  }
+            ];
+
+            http.when("GET", "/_matrix/client/r0/rooms").respond(200, (path, content, req) => {
+                expect(req.opts.qs.membership).toEqual("join");
+                expect(req.opts.qs.not_membership).toEqual("invite");
+                expect(path).toEqual(
+                    `${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/members`
+                );
+                return {chunk: members};
+            });
+
+            http.flushAllExpected();
+            const result = await client.getRoomMembers(roomId, "join", "invite");
             expectArrayEquals(members, result);
         });
     });
