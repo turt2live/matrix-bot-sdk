@@ -19,7 +19,7 @@ export class LogService {
     /**
      * Logs to the DEBUG channel
      * @param {string} module The module being logged
-     * @param {*[]} messageOrObject The data to log
+     * @param {any[]} messageOrObject The data to log
      */
     public static debug(module: string, ...messageOrObject: any[]) {
         LogService.logger.debug(module, ...messageOrObject);
@@ -28,7 +28,7 @@ export class LogService {
     /**
      * Logs to the ERROR channel
      * @param {string} module The module being logged
-     * @param {*[]} messageOrObject The data to log
+     * @param {any[]} messageOrObject The data to log
      */
     public static error(module: string, ...messageOrObject: any[]) {
         LogService.logger.error(module, ...messageOrObject);
@@ -37,7 +37,7 @@ export class LogService {
     /**
      * Logs to the INFO channel
      * @param {string} module The module being logged
-     * @param {*[]} messageOrObject The data to log
+     * @param {any[]} messageOrObject The data to log
      */
     public static info(module: string, ...messageOrObject: any[]) {
         LogService.logger.info(module, ...messageOrObject);
@@ -46,7 +46,7 @@ export class LogService {
     /**
      * Logs to the WARN channel
      * @param {string} module The module being logged
-     * @param {*[]} messageOrObject The data to log
+     * @param {any[]} messageOrObject The data to log
      */
     public static warn(module: string, ...messageOrObject: any[]) {
         LogService.logger.warn(module, ...messageOrObject);
