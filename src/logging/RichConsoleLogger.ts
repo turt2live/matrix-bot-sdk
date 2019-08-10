@@ -10,14 +10,14 @@ export class RichConsoleLogger implements ILogger {
     private chalkTimestamp = chalk.grey;
     private chalkModule = chalk.grey;
 
-    private now(): string {
+    protected getTimestamp(): string {
         const now = new Date(Date.now()).toUTCString();
         return this.chalkTimestamp(now);
     }
 
     public debug(module: string, ...messageOrObject: any[]) {
         console.debug(
-            this.now(),
+            this.getTimestamp(),
             this.chalkDebug("[DEBUG]"),
             this.chalkModule(`[${module}]`),
             ...messageOrObject,
@@ -26,7 +26,7 @@ export class RichConsoleLogger implements ILogger {
 
     public error(module: string, ...messageOrObject: any[]) {
         console.error(
-            this.now(),
+            this.getTimestamp(),
             this.chalkError("[ERROR]"),
             this.chalkModule(`[${module}]`),
             ...messageOrObject,
@@ -35,7 +35,7 @@ export class RichConsoleLogger implements ILogger {
 
     public info(module: string, ...messageOrObject: any[]) {
         console.log(
-            this.now(),
+            this.getTimestamp(),
             this.chalkInfo("[INFO]"),
             this.chalkModule(`[${module}]`),
             ...messageOrObject,
@@ -44,7 +44,7 @@ export class RichConsoleLogger implements ILogger {
 
     public warn(module: string, ...messageOrObject: any[]) {
         console.warn(
-            this.now(),
+            this.getTimestamp(),
             this.chalkWarning("[WARN]"),
             this.chalkModule(`[${module}]`),
             ...messageOrObject,
