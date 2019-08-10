@@ -32,6 +32,7 @@
   "dependencies": {
     "@types/node": "^10.14.9",
     "bluebird": "^3.5.5",
+    "chalk": "^2.4.2",
     "express": "^4.17.1",
     "hash.js": "^1.1.7",
     "htmlencode": "0.0.4",
