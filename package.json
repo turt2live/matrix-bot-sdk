@@ -15,6 +15,7 @@
   "scripts": {
     "prepare": "node scripts/try_build.js",
     "prepublishOnly": "npm run build",
+    "docs": "npm run build && node_modules/jsdoc/jsdoc.js -R README.md -P package.json -r lib/**/*.js -d .jsdoc",
     "build": "tsc",
     "lint": "tslint --project ./tsconfig.json -t stylish",
     "test": "ts-mocha --project ./tsconfig.json test/**/*.ts",
@@ -69,6 +70,7 @@
     "mocha": "^6.1.4",
     "simple-mock": "^0.8.0",
     "tmp": "^0.1.0",
-    "ts-mocha": "^6.0.0"
+    "ts-mocha": "^6.0.0",
+    "jsdoc": "^3.6.3"
   }
 }
