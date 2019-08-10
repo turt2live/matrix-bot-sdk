@@ -3,12 +3,12 @@ import chalk from "chalk";
 
 export class RichConsoleLogger implements ILogger {
 
-    private chalkDebug = chalk.cyan;
-    private chalkInfo = chalk.green;
-    private chalkWarning = chalk.yellow;
-    private chalkError = chalk.bold.red;
-    private chalkTimestamp = chalk.grey;
-    private chalkModule = chalk.grey;
+    protected chalkDebug = chalk.cyan;
+    protected chalkInfo = chalk.green;
+    protected chalkWarning = chalk.yellow;
+    protected chalkError = chalk.bold.red;
+    protected chalkTimestamp = chalk.grey;
+    protected chalkModule = chalk.grey;
 
     protected getTimestamp(): string {
         const now = new Date(Date.now()).toUTCString();
