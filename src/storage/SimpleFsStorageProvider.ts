@@ -8,8 +8,9 @@ import * as sha512 from "hash.js/lib/hash/sha/512";
 export class SimpleFsStorageProvider implements IStorageProvider, IAppserviceStorageProvider {
 
     private db: any;
+    private completedTransactions = [];
 
-    constructor(filename: string) {
+    constructor(filename: string, private trackTransactionsInMemory = true, private maxInMemoryTransactions = 20) {
         const adapter = new FileSync(filename);
         this.db = lowdb(adapter);
 
@@ -51,11 +52,25 @@ export class SimpleFsStorageProvider implements IStorageProvider, IAppserviceSto
     }
 
     isTransactionCompleted(transactionId: string): boolean {
+        if (this.trackTransactionsInMemory) {
+            return this.completedTransactions.indexOf(transactionId) !== -1;
+        }
+
         const key = sha512().update(transactionId).digest('hex');
         return this.db.get(`appserviceTransactions.${key}.completed`).value();
     }
 
     setTransactionCompleted(transactionId: string) {
+        if (this.trackTransactionsInMemory) {
+            if (this.completedTransactions.indexOf(transactionId) === -1) {
+                this.completedTransactions.push(transactionId);
+            }
+            if (this.completedTransactions.length > this.maxInMemoryTransactions) {
+                this.completedTransactions = this.completedTransactions.reverse().slice(0, this.maxInMemoryTransactions).reverse();
+            }
+            return;
+        }
+
         const key = sha512().update(transactionId).digest('hex');
         this.db
             .set(`appserviceTransactions.${key}.txnId`, transactionId)

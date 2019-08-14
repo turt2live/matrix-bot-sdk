@@ -36,6 +36,7 @@ export class RichReply {
                     "event_id": event["event_id"],
                 },
             },
+            "msgtype": "m.text", // for those who just want to send the reply as-is
             "body": fallbackText + "\n\n" + withText,
             "format": "org.matrix.custom.html",
             "formatted_body": fallbackHtml + withHtml,

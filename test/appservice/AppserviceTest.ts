@@ -114,6 +114,52 @@ describe('Appservice', () => {
     });
 
     // @ts-ignore
+    it('should return the express app running the webserver', async () => {
+        const appservice = new Appservice({
+            port: 0,
+            bindAddress: '127.0.0.1',
+            homeserverName: 'example.org',
+            homeserverUrl: 'https://localhost',
+            registration: {
+                as_token: "",
+                hs_token: "",
+                sender_localpart: "_bot_",
+                namespaces: {
+                    users: [{exclusive: true, regex: "@_prefix_.*:.+"}],
+                    rooms: [],
+                    aliases: [],
+                },
+            },
+        });
+
+        const instance = appservice.expressAppInstance;
+        expect(instance).toBeDefined();
+    });
+
+    // @ts-ignore
+    it('should return the bridge APIs for the appservice', async () => {
+        const appservice = new Appservice({
+            port: 0,
+            bindAddress: '127.0.0.1',
+            homeserverName: 'example.org',
+            homeserverUrl: 'https://localhost',
+            registration: {
+                as_token: "",
+                hs_token: "",
+                sender_localpart: "_bot_",
+                namespaces: {
+                    users: [{exclusive: true, regex: "@_prefix_.*:.+"}],
+                    rooms: [],
+                    aliases: [],
+                },
+            },
+        });
+
+        const instance = appservice.bridge;
+        expect(instance).toBeDefined();
+    });
+
+    // @ts-ignore
     it('should return an intent for the bot user', async () => {
         const appservice = new Appservice({
             port: 0,
@@ -135,6 +181,29 @@ describe('Appservice', () => {
         const intent = appservice.botIntent;
         expect(intent).toBeDefined();
         expect(intent.userId).toEqual(appservice.botUserId);
+    });
+
+    // @ts-ignore
+    it('should return a client for the bot user', async () => {
+        const appservice = new Appservice({
+            port: 0,
+            bindAddress: '127.0.0.1',
+            homeserverName: 'example.org',
+            homeserverUrl: 'https://localhost',
+            registration: {
+                as_token: "",
+                hs_token: "",
+                sender_localpart: "_bot_",
+                namespaces: {
+                    users: [{exclusive: true, regex: "@_prefix_.*:.+"}],
+                    rooms: [],
+                    aliases: [],
+                },
+            },
+        });
+
+        const intent = appservice.botClient;
+        expect(intent).toBeDefined();
     });
 
     // @ts-ignore
@@ -296,6 +365,331 @@ describe('Appservice', () => {
         });
 
         expect(appservice.getUserIdForSuffix("testing")).toEqual("@_prefix_testing:example.org");
+    });
+
+    // @ts-ignore
+    describe('getSuffixForUserId', () => {
+        // @ts-ignore
+        it('should return a suffix for any namespaced user ID', async () => {
+            const appservice = new Appservice({
+                port: 0,
+                bindAddress: '127.0.0.1',
+                homeserverName: 'example.org',
+                homeserverUrl: 'https://localhost',
+                registration: {
+                    as_token: "",
+                    hs_token: "",
+                    sender_localpart: "_bot_",
+                    namespaces: {
+                        users: [{exclusive: true, regex: "@_prefix_.*:.+"}],
+                        rooms: [],
+                        aliases: [],
+                    },
+                },
+            });
+
+            const suffix = "testing";
+            const userId = `@_prefix_${suffix}:example.org`;
+
+            expect(appservice.getSuffixForUserId(userId)).toBe(suffix);
+        });
+
+        // @ts-ignore
+        it('should return a falsey suffix for any non-namespaced user ID', async () => {
+            const appservice = new Appservice({
+                port: 0,
+                bindAddress: '127.0.0.1',
+                homeserverName: 'example.org',
+                homeserverUrl: 'https://localhost',
+                registration: {
+                    as_token: "",
+                    hs_token: "",
+                    sender_localpart: "_bot_",
+                    namespaces: {
+                        users: [{exclusive: true, regex: "@_prefix_.*:.+"}],
+                        rooms: [],
+                        aliases: [],
+                    },
+                },
+            });
+
+            expect(appservice.getSuffixForUserId(null)).toBeFalsy();
+            expect(appservice.getSuffixForUserId(undefined)).toBeFalsy();
+            expect(appservice.getSuffixForUserId("")).toBeFalsy();
+            expect(appservice.getSuffixForUserId("@invalid")).toBeFalsy();
+            expect(appservice.getSuffixForUserId("@_prefix_invalid")).toBeFalsy();
+            expect(appservice.getSuffixForUserId("@_prefix_testing:invalid.example.org")).toBeFalsy();
+            expect(appservice.getSuffixForUserId("@_invalid_testing:example.org")).toBeFalsy();
+        });
+    });
+
+    describe('isNamespacedAlias', () => {
+        // @ts-ignore
+        it('should throw on no alias prefix set', async () => {
+            try {
+                const appservice = new Appservice({
+                    port: 0,
+                    bindAddress: '127.0.0.1',
+                    homeserverName: 'example.org',
+                    homeserverUrl: 'https://localhost',
+                    registration: {
+                        as_token: "",
+                        hs_token: "",
+                        sender_localpart: "_bot_",
+                        namespaces: {
+                            users: [{exclusive: true, regex: "@_prefix_.*:.+"}],
+                            rooms: [],
+                            aliases: [],
+                        },
+                    },
+                });
+                
+                const userA = "#_prefix_test:example.org";
+                const userB = "#alice_prefix_:example.org";
+                
+                expect(appservice.isNamespacedAlias(userA)).toBeTruthy();
+                expect(appservice.isNamespacedAlias(userB)).toBeFalsy();
+                throw new Error("Did not throw when expecting it");
+            } catch (e) {
+                expect(e.message).toEqual("Invalid configured alias prefix");
+            }
+        });
+
+        // @ts-ignore
+        it('should be able to tell if a given alias is the prefix namespace', async () => {
+            const appservice = new Appservice({
+                port: 0,
+                bindAddress: '127.0.0.1',
+                homeserverName: 'example.org',
+                homeserverUrl: 'https://localhost',
+                registration: {
+                    as_token: "",
+                    hs_token: "",
+                    sender_localpart: "_bot_",
+                    namespaces: {
+                        users: [{exclusive: true, regex: "@_prefix_.*:.+"}],
+                        rooms: [],
+                        aliases: [{exclusive: true, regex: "#_prefix_.*:.+"}],
+                    },
+                },
+            });
+
+            const userA = "#_prefix_test:example.org";
+            const userB = "#alice_prefix_:example.org";
+
+            expect(appservice.isNamespacedAlias(userA)).toBeTruthy();
+            expect(appservice.isNamespacedAlias(userB)).toBeFalsy();
+        });
+    });
+
+    // @ts-ignore
+    it('should return a alia for any namespaced localpart', async () => {
+        const appservice = new Appservice({
+            port: 0,
+            bindAddress: '127.0.0.1',
+            homeserverName: 'example.org',
+            homeserverUrl: 'https://localhost',
+            registration: {
+                as_token: "",
+                hs_token: "",
+                sender_localpart: "_bot_",
+                namespaces: {
+                    users: [{exclusive: true, regex: "@_prefix_.*:.+"}],
+                    rooms: [],
+                    aliases: [],
+                },
+            },
+        });
+
+        expect(appservice.getAlias("_prefix_testing")).toEqual("#_prefix_testing:example.org");
+    });
+
+    describe('getAliasForSuffix', () => {
+        // @ts-ignore
+        if('should throw on no alias prefix set', async () => {
+            try {
+                const appservice = new Appservice({
+                    port: 0,
+                    bindAddress: '127.0.0.1',
+                    homeserverName: 'example.org',
+                    homeserverUrl: 'https://localhost',
+                    registration: {
+                        as_token: "",
+                        hs_token: "",
+                        sender_localpart: "_bot_",
+                        namespaces: {
+                            users: [{exclusive: true, regex: "@_prefix_.*:.+"}],
+                            rooms: [],
+                            aliases: [],
+                        },
+                    },
+                });
+
+                expect(appservice.getAliasForSuffix("testing")).toEqual("#_prefix_testing:example.org");
+                throw new Error("Did not throw when expecting it");
+            } catch (e) {
+                expect(e.message).toEqual("Invalid configured alias prefix");
+            }
+        });
+
+        // @ts-ignore
+        it('should return an alias for any namespaced suffix', async () => {
+            const appservice = new Appservice({
+                port: 0,
+                bindAddress: '127.0.0.1',
+                homeserverName: 'example.org',
+                homeserverUrl: 'https://localhost',
+                registration: {
+                    as_token: "",
+                    hs_token: "",
+                    sender_localpart: "_bot_",
+                    namespaces: {
+                        users: [{exclusive: true, regex: "@_prefix_.*:.+"}],
+                        rooms: [],
+                        aliases: [{exclusive: true, regex: "#_prefix_.*:.+"}],
+                    },
+                },
+            });
+
+            expect(appservice.getAliasForSuffix("testing")).toEqual("#_prefix_testing:example.org");
+        });
+    });
+
+    describe('getAliasLocalpartForSuffix', () => {
+        // @ts-ignore
+        it('should throw on no alias prefix set', async () => {
+            try {
+                const appservice = new Appservice({
+                    port: 0,
+                    bindAddress: '127.0.0.1',
+                    homeserverName: 'example.org',
+                    homeserverUrl: 'https://localhost',
+                    registration: {
+                        as_token: "",
+                        hs_token: "",
+                        sender_localpart: "_bot_",
+                        namespaces: {
+                            users: [{exclusive: true, regex: "@_prefix_.*:.+"}],
+                            rooms: [],
+                            aliases: [],
+                        },
+                    },
+                });
+
+                expect(appservice.getAliasLocalpartForSuffix("testing")).toEqual("_prefix_testing");
+                throw new Error("Did not throw when expecting it");
+            } catch (e) {
+                expect(e.message).toEqual("Invalid configured alias prefix");
+            }
+        });
+
+        // @ts-ignore
+        it('should return an alias localpart for any namespaced suffix', async () => {
+            const appservice = new Appservice({
+                port: 0,
+                bindAddress: '127.0.0.1',
+                homeserverName: 'example.org',
+                homeserverUrl: 'https://localhost',
+                registration: {
+                    as_token: "",
+                    hs_token: "",
+                    sender_localpart: "_bot_",
+                    namespaces: {
+                        users: [{exclusive: true, regex: "@_prefix_.*:.+"}],
+                        rooms: [],
+                        aliases: [{exclusive: true, regex: "#_prefix_.*:.+"}],
+                    },
+                },
+            });
+
+            expect(appservice.getAliasLocalpartForSuffix("testing")).toEqual("_prefix_testing");
+        });
+    });
+
+    // @ts-ignore
+    describe('getSuffixForAlias', () => {
+        // @ts-ignore
+        it('should throw on no alias prefix set', async () => {
+            try {
+                const appservice = new Appservice({
+                    port: 0,
+                    bindAddress: '127.0.0.1',
+                    homeserverName: 'example.org',
+                    homeserverUrl: 'https://localhost',
+                    registration: {
+                        as_token: "",
+                        hs_token: "",
+                        sender_localpart: "_bot_",
+                        namespaces: {
+                            users: [{exclusive: true, regex: "@_prefix_.*:.+"}],
+                            rooms: [],
+                            aliases: [],
+                        },
+                    },
+                });
+
+                const suffix = "testing";
+                const userId = `#_prefix_${suffix}:example.org`;
+
+                expect(appservice.getSuffixForAlias(userId)).toBe(suffix);
+                throw new Error("Did not throw when expecting it");
+            } catch (e) {
+                expect(e.message).toEqual("Invalid configured alias prefix");
+            }
+        });
+
+        // @ts-ignore
+        it('should return a suffix for any namespaced alias', async () => {
+            const appservice = new Appservice({
+                port: 0,
+                bindAddress: '127.0.0.1',
+                homeserverName: 'example.org',
+                homeserverUrl: 'https://localhost',
+                registration: {
+                    as_token: "",
+                    hs_token: "",
+                    sender_localpart: "_bot_",
+                    namespaces: {
+                        users: [{exclusive: true, regex: "@_prefix_.*:.+"}],
+                        rooms: [],
+                        aliases: [{exclusive: true, regex: "#_prefix_.*:.+"}],
+                    },
+                },
+            });
+
+            const suffix = "testing";
+            const userId = `#_prefix_${suffix}:example.org`;
+
+            expect(appservice.getSuffixForAlias(userId)).toBe(suffix);
+        });
+
+        // @ts-ignore
+        it('should return a falsey suffix for any non-namespaced alias', async () => {
+            const appservice = new Appservice({
+                port: 0,
+                bindAddress: '127.0.0.1',
+                homeserverName: 'example.org',
+                homeserverUrl: 'https://localhost',
+                registration: {
+                    as_token: "",
+                    hs_token: "",
+                    sender_localpart: "_bot_",
+                    namespaces: {
+                        users: [{exclusive: true, regex: "@_prefix_.*:.+"}],
+                        rooms: [],
+                        aliases: [{exclusive: true, regex: "#_prefix_.*:.+"}],
+                    },
+                },
+            });
+
+            expect(appservice.getSuffixForAlias(null)).toBeFalsy();
+            expect(appservice.getSuffixForAlias(undefined)).toBeFalsy();
+            expect(appservice.getSuffixForAlias("")).toBeFalsy();
+            expect(appservice.getSuffixForAlias("#invalid")).toBeFalsy();
+            expect(appservice.getSuffixForAlias("#_prefix_invalid")).toBeFalsy();
+            expect(appservice.getSuffixForAlias("#_prefix_testing:invalid.example.org")).toBeFalsy();
+            expect(appservice.getSuffixForAlias("#_invalid_testing:example.org")).toBeFalsy();
+        });
     });
 
     // @ts-ignore

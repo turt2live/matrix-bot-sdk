@@ -42,13 +42,42 @@ export class Intent {
     }
 
     /**
+     * Gets the joined rooms for the intent. Note that by working around
+     * the intent to join rooms may yield inaccurate results.
+     * @returns {Promise<string[]>} Resolves to an array of room IDs where
+     * the intent is joined.
+     */
+    public async getJoinedRooms(): Promise<string[]> {
+        await this.ensureRegistered();
+        if (this.knownJoinedRooms.length === 0) await this.refreshJoinedRooms();
+        return this.knownJoinedRooms.map(r => r); // clone
+    }
+
+    /**
+     * Leaves the given room.
+     * @param {string} roomId The room ID to leave
+     * @returns {Promise<*>} Resolves when the room has been left.
+     */
+    public async leaveRoom(roomId: string): Promise<any> {
+        await this.ensureRegistered();
+        return this.client.leaveRoom(roomId).then(async () => {
+            // Recalculate joined rooms now that we've left a room
+            await this.refreshJoinedRooms();
+        });
+    }
+
+    /**
      * Joins the given room
      * @param {string} roomIdOrAlias the room ID or alias to join
      * @returns {Promise<string>} resolves to the joined room ID
      */
     public async joinRoom(roomIdOrAlias: string): Promise<string> {
         await this.ensureRegistered();
-        return this.client.joinRoom(roomIdOrAlias);
+        return this.client.joinRoom(roomIdOrAlias).then(async roomId => {
+            // Recalculate joined rooms now that we've joined a room
+            await this.refreshJoinedRooms();
+            return roomId;
+        });
     }
 
     /**
@@ -93,16 +122,27 @@ export class Intent {
             return;
         }
 
-        const rooms = await this.client.getJoinedRooms();
-        for (const room of rooms) {
-            if (this.knownJoinedRooms.indexOf(room) === -1) this.knownJoinedRooms.push(room);
-        }
+        await this.refreshJoinedRooms();
 
         if (this.knownJoinedRooms.indexOf(roomId) !== -1) {
             return;
         }
 
-        return this.client.joinRoom(roomId);
+        const returnedRoomId = await this.client.joinRoom(roomId);
+        if (!this.knownJoinedRooms.includes(returnedRoomId)) {
+            this.knownJoinedRooms.push(returnedRoomId);
+        }
+        return returnedRoomId;
+    }
+
+    /**
+     * Refreshes which rooms the user is joined to, potentially saving time on
+     * calls like ensureJoined()
+     * @returns {Promise<string[]>} Resolves to the joined room IDs for the user.
+     */
+    public async refreshJoinedRooms(): Promise<string[]> {
+        this.knownJoinedRooms = await this.client.getJoinedRooms();
+        return this.knownJoinedRooms.map(r => r); // clone
     }
 
     /**
@@ -123,7 +163,7 @@ export class Intent {
                     throw {body: result};
                 }
             } catch (err) {
-                if (typeof(err.body) === "string") err.body = JSON.parse(err.body);
+                if (typeof (err.body) === "string") err.body = JSON.parse(err.body);
                 if (err.body && err.body["errcode"] === "M_USER_IN_USE") {
                     this.storage.addRegisteredUser(this.userId);
                     if (this.userId === this.appservice.botUserId) {

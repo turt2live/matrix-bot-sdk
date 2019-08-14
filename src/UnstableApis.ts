@@ -80,4 +80,21 @@ export class UnstableApis {
             },
         });
     }
+
+    /**
+     * Adds a reaction to an event. The contract for this function may change in the future.
+     * @param {string} roomId The room ID to react in
+     * @param {string} eventId The event ID to react against, in the given room
+     * @param {string} emoji The emoji to react with
+     * @returns {Promise<string>} Resolves to the event ID of the reaction
+     */
+    public async addReactionToEvent(roomId: string, eventId: string, emoji: string): Promise<string> {
+        return this.client.sendEvent(roomId, "m.reaction", {
+            "m.relates_to": {
+                event_id: eventId,
+                key: emoji,
+                rel_type: "m.annotation",
+            },
+        });
+    }
 }

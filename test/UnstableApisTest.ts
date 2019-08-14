@@ -73,7 +73,7 @@ describe('UnstableApis', () => {
 
             http.when("POST", "/_matrix/client/r0/groups").respond(200, (path, content) => {
                 expect(path).toEqual(`${hsUrl}/_matrix/client/r0/groups/${encodeURIComponent(groupId)}/profile`);
-                expect(content).toMatchObject(profile);
+                expect(content).toMatchObject(<any>profile);
                 return {};
             });
 

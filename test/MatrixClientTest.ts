@@ -9,6 +9,7 @@ import {
 } from "../src";
 import * as simple from "simple-mock";
 import * as MockHttpBackend from 'matrix-mock-request';
+import { expectArrayEquals } from "./TestUtils";
 
 export function createTestClient(storage: IStorageProvider = null): { client: MatrixClient, http: MockHttpBackend, hsUrl: string, accessToken: string } {
     const http = new MockHttpBackend();
@@ -22,6 +23,31 @@ export function createTestClient(storage: IStorageProvider = null): { client: Ma
 
 // @ts-ignore
 describe('MatrixClient', () => {
+    // @ts-ignore
+    describe("constructor", () => {
+        // @ts-ignore
+        it('should pass through the homeserver URL and access token', () => {
+            const homeserverUrl = "https://example.org";
+            const accessToken = "example_token";
+
+            const client = new MatrixClient(homeserverUrl, accessToken);
+
+            expect(client.homeserverUrl).toEqual(homeserverUrl);
+            expect(client.accessToken).toEqual(accessToken);
+        });
+
+        // @ts-ignore
+        it('should strip trailing slashes from the homeserver URL', () => {
+            const homeserverUrl = "https://example.org";
+            const accessToken = "example_token";
+
+            const client = new MatrixClient(homeserverUrl + "/", accessToken);
+
+            expect(client.homeserverUrl).toEqual(homeserverUrl);
+            expect(client.accessToken).toEqual(accessToken);
+        });
+    });
+
     // @ts-ignore
     describe("doRequest", () => {
         // @ts-ignore
@@ -225,6 +251,84 @@ describe('MatrixClient', () => {
 
             http.flushAllExpected();
             await client.getAccountData(eventType);
+        });
+    });
+
+    // @ts-ignore
+    describe('getPresenceStatus', () => {
+        // @ts-ignore
+        it('should call the right endpoint', async () => {
+            const {client, http, hsUrl} = createTestClient();
+
+            const userId = "@test:example.org";
+            const presenceObj = {
+                presence: "online",
+                last_active_ago: 12,
+                status_message: "Hello world",
+                currently_active: true,
+            };
+
+            client.getUserId = () => Promise.resolve(userId);
+
+            http.when("GET", "/_matrix/client/r0/presence").respond(200, (path) => {
+                expect(path).toEqual(`${hsUrl}/_matrix/client/r0/presence/${encodeURIComponent(userId)}/status`);
+                return presenceObj;
+            });
+
+            http.flushAllExpected();
+            const result = await client.getPresenceStatus();
+            expect(result).toMatchObject(presenceObj);
+        });
+    });
+
+    // @ts-ignore
+    describe('getPresenceStatusFor', () => {
+        // @ts-ignore
+        it('should call the right endpoint', async () => {
+            const {client, http, hsUrl} = createTestClient();
+
+            const userId = "@testing:example.org";
+            const presenceObj = {
+                presence: "online",
+                last_active_ago: 12,
+                status_message: "Hello world",
+                currently_active: true,
+            };
+
+            http.when("GET", "/_matrix/client/r0/presence").respond(200, (path) => {
+                expect(path).toEqual(`${hsUrl}/_matrix/client/r0/presence/${encodeURIComponent(userId)}/status`);
+                return presenceObj;
+            });
+
+            http.flushAllExpected();
+            const result = await client.getPresenceStatusFor(userId);
+            expect(result).toMatchObject(presenceObj);
+        });
+    });
+
+    // @ts-ignore
+    describe('setPresenceStatus', () => {
+        // @ts-ignore
+        it('should call the right endpoint', async () => {
+            const {client, http, hsUrl} = createTestClient();
+
+            const userId = "@test:example.org";
+            const presence = "online";
+            const message = "Hello World";
+
+            client.getUserId = () => Promise.resolve(userId);
+
+            http.when("PUT", "/_matrix/client/r0/presence").respond(200, (path, obj) => {
+                expect(path).toEqual(`${hsUrl}/_matrix/client/r0/presence/${encodeURIComponent(userId)}/status`);
+                expect(obj).toMatchObject({
+                    presence: presence,
+                    status_msg: message,
+                });
+                return {};
+            });
+
+            http.flushAllExpected();
+            await client.setPresenceStatus(presence, message);
         });
     });
 
@@ -1490,7 +1594,7 @@ describe('MatrixClient', () => {
             ];
 
             const processor = <IPreprocessor>{
-                processEvent: (ev, client) => {
+                processEvent: (ev, procClient) => {
                     ev["processed"] = true;
                 },
                 getSupportedEventTypes: () => ["m.room.member", "m.room.message", "m.room.not_message"],
@@ -1574,13 +1678,13 @@ describe('MatrixClient', () => {
             const processedA = "A";
             const processedB = "B";
             const processorA = <IPreprocessor>{
-                processEvent: (ev, client) => {
+                processEvent: (ev, procClient) => {
                     ev["processed"] = processedA;
                 },
                 getSupportedEventTypes: () => ["m.room.message"],
             };
             const processorB = <IPreprocessor>{
-                processEvent: (ev, client) => {
+                processEvent: (ev, procClient) => {
                     ev["processed"] = processedB;
                 },
                 getSupportedEventTypes: () => ["m.room.not_message"],
@@ -1659,7 +1763,7 @@ describe('MatrixClient', () => {
             const eventId = "$example:matrix.org";
             const event = {type: "m.room.message"};
             const processor = <IPreprocessor>{
-                processEvent: (ev, client) => {
+                processEvent: (ev, procClient) => {
                     ev["processed"] = true;
                 },
                 getSupportedEventTypes: () => ["m.room.message"],
@@ -1709,7 +1813,7 @@ describe('MatrixClient', () => {
             const roomId = "!abc123:example.org";
             const events = [{type: "m.room.message"}, {type: "m.room.not_message"}];
             const processor = <IPreprocessor>{
-                processEvent: (ev, client) => {
+                processEvent: (ev, procClient) => {
                     ev["processed"] = true;
                 },
                 getSupportedEventTypes: () => ["m.room.message"],
@@ -1784,7 +1888,7 @@ describe('MatrixClient', () => {
             const eventType = "m.room.message";
             const event = {type: "m.room.message"};
             const processor = <IPreprocessor>{
-                processEvent: (ev, client) => {
+                processEvent: (ev, procClient) => {
                     ev["processed"] = true;
                 },
                 getSupportedEventTypes: () => ["m.room.message"],
@@ -1812,7 +1916,7 @@ describe('MatrixClient', () => {
             const event = {type: "m.room.message"};
             const stateKey = "testing";
             const processor = <IPreprocessor>{
-                processEvent: (ev, client) => {
+                processEvent: (ev, procClient) => {
                     ev["processed"] = true;
                 },
                 getSupportedEventTypes: () => ["m.room.message"],
@@ -2074,11 +2178,7 @@ describe('MatrixClient', () => {
 
             http.flushAllExpected();
             const result = await client.getJoinedRooms();
-            expect(result).toBeDefined();
-            expect(result.length).toBe(roomIds.length);
-            for (let i = 0; i < result.length; i++) {
-                expect(result[i]).toEqual(roomIds[i]);
-            }
+            expectArrayEquals(roomIds, result);
         });
     });
 
@@ -2100,11 +2200,7 @@ describe('MatrixClient', () => {
 
             http.flushAllExpected();
             const result = await client.getJoinedRoomMembers(roomId);
-            expect(result).toBeDefined();
-            expect(result.length).toBe(members.length);
-            for (let i = 0; i < result.length; i++) {
-                expect(result[i]).toEqual(members[i]);
-            }
+            expectArrayEquals(members, result);
         });
     });
 
@@ -2144,7 +2240,7 @@ describe('MatrixClient', () => {
             await client.sendReadReceipt(roomId, eventId);
         });
     });
-    
+
     // @ts-ignore
     describe('setTyping', () => {
         // @ts-ignore
@@ -2155,10 +2251,10 @@ describe('MatrixClient', () => {
             const userId = "@test:example.com";
             const typing = true;
             const timeout = 15000; // ms
-            
+
             client.getUserId = () => Promise.resolve(userId);
 
-            http.when("POST", "/_matrix/client/r0/rooms").respond(200, (path, content) => {
+            http.when("PUT", "/_matrix/client/r0/rooms").respond(200, (path, content) => {
                 expect(path).toEqual(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/typing/${encodeURIComponent(userId)}`);
                 expect(content).toMatchObject({typing: typing, timeout: timeout});
                 return {};
@@ -2169,6 +2265,175 @@ describe('MatrixClient', () => {
         });
     });
 
+    // @ts-ignore
+    describe('replyText', () => {
+        // @ts-ignore
+        it('should call the right endpoint', async () => {
+            const {client, http, hsUrl} = createTestClient();
+
+            const roomId = "!testing:example.org";
+            const eventId = "$something:example.org";
+            const originalEvent = {
+                content: {
+                    body: "*Hello World*",
+                    formatted_body: "<i>Hello World</i>",
+                },
+                sender: "@abc:example.org",
+                event_id: "$abc:example.org",
+            };
+            const replyText = "<testing1234>";
+            const replyHtml = "&lt;testing1234&gt;";
+
+            const expectedContent = {
+                "m.relates_to": {
+                    "m.in_reply_to": {
+                        "event_id": originalEvent.event_id,
+                    },
+                },
+                msgtype: "m.text",
+                format: "org.matrix.custom.html",
+                body: `> <${originalEvent.sender}> ${originalEvent.content.body}\n\n${replyText}`,
+                formatted_body: `<mx-reply><blockquote><a href="https://matrix.to/#/${roomId}/${originalEvent.event_id}">In reply to</a><a href="https://matrix.to/#/${originalEvent.sender}">${originalEvent.sender}</a><br />${originalEvent.content.formatted_body}</blockquote></mx-reply>${replyHtml}`,
+            };
+
+            http.when("PUT", "/_matrix/client/r0/rooms").respond(200, (path, content) => {
+                const idx = path.indexOf(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/send/m.room.message/`);
+                expect(idx).toBe(0);
+                expect(content).toMatchObject(expectedContent);
+                return {event_id: eventId};
+            });
+
+            http.flushAllExpected();
+            const result = await client.replyText(roomId, originalEvent, replyText, replyHtml);
+            expect(result).toEqual(eventId);
+        });
+
+        // @ts-ignore
+        it('should use encoded plain text as the HTML component', async () => {
+            const {client, http, hsUrl} = createTestClient();
+
+            const roomId = "!testing:example.org";
+            const eventId = "$something:example.org";
+            const originalEvent = {
+                content: {
+                    body: "*Hello World*",
+                    formatted_body: "<i>Hello World</i>",
+                },
+                sender: "@abc:example.org",
+                event_id: "$abc:example.org",
+            };
+            const replyText = "<testing1234>";
+            const replyHtml = "&lt;testing1234&gt;";
+
+            const expectedContent = {
+                "m.relates_to": {
+                    "m.in_reply_to": {
+                        "event_id": originalEvent.event_id,
+                    },
+                },
+                msgtype: "m.text",
+                format: "org.matrix.custom.html",
+                body: `> <${originalEvent.sender}> ${originalEvent.content.body}\n\n${replyText}`,
+                formatted_body: `<mx-reply><blockquote><a href="https://matrix.to/#/${roomId}/${originalEvent.event_id}">In reply to</a><a href="https://matrix.to/#/${originalEvent.sender}">${originalEvent.sender}</a><br />${originalEvent.content.formatted_body}</blockquote></mx-reply>${replyHtml}`,
+            };
+
+            http.when("PUT", "/_matrix/client/r0/rooms").respond(200, (path, content) => {
+                const idx = path.indexOf(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/send/m.room.message/`);
+                expect(idx).toBe(0);
+                expect(content).toMatchObject(expectedContent);
+                return {event_id: eventId};
+            });
+
+            http.flushAllExpected();
+            const result = await client.replyText(roomId, originalEvent, replyText);
+            expect(result).toEqual(eventId);
+        });
+    });
+
+    // @ts-ignore
+    describe('replyNotice', () => {
+        // @ts-ignore
+        it('should call the right endpoint', async () => {
+            const {client, http, hsUrl} = createTestClient();
+
+            const roomId = "!testing:example.org";
+            const eventId = "$something:example.org";
+            const originalEvent = {
+                content: {
+                    body: "*Hello World*",
+                    formatted_body: "<i>Hello World</i>",
+                },
+                sender: "@abc:example.org",
+                event_id: "$abc:example.org",
+            };
+            const replyText = "<testing1234>";
+            const replyHtml = "&lt;testing1234&gt;";
+
+            const expectedContent = {
+                "m.relates_to": {
+                    "m.in_reply_to": {
+                        "event_id": originalEvent.event_id,
+                    },
+                },
+                msgtype: "m.notice",
+                format: "org.matrix.custom.html",
+                body: `> <${originalEvent.sender}> ${originalEvent.content.body}\n\n${replyText}`,
+                formatted_body: `<mx-reply><blockquote><a href="https://matrix.to/#/${roomId}/${originalEvent.event_id}">In reply to</a><a href="https://matrix.to/#/${originalEvent.sender}">${originalEvent.sender}</a><br />${originalEvent.content.formatted_body}</blockquote></mx-reply>${replyHtml}`,
+            };
+
+            http.when("PUT", "/_matrix/client/r0/rooms").respond(200, (path, content) => {
+                const idx = path.indexOf(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/send/m.room.message/`);
+                expect(idx).toBe(0);
+                expect(content).toMatchObject(expectedContent);
+                return {event_id: eventId};
+            });
+
+            http.flushAllExpected();
+            const result = await client.replyNotice(roomId, originalEvent, replyText, replyHtml);
+            expect(result).toEqual(eventId);
+        });
+
+        // @ts-ignore
+        it('should use encoded plain text as the HTML component', async () => {
+            const {client, http, hsUrl} = createTestClient();
+
+            const roomId = "!testing:example.org";
+            const eventId = "$something:example.org";
+            const originalEvent = {
+                content: {
+                    body: "*Hello World*",
+                    formatted_body: "<i>Hello World</i>",
+                },
+                sender: "@abc:example.org",
+                event_id: "$abc:example.org",
+            };
+            const replyText = "<testing1234>";
+            const replyHtml = "&lt;testing1234&gt;";
+
+            const expectedContent = {
+                "m.relates_to": {
+                    "m.in_reply_to": {
+                        "event_id": originalEvent.event_id,
+                    },
+                },
+                msgtype: "m.notice",
+                format: "org.matrix.custom.html",
+                body: `> <${originalEvent.sender}> ${originalEvent.content.body}\n\n${replyText}`,
+                formatted_body: `<mx-reply><blockquote><a href="https://matrix.to/#/${roomId}/${originalEvent.event_id}">In reply to</a><a href="https://matrix.to/#/${originalEvent.sender}">${originalEvent.sender}</a><br />${originalEvent.content.formatted_body}</blockquote></mx-reply>${replyHtml}`,
+            };
+
+            http.when("PUT", "/_matrix/client/r0/rooms").respond(200, (path, content) => {
+                const idx = path.indexOf(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/send/m.room.message/`);
+                expect(idx).toBe(0);
+                expect(content).toMatchObject(expectedContent);
+                return {event_id: eventId};
+            });
+
+            http.flushAllExpected();
+            const result = await client.replyNotice(roomId, originalEvent, replyText);
+            expect(result).toEqual(eventId);
+        });
+    });
 
     // @ts-ignore
     describe('sendNotice', () => {
@@ -2178,7 +2443,7 @@ describe('MatrixClient', () => {
 
             const roomId = "!testing:example.org";
             const eventId = "$something:example.org";
-            const content = {
+            const eventContent = {
                 body: "Hello World",
                 msgtype: "m.notice",
             };
@@ -2186,12 +2451,38 @@ describe('MatrixClient', () => {
             http.when("PUT", "/_matrix/client/r0/rooms").respond(200, (path, content) => {
                 const idx = path.indexOf(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/send/m.room.message/`);
                 expect(idx).toBe(0);
-                expect(content).toMatchObject(content);
+                expect(content).toMatchObject(eventContent);
                 return {event_id: eventId};
             });
 
             http.flushAllExpected();
-            const result = await client.sendNotice(roomId, content.body);
+            const result = await client.sendNotice(roomId, eventContent.body);
+            expect(result).toEqual(eventId);
+        });
+    });
+
+    // @ts-ignore
+    describe('sendText', () => {
+        // @ts-ignore
+        it('should call the right endpoint', async () => {
+            const {client, http, hsUrl} = createTestClient();
+
+            const roomId = "!testing:example.org";
+            const eventId = "$something:example.org";
+            const eventContent = {
+                body: "Hello World",
+                msgtype: "m.text",
+            };
+
+            http.when("PUT", "/_matrix/client/r0/rooms").respond(200, (path, content) => {
+                const idx = path.indexOf(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/send/m.room.message/`);
+                expect(idx).toBe(0);
+                expect(content).toMatchObject(eventContent);
+                return {event_id: eventId};
+            });
+
+            http.flushAllExpected();
+            const result = await client.sendText(roomId, eventContent.body);
             expect(result).toEqual(eventId);
         });
     });
@@ -2204,7 +2495,7 @@ describe('MatrixClient', () => {
 
             const roomId = "!testing:example.org";
             const eventId = "$something:example.org";
-            const content = {
+            const eventContent = {
                 body: "Hello World",
                 msgtype: "m.text",
                 sample: true,
@@ -2213,12 +2504,39 @@ describe('MatrixClient', () => {
             http.when("PUT", "/_matrix/client/r0/rooms").respond(200, (path, content) => {
                 const idx = path.indexOf(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/send/m.room.message/`);
                 expect(idx).toBe(0);
-                expect(content).toMatchObject(content);
+                expect(content).toMatchObject(eventContent);
                 return {event_id: eventId};
             });
 
             http.flushAllExpected();
-            const result = await client.sendMessage(roomId, content);
+            const result = await client.sendMessage(roomId, eventContent);
+            expect(result).toEqual(eventId);
+        });
+    });
+
+    // @ts-ignore
+    describe('sendEvent', () => {
+        // @ts-ignore
+        it('should call the right endpoint', async () => {
+            const {client, http, hsUrl} = createTestClient();
+
+            const roomId = "!testing:example.org";
+            const eventId = "$something:example.org";
+            const eventType = "io.t2bot.test";
+            const eventContent = {
+                testing: "hello world",
+                sample: true,
+            };
+
+            http.when("PUT", "/_matrix/client/r0/rooms").respond(200, (path, content) => {
+                const idx = path.indexOf(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/send/${encodeURIComponent(eventType)}/`);
+                expect(idx).toBe(0);
+                expect(content).toMatchObject(eventContent);
+                return {event_id: eventId};
+            });
+
+            http.flushAllExpected();
+            const result = await client.sendEvent(roomId, eventType, eventContent);
             expect(result).toEqual(eventId);
         });
     });
@@ -2233,7 +2551,7 @@ describe('MatrixClient', () => {
             const eventId = "$something:example.org";
             const stateKey = "";
             const eventType = "m.room.message";
-            const content = {
+            const eventContent = {
                 body: "Hello World",
                 msgtype: "m.text",
                 sample: true,
@@ -2242,12 +2560,12 @@ describe('MatrixClient', () => {
             http.when("PUT", "/_matrix/client/r0/rooms").respond(200, (path, content) => {
                 const idx = path.indexOf(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/state/${encodeURIComponent(eventType)}/`);
                 expect(idx).toBe(0);
-                expect(content).toMatchObject(content);
+                expect(content).toMatchObject(eventContent);
                 return {event_id: eventId};
             });
 
             http.flushAllExpected();
-            const result = await client.sendStateEvent(roomId, eventType, stateKey, content);
+            const result = await client.sendStateEvent(roomId, eventType, stateKey, eventContent);
             expect(result).toEqual(eventId);
         });
 
@@ -2259,7 +2577,7 @@ describe('MatrixClient', () => {
             const eventId = "$something:example.org";
             const stateKey = "testing";
             const eventType = "m.room.message";
-            const content = {
+            const eventContent = {
                 body: "Hello World",
                 msgtype: "m.text",
                 sample: true,
@@ -2268,12 +2586,35 @@ describe('MatrixClient', () => {
             http.when("PUT", "/_matrix/client/r0/rooms").respond(200, (path, content) => {
                 const idx = path.indexOf(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/state/${encodeURIComponent(eventType)}/`);
                 expect(idx).toBe(0);
-                expect(content).toMatchObject(content);
+                expect(content).toMatchObject(eventContent);
                 return {event_id: eventId};
             });
 
             http.flushAllExpected();
-            const result = await client.sendStateEvent(roomId, eventType, stateKey, content);
+            const result = await client.sendStateEvent(roomId, eventType, stateKey, eventContent);
+            expect(result).toEqual(eventId);
+        });
+    });
+
+    // @ts-ignore
+    describe('redactEvent', () => {
+        // @ts-ignore
+        it('should call the right endpoint', async () => {
+            const {client, http, hsUrl} = createTestClient();
+
+            const roomId = "!testing:example.org";
+            const eventId = "$something:example.org";
+            const reason = "Zvarri!";
+
+            http.when("PUT", "/_matrix/client/r0/rooms").respond(200, (path, content) => {
+                const idx = path.indexOf(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/redact/${encodeURIComponent(eventId)}/`);
+                expect(idx).toBe(0);
+                expect(content).toMatchObject({reason});
+                return {event_id: eventId};
+            });
+
+            http.flushAllExpected();
+            const result = await client.redactEvent(roomId, eventId, reason);
             expect(result).toEqual(eventId);
         });
     });
@@ -2632,6 +2973,78 @@ describe('MatrixClient', () => {
     });
 
     // @ts-ignore
+    describe('mxcToHttp', () => {
+        // @ts-ignore
+        it('should convert to the right URL', async () => {
+            const {client, hsUrl} = createTestClient();
+
+            const domain = "example.org";
+            const mediaId = "testing/val";
+            const mxc = `mxc://${domain}/${mediaId}`;
+
+            const http = client.mxcToHttp(mxc);
+            expect(http).toBe(`${hsUrl}/_matrix/media/r0/download/${encodeURIComponent(domain)}/${encodeURIComponent(mediaId)}`);
+        });
+
+        // @ts-ignore
+        it('should error for non-MXC URIs', async () => {
+            const {client, hsUrl} = createTestClient();
+
+            const domain = "example.org";
+            const mediaId = "testing/val";
+            const mxc = `https://${domain}/${mediaId}`;
+
+            try {
+                client.mxcToHttp(mxc);
+
+                // noinspection ExceptionCaughtLocallyJS
+                throw new Error("Expected an error and didn't get one");
+            } catch (e) {
+                expect(e.message).toEqual("Not a MXC URI");
+            }
+        });
+    });
+
+    // @ts-ignore
+    describe('mxcToHttpThumbnail', () => {
+        // @ts-ignore
+        it('should convert to the right URL', async () => {
+            const {client, hsUrl} = createTestClient();
+
+            const domain = "example.org";
+            const mediaId = "testing/val";
+            const width = 240;
+            const height = 600;
+            const method = "scale";
+            const mxc = `mxc://${domain}/${mediaId}`;
+
+            const http = client.mxcToHttpThumbnail(mxc, width, height, method);
+            expect(http).toBe(`${hsUrl}/_matrix/media/r0/thumbnail/${encodeURIComponent(domain)}/${encodeURIComponent(mediaId)}?width=${width}&height=${height}&method=${encodeURIComponent(method)}`);
+        });
+
+        // @ts-ignore
+        it('should error for non-MXC URIs', async () => {
+            const {client, hsUrl} = createTestClient();
+
+            const domain = "example.org";
+            const mediaId = "testing/val";
+            const width = 240;
+            const height = 600;
+            const method = "scale";
+            const mxc = `https://${domain}/${mediaId}`;
+
+            try {
+                client.mxcToHttpThumbnail(mxc, width, height, method);
+
+                // noinspection ExceptionCaughtLocallyJS
+                throw new Error("Expected an error and didn't get one");
+            } catch (e) {
+                expect(e.message).toEqual("Not a MXC URI");
+            }
+        });
+    });
+
+    // @ts-ignore
     describe('uploadContent', () => {
         // @ts-ignore
         it('should call the right endpoint', async () => {
@@ -2710,6 +3123,36 @@ describe('MatrixClient', () => {
             const res = await client.downloadContent(mxcUrl);
             expect(Object.keys(res)).toContain("data");
             expect(Object.keys(res)).toContain("contentType");
+        });
+    });
+
+    // @ts-ignore
+    describe('uploadContentFromUrl', () => {
+        // @ts-ignore
+        it('should download then upload the content', async () => {
+            const {client, http, hsUrl} = createTestClient();
+
+            const data = <Buffer>(<any>`{"hello":"world"}`); // we can't use a real buffer because of the mock library
+            const uri = "mxc://example.org/testing";
+
+            Buffer.isBuffer = <any>(i => i === data);
+
+            http.when("GET", "/sample/download").respond(200, (path, content, req) => {
+                // We can't override headers, so don't bother
+                return data;
+            });
+
+            http.when("POST", "/_matrix/media/r0/upload").respond(200, (path, content, req) => {
+                expect(content).toBeDefined();
+                // HACK: We know the mock library will return JSON
+                expect(req.opts.headers["Content-Type"]).toEqual("application/json");
+                //expect(req.opts.body).toEqual(data); // XXX: We can't verify that the content was uploaded correctly
+                return {content_uri: uri};
+            });
+
+            http.flushAllExpected();
+            const result = await client.uploadContentFromUrl(`${hsUrl}/sample/download`);
+            expect(result).toEqual(uri);
         });
     });
 
@@ -3204,6 +3647,121 @@ describe('MatrixClient', () => {
 
             const result = await client.getRoomUpgradeHistory("!current:localhost");
             expect(result).toMatchObject(expected);
+        });
+    });
+
+    // @ts-ignore
+    describe('redactObjectForLogging', () => {
+        // @ts-ignore
+        it('should redact multilevel objects', () => {
+           const {client} = createTestClient();
+
+           // We have to do private access to get at the function
+           const fn = (<any>client).redactObjectForLogging;
+
+           const input = {
+               "untouched_one": 1,
+               "untouched_two": "test",
+               "untouched_three": false,
+               "untouched_four": null,
+               "access_token": "REDACT ME",
+               "password": "REDACT ME",
+               "subobject": {
+                   "untouched_one": 1,
+                   "untouched_two": "test",
+                   "untouched_three": false,
+                   "untouched_four": null,
+                   "access_token": "REDACT ME",
+                   "password": "REDACT ME",
+                   "subobject": {
+                       "untouched_one": 1,
+                       "untouched_two": "test",
+                       "untouched_three": false,
+                       "untouched_four": null,
+                       "access_token": "REDACT ME",
+                       "password": "REDACT ME",
+                   },
+               },
+               "array": [
+                   {
+                       "untouched_one": 1,
+                       "untouched_two": "test",
+                       "untouched_three": false,
+                       "untouched_four": null,
+                       "access_token": "REDACT ME",
+                       "password": "REDACT ME",
+                       "subobject": {
+                           "untouched_one": 1,
+                           "untouched_two": "test",
+                           "untouched_three": false,
+                           "untouched_four": null,
+                           "access_token": "REDACT ME",
+                           "password": "REDACT ME",
+                           "subobject": {
+                               "untouched_one": 1,
+                               "untouched_two": "test",
+                               "untouched_three": false,
+                               "untouched_four": null,
+                               "access_token": "REDACT ME",
+                               "password": "REDACT ME",
+                           },
+                       },
+                   },
+               ],
+           };
+           const output = {
+               "untouched_one": 1,
+               "untouched_two": "test",
+               "untouched_three": false,
+               "untouched_four": null,
+               "access_token": "<redacted>",
+               "password": "<redacted>",
+               "subobject": {
+                   "untouched_one": 1,
+                   "untouched_two": "test",
+                   "untouched_three": false,
+                   "untouched_four": null,
+                   "access_token": "<redacted>",
+                   "password": "<redacted>",
+                   "subobject": {
+                       "untouched_one": 1,
+                       "untouched_two": "test",
+                       "untouched_three": false,
+                       "untouched_four": null,
+                       "access_token": "<redacted>",
+                       "password": "<redacted>",
+                   },
+               },
+               "array": [
+                   {
+                       "untouched_one": 1,
+                       "untouched_two": "test",
+                       "untouched_three": false,
+                       "untouched_four": null,
+                       "access_token": "<redacted>",
+                       "password": "<redacted>",
+                       "subobject": {
+                           "untouched_one": 1,
+                           "untouched_two": "test",
+                           "untouched_three": false,
+                           "untouched_four": null,
+                           "access_token": "<redacted>",
+                           "password": "<redacted>",
+                           "subobject": {
+                               "untouched_one": 1,
+                               "untouched_two": "test",
+                               "untouched_three": false,
+                               "untouched_four": null,
+                               "access_token": "<redacted>",
+                               "password": "<redacted>",
+                           },
+                       },
+                   },
+               ],
+           };
+
+           const result = fn(input);
+           expect(result).toMatchObject(output);
         });
     });
 });

@@ -5,11 +5,13 @@ import {
     IAppserviceStorageProvider,
     IJoinRoomStrategy,
     IPreprocessor,
-    LogService,
+    LogService, MatrixClient,
     MemoryStorageProvider
 } from "..";
 import { EventEmitter } from "events";
 import * as morgan from "morgan";
+import { MatrixBridge } from "./MatrixBridge";
+import * as LRU from "lru-cache";
 
 /**
  * Represents an application service's registration file. This is expected to be
@@ -129,17 +131,33 @@ export interface IAppserviceOptions {
     /**
      * The storage provider to use for this application service.
      */
-    storage?: IAppserviceStorageProvider,
+    storage?: IAppserviceStorageProvider;
 
     /**
      * The registration for this application service.
      */
-    registration: IAppserviceRegistration,
+    registration: IAppserviceRegistration;
 
     /**
      * The join strategy to use for all intents, if any.
      */
-    joinStrategy?: IJoinRoomStrategy,
+    joinStrategy?: IJoinRoomStrategy;
+
+    /**
+     * Options for how Intents are handled.
+     */
+    intentOptions?: {
+        /**
+         * The maximum number of intents to keep cached. Defaults to 10 thousand.
+         */
+        maxCached?: number;
+
+        /**
+         * The maximum age in milliseconds to keep an Intent around for, provided
+         * the maximum number of intents has been reached. Defaults to 60 minutes.
+         */
+        maxAgeMs?: number;
+    };
 }
 
 /**
@@ -149,11 +167,14 @@ export interface IAppserviceOptions {
 export class Appservice extends EventEmitter {
 
     private readonly userPrefix: string;
+    private readonly aliasPrefix: string | null;
     private readonly registration: IAppserviceRegistration;
     private readonly storage: IAppserviceStorageProvider;
+    private readonly bridgeInstance = new MatrixBridge(this);
 
     private app = express();
     private appServer: any;
+    private intentsCache: LRU;
     private intents: { [userId: string]: Intent } = {};
     private eventProcessors: { [eventType: string]: IPreprocessor[] } = {};
     private pendingTransactions: { [txnId: string]: Promise<any> } = {};
@@ -167,8 +188,18 @@ export class Appservice extends EventEmitter {
 
         options.joinStrategy = new AppserviceJoinRoomStrategy(options.joinStrategy, this);
 
+        if (!options.intentOptions) options.intentOptions = {};
+        if (!options.intentOptions.maxAgeMs) options.intentOptions.maxAgeMs = 60 * 60 * 1000;
+        if (!options.intentOptions.maxCached) options.intentOptions.maxCached = 10000;
+
+        this.intentsCache = new LRU({
+            max: options.intentOptions.maxCached,
+            maxAge: options.intentOptions.maxAgeMs,
+        });
+
         this.registration = options.registration;
         this.storage = options.storage || new MemoryStorageProvider();
+        options.storage = this.storage;
 
         this.app.use(express.json());
         this.app.use(morgan("combined"));
@@ -195,6 +226,32 @@ export class Appservice extends EventEmitter {
             throw new Error("Expected user namespace to be a prefix");
         }
         this.userPrefix = this.userPrefix.substring(0, this.userPrefix.length - 2); // trim off the .* part
+
+        if (!this.registration.namespaces || !this.registration.namespaces.aliases || this.registration.namespaces.aliases.length === 0 || this.registration.namespaces.aliases.length !== 1) {
+            this.aliasPrefix = null;
+        } else {
+            this.aliasPrefix = (this.registration.namespaces.aliases[0].regex || "").split(":")[0];
+            if (!this.aliasPrefix.endsWith(".*")) {
+                this.aliasPrefix = null;
+            } else {
+                this.aliasPrefix = this.aliasPrefix.substring(0, this.aliasPrefix.length - 2); // trim off the .* part
+            }
+        }
+    }
+
+    /**
+     * Gets the express app instance which is serving requests. Not recommended for
+     * general usage, but may be used to append routes to the web server.
+     */
+    public get expressAppInstance() {
+        return this.app;
+    }
+
+    /**
+     * Gets the bridge-specific APIs for this application service.
+     */
+    public get bridge(): MatrixBridge {
+        return this.bridgeInstance;
     }
 
     /**
@@ -210,6 +267,16 @@ export class Appservice extends EventEmitter {
      */
     public get botIntent(): Intent {
         return this.getIntentForUserId(this.botUserId);
+    }
+
+    /**
+     * Get the application service's "bot" MatrixClient (the sender_localpart).
+     * Normally the botIntent should be used to ensure that the bot user is safely
+     * handled.
+     * @returns {MatrixClient} The client for the application service itself.
+     */
+    public get botClient(): MatrixClient {
+        return this.botIntent.underlyingClient;
     }
 
     /**
@@ -276,10 +343,33 @@ export class Appservice extends EventEmitter {
      * @returns {Intent} An Intent for the user.
      */
     public getIntentForUserId(userId: string): Intent {
-        if (!this.intents[userId]) {
-            this.intents[userId] = new Intent(this.options, userId, this);
+        let intent = this.intentsCache.get(userId);
+        if (!intent) {
+            intent = new Intent(this.options, userId, this);
+            this.intentsCache.set(userId, intent);
         }
-        return this.intents[userId];
+        return intent;
+    }
+
+    /**
+     * Gets the suffix for the provided user ID. If the user ID is not a namespaced
+     * user, this will return a falsey value.
+     * @param {string} userId The user ID to parse
+     * @returns {string} The suffix from the user ID.
+     */
+    public getSuffixForUserId(userId: string): string {
+        if (!userId || !userId.startsWith(this.userPrefix) || !userId.endsWith(`:${this.options.homeserverName}`)) {
+            // Invalid ID
+            return null;
+        }
+
+        return userId
+            .split('')
+            .slice(this.userPrefix.length)
+            .reverse()
+            .slice(this.options.homeserverName.length + 1)
+            .reverse()
+            .join('');
     }
 
     /**
@@ -289,6 +379,78 @@ export class Appservice extends EventEmitter {
      */
     public isNamespacedUser(userId: string): boolean {
         return userId === this.botUserId || (userId.startsWith(this.userPrefix) && userId.endsWith(":" + this.options.homeserverName));
+    }
+
+    /**
+     * Gets a full alias for a given localpart. The alias will be formed with the domain name given
+     * in the constructor.
+     * @param localpart The localpart to get an alias for.
+     * @returns {string} The alias.
+     */
+    public getAlias(localpart: string): string {
+        return `#${localpart}:${this.options.homeserverName}`;
+    }
+
+    /**
+     * Gets a full alias for a given suffix. The prefix is automatically detected from the registration
+     * options.
+     * @param suffix The alias's suffix
+     * @returns {string} The alias.
+     */
+    public getAliasForSuffix(suffix: string): string {
+        if (!this.aliasPrefix) {
+            throw new Error("Invalid configured alias prefix");
+        }
+        return `${this.aliasPrefix}${suffix}:${this.options.homeserverName}`;
+    }
+
+    /**
+     * Gets the localpart of an alias for a given suffix. The prefix is automatically detected from the registration
+     * options. Useful for the createRoom endpoint.
+     * @param suffix The alias's suffix
+     * @returns {string} The alias localpart.
+     */
+    public getAliasLocalpartForSuffix(suffix: string): string {
+        if (!this.aliasPrefix) {
+            throw new Error("Invalid configured alias prefix");
+        }
+        return `${this.aliasPrefix.substr(1)}${suffix}`;
+    }
+
+    /**
+     * Gets the suffix for the provided alias. If the alias is not a namespaced
+     * alias, this will return a falsey value.
+     * @param {string} alias The alias to parse
+     * @returns {string} The suffix from the alias.
+     */
+    public getSuffixForAlias(alias: string): string {
+        if (!this.aliasPrefix) {
+            throw new Error("Invalid configured alias prefix");
+        }
+        if (!alias || !this.isNamespacedAlias(alias)) {
+            // Invalid ID
+            return null;
+        }
+
+        return alias
+            .split('')
+            .slice(this.aliasPrefix.length)
+            .reverse()
+            .slice(this.options.homeserverName.length + 1)
+            .reverse()
+            .join('');
+    }
+
+    /**
+     * Determines if a given alias is namespaced by this application service.
+     * @param {string} alias The alias to check
+     * @returns {boolean} true if the alias is namespaced, false otherwise
+     */
+    public isNamespacedAlias(alias: string): boolean {
+        if (!this.aliasPrefix) {
+            throw new Error("Invalid configured alias prefix");
+        }
+        return alias.startsWith(this.aliasPrefix) && alias.endsWith(":" + this.options.homeserverName);
     }
 
     /**
