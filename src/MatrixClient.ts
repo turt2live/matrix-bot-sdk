@@ -676,20 +676,6 @@ export class MatrixClient extends EventEmitter {
     }
 
     /**
-     * Redact an event in a given room
-     * @param {string} roomId the room ID to send the redaction to
-     * @param {string} eventId the event ID to redact
-     * @returns {Promise<string>} resolves to the event ID that represents the redaction
-     */
-    public redactEvent(roomId: string, eventId: string, reason: string|null = null): Promise<string> {
-        const txnId = (new Date().getTime()) + "__REQ" + this.requestId;
-        const content = reason !== null ? {reason} : {};
-        return this.doRequest("PUT", `/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/redact/${encodeURIComponent(eventId)}/${txnId}`, null, content).then(response => {
-            return response['event_id'];
-        });
-    }
-
-    /**
      * Creates a room. This does not break out the various options for creating a room
      * due to the large number of possibilities. See the /createRoom endpoint in the
      * spec for more information on what to provide for `properties`.
@@ -744,11 +730,15 @@ export class MatrixClient extends EventEmitter {
      * Download content from the homeserver's media repository.
      * @param {string} mxcUrl the mxcUrl URL.
      * @param {string} allowRemote Indicates to the server that it should not attempt to fetch the media if it is deemed remote. This is to prevent routing loops where the server contacts itself. Defaults to true if not provided.
-     * @returns {Promise<Buffer>} resolves to a Buffer containing the content
+     * @returns {Promise<{data: Buffer, contentType: string}>} resolves to a Buffer and a contentType
      */
     public async downloadContent(mxcUrl: string, allowRemote = true): Promise<{data: Buffer, contentType: string}> {
+        if (!mxcUrl.toLowerCase().startsWith("mxc://")) {
+            throw Error("'mxcUrl' does not begin with mxc://");
+        }
         const urlParts = mxcUrl.substr("mxc://".length).split("/");
-        const res = await this.doRequest("GET", `/_matrix/media/r0/download/${urlParts[0]}/${urlParts[1]}`, {allow_remote: allowRemote}, null, null, true, null, true);
+        const path = `/_matrix/media/r0/download/${encodeURIComponent(urlParts[0])}/${encodeURIComponent(urlParts[1])}`;
+        const res = await this.doRequest("GET", path, {allow_remote: allowRemote}, null, null, true, null, true);
         return {
             data: res.body,
             contentType: res.headers["content-type"],
