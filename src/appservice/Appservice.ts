@@ -477,7 +477,7 @@ export class Appservice extends EventEmitter {
      * @param {"public" | "private"} visibility The visibility to set for the room.
      * @return {Promise<*>} resolves when the visibility has been updated.
      */
-    public setAppserviceDirectoryVisibility(networkId: string, roomId: string, visibility: "public"|"private") {
+    public setRoomDirectoryVisibility(networkId: string, roomId: string, visibility: "public"|"private") {
         roomId = encodeURIComponent(roomId);
         networkId = encodeURIComponent(networkId);
         return this.botClient.doRequest("PUT", `/directory/list/appservice/${networkId}/${roomId}`, null, {
