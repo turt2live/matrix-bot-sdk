@@ -470,6 +470,21 @@ export class Appservice extends EventEmitter {
         }
     }
 
+    /**
+     * Sets the visibility of a room in the appservice's room directory.
+     * @param {string} networkId The network ID to group the room under.
+     * @param {string} roomId The room ID to manipulate the visibility of.
+     * @param {"public" | "private"} visibility The visibility to set for the room.
+     * @return {Promise<*>} resolves when the visibility has been updated.
+     */
+    public setRoomDirectoryVisibility(networkId: string, roomId: string, visibility: "public"|"private") {
+        roomId = encodeURIComponent(roomId);
+        networkId = encodeURIComponent(networkId);
+        return this.botClient.doRequest("PUT", `/_matrix/client/r0/directory/list/appservice/${networkId}/${roomId}`, null, {
+            visibility,
+        });
+    }
+
     private async processEvent(event: any): Promise<any> {
         if (!event) return event;
         if (!this.eventProcessors[event["type"]]) return event;
