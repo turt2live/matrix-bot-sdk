@@ -9,6 +9,7 @@ export * from "./helpers/MentionPill";
 
 // Logging
 export * from "./logging/ConsoleLogger";
+export * from "./logging/RichConsoleLogger";
 export * from "./logging/ILogger";
 export * from "./logging/LogService";
 
