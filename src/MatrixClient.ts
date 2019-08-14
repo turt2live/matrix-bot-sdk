@@ -916,6 +916,29 @@ export class MatrixClient extends EventEmitter {
     }
 
     /**
+     * Download content from the homeserver's media repository.
+     * @param {string} mxcUrl The MXC URI for the content.
+     * @param {string} allowRemote Indicates to the server that it should not attempt to fetch the 
+     * media if it is deemed remote. This is to prevent routing loops where the server contacts itself. 
+     * Defaults to true if not provided.
+     * @returns {Promise<{data: Buffer, contentType: string}>} Resolves to the downloaded content.
+     */
+    public async downloadContent(mxcUrl: string, allowRemote = true): Promise<{data: Buffer, contentType: string}> {
+        if (!mxcUrl.toLowerCase().startsWith("mxc://")) {
+            throw Error("'mxcUrl' does not begin with mxc://");
+        }
+        const urlParts = mxcUrl.substr("mxc://".length).split("/");
+        const domain = encodeURIComponent(urlParts[0]);
+        const mediaId = encodeURIComponent(urlParts[1].split("/")[0]);
+        const path = `/_matrix/media/r0/download/${domain}/${mediaId}`;
+        const res = await this.doRequest("GET", path, {allow_remote: allowRemote}, null, null, true, null, true);
+        return {
+            data: res.body,
+            contentType: res.headers["content-type"],
+        };
+    }
+
+    /**
      * Uploads data to the homeserver's media repository after downloading it from the
      * provided URL.
      * @param {string} url The URL to download content from.
@@ -1071,10 +1094,11 @@ export class MatrixClient extends EventEmitter {
      * @param {number} timeout The number of milliseconds to wait before timing out.
      * @param {boolean} raw If true, the raw response will be returned instead of the response body.
      * @param {string} contentType The content type to send. Only used if the `body` is a Buffer.
+     * @param {string} noEncoding Set to true to disable encoding, and return a Buffer. Defaults to false
      * @returns {Promise<*>} Resolves to the response (body), rejected if a non-2xx status code was returned.
      */
     @timedMatrixClientFunctionCall()
-    public doRequest(method, endpoint, qs = null, body = null, timeout = 60000, raw = false, contentType = "application/json"): Promise<any> {
+    public doRequest(method, endpoint, qs = null, body = null, timeout = 60000, raw = false, contentType = "application/json", noEncoding = false): Promise<any> {
         if (!endpoint.startsWith('/'))
             endpoint = '/' + endpoint;
 
@@ -1101,6 +1125,8 @@ export class MatrixClient extends EventEmitter {
             uri: url,
             method: method,
             qs: qs,
+            // If this is undefined, then a string will be returned. If it's null, a Buffer will be returned.
+            encoding: noEncoding === false ? undefined : null,
             userQuerystring: true,
             qsStringifyOptions: {
                 options: {arrayFormat: 'repeat'},
