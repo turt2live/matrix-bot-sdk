@@ -473,7 +473,7 @@ export class Appservice extends EventEmitter {
     /**
      * Sets the visibility of a room in the appservice directory.
      * @param {string} networkId The network ID to group the room under
-     * @param {string} roomId The room ID to manipulate the visibility of
+     * @param {string} roomId The room ID to manipulate the visibility of.
      * @param {"public" | "private"} visibility The visibility to set for the room
      * @return {Promise} resolves when the visibility has been updated
      */
