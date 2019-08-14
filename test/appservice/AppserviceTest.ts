@@ -2158,7 +2158,7 @@ describe('Appservice', () => {
 
         http.when("PUT", "/_matrix/client/r0/directory/list/appservice").respond(200, (path, content) => {
             expect(path).toEqual(`${hsUrl}/_matrix/client/r0/directory/list/appservice/${encodeURIComponent(networkId)}/${encodeURIComponent(roomId)}`);
-            expect(content).toStrictEqual({ visibility: "public" });
+            expect(content).toMatchObject({visibility: "public"});
             return {};
         });
 
