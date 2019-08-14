@@ -668,7 +668,6 @@ export class MatrixClient extends EventEmitter {
 
     /**
      * Gets the joined members in a room. The client must be in the room to make this request.
-     * This request is usually faster than getRoomMembers.
      * @param {string} roomId The room ID to get the joined members of.
      * @returns {Promise<string>} The joined user IDs in the room
      */
@@ -679,21 +678,20 @@ export class MatrixClient extends EventEmitter {
         });
     }
 
-        /**
-     * Gets the joined members in a room. The client must be in the room to make this request.
-     * @param {string} roomId The room ID to get the joined members of.
+    /**
+     * Gets all members of any membership in a room. The client must be in the room to make this request.
+     * @param {string} roomId The room ID to get the members of.
      * @param {string} membership Get members who are of this type. Leave undefined if no filtering is needed.
      * @param {string} notMembership Do not get members who are of this type. Leave undefined if no filtering is needed.
-     * @returns {Promise<string>} The joined user IDs in the room
+     * @returns {Promise<MatrixRoomMemberEvent[]>} The members in this room
      */
     @timedMatrixClientFunctionCall()
-    public getRoomMembers(roomId: string, membership?: MembershipEnum, notMembership?: MembershipEnum) {
-        return this.doRequest("GET", "/_matrix/client/r0/rooms/" + encodeURIComponent(roomId) + "/members", {
+    public async getRoomMembers(roomId: string, membership?: MembershipEnum, notMembership?: MembershipEnum) {
+        const res = await this.doRequest("GET", "/_matrix/client/r0/rooms/" + encodeURIComponent(roomId) + "/members", {
             membership,
-            not_membership: notMembership,
-        }).then(response => {
-            return response['chunk'] as MatrixRoomMemberEvent[];
+            not_membership: notMembership
         });
+        return res.chunk as MatrixRoomMemberEvent[];
     }
 
     /**
