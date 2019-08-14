@@ -1,6 +1,6 @@
 {
   "name": "matrix-bot-sdk",
-  "version": "0.4.0-beta.3",
+  "version": "0.4.0-beta.4",
   "description": "A lightweight version of the matrix-js-sdk intended for bots",
   "repository": {
     "type": "git",
@@ -15,6 +15,7 @@
   "scripts": {
     "prepare": "node scripts/try_build.js",
     "prepublishOnly": "npm run build",
+    "docs": "npm run build && node_modules/jsdoc/jsdoc.js -R README.md -P package.json -r lib/**/*.js -d .jsdoc",
     "build": "tsc",
     "lint": "tslint --project ./tsconfig.json -t stylish",
     "test": "ts-mocha --project ./tsconfig.json test/**/*.ts",
@@ -31,6 +32,7 @@
   "dependencies": {
     "@types/node": "^10.14.9",
     "bluebird": "^3.5.5",
+    "chalk": "^2.4.2",
     "express": "^4.17.1",
     "hash.js": "^1.1.7",
     "htmlencode": "0.0.4",
@@ -69,6 +71,7 @@
     "mocha": "^6.1.4",
     "simple-mock": "^0.8.0",
     "tmp": "^0.1.0",
-    "ts-mocha": "^6.0.0"
+    "ts-mocha": "^6.0.0",
+    "jsdoc": "^3.6.3"
   }
 }
