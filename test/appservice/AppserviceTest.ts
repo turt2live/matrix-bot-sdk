@@ -2125,4 +2125,44 @@ describe('Appservice', () => {
             appservice.stop();
         }
     });
+
+    it("should set visibilty of a room on the appservice's network", async () => {
+        const port = await getPort();
+        const hsToken = "s3cret_token";
+        const hsUrl = "https://localhost";
+        const networkId = "foonetwork";
+        const roomId = "!aroomid:example.org";
+        const appservice = new Appservice({
+            port: port,
+            bindAddress: '127.0.0.1',
+            homeserverName: 'example.org',
+            homeserverUrl: hsUrl,
+            registration: {
+                as_token: "",
+                hs_token: hsToken,
+                sender_localpart: "_bot_",
+                namespaces: {
+                    users: [{exclusive: true, regex: "@_prefix_.*:.+"}],
+                    rooms: [],
+                    aliases: [],
+                },
+            },
+        });
+        appservice.botIntent.ensureRegistered = () => {
+            return null;
+        };
+
+
+        const http = new MockHttpBackend();
+        setRequestFn(http.requestFn);
+
+        http.when("PUT", "/_matrix/client/r0/directory/list/appservice").respond(200, (path, content) => {
+            expect(path).toEqual(`${hsUrl}/_matrix/client/r0/directory/list/appservice/${encodeURIComponent(networkId)}/${encodeURIComponent(roomId)}`);
+            expect(content).toStrictEqual({ visibility: "public" });
+            return {};
+        });
+
+        http.flushAllExpected();
+        await appservice.setRoomDirectoryVisibility("foonetwork", "!aroomid:example.org", "public");
+    })
 });
