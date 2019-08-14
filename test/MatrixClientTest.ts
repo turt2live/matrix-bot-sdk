@@ -2207,42 +2207,115 @@ describe('MatrixClient', () => {
 
     // @ts-ignore
     describe('getRoomMembers', () => {
+        const roomId = "!testing:example.org";
+        const staticEventContent = {
+            "type": "m.room.member",
+            "event_id": "$143273582443PhrSn:example.org",
+            "room_id": roomId,
+            "sender": "@example:example.org",
+            "origin_server_ts": 1432735824653,
+            "unsigned": {
+                "age": 1234
+            },
+        };
+        const members: MatrixRoomMemberEvent[] = [
+            {
+                "content": {
+                    "membership": "join",
+                    "avatar_url": "mxc://example.org/SEsfnsuifSDFSSEF",
+                    "displayname": "Alice"
+                },
+                ...staticEventContent,
+                "state_key": "@alice:example.org"
+            },
+            {
+                "content": {
+                    "membership": "invite",
+                    "avatar_url": "mxc://example.org/SEsfnsuifSDFSSEF",
+                    "displayname": "Bob"
+                },
+                ...staticEventContent,
+                "state_key": "@bob:example.org"
+            },
+            {
+                "content": {
+                    "membership": "leave",
+                    "avatar_url": "mxc://example.org/SEsfnsuifSDFSSEF",
+                    "displayname": "Chuck"
+                },
+                ...staticEventContent,
+                "state_key": "@chuck:example.org"
+            },
+            {
+                "content": {
+                    "membership": "ban",
+                    "avatar_url": "mxc://example.org/SEsfnsuifSDFSSEF",
+                    "displayname": "Dave"
+                },
+                ...staticEventContent,
+                "state_key": "@dave:example.org"
+            }
+        ];
+
         // @ts-ignore
-        it('should call the right endpoint', async () => {
+        it('should handle no parameters', async () => {
             const {client, http, hsUrl} = createTestClient();
-
-            const roomId = "!testing:example.org";
-            const members: MatrixRoomMemberEvent[] = [
-                {
-                    "content": {
-                      "membership": "join",
-                      "avatar_url": "mxc://example.org/SEsfnsuifSDFSSEF",
-                      "displayname": "Alice Margatroid"
-                    },
-                    "type": "m.room.member",
-                    "event_id": "$143273582443PhrSn:example.org",
-                    "room_id": "!636q39766251:example.com",
-                    "sender": "@example:example.org",
-                    "origin_server_ts": 1432735824653,
-                    "unsigned": {
-                      "age": 1234
-                    },
-                    "state_key": "@alice:example.org"
-                  }
-            ];
-
-            http.when("GET", "/_matrix/client/r0/rooms").respond(200, (path, content, req) => {
-                expect(req.opts.qs.membership).toEqual("join");
-                expect(req.opts.qs.not_membership).toEqual("invite");
-                expect(path).toEqual(
-                    `${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/members`
-                );
+            http.when("GET", "/_matrix/client/r0/rooms").respond(200, (path, _, req) => {
+                expect(path).toEqual(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/members`);
+                expect(req.opts.qs.membership).toBeUndefined();
+                expect(req.opts.qs.not_membership).toBeUndefined();
                 return {chunk: members};
             });
 
             http.flushAllExpected();
-            const result = await client.getRoomMembers(roomId, "join", "invite");
-            expectArrayEquals(members, result);
+            expectArrayEquals(members, await client.getRoomMembers(roomId));
+        });
+
+        // @ts-ignore
+        it('should handle a membership parameter', async () => {
+            const {client, http, hsUrl} = createTestClient();
+            http.when("GET", "/_matrix/client/r0/rooms").respond(200, (path, _, req) => {
+                expect(path).toEqual(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/members`);
+                expect(req.opts.qs.membership).toBe("join");
+                expect(req.opts.qs.not_membership).toBeUndefined();
+                const wantedMembership = req.opts.qs.membership;
+                const chunk = members.filter((m) => m.content.membership === wantedMembership);
+                return {chunk};
+            });
+
+            http.flushAllExpected();
+            expectArrayEquals([members[0]], await client.getRoomMembers(roomId, "join"));
+        });
+
+        // @ts-ignore
+        it('should handle a not_membership parameter', async () => {
+            const {client, http, hsUrl} = createTestClient();
+            http.when("GET", "/_matrix/client/r0/rooms").respond(200, (path, _, req) => {
+                expect(path).toEqual(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/members`);
+                expect(req.opts.qs.membership).toBeUndefined();
+                expect(req.opts.qs.not_membership).toBe("leave");
+                const unwantedMembership = req.opts.qs.not_membership;
+                const chunk = members.filter((m) => m.content.membership !== unwantedMembership);
+                return {chunk};
+            });
+
+            http.flushAllExpected();
+            expectArrayEquals([members[0], members[1], members[3]], await client.getRoomMembers(roomId, undefined, "leave"));
+        });
+
+        // @ts-ignore
+        it('should handle both parameters', async () => {
+            const {client, http, hsUrl} = createTestClient();
+            http.when("GET", "/_matrix/client/r0/rooms").respond(200, (path, _, req) => {
+                expect(path).toEqual(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/members`);
+                const wantedMembership = req.opts.qs.membership;
+                const unwantedMembership = req.opts.qs.not_membership;
+                const chunk = members.filter((m) => m.content.membership === wantedMembership || m.content.membership !== unwantedMembership);
+                return {chunk};
+            });
+
+            http.flushAllExpected();
+            expectArrayEquals([members[0], members[1], members[2]], await client.getRoomMembers(roomId, "invite", "ban"));
         });
     });
 
