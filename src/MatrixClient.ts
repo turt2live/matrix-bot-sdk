@@ -679,7 +679,7 @@ export class MatrixClient extends EventEmitter {
     }
 
     /**
-     * Gets all members of any membership in a room. The client must be in the room to make this request.
+     * Gets members in a room.
      * @param {string} roomId The room ID to get the members of.
      * @param {string} membership Get members who are of this type. Leave undefined if no filtering is needed.
      * @param {string} notMembership Do not get members who are of this type. Leave undefined if no filtering is needed.
