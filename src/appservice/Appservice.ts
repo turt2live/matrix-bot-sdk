@@ -102,6 +102,8 @@ export interface IAppserviceRegistration {
         }[];
     };
 
+    protocols?: string[];
+
     // not interested in other options
 }
 
@@ -199,6 +201,12 @@ export class Appservice extends EventEmitter {
         });
 
         this.registration = options.registration;
+
+        // If protocol is not defined, define an empty array.
+        if (!this.registration.protocols) {
+            this.registration.protocols = [];
+        }
+
         this.storage = options.storage || new MemoryStorageProvider();
         options.storage = this.storage;
 
@@ -211,6 +219,7 @@ export class Appservice extends EventEmitter {
         this.app.get("/_matrix/app/v1/users/:userId", this.onUser.bind(this));
         this.app.get("/_matrix/app/v1/rooms/:roomAlias", this.onRoomAlias.bind(this));
         this.app.put("/_matrix/app/v1/transactions/:txnId", this.onTransaction.bind(this));
+        this.app.put("/_matrix/app/v1/thirdparty/protocol/:protocol", this.onThirdpartyProtocol.bind(this));
         // Everything else can 404
 
         // TODO: Should we permit other user namespaces and instead error when trying to use doSomethingBySuffix()?
@@ -624,6 +633,23 @@ export class Appservice extends EventEmitter {
 
                 res.status(200).send(result); // return result for debugging + testing
             }
+        });
+    }
+
+    private onThirdpartyProtocol(req: express.Request, res: express.Response) {
+        if (!this.isAuthed(req)) {
+            res.status(401).send({errcode: "AUTH_FAILED", error: "Authentication failed"});
+        }
+        const protocol = req.params["protocol"];
+        if (!this.registration.protocols.includes(protocol)) {
+            res.status(404).send({
+                errcode: "PROTOCOL_NOT_HANDLED",
+                error: "Protocol is not handled by this appservice"
+            })
+            return;
+        }
+        this.emit("thirdparty.protocol", protocol, (protocolResponse) => {
+            res.status(200).send(protocolResponse);
         });
     }
 }
