@@ -30,6 +30,7 @@
     "npm": ">= 5.0.0"
   },
   "dependencies": {
+    "@types/express": "^4.17.1",
     "@types/node": "^10.14.9",
     "bluebird": "^3.5.5",
     "chalk": "^2.4.2",
