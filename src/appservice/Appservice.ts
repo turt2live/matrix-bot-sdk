@@ -220,6 +220,11 @@ export class Appservice extends EventEmitter {
         this.app.get("/_matrix/app/v1/rooms/:roomAlias", this.onRoomAlias.bind(this));
         this.app.put("/_matrix/app/v1/transactions/:txnId", this.onTransaction.bind(this));
         this.app.put("/_matrix/app/v1/thirdparty/protocol/:protocol", this.onThirdpartyProtocol.bind(this));
+        this.app.put("/_matrix/app/v1/thirdparty/user/:protocol", this.onThirdpartyUser.bind(this));
+        this.app.put("/_matrix/app/v1/thirdparty/user", this.onThirdpartyUser.bind(this));
+        this.app.put("/_matrix/app/v1/thirdparty/location/:protocol", this.onThirdpartyLocation.bind(this));
+        this.app.put("/_matrix/app/v1/thirdparty/location", this.onThirdpartyLocation.bind(this));
+
         // Everything else can 404
 
         // TODO: Should we permit other user namespaces and instead error when trying to use doSomethingBySuffix()?
@@ -650,6 +655,47 @@ export class Appservice extends EventEmitter {
         }
         this.emit("thirdparty.protocol", protocol, (protocolResponse) => {
             res.status(200).send(protocolResponse);
+        });
+    }
+
+    private onThirdpartyUser(req: express.Request, res: express.Response) {
+        if (!this.isAuthed(req)) {
+            res.status(401).send({errcode: "AUTH_FAILED", error: "Authentication failed"});
+        }
+
+        const protocol = req.params["protocol"];
+        const userid = req.query["userid"];
+
+        const responseFunc = (userResponse) => {
+            // Response is an array of users
+            if (userResponse && userResponse.length > 0) {
+                res.status(200).send(userResponse);
+                return;
+            }
+            res.status(404).send({
+                errcode: "NO_MAPPING_FOUND",
+                error: "No mappings found for the user"
+            });
+        };
+
+        // Lookup remote user(s)
+        if (protocol) {
+            if (!this.registration.protocols.includes(protocol)) {
+                res.status(404).send({
+                    errcode: "PROTOCOL_NOT_HANDLED",
+                    error: "Protocol is not handled by this appservice"
+                })
+                return;
+            }
+            this.emit("thirdparty.user", req.query, responseFunc);
+            return;
+        } else if (userid) {
+            this.emit("thirdparty.user", userid, responseFunc);
+        }
+
+        res.status(400).send({
+            errcode: "INVALID_PARAMETERS",
+            error: "Invalid parameters given"
         });
     }
 }
