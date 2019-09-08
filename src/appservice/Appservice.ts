@@ -220,11 +220,11 @@ export class Appservice extends EventEmitter {
         this.app.get("/_matrix/app/v1/users/:userId", this.onUser.bind(this));
         this.app.get("/_matrix/app/v1/rooms/:roomAlias", this.onRoomAlias.bind(this));
         this.app.put("/_matrix/app/v1/transactions/:txnId", this.onTransaction.bind(this));
-        this.app.put("/_matrix/app/v1/thirdparty/protocol/:protocol", this.onThirdpartyProtocol.bind(this));
-        this.app.put("/_matrix/app/v1/thirdparty/user/:protocol", this.onThirdpartyUser.bind(this));
-        this.app.put("/_matrix/app/v1/thirdparty/user", this.onThirdpartyUser.bind(this));
-        this.app.put("/_matrix/app/v1/thirdparty/location/:protocol", this.onThirdpartyLocation.bind(this));
-        this.app.put("/_matrix/app/v1/thirdparty/location", this.onThirdpartyLocation.bind(this));
+        this.app.get("/_matrix/app/v1/thirdparty/protocol/:protocol", this.onThirdpartyProtocol.bind(this));
+        this.app.get("/_matrix/app/v1/thirdparty/user/:protocol", this.onThirdpartyUser.bind(this));
+        this.app.get("/_matrix/app/v1/thirdparty/user", this.onThirdpartyUser.bind(this));
+        this.app.get("/_matrix/app/v1/thirdparty/location/:protocol", this.onThirdpartyLocation.bind(this));
+        this.app.get("/_matrix/app/v1/thirdparty/location", this.onThirdpartyLocation.bind(this));
 
         // Everything else can 404
 
@@ -677,7 +677,7 @@ export class Appservice extends EventEmitter {
             }
             res.status(404).send({
                 errcode: "NO_MAPPING_FOUND",
-                error: `No mappings found for the ${objType}`
+                error: "No mappings found"
             });
         };
 
@@ -690,10 +690,12 @@ export class Appservice extends EventEmitter {
                 })
                 return;
             }
-            this.emit(`thirdparty.${objType}`, req.query, responseFunc);
+            // Remove the access_token
+            delete req.query.access_token;
+            this.emit(`thirdparty.${objType}.remote`, protocol, req.query, responseFunc);
             return;
         } else if (matrixId) { // If a userid is given, we are looking up a remote objects based on a id
-            this.emit(`thirdparty.${objType}`, matrixId, responseFunc);
+            this.emit(`thirdparty.${objType}.matrix`, matrixId, responseFunc);
             return;
         }
 
