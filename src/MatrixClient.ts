@@ -918,8 +918,8 @@ export class MatrixClient extends EventEmitter {
     /**
      * Download content from the homeserver's media repository.
      * @param {string} mxcUrl The MXC URI for the content.
-     * @param {string} allowRemote Indicates to the server that it should not attempt to fetch the 
-     * media if it is deemed remote. This is to prevent routing loops where the server contacts itself. 
+     * @param {string} allowRemote Indicates to the server that it should not attempt to fetch the
+     * media if it is deemed remote. This is to prevent routing loops where the server contacts itself.
      * Defaults to true if not provided.
      * @returns {Promise<{data: Buffer, contentType: string}>} Resolves to the downloaded content.
      */

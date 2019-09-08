@@ -659,12 +659,6 @@ export class Appservice extends EventEmitter {
         });
     }
 
-    /**
-     * The logic behind /user and /location are similar, so this function handles
-     * both requests.
-     * @param req 
-     * @param res 
-     */
     private onThirdpartyObject(req: express.Request, res: express.Response, objType: string, matrixId?: string) {
         if (!this.isAuthed(req)) {
             res.status(401).send({errcode: "AUTH_FAILED", error: "Authentication failed"});
