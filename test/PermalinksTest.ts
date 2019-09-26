@@ -1,5 +1,5 @@
 import * as expect from "expect";
-import { Permalinks } from "../src";
+import { PermalinkParts, Permalinks } from "../src";
 
 // @ts-ignore
 describe('Permalinks', () => {
@@ -80,6 +80,78 @@ describe('Permalinks', () => {
             const userId = "@test:example.org";
             const expected = `https://matrix.to/#/${userId}`;
             expect(Permalinks.forUser(userId)).toBe(expected);
+        });
+    });
+
+    // @ts-ignore
+    describe('parseUrl', () => {
+        // @ts-ignore
+        it('should parse user URLs', () => {
+            const userId = "@test:example.org";
+            const expected: PermalinkParts = {userId, roomIdOrAlias: undefined, viaServers: undefined, eventId: undefined};
+            const parsed = Permalinks.parseUrl(`https://matrix.to/#/${userId}`);
+
+            expect(parsed).toMatchObject(<any>expected);
+        });
+
+        // @ts-ignore
+        it('should parse room alias URLs', () => {
+            const roomId = "#test:example.org";
+            const expected: PermalinkParts = {userId: undefined, roomIdOrAlias: roomId, viaServers: [], eventId: undefined};
+            const parsed = Permalinks.parseUrl(`https://matrix.to/#/${roomId}`);
+
+            expect(parsed).toMatchObject(<any>expected);
+        });
+
+        // @ts-ignore
+        it('should parse room ID URLs', () => {
+            const roomId = "!test:example.org";
+            const expected: PermalinkParts = {userId: undefined, roomIdOrAlias: roomId, viaServers: [], eventId: undefined};
+            const parsed = Permalinks.parseUrl(`https://matrix.to/#/${roomId}`);
+
+            expect(parsed).toMatchObject(<any>expected);
+        });
+
+        // @ts-ignore
+        it('should parse room alias permalink URLs', () => {
+            const roomId = "#test:example.org";
+            const eventId = "$ev:example.org";
+            const expected: PermalinkParts = {userId: undefined, roomIdOrAlias: roomId, viaServers: [], eventId};
+            const parsed = Permalinks.parseUrl(`https://matrix.to/#/${roomId}/${eventId}`);
+
+            expect(parsed).toMatchObject(<any>expected);
+        });
+
+        // @ts-ignore
+        it('should parse room ID permalink URLs', () => {
+            const roomId = "!test:example.org";
+            const eventId = "$ev:example.org";
+            const expected: PermalinkParts = {userId: undefined, roomIdOrAlias: roomId, viaServers: [], eventId};
+            const parsed = Permalinks.parseUrl(`https://matrix.to/#/${roomId}/${eventId}`);
+
+            expect(parsed).toMatchObject(<any>expected);
+        });
+
+        // @ts-ignore
+        it('should parse room alias permalink URLs with via servers', () => {
+            const roomId = "#test:example.org";
+            const eventId = "$ev:example.org";
+            const via = ["one.example.org", "two.example.org"];
+            const expected: PermalinkParts = {userId: undefined, roomIdOrAlias: roomId, viaServers: via, eventId};
+            const parsed = Permalinks.parseUrl(`https://matrix.to/#/${roomId}/${eventId}?via=${via.join("via=")}`);
+
+            expect(parsed).toMatchObject(<any>expected);
+        });
+
+        // @ts-ignore
+        it('should parse room ID permalink URLs with via servers', () => {
+            const roomId = "!test:example.org";
+            const eventId = "$ev:example.org";
+            const via = ["one.example.org", "two.example.org"];
+            const expected: PermalinkParts = {userId: undefined, roomIdOrAlias: roomId, viaServers: via, eventId};
+            const parsed = Permalinks.parseUrl(`https://matrix.to/#/${roomId}/${eventId}?via=${via.join("via=")}`);
+
+            expect(parsed).toMatchObject(<any>expected);
         });
     });
 });
