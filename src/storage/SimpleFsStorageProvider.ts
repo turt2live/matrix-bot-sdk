@@ -4,6 +4,8 @@ import * as lowdb from "lowdb";
 import * as FileSync from "lowdb/adapters/FileSync";
 import { IAppserviceStorageProvider } from "./IAppserviceStorageProvider";
 import * as sha512 from "hash.js/lib/hash/sha/512";
+import * as mkdirp from "mkdirp";
+import * as path from "path";
 
 export class SimpleFsStorageProvider implements IStorageProvider, IAppserviceStorageProvider {
 
@@ -11,6 +13,8 @@ export class SimpleFsStorageProvider implements IStorageProvider, IAppserviceSto
     private completedTransactions = [];
 
     constructor(filename: string, private trackTransactionsInMemory = true, private maxInMemoryTransactions = 20) {
+        mkdirp.sync(path.dirname(filename));
+
         const adapter = new FileSync(filename);
         this.db = lowdb(adapter);
 
