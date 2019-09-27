@@ -695,7 +695,7 @@ export class MatrixClient extends EventEmitter {
      */
     @timedMatrixClientFunctionCall()
     public sendReadReceipt(roomId: string, eventId: string): Promise<any> {
-        return this.doRequest("POST", "/_matrix/client/r0/rooms/" + encodeURIComponent(roomId) + "/receipt/m.read/" + encodeURIComponent(eventId));
+        return this.doRequest("POST", "/_matrix/client/r0/rooms/" + encodeURIComponent(roomId) + "/receipt/m.read/" + encodeURIComponent(eventId), null, {});
     }
 
     /**
