@@ -34,6 +34,7 @@
     "bluebird": "^3.5.5",
     "chalk": "^2.4.2",
     "express": "^4.17.1",
+    "glob-to-regexp": "^0.4.1",
     "hash.js": "^1.1.7",
     "htmlencode": "0.0.4",
     "lowdb": "^1.0.0",
