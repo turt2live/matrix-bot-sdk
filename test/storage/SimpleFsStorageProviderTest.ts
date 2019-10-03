@@ -1,4 +1,4 @@
-import { IFilterInfo, SimpleFsStorageProvider } from "../../src";
+import { IFilterInfo, MemoryStorageProvider, SimpleFsStorageProvider } from "../../src";
 import * as expect from "expect";
 import * as tmp from "tmp";
 
@@ -131,5 +131,18 @@ describe('SimpleFsStorageProvider', () => {
         expect(readProviderFn().isTransactionCompleted(txnA)).toBeFalsy();
         expect(readProviderFn().isTransactionCompleted(txnB)).toBeFalsy();
         expect(readProviderFn().isTransactionCompleted(txnC)).toBeFalsy();
+    });
+
+    // @ts-ignore
+    it('should track arbitrary key value pairs', async () => {
+        const {writeProvider, readProviderFn} = createSimpleFsStorageProvider();
+
+        const key = "test";
+        const value = "testing";
+
+        expect(writeProvider.readValue(key)).toBeFalsy();
+        writeProvider.storeValue(key, value);
+        expect(writeProvider.readValue(key)).toEqual(value);
+        expect(readProviderFn().readValue(key)).toEqual(value);
     });
 });

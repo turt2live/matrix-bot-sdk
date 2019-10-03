@@ -27,4 +27,20 @@ export interface IStorageProvider {
      * @returns {IFilterInfo} The last saved filter, or null
      */
     getFilter(): IFilterInfo;
+
+    /**
+     * Store a simple string value into the provided key.
+     * @param {string} key The key to store the value under.
+     * @param {string} value The value to store.
+     */
+    storeValue(key: string, value: string): void;
+
+    /**
+     * Reads a previously stored value under the given key. If the
+     * key does not exist, null or undefined is returned.
+     * @param {string} key The key to read.
+     * @returns {string|null|undefined} The value, or null/undefined if
+     * not found.
+     */
+    readValue(key: string): string|null|undefined;
 }

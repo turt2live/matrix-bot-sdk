@@ -8,6 +8,7 @@ export class MemoryStorageProvider implements IStorageProvider, IAppserviceStora
     private filter: IFilterInfo;
     private appserviceUsers: { [userId: string]: { registered: boolean } } = {};
     private appserviceTransactions: { [txnId: string]: boolean } = {};
+    private kvStore: {[key: string]: string} = {};
 
     setSyncToken(token: string | null): void {
         this.syncToken = token;
@@ -41,5 +42,13 @@ export class MemoryStorageProvider implements IStorageProvider, IAppserviceStora
 
     setTransactionCompleted(transactionId: string) {
         this.appserviceTransactions[transactionId] = true;
+    }
+
+    readValue(key: string): string | null | undefined {
+        return this.kvStore[key];
+    }
+
+    storeValue(key: string, value: string): void {
+        this.kvStore[key] = value;
     }
 }

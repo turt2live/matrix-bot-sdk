@@ -46,6 +46,7 @@ export * from "./UnstableApis";
 export * from "./AdminApis";
 export * from "./request";
 export * from "./Permalinks";
+export * from "./PantalaimonClient";
 
 // Models
 export * from "./models/MatrixPresence";

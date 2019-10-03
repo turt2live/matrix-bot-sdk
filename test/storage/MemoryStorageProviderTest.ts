@@ -62,4 +62,16 @@ describe('MemoryStorageProvider', () => {
         expect(provider.isTransactionCompleted(txnA)).toBeTruthy();
         expect(provider.isTransactionCompleted(txnB)).toBeTruthy();
     });
+
+    // @ts-ignore
+    it('should track arbitrary key value pairs', async () => {
+        const provider = new MemoryStorageProvider();
+
+        const key = "test";
+        const value = "example";
+
+        expect(provider.readValue(key)).toBeFalsy();
+        provider.storeValue(key, value);
+        expect(provider.readValue(key)).toEqual(value);
+    });
 });

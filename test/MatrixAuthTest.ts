@@ -14,7 +14,7 @@ export function createTestAuth(): { auth: MatrixAuth, http: MockHttpBackend, hsU
 
     // Overwrite the function for which client to return. We want to use the
     // one which uses our http thing.
-    auth['createTemplateclient'] = () => mxClient;
+    auth['createTemplateClient'] = () => mxClient;
 
     return {hsUrl, http, auth};
 }

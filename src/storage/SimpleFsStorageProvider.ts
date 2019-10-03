@@ -23,6 +23,7 @@ export class SimpleFsStorageProvider implements IStorageProvider, IAppserviceSto
             filter: null,
             appserviceUsers: {}, // userIdHash => { data }
             appserviceTransactions: {}, // txnIdHash => { data }
+            kvStore: {}, // key => value (str)
         }).write();
     }
 
@@ -80,5 +81,15 @@ export class SimpleFsStorageProvider implements IStorageProvider, IAppserviceSto
             .set(`appserviceTransactions.${key}.txnId`, transactionId)
             .set(`appserviceTransactions.${key}.completed`, true)
             .write();
+    }
+
+    readValue(key: string): string | null | undefined {
+        return this.db.get("kvStore").value()[key];
+    }
+
+    storeValue(key: string, value: string): void {
+        const kvStore = this.db.get("kvStore").value();
+        kvStore[key] = value;
+        this.db.set("kvStore", kvStore).write();
     }
 }
