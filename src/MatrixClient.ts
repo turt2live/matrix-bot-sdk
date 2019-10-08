@@ -513,13 +513,6 @@ export class MatrixClient extends EventEmitter {
         // Process rooms we've been invited to
         for (let roomId in inviteRooms) {
             const room = inviteRooms[roomId];
-
-            if (room['account_data'] && room['account_data']['events']) {
-                for (const event of room['account_data']['events']) {
-                    this.emit("room.account_data", roomId, event);
-                }
-            }
-
             if (!room['invite_state'] || !room['invite_state']['events']) continue;
 
             let inviteEvent = null;
@@ -553,6 +546,13 @@ export class MatrixClient extends EventEmitter {
             }
 
             const room = joinedRooms[roomId];
+
+            if (room['account_data'] && room['account_data']['events']) {
+                for (const event of room['account_data']['events']) {
+                    this.emit("room.account_data", roomId, event);
+                }
+            }
+
             if (!room['timeline'] || !room['timeline']['events']) continue;
 
             for (let event of room['timeline']['events']) {
