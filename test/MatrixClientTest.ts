@@ -966,6 +966,32 @@ describe('MatrixClient', () => {
         }
 
         // @ts-ignore
+        it('should process non-room account data', async () => {
+            const {client: realClient} = createTestClient();
+            const client = <ProcessSyncClient>(<any>realClient);
+
+            const userId = "@syncing:example.org";
+            const events = [
+                {
+                    type: "m.room.member",
+                    content: {
+                        example: true,
+                    },
+                },
+            ];
+
+            client.userId = userId;
+
+            const spy = simple.stub().callFn((ev) => {
+                expect(ev).toMatchObject(events[0]);
+            });
+            realClient.on("account_data", spy);
+
+            await client.processSync({account_data: {events: events}});
+            expect(spy.callCount).toBe(1);
+        });
+
+        // @ts-ignore
         it('should process left rooms', async () => {
             const {client: realClient} = createTestClient();
             const client = <ProcessSyncClient>(<any>realClient);
@@ -990,6 +1016,36 @@ describe('MatrixClient', () => {
 
             const roomsObj = {};
             roomsObj[roomId] = {timeline: {events: events}};
+            await client.processSync({rooms: {leave: roomsObj}});
+            expect(spy.callCount).toBe(1);
+        });
+
+        // @ts-ignore
+        it('should process left rooms account data', async () => {
+            const {client: realClient} = createTestClient();
+            const client = <ProcessSyncClient>(<any>realClient);
+
+            const userId = "@syncing:example.org";
+            const roomId = "!testing:example.org";
+            const events = [
+                {
+                    type: "m.room.member",
+                    content: {
+                        example: true,
+                    },
+                },
+            ];
+
+            client.userId = userId;
+
+            const spy = simple.stub().callFn((rid, ev) => {
+                expect(ev).toMatchObject(events[0]);
+                expect(rid).toEqual(roomId);
+            });
+            realClient.on("room.account_data", spy);
+
+            const roomsObj = {};
+            roomsObj[roomId] = {account_data: {events: events}};
             await client.processSync({rooms: {leave: roomsObj}});
             expect(spy.callCount).toBe(1);
         });
@@ -1349,6 +1405,36 @@ describe('MatrixClient', () => {
 
             const roomsObj = {};
             roomsObj[roomId] = {};
+            await client.processSync({rooms: {join: roomsObj}});
+            expect(spy.callCount).toBe(1);
+        });
+
+        // @ts-ignore
+        it('should process joined room account data', async () => {
+            const {client: realClient} = createTestClient();
+            const client = <ProcessSyncClient>(<any>realClient);
+
+            const userId = "@syncing:example.org";
+            const roomId = "!testing:example.org";
+            const events = [
+                {
+                    type: "m.room.member",
+                    content: {
+                        example: true,
+                    },
+                },
+            ];
+
+            client.userId = userId;
+
+            const spy = simple.stub().callFn((rid, ev) => {
+                expect(ev).toMatchObject(events[0]);
+                expect(rid).toEqual(roomId);
+            });
+            realClient.on("room.account_data", spy);
+
+            const roomsObj = {};
+            roomsObj[roomId] = {account_data: {events: events}};
             await client.processSync({rooms: {join: roomsObj}});
             expect(spy.callCount).toBe(1);
         });
@@ -3654,114 +3740,114 @@ describe('MatrixClient', () => {
     describe('redactObjectForLogging', () => {
         // @ts-ignore
         it('should redact multilevel objects', () => {
-           const {client} = createTestClient();
+            const {client} = createTestClient();
 
-           // We have to do private access to get at the function
-           const fn = (<any>client).redactObjectForLogging;
+            // We have to do private access to get at the function
+            const fn = (<any>client).redactObjectForLogging;
 
-           const input = {
-               "untouched_one": 1,
-               "untouched_two": "test",
-               "untouched_three": false,
-               "untouched_four": null,
-               "access_token": "REDACT ME",
-               "password": "REDACT ME",
-               "subobject": {
-                   "untouched_one": 1,
-                   "untouched_two": "test",
-                   "untouched_three": false,
-                   "untouched_four": null,
-                   "access_token": "REDACT ME",
-                   "password": "REDACT ME",
-                   "subobject": {
-                       "untouched_one": 1,
-                       "untouched_two": "test",
-                       "untouched_three": false,
-                       "untouched_four": null,
-                       "access_token": "REDACT ME",
-                       "password": "REDACT ME",
-                   },
-               },
-               "array": [
-                   {
-                       "untouched_one": 1,
-                       "untouched_two": "test",
-                       "untouched_three": false,
-                       "untouched_four": null,
-                       "access_token": "REDACT ME",
-                       "password": "REDACT ME",
-                       "subobject": {
-                           "untouched_one": 1,
-                           "untouched_two": "test",
-                           "untouched_three": false,
-                           "untouched_four": null,
-                           "access_token": "REDACT ME",
-                           "password": "REDACT ME",
-                           "subobject": {
-                               "untouched_one": 1,
-                               "untouched_two": "test",
-                               "untouched_three": false,
-                               "untouched_four": null,
-                               "access_token": "REDACT ME",
-                               "password": "REDACT ME",
-                           },
-                       },
-                   },
-               ],
-           };
-           const output = {
-               "untouched_one": 1,
-               "untouched_two": "test",
-               "untouched_three": false,
-               "untouched_four": null,
-               "access_token": "<redacted>",
-               "password": "<redacted>",
-               "subobject": {
-                   "untouched_one": 1,
-                   "untouched_two": "test",
-                   "untouched_three": false,
-                   "untouched_four": null,
-                   "access_token": "<redacted>",
-                   "password": "<redacted>",
-                   "subobject": {
-                       "untouched_one": 1,
-                       "untouched_two": "test",
-                       "untouched_three": false,
-                       "untouched_four": null,
-                       "access_token": "<redacted>",
-                       "password": "<redacted>",
-                   },
-               },
-               "array": [
-                   {
-                       "untouched_one": 1,
-                       "untouched_two": "test",
-                       "untouched_three": false,
-                       "untouched_four": null,
-                       "access_token": "<redacted>",
-                       "password": "<redacted>",
-                       "subobject": {
-                           "untouched_one": 1,
-                           "untouched_two": "test",
-                           "untouched_three": false,
-                           "untouched_four": null,
-                           "access_token": "<redacted>",
-                           "password": "<redacted>",
-                           "subobject": {
-                               "untouched_one": 1,
-                               "untouched_two": "test",
-                               "untouched_three": false,
-                               "untouched_four": null,
-                               "access_token": "<redacted>",
-                               "password": "<redacted>",
-                           },
-                       },
-                   },
-               ],
-           };
+            const input = {
+                "untouched_one": 1,
+                "untouched_two": "test",
+                "untouched_three": false,
+                "untouched_four": null,
+                "access_token": "REDACT ME",
+                "password": "REDACT ME",
+                "subobject": {
+                    "untouched_one": 1,
+                    "untouched_two": "test",
+                    "untouched_three": false,
+                    "untouched_four": null,
+                    "access_token": "REDACT ME",
+                    "password": "REDACT ME",
+                    "subobject": {
+                        "untouched_one": 1,
+                        "untouched_two": "test",
+                        "untouched_three": false,
+                        "untouched_four": null,
+                        "access_token": "REDACT ME",
+                        "password": "REDACT ME",
+                    },
+                },
+                "array": [
+                    {
+                        "untouched_one": 1,
+                        "untouched_two": "test",
+                        "untouched_three": false,
+                        "untouched_four": null,
+                        "access_token": "REDACT ME",
+                        "password": "REDACT ME",
+                        "subobject": {
+                            "untouched_one": 1,
+                            "untouched_two": "test",
+                            "untouched_three": false,
+                            "untouched_four": null,
+                            "access_token": "REDACT ME",
+                            "password": "REDACT ME",
+                            "subobject": {
+                                "untouched_one": 1,
+                                "untouched_two": "test",
+                                "untouched_three": false,
+                                "untouched_four": null,
+                                "access_token": "REDACT ME",
+                                "password": "REDACT ME",
+                            },
+                        },
+                    },
+                ],
+            };
+            const output = {
+                "untouched_one": 1,
+                "untouched_two": "test",
+                "untouched_three": false,
+                "untouched_four": null,
+                "access_token": "<redacted>",
+                "password": "<redacted>",
+                "subobject": {
+                    "untouched_one": 1,
+                    "untouched_two": "test",
+                    "untouched_three": false,
+                    "untouched_four": null,
+                    "access_token": "<redacted>",
+                    "password": "<redacted>",
+                    "subobject": {
+                        "untouched_one": 1,
+                        "untouched_two": "test",
+                        "untouched_three": false,
+                        "untouched_four": null,
+                        "access_token": "<redacted>",
+                        "password": "<redacted>",
+                    },
+                },
+                "array": [
+                    {
+                        "untouched_one": 1,
+                        "untouched_two": "test",
+                        "untouched_three": false,
+                        "untouched_four": null,
+                        "access_token": "<redacted>",
+                        "password": "<redacted>",
+                        "subobject": {
+                            "untouched_one": 1,
+                            "untouched_two": "test",
+                            "untouched_three": false,
+                            "untouched_four": null,
+                            "access_token": "<redacted>",
+                            "password": "<redacted>",
+                            "subobject": {
+                                "untouched_one": 1,
+                                "untouched_two": "test",
+                                "untouched_three": false,
+                                "untouched_four": null,
+                                "access_token": "<redacted>",
+                                "password": "<redacted>",
+                            },
+                        },
+                    },
+                ],
+            };
 
-           const result = fn(input);
-           expect(result).toMatchObject(output);
+            const result = fn(input);
+            expect(result).toMatchObject(output);
         });
     });
 });

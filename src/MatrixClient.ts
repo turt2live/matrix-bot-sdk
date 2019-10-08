@@ -463,7 +463,16 @@ export class MatrixClient extends EventEmitter {
 
     @timedMatrixClientFunctionCall()
     private async processSync(raw: any): Promise<any> {
-        if (!raw || !raw['rooms']) return; // nothing to process
+        if (!raw) return; // nothing to process
+
+        if (raw['account_data'] && raw['account_data']['events']) {
+            for (const event of raw['account_data']['events']) {
+                this.emit("account_data", event);
+            }
+        }
+
+        if (!raw['rooms']) return; // nothing more to process
+
         let leftRooms = raw['rooms']['leave'] || {};
         let inviteRooms = raw['rooms']['invite'] || {};
         let joinedRooms = raw['rooms']['join'] || {};
@@ -471,6 +480,13 @@ export class MatrixClient extends EventEmitter {
         // Process rooms we've left first
         for (let roomId in leftRooms) {
             const room = leftRooms[roomId];
+
+            if (room['account_data'] && room['account_data']['events']) {
+                for (const event of room['account_data']['events']) {
+                    this.emit("room.account_data", roomId, event);
+                }
+            }
+
             if (!room['timeline'] || !room['timeline']['events']) continue;
 
             let leaveEvent = null;
@@ -497,6 +513,13 @@ export class MatrixClient extends EventEmitter {
         // Process rooms we've been invited to
         for (let roomId in inviteRooms) {
             const room = inviteRooms[roomId];
+
+            if (room['account_data'] && room['account_data']['events']) {
+                for (const event of room['account_data']['events']) {
+                    this.emit("room.account_data", roomId, event);
+                }
+            }
+
             if (!room['invite_state'] || !room['invite_state']['events']) continue;
 
             let inviteEvent = null;
@@ -918,12 +941,12 @@ export class MatrixClient extends EventEmitter {
     /**
      * Download content from the homeserver's media repository.
      * @param {string} mxcUrl The MXC URI for the content.
-     * @param {string} allowRemote Indicates to the server that it should not attempt to fetch the 
-     * media if it is deemed remote. This is to prevent routing loops where the server contacts itself. 
+     * @param {string} allowRemote Indicates to the server that it should not attempt to fetch the
+     * media if it is deemed remote. This is to prevent routing loops where the server contacts itself.
      * Defaults to true if not provided.
      * @returns {Promise<{data: Buffer, contentType: string}>} Resolves to the downloaded content.
      */
-    public async downloadContent(mxcUrl: string, allowRemote = true): Promise<{data: Buffer, contentType: string}> {
+    public async downloadContent(mxcUrl: string, allowRemote = true): Promise<{ data: Buffer, contentType: string }> {
         if (!mxcUrl.toLowerCase().startsWith("mxc://")) {
             throw Error("'mxcUrl' does not begin with mxc://");
         }
