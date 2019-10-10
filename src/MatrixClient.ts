@@ -701,6 +701,27 @@ export class MatrixClient extends EventEmitter {
     }
 
     /**
+     * Gets the membership events of users in the room. Defaults to all membership
+     * types, though this can be controlled with the membership and notMembership
+     * arguments. To change the point in time, use the batchToken.
+     * @param {string} roomId The room ID to get members in.
+     * @param {string} batchToken The point in time to get members at (or null for 'now')
+     * @param {string[]} membership The membership kinds to search for.
+     * @param {string[]} notMembership The membership kinds to not search for.
+     * @returns {Promise<*[]>} Resolves to the membership events of the users in the room.
+     */
+    public getMembers(roomId: string, batchToken: string = null, membership: string[] = null, notMembership: string[] = null): Promise<any[]> {
+        const qs = {};
+        if (batchToken) qs["at"] = batchToken;
+        if (membership) qs["membership"] = membership;
+        if (notMembership) qs["not_membership"] = notMembership;
+
+        return this.doRequest("GET", "/_matrix/client/r0/rooms/" + encodeURIComponent(roomId) + "/members", qs).then(r => {
+            return r['chunk'];
+        });
+    }
+
+    /**
      * Leaves the given room
      * @param {string} roomId the room ID to leave
      * @returns {Promise<*>} resolves when left
