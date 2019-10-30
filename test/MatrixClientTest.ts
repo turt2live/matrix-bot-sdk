@@ -2317,7 +2317,7 @@ describe('MatrixClient', () => {
 
             http.when("GET", "/_matrix/client/r0/rooms").respond(200, (path, content) => {
                 expect(path).toEqual(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/members`);
-                return memberEvents;
+                return {chunk: memberEvents};
             });
 
             http.flushAllExpected();
@@ -2352,7 +2352,7 @@ describe('MatrixClient', () => {
             http.when("GET", "/_matrix/client/r0/rooms").respond(200, (path, content, req) => {
                 expect(path).toEqual(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/members`);
                 expect(req.opts.qs.at).toEqual(atToken);
-                return memberEvents;
+                return {chunk: memberEvents};
             });
 
             http.flushAllExpected();
@@ -2389,7 +2389,7 @@ describe('MatrixClient', () => {
                 expect(path).toEqual(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/members`);
                 expectArrayEquals(forMemberships, req.opts.qs.membership);
                 expectArrayEquals(forNotMemberships, req.opts.qs.not_membership);
-                return memberEvents;
+                return {chunk: memberEvents};
             });
 
             http.flushAllExpected();
