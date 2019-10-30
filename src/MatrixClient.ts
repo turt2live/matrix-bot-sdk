@@ -1229,24 +1229,30 @@ export class MatrixClient extends EventEmitter {
         const redactFn = (i) => {
             if (!i) return i;
 
-            const newObj = {};
-            for (const key of Object.keys(i)) {
-                if (fieldsToRedact.indexOf(key) !== -1) {
-                    newObj[key] = "<redacted>";
-                    continue;
-                }
+            // Don't treat strings like arrays/objects
+            if (typeof i === 'string') return i;
 
-                let val = i[key];
-                if (Array.isArray(val)) {
-                    const newArray = [];
-                    for (const v of val) {
-                        newArray.push(redactFn(v));
-                    }
-                    val = newArray;
-                } else if (val && val instanceof Object) val = redactFn(val);
-                newObj[key] = val;
+            if (Array.isArray(i)) {
+                const rebuilt = [];
+                for (const v of i) {
+                    rebuilt.push(redactFn(v));
+                }
+                return rebuilt;
             }
-            return newObj;
+
+            if (i instanceof Object) {
+                const rebuilt = {};
+                for (const key of Object.keys(i)) {
+                    if (fieldsToRedact.includes(key)) {
+                        rebuilt[key] = '<redacted>';
+                    } else {
+                        rebuilt[key] = redactFn(i[key]);
+                    }
+                }
+                return rebuilt;
+            }
+
+            return i; // It's a primitive value
         };
 
         return redactFn(input);
