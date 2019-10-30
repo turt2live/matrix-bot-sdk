@@ -2291,6 +2291,114 @@ describe('MatrixClient', () => {
     });
 
     // @ts-ignore
+    describe('getMembers', () => {
+        // @ts-ignore
+        it('should call the right endpoint', async () => {
+            const {client, http, hsUrl} = createTestClient();
+
+            const roomId = "!testing:example.org";
+            const memberEvents = [
+                // HACK: These are minimal events for testing purposes only.
+                {
+                    type: "m.room.member",
+                    state_key: "@alice:example.org",
+                    content: {
+                        membership: "join",
+                    },
+                },
+                {
+                    type: "m.room.member",
+                    state_key: "@bob:example.org",
+                    content: {
+                        membership: "leave",
+                    },
+                },
+            ];
+
+            http.when("GET", "/_matrix/client/r0/rooms").respond(200, (path, content) => {
+                expect(path).toEqual(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/members`);
+                return memberEvents;
+            });
+
+            http.flushAllExpected();
+            const result = await client.getMembers(roomId);
+            expectArrayEquals(memberEvents, result);
+        });
+
+        // @ts-ignore
+        it('should call the right endpoint with a batch token', async () => {
+            const {client, http, hsUrl} = createTestClient();
+
+            const roomId = "!testing:example.org";
+            const memberEvents = [
+                // HACK: These are minimal events for testing purposes only.
+                {
+                    type: "m.room.member",
+                    state_key: "@alice:example.org",
+                    content: {
+                        membership: "join",
+                    },
+                },
+                {
+                    type: "m.room.member",
+                    state_key: "@bob:example.org",
+                    content: {
+                        membership: "leave",
+                    },
+                },
+            ];
+            const atToken = "test_token";
+
+            http.when("GET", "/_matrix/client/r0/rooms").respond(200, (path, content, req) => {
+                expect(path).toEqual(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/members`);
+                expect(req.opts.qs.at).toEqual(atToken);
+                return memberEvents;
+            });
+
+            http.flushAllExpected();
+            const result = await client.getMembers(roomId, atToken);
+            expectArrayEquals(memberEvents, result);
+        });
+
+        // @ts-ignore
+        it('should call the right endpoint with membership filtering', async () => {
+            const {client, http, hsUrl} = createTestClient();
+
+            const roomId = "!testing:example.org";
+            const memberEvents = [
+                // HACK: These are minimal events for testing purposes only.
+                {
+                    type: "m.room.member",
+                    state_key: "@alice:example.org",
+                    content: {
+                        membership: "join",
+                    },
+                },
+                {
+                    type: "m.room.member",
+                    state_key: "@bob:example.org",
+                    content: {
+                        membership: "leave",
+                    },
+                },
+            ];
+            const forMemberships = ['join', 'leave'];
+            const forNotMemberships = ['ban'];
+
+            http.when("GET", "/_matrix/client/r0/rooms").respond(200, (path, content, req) => {
+                expect(path).toEqual(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/members`);
+                expectArrayEquals(forMemberships, req.opts.qs.membership);
+                expectArrayEquals(forNotMemberships, req.opts.qs.not_membership);
+                return memberEvents;
+            });
+
+            http.flushAllExpected();
+            const result = await client.getMembers(roomId, null, forMemberships, forNotMemberships);
+            expectArrayEquals(memberEvents, result);
+        });
+    });
+
+    // @ts-ignore
     describe('leaveRoom', () => {
         // @ts-ignore
         it('should call the right endpoint', async () => {
