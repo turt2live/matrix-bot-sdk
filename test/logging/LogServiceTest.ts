@@ -1,4 +1,4 @@
-import { ConsoleLogger, LogService } from "../../src";
+import { ConsoleLogger, LogLevel, LogService } from "../../src";
 import * as expect from "expect";
 import * as simple from "simple-mock";
 
@@ -13,10 +13,10 @@ describe('LogService', () => {
         const a1 = "This is a message";
         const a2 = {hello: "world"};
 
-        const logSpy = simple.stub().callFn((m, a1, a2) => {
+        const logSpy = simple.stub().callFn((m, arg1, arg2) => {
             expect(m).toEqual(module);
-            expect(a1).toEqual(a1);
-            expect(a2).toEqual(a2);
+            expect(arg1).toEqual(a1);
+            expect(arg2).toEqual(a2);
         });
 
         LogService.setLogger({info: logSpy, warn: null, error: null, debug: null});
@@ -30,10 +30,10 @@ describe('LogService', () => {
         const a1 = "This is a message";
         const a2 = {hello: "world"};
 
-        const logSpy = simple.stub().callFn((m, a1, a2) => {
+        const logSpy = simple.stub().callFn((m, arg1, arg2) => {
             expect(m).toEqual(module);
-            expect(a1).toEqual(a1);
-            expect(a2).toEqual(a2);
+            expect(arg1).toEqual(a1);
+            expect(arg2).toEqual(a2);
         });
 
         LogService.setLogger({info: null, warn: null, error: logSpy, debug: null});
@@ -47,10 +47,10 @@ describe('LogService', () => {
         const a1 = "This is a message";
         const a2 = {hello: "world"};
 
-        const logSpy = simple.stub().callFn((m, a1, a2) => {
+        const logSpy = simple.stub().callFn((m, arg1, arg2) => {
             expect(m).toEqual(module);
-            expect(a1).toEqual(a1);
-            expect(a2).toEqual(a2);
+            expect(arg1).toEqual(a1);
+            expect(arg2).toEqual(a2);
         });
 
         LogService.setLogger({info: null, warn: logSpy, error: null, debug: null});
@@ -64,14 +64,68 @@ describe('LogService', () => {
         const a1 = "This is a message";
         const a2 = {hello: "world"};
 
-        const logSpy = simple.stub().callFn((m, a1, a2) => {
+        const logSpy = simple.stub().callFn((m, arg1, arg2) => {
             expect(m).toEqual(module);
-            expect(a1).toEqual(a1);
-            expect(a2).toEqual(a2);
+            expect(arg1).toEqual(a1);
+            expect(arg2).toEqual(a2);
         });
 
         LogService.setLogger({info: null, warn: null, error: null, debug: logSpy});
         LogService.debug(module, a1, a2);
         expect(logSpy.callCount).toBe(1);
+    });
+
+    // @ts-ignore
+    it('should not log to the DEBUG channel when the log level is higher', () => {
+        const module = "Testing Module";
+        const a1 = "This is a message";
+        const a2 = {hello: "world"};
+
+        const logSpy = simple.stub().callFn((m, arg1, arg2) => {
+            expect(m).toEqual(module);
+            expect(arg1).toEqual(a1);
+            expect(arg2).toEqual(a2);
+        });
+
+        LogService.setLogger({info: null, warn: null, error: null, debug: logSpy});
+        LogService.setLevel(LogLevel.INFO);
+        LogService.debug(module, a1, a2);
+        expect(logSpy.callCount).toBe(0);
+    });
+
+    // @ts-ignore
+    it('should not log to the INFO channel when the log level is higher', () => {
+        const module = "Testing Module";
+        const a1 = "This is a message";
+        const a2 = {hello: "world"};
+
+        const logSpy = simple.stub().callFn((m, arg1, arg2) => {
+            expect(m).toEqual(module);
+            expect(arg1).toEqual(a1);
+            expect(arg2).toEqual(a2);
+        });
+
+        LogService.setLogger({info: logSpy, warn: null, error: null, debug: null});
+        LogService.setLevel(LogLevel.WARN);
+        LogService.info(module, a1, a2);
+        expect(logSpy.callCount).toBe(0);
+    });
+
+    // @ts-ignore
+    it('should not log to the WARN channel when the log level is higher', () => {
+        const module = "Testing Module";
+        const a1 = "This is a message";
+        const a2 = {hello: "world"};
+
+        const logSpy = simple.stub().callFn((m, arg1, arg2) => {
+            expect(m).toEqual(module);
+            expect(arg1).toEqual(a1);
+            expect(arg2).toEqual(a2);
+        });
+
+        LogService.setLogger({info: null, warn: logSpy, error: null, debug: null});
+        LogService.setLevel(LogLevel.ERROR);
+        LogService.warn(module, a1, a2);
+        expect(logSpy.callCount).toBe(0);
     });
 });
