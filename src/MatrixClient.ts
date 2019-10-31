@@ -6,7 +6,7 @@ import { IJoinRoomStrategy } from "./strategies/JoinRoomStrategy";
 import { UnstableApis } from "./UnstableApis";
 import { IPreprocessor } from "./preprocessors/IPreprocessor";
 import { getRequestFn } from "./request";
-import { LogService } from "./logging/LogService";
+import { LogLevel, LogService } from "./logging/LogService";
 import { htmlEncode } from "htmlencode";
 import { RichReply } from "./helpers/RichReply";
 import { MatrixPresence } from "./models/MatrixPresence";
@@ -1161,9 +1161,12 @@ export class MatrixClient extends EventEmitter {
             headers["Authorization"] = `Bearer ${this.accessToken}`;
         }
 
-        if (qs) LogService.debug("MatrixLiteClient (REQ-" + requestId + ")", "qs = " + JSON.stringify(qs));
-        if (body && !Buffer.isBuffer(body)) LogService.debug("MatrixLiteClient (REQ-" + requestId + ")", "body = " + JSON.stringify(this.redactObjectForLogging(body)));
-        if (body && Buffer.isBuffer(body)) LogService.debug("MatrixLiteClient (REQ-" + requestId + ")", "body = <Buffer>");
+        // Don't log the request unless we're in debug mode. It can be large.
+        if (LogService.level.includes(LogLevel.DEBUG)) {
+            if (qs) LogService.debug("MatrixLiteClient (REQ-" + requestId + ")", "qs = " + JSON.stringify(qs));
+            if (body && !Buffer.isBuffer(body)) LogService.debug("MatrixLiteClient (REQ-" + requestId + ")", "body = " + JSON.stringify(this.redactObjectForLogging(body)));
+            if (body && Buffer.isBuffer(body)) LogService.debug("MatrixLiteClient (REQ-" + requestId + ")", "body = <Buffer>");
+        }
 
         const params: { [k: string]: any } = {
             uri: url,
@@ -1207,9 +1210,13 @@ export class MatrixClient extends EventEmitter {
                         }
                     }
 
-                    const redactedBody = this.redactObjectForLogging(response.body);
-                    LogService.debug("MatrixLiteClient (REQ-" + requestId + " RESP-H" + response.statusCode + ")", redactedBody);
+                    // Don't log the body unless we're in debug mode. They can be large.
+                    if (LogService.level.includes(LogLevel.DEBUG)) {
+                        const redactedBody = this.redactObjectForLogging(response.body);
+                        LogService.debug("MatrixLiteClient (REQ-" + requestId + " RESP-H" + response.statusCode + ")", redactedBody);
+                    }
                     if (response.statusCode < 200 || response.statusCode >= 300) {
+                        const redactedBody = this.redactObjectForLogging(response.body);
                         LogService.error("MatrixLiteClient (REQ-" + requestId + ")", redactedBody);
                         reject(response);
                     } else resolve(raw ? response : resBody);

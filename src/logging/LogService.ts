@@ -38,6 +38,13 @@ export class LogService {
     }
 
     /**
+     * The level at which the LogService is running.
+     */
+    public static get level(): LogLevel {
+        return this.logLevel;
+    }
+
+    /**
      * Sets the log level for this logger. Defaults to DEBUG.
      * @param {LogLevel} level the new log level
      */
