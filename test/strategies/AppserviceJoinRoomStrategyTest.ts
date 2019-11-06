@@ -2,9 +2,9 @@ import { Appservice, AppserviceJoinRoomStrategy, IJoinRoomStrategy } from "../..
 import * as expect from "expect";
 import * as simple from "simple-mock";
 
-// @ts-ignore
+
 describe('AppserviceJoinRoomStrategy', () => {
-    // @ts-ignore
+
     it('should be able to join the room normally', async () => {
         const appservice = new Appservice({
             port: 0,
@@ -49,7 +49,7 @@ describe('AppserviceJoinRoomStrategy', () => {
         expect(underlyingSpy.callCount).toBe(0);
     });
 
-    // @ts-ignore
+
     it('should call the underlying strategy after the first failure', async () => {
         const appservice = new Appservice({
             port: 0,
@@ -105,7 +105,7 @@ describe('AppserviceJoinRoomStrategy', () => {
         expect(inviteSpy.callCount).toBe(1);
     });
 
-    // @ts-ignore
+
     it('should not invite the bot user if the bot user is joining', async () => {
         const appservice = new Appservice({
             port: 0,
@@ -161,7 +161,7 @@ describe('AppserviceJoinRoomStrategy', () => {
         expect(inviteSpy.callCount).toBe(0);
     });
 
-    // @ts-ignore
+
     it('should call the API twice when there is no strategy', async () => {
         const appservice = new Appservice({
             port: 0,
@@ -211,7 +211,7 @@ describe('AppserviceJoinRoomStrategy', () => {
         expect(inviteSpy.callCount).toBe(1);
     });
 
-    // @ts-ignore
+
     it('should call the API once when there is no strategy for the bot user', async () => {
         const appservice = new Appservice({
             port: 0,
@@ -265,7 +265,7 @@ describe('AppserviceJoinRoomStrategy', () => {
         expect(inviteSpy.callCount).toBe(0);
     });
 
-    // @ts-ignore
+
     it('should fail if the underlying strategy fails', async () => {
         const appservice = new Appservice({
             port: 0,
@@ -328,7 +328,7 @@ describe('AppserviceJoinRoomStrategy', () => {
         expect(inviteSpy.callCount).toBe(1);
     });
 
-    // @ts-ignore
+
     it('should handle invite failures', async () => {
         const appservice = new Appservice({
             port: 0,
@@ -382,7 +382,7 @@ describe('AppserviceJoinRoomStrategy', () => {
         expect(inviteSpy.callCount).toBe(1);
     });
 
-    // @ts-ignore
+
     it('should pass to the underlying strategy on invite failures', async () => {
         const appservice = new Appservice({
             port: 0,

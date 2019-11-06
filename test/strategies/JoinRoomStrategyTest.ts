@@ -2,9 +2,9 @@ import { SimpleRetryJoinStrategy } from "../../src";
 import * as expect from "expect";
 import * as simple from "simple-mock";
 
-// @ts-ignore
+
 describe('SimpleRetryJoinStrategy', () => {
-    // @ts-ignore
+
     it('should retry joins when they fail', async () => {
         const strategy = new SimpleRetryJoinStrategy();
 
@@ -29,7 +29,7 @@ describe('SimpleRetryJoinStrategy', () => {
         expect(apiCallSpy.callCount).toBe(schedule.length);
     });
 
-    // @ts-ignore
+
     it('should retry joins on a schedule', async () => {
         const strategy = new SimpleRetryJoinStrategy();
 
@@ -63,7 +63,7 @@ describe('SimpleRetryJoinStrategy', () => {
         expect(apiCallSpy.callCount).toBe(schedule.length);
     });
 
-    // @ts-ignore
+
     it('should fail if all attempts fail', async () => {
         const strategy = new SimpleRetryJoinStrategy();
 

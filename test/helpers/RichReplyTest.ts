@@ -1,9 +1,9 @@
 import { RichReply } from "../../src";
 import * as expect from "expect";
 
-// @ts-ignore
+
 describe('RichReply', () => {
-    // @ts-ignore
+
     it('should return a well-formatted reply', () => {
         const inputEvent = {
             content: {
@@ -34,7 +34,7 @@ describe('RichReply', () => {
         expect(reply).toMatchObject(expectedReply);
     });
 
-    // @ts-ignore
+
     it('should return a well-formatted multiline reply', () => {
         const inputEvent = {
             content: {
@@ -65,7 +65,7 @@ describe('RichReply', () => {
         expect(reply).toMatchObject(expectedReply);
     });
 
-    // @ts-ignore
+
     it('should be able to reply to plaintext events', () => {
         const inputEvent = {
             content: {

@@ -12,9 +12,9 @@ import * as simple from "simple-mock";
 import * as MockHttpBackend from 'matrix-mock-request';
 import { expectArrayEquals } from "../TestUtils";
 
-// @ts-ignore
+
 describe('Intent', () => {
-    // @ts-ignore
+
     it('should prepare the underlying client for a bot user', async () => {
         const userId = "@someone:example.org";
         const asToken = "s3cret";
@@ -35,7 +35,7 @@ describe('Intent', () => {
         expect((<any>intent.underlyingClient).homeserverUrl).toEqual(hsUrl);
     });
 
-    // @ts-ignore
+
     it('should prepare the underlying client for a bot user with a join strategy', async () => {
         const userId = "@someone:example.org";
         const asToken = "s3cret";
@@ -59,7 +59,7 @@ describe('Intent', () => {
         expect((<any>intent.underlyingClient).joinStrategy).toEqual(joinStrategy);
     });
 
-    // @ts-ignore
+
     it('should prepare the underlying client for an impersonated user', async () => {
         const userId = "@someone:example.org";
         const botUserId = "@bot:example.org";
@@ -81,7 +81,7 @@ describe('Intent', () => {
         expect((<any>intent.underlyingClient).homeserverUrl).toEqual(hsUrl);
     });
 
-    // @ts-ignore
+
     it('should prepare the underlying client for an impersonated user with a join strategy', async () => {
         const userId = "@someone:example.org";
         const botUserId = "@bot:example.org";
@@ -106,9 +106,9 @@ describe('Intent', () => {
         expect((<any>intent.underlyingClient).joinStrategy).toEqual(joinStrategy);
     });
 
-    // @ts-ignore
+
     describe('ensureRegistered', () => {
-        // @ts-ignore
+
         it('should do nothing if the user is flagged as registered', async () => {
             const userId = "@someone:example.org";
             const botUserId = "@bot:example.org";
@@ -140,7 +140,7 @@ describe('Intent', () => {
             expect(addRegisteredSpy.callCount).toBe(0);
         });
 
-        // @ts-ignore
+
         it('should try to register the user when not flagged as such', async () => {
             const http = new MockHttpBackend();
             setRequestFn(http.requestFn);
@@ -181,7 +181,7 @@ describe('Intent', () => {
             expect(addRegisteredSpy.callCount).toBe(1);
         });
 
-        // @ts-ignore
+
         it('should gracefully handle M_USER_IN_USE', async () => {
             const http = new MockHttpBackend();
             setRequestFn(http.requestFn);
@@ -223,7 +223,7 @@ describe('Intent', () => {
             expect(addRegisteredSpy.callCount).toBe(1);
         });
 
-        // @ts-ignore
+
         it('should handle unexpected errors', async () => {
             const http = new MockHttpBackend();
             setRequestFn(http.requestFn);
@@ -272,9 +272,9 @@ describe('Intent', () => {
         });
     });
 
-    // @ts-ignore
+
     describe('getJoinedRooms', () => {
-        // @ts-ignore
+
         it('should fetch rooms if none are cached', async () => {
             const userId = "@someone:example.org";
             const botUserId = "@bot:example.org";
@@ -308,7 +308,7 @@ describe('Intent', () => {
             expect(getJoinedSpy.callCount).toBe(1);
         });
 
-        // @ts-ignore
+
         it('should cache rooms on join', async () => {
             const userId = "@someone:example.org";
             const botUserId = "@bot:example.org";
@@ -358,7 +358,7 @@ describe('Intent', () => {
             expect(joinSpy.callCount).toBe(1);
         });
 
-        // @ts-ignore
+
         it('should cache rooms on leave', async () => {
             const userId = "@someone:example.org";
             const botUserId = "@bot:example.org";
@@ -408,7 +408,7 @@ describe('Intent', () => {
             expect(leaveSpy.callCount).toBe(1);
         });
 
-        // @ts-ignore
+
         it('should cache rooms on ensureJoined', async () => {
             const userId = "@someone:example.org";
             const botUserId = "@bot:example.org";
@@ -468,9 +468,9 @@ describe('Intent', () => {
         });
     });
 
-    // @ts-ignore
+
     describe('refreshJoinedRooms', () => {
-        // @ts-ignore
+
         it('should overwrite any previously known joined rooms', async () => {
             const userId = "@someone:example.org";
             const botUserId = "@bot:example.org";
@@ -516,9 +516,9 @@ describe('Intent', () => {
         });
     });
 
-    // @ts-ignore
+
     describe('ensureJoined', () => {
-        // @ts-ignore
+
         it('should fetch the rooms the user is joined to', async () => {
             const userId = "@someone:example.org";
             const botUserId = "@bot:example.org";
@@ -553,7 +553,7 @@ describe('Intent', () => {
             expect(joinSpy.callCount).toBe(0);
         });
 
-        // @ts-ignore
+
         it('should attempt to join rooms a user is not in', async () => {
             const userId = "@someone:example.org";
             const botUserId = "@bot:example.org";
@@ -588,7 +588,7 @@ describe('Intent', () => {
             expect(joinSpy.callCount).toBe(1);
         });
 
-        // @ts-ignore
+
         it('should proxy failure for joining a room', async () => {
             const userId = "@someone:example.org";
             const botUserId = "@bot:example.org";
@@ -630,7 +630,7 @@ describe('Intent', () => {
             expect(joinSpy.callCount).toBe(1);
         });
 
-        // @ts-ignore
+
         it('should proxy failure for getting joined rooms', async () => {
             const userId = "@someone:example.org";
             const botUserId = "@bot:example.org";
@@ -673,9 +673,9 @@ describe('Intent', () => {
         });
     });
 
-    // @ts-ignore
+
     describe('ensureRegisteredAndJoined', () => {
-        // @ts-ignore
+
         it('should call both ensureRegistered and ensureJoined', async () => {
             const userId = "@someone:example.org";
             const botUserId = "@bot:example.org";
@@ -707,7 +707,7 @@ describe('Intent', () => {
             expect(joinSpy.callCount).toBe(1);
         });
 
-        // @ts-ignore
+
         it('should proxy failure from ensureRegistered', async () => {
             const userId = "@someone:example.org";
             const botUserId = "@bot:example.org";
@@ -746,7 +746,7 @@ describe('Intent', () => {
             expect(joinSpy.callCount).toBe(0);
         });
 
-        // @ts-ignore
+
         it('should proxy failure from ensureJoined', async () => {
             const userId = "@someone:example.org";
             const botUserId = "@bot:example.org";
@@ -786,9 +786,9 @@ describe('Intent', () => {
         });
     });
 
-    // @ts-ignore
+
     describe('sendEvent', () => {
-        // @ts-ignore
+
         it('should proxy through to the client while ensuring they are registered and joined', async () => {
             const userId = "@someone:example.org";
             const botUserId = "@bot:example.org";
@@ -831,7 +831,7 @@ describe('Intent', () => {
             expect(joinSpy.callCount).toBe(1);
         });
 
-        // @ts-ignore
+
         it('should proxy errors upwards', async () => {
             const userId = "@someone:example.org";
             const botUserId = "@bot:example.org";
@@ -880,9 +880,9 @@ describe('Intent', () => {
         });
     });
 
-    // @ts-ignore
+
     describe('sendText', () => {
-        // @ts-ignore
+
         it('should proxy through to the client while ensuring they are registered and joined', async () => {
             const userId = "@someone:example.org";
             const botUserId = "@bot:example.org";
@@ -925,7 +925,7 @@ describe('Intent', () => {
             expect(joinSpy.callCount).toBe(1);
         });
 
-        // @ts-ignore
+
         it('should proxy errors upwards', async () => {
             const userId = "@someone:example.org";
             const botUserId = "@bot:example.org";
@@ -974,9 +974,9 @@ describe('Intent', () => {
         });
     });
 
-    // @ts-ignore
+
     describe('joinRoom', () => {
-        // @ts-ignore
+
         it('should proxy through to the client while ensuring they are registered', async () => {
             const userId = "@someone:example.org";
             const botUserId = "@bot:example.org";
@@ -1021,7 +1021,7 @@ describe('Intent', () => {
             expect(refreshJoinedRoomsSpy.callCount).toBe(1);
         });
 
-        // @ts-ignore
+
         it('should proxy errors upwards', async () => {
             const userId = "@someone:example.org";
             const botUserId = "@bot:example.org";
@@ -1068,9 +1068,9 @@ describe('Intent', () => {
         });
     });
 
-    // @ts-ignore
+
     describe('leaveRoom', () => {
-        // @ts-ignore
+
         it('should proxy through to the client while ensuring they are registered', async () => {
             const userId = "@someone:example.org";
             const botUserId = "@bot:example.org";
@@ -1114,7 +1114,7 @@ describe('Intent', () => {
             expect(refreshJoinedRoomsSpy.callCount).toBe(1);
         });
 
-        // @ts-ignore
+
         it('should proxy errors upwards', async () => {
             const userId = "@someone:example.org";
             const botUserId = "@bot:example.org";

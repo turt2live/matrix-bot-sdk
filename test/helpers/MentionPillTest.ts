@@ -3,11 +3,11 @@ import { MentionPill } from "../../src";
 import { createTestClient } from "../MatrixClientTest";
 import * as simple from "simple-mock";
 
-// @ts-ignore
+
 describe('MentionPill', () => {
-    // @ts-ignore
+
     describe('forUser', () => {
-        // @ts-ignore
+
         it('should generate a pill for a user', async () => {
             const userId = "@test:example.org";
             const displayName = userId; //"John Doe";
@@ -20,7 +20,7 @@ describe('MentionPill', () => {
             expect(mention.text).toBe(expectedText);
         });
 
-        // @ts-ignore
+
         it('should generate a pill for a user using their profile', async () => {
             const {client} = createTestClient();
 
@@ -45,7 +45,7 @@ describe('MentionPill', () => {
             expect(stateSpy.callCount).toBe(0);
         });
 
-        // @ts-ignore
+
         it('should generate a pill for a user using their profile in a room', async () => {
             const {client} = createTestClient();
 
@@ -73,7 +73,7 @@ describe('MentionPill', () => {
             expect(stateSpy.callCount).toBe(1);
         });
 
-        // @ts-ignore
+
         it('should generate use the user ID when the profile errors (profile endpoint)', async () => {
             const {client} = createTestClient();
 
@@ -98,7 +98,7 @@ describe('MentionPill', () => {
             expect(stateSpy.callCount).toBe(0);
         });
 
-        // @ts-ignore
+
         it('should generate use the user ID when the profile errors (room endpoint)', async () => {
             const {client} = createTestClient();
 

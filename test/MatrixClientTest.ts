@@ -21,11 +21,11 @@ export function createTestClient(storage: IStorageProvider = null): { client: Ma
     return {http, hsUrl, accessToken, client};
 }
 
-// @ts-ignore
+
 describe('MatrixClient', () => {
-    // @ts-ignore
+
     describe("constructor", () => {
-        // @ts-ignore
+
         it('should pass through the homeserver URL and access token', () => {
             const homeserverUrl = "https://example.org";
             const accessToken = "example_token";
@@ -36,7 +36,7 @@ describe('MatrixClient', () => {
             expect(client.accessToken).toEqual(accessToken);
         });
 
-        // @ts-ignore
+
         it('should strip trailing slashes from the homeserver URL', () => {
             const homeserverUrl = "https://example.org";
             const accessToken = "example_token";
@@ -48,9 +48,9 @@ describe('MatrixClient', () => {
         });
     });
 
-    // @ts-ignore
+
     describe("doRequest", () => {
-        // @ts-ignore
+
         it('should use the request function defined', async () => {
             const {client} = createTestClient();
 
@@ -62,7 +62,7 @@ describe('MatrixClient', () => {
             expect(spy.callCount).toBe(1);
         });
 
-        // @ts-ignore
+
         it('should reject upon error', async () => {
             const {client, http} = createTestClient();
             http.when("GET", "/test").respond(404, {error: "Not Found"});
@@ -78,7 +78,7 @@ describe('MatrixClient', () => {
             }
         });
 
-        // @ts-ignore
+
         it('should return a parsed JSON body', async () => {
             const {client, http} = createTestClient();
 
@@ -90,7 +90,7 @@ describe('MatrixClient', () => {
             expect(response).toMatchObject(expectedResponse);
         });
 
-        // @ts-ignore
+
         it('should be kind with prefixed slashes', async () => {
             const {client, http} = createTestClient();
 
@@ -102,7 +102,7 @@ describe('MatrixClient', () => {
             expect(response).toMatchObject(expectedResponse);
         });
 
-        // @ts-ignore
+
         it('should send the appropriate body', async () => {
             const {client, http} = createTestClient();
 
@@ -116,7 +116,7 @@ describe('MatrixClient', () => {
             await client.doRequest("PUT", "/test", null, expectedInput);
         });
 
-        // @ts-ignore
+
         it('should send the appropriate query string', async () => {
             const {client, http} = createTestClient();
 
@@ -130,7 +130,7 @@ describe('MatrixClient', () => {
             await client.doRequest("GET", "/test", expectedInput);
         });
 
-        // @ts-ignore
+
         it('should send the access token in the Authorization header', async () => {
             const {client, http, accessToken} = createTestClient();
 
@@ -143,7 +143,7 @@ describe('MatrixClient', () => {
             await client.doRequest("GET", "/test");
         });
 
-        // @ts-ignore
+
         it('should send application/json by default', async () => {
             const {client, http} = createTestClient();
 
@@ -156,7 +156,7 @@ describe('MatrixClient', () => {
             await client.doRequest("PUT", "/test", null, {test: 1});
         });
 
-        // @ts-ignore
+
         it('should send the content-type of choice where possible', async () => {
             const {client, http} = createTestClient();
 
@@ -174,7 +174,7 @@ describe('MatrixClient', () => {
             await client.doRequest("PUT", "/test", null, fakeJson, 60000, false, contentType);
         });
 
-        // @ts-ignore
+
         it('should return raw responses if requested', async () => {
             const {client, http} = createTestClient();
 
@@ -188,7 +188,7 @@ describe('MatrixClient', () => {
             expect(result.statusCode).toBe(200);
         });
 
-        // @ts-ignore
+
         it('should proxy the timeout to request', async () => {
             const {client, http} = createTestClient();
 
@@ -203,9 +203,9 @@ describe('MatrixClient', () => {
         });
     });
 
-    // @ts-ignore
+
     describe('impersonateUserId', () => {
-        // @ts-ignore
+
         it('should set a user_id param on requests', async () => {
             const {client, http} = createTestClient();
 
@@ -222,9 +222,9 @@ describe('MatrixClient', () => {
         });
     });
 
-    // @ts-ignore
+
     describe('unstableApis', () => {
-        // @ts-ignore
+
         it('should always return an object', async () => {
             const {client} = createTestClient();
 
@@ -233,9 +233,9 @@ describe('MatrixClient', () => {
         });
     });
 
-    // @ts-ignore
+
     describe('getAccountData', () => {
-        // @ts-ignore
+
         it('should call the right endpoint', async () => {
             const {client, http, hsUrl} = createTestClient();
 
@@ -254,9 +254,9 @@ describe('MatrixClient', () => {
         });
     });
 
-    // @ts-ignore
+
     describe('getPresenceStatus', () => {
-        // @ts-ignore
+
         it('should call the right endpoint', async () => {
             const {client, http, hsUrl} = createTestClient();
 
@@ -281,9 +281,9 @@ describe('MatrixClient', () => {
         });
     });
 
-    // @ts-ignore
+
     describe('getPresenceStatusFor', () => {
-        // @ts-ignore
+
         it('should call the right endpoint', async () => {
             const {client, http, hsUrl} = createTestClient();
 
@@ -306,9 +306,9 @@ describe('MatrixClient', () => {
         });
     });
 
-    // @ts-ignore
+
     describe('setPresenceStatus', () => {
-        // @ts-ignore
+
         it('should call the right endpoint', async () => {
             const {client, http, hsUrl} = createTestClient();
 
@@ -332,9 +332,9 @@ describe('MatrixClient', () => {
         });
     });
 
-    // @ts-ignore
+
     describe('getRoomAccountData', () => {
-        // @ts-ignore
+
         it('should call the right endpoint', async () => {
             const {client, http, hsUrl} = createTestClient();
 
@@ -354,9 +354,9 @@ describe('MatrixClient', () => {
         });
     });
 
-    // @ts-ignore
+
     describe('setAccountData', () => {
-        // @ts-ignore
+
         it('should call the right endpoint', async () => {
             const {client, http, hsUrl} = createTestClient();
 
@@ -377,9 +377,9 @@ describe('MatrixClient', () => {
         });
     });
 
-    // @ts-ignore
+
     describe('setRoomAccountData', () => {
-        // @ts-ignore
+
         it('should call the right endpoint', async () => {
             const {client, http, hsUrl} = createTestClient();
 
@@ -401,9 +401,9 @@ describe('MatrixClient', () => {
         });
     });
 
-    // @ts-ignore
+
     describe('createRoomAlias', () => {
-        // @ts-ignore
+
         it('should call the right endpoint', async () => {
             const {client, http, hsUrl} = createTestClient();
 
@@ -421,9 +421,9 @@ describe('MatrixClient', () => {
         });
     });
 
-    // @ts-ignore
+
     describe('deleteRoomAlias', () => {
-        // @ts-ignore
+
         it('should call the right endpoint', async () => {
             const {client, http, hsUrl} = createTestClient();
 
@@ -439,9 +439,9 @@ describe('MatrixClient', () => {
         });
     });
 
-    // @ts-ignore
+
     describe('setDirectoryVisibility', () => {
-        // @ts-ignore
+
         it('should call the right endpoint', async () => {
             const {client, http, hsUrl} = createTestClient();
 
@@ -459,9 +459,9 @@ describe('MatrixClient', () => {
         });
     });
 
-    // @ts-ignore
+
     describe('getDirectoryVisibility', () => {
-        // @ts-ignore
+
         it('should call the right endpoint', async () => {
             const {client, http, hsUrl} = createTestClient();
 
@@ -476,7 +476,7 @@ describe('MatrixClient', () => {
             await client.getDirectoryVisibility(roomId);
         });
 
-        // @ts-ignore
+
         it('should return the right visibility string', async () => {
             const {client, http} = createTestClient();
 
@@ -491,9 +491,9 @@ describe('MatrixClient', () => {
         });
     });
 
-    // @ts-ignore
+
     describe('resolveRoom', () => {
-        // @ts-ignore
+
         it('should return the raw room ID if given an ID', async () => {
             const {client} = createTestClient();
 
@@ -502,7 +502,7 @@ describe('MatrixClient', () => {
             expect(result).toEqual(roomId);
         });
 
-        // @ts-ignore
+
         it('should try to look up room aliases', async () => {
             const {client} = createTestClient();
 
@@ -520,7 +520,7 @@ describe('MatrixClient', () => {
             expect(spy.callCount).toBe(1);
         });
 
-        // @ts-ignore
+
         it('should error on invalid identifiers', async () => {
             const {client} = createTestClient();
 
@@ -535,9 +535,9 @@ describe('MatrixClient', () => {
         });
     });
 
-    // @ts-ignore
+
     describe('lookupRoomAlias', () => {
-        // @ts-ignore
+
         it('should call the right endpoint', async () => {
             const {client, http, hsUrl} = createTestClient();
 
@@ -554,7 +554,7 @@ describe('MatrixClient', () => {
             await client.lookupRoomAlias(alias);
         });
 
-        // @ts-ignore
+
         it('should return a translated response', async () => {
             const {client, http} = createTestClient();
 
@@ -570,9 +570,9 @@ describe('MatrixClient', () => {
         });
     });
 
-    // @ts-ignore
+
     describe('inviteUser', () => {
-        // @ts-ignore
+
         it('should call the right endpoint', async () => {
             const {client, http, hsUrl} = createTestClient();
 
@@ -590,9 +590,9 @@ describe('MatrixClient', () => {
         });
     });
 
-    // @ts-ignore
+
     describe('kickUser', () => {
-        // @ts-ignore
+
         it('should call the right endpoint', async () => {
             const {client, http, hsUrl} = createTestClient();
 
@@ -609,7 +609,7 @@ describe('MatrixClient', () => {
             await client.kickUser(userId, roomId);
         });
 
-        // @ts-ignore
+
         it('should support a reason', async () => {
             const {client, http, hsUrl} = createTestClient();
 
@@ -628,9 +628,9 @@ describe('MatrixClient', () => {
         });
     });
 
-    // @ts-ignore
+
     describe('banUser', () => {
-        // @ts-ignore
+
         it('should call the right endpoint', async () => {
             const {client, http, hsUrl} = createTestClient();
 
@@ -647,7 +647,7 @@ describe('MatrixClient', () => {
             await client.banUser(userId, roomId);
         });
 
-        // @ts-ignore
+
         it('should support a reason', async () => {
             const {client, http, hsUrl} = createTestClient();
 
@@ -666,9 +666,9 @@ describe('MatrixClient', () => {
         });
     });
 
-    // @ts-ignore
+
     describe('unbanUser', () => {
-        // @ts-ignore
+
         it('should call the right endpoint', async () => {
             const {client, http, hsUrl} = createTestClient();
 
@@ -686,9 +686,9 @@ describe('MatrixClient', () => {
         });
     });
 
-    // @ts-ignore
+
     describe('getUserId', () => {
-        // @ts-ignore
+
         it('should return the user ID if it is already known', async () => {
             const {client} = createTestClient();
 
@@ -699,7 +699,7 @@ describe('MatrixClient', () => {
             expect(result).toEqual(userId);
         });
 
-        // @ts-ignore
+
         it('should request the user ID if it is not known', async () => {
             const {client, http} = createTestClient();
 
@@ -713,9 +713,9 @@ describe('MatrixClient', () => {
         });
     });
 
-    // @ts-ignore
+
     describe('stop', () => {
-        // @ts-ignore
+
         it('should stop when requested', async () => {
             const {client, http} = createTestClient();
 
@@ -748,9 +748,9 @@ describe('MatrixClient', () => {
         }).timeout(10000);
     });
 
-    // @ts-ignore
+
     describe('start', () => {
-        // @ts-ignore
+
         it('should use an existing filter if one is present', async () => {
             const storage = new MemoryStorageProvider();
             const {client, http} = createTestClient(storage);
@@ -770,7 +770,7 @@ describe('MatrixClient', () => {
             await client.start(filter);
         });
 
-        // @ts-ignore
+
         it('should create a filter when the stored filter is outdated', async () => {
             const storage = new MemoryStorageProvider();
             const {client, http, hsUrl} = createTestClient(storage);
@@ -800,7 +800,7 @@ describe('MatrixClient', () => {
             expect(setFilterFn.callCount).toBe(1);
         });
 
-        // @ts-ignore
+
         it('should create a filter when there is no stored filter', async () => {
             const storage = new MemoryStorageProvider();
             const {client, http, hsUrl} = createTestClient(storage);
@@ -831,7 +831,7 @@ describe('MatrixClient', () => {
             expect(setFilterFn.callCount).toBe(1);
         });
 
-        // @ts-ignore
+
         it('should use the filter ID when syncing', async () => {
             const storage = new MemoryStorageProvider();
             const {client, http} = createTestClient(storage);
@@ -854,7 +854,7 @@ describe('MatrixClient', () => {
             await client.start(filter);
         });
 
-        // @ts-ignore
+
         it('should make sync requests with the new token', async () => {
             const storage = new MemoryStorageProvider();
             const {client, http} = createTestClient(storage);
@@ -890,7 +890,7 @@ describe('MatrixClient', () => {
             await waitPromise;
         });
 
-        // @ts-ignore
+
         it('should read the sync token from the store', async () => {
             const storage = new MemoryStorageProvider();
             const {client, http} = createTestClient(storage);
@@ -925,7 +925,7 @@ describe('MatrixClient', () => {
             await waitPromise;
         });
 
-        // @ts-ignore
+
         it('should use the syncing presence variable', async () => {
             const storage = new MemoryStorageProvider();
             const {client, http} = createTestClient(storage);
@@ -956,7 +956,7 @@ describe('MatrixClient', () => {
         });
     });
 
-    // @ts-ignore
+
     describe('processSync', () => {
 
         interface ProcessSyncClient {
@@ -965,7 +965,7 @@ describe('MatrixClient', () => {
             processSync(raw: any): Promise<any>;
         }
 
-        // @ts-ignore
+
         it('should process non-room account data', async () => {
             const {client: realClient} = createTestClient();
             const client = <ProcessSyncClient>(<any>realClient);
@@ -991,7 +991,7 @@ describe('MatrixClient', () => {
             expect(spy.callCount).toBe(1);
         });
 
-        // @ts-ignore
+
         it('should process left rooms', async () => {
             const {client: realClient} = createTestClient();
             const client = <ProcessSyncClient>(<any>realClient);
@@ -1020,7 +1020,7 @@ describe('MatrixClient', () => {
             expect(spy.callCount).toBe(1);
         });
 
-        // @ts-ignore
+
         it('should process left rooms account data', async () => {
             const {client: realClient} = createTestClient();
             const client = <ProcessSyncClient>(<any>realClient);
@@ -1050,7 +1050,7 @@ describe('MatrixClient', () => {
             expect(spy.callCount).toBe(1);
         });
 
-        // @ts-ignore
+
         it('should use the most recent leave event', async () => {
             const {client: realClient} = createTestClient();
             const client = <ProcessSyncClient>(<any>realClient);
@@ -1089,7 +1089,7 @@ describe('MatrixClient', () => {
             expect(spy.callCount).toBe(1);
         });
 
-        // @ts-ignore
+
         it('should not be affected by irrelevant events during leaves', async () => {
             const {client: realClient} = createTestClient();
             const client = <ProcessSyncClient>(<any>realClient);
@@ -1128,7 +1128,7 @@ describe('MatrixClient', () => {
             expect(spy.callCount).toBe(1);
         });
 
-        // @ts-ignore
+
         it('should not process leaves detached from events', async () => {
             const {client: realClient} = createTestClient();
             const client = <ProcessSyncClient>(<any>realClient);
@@ -1168,7 +1168,7 @@ describe('MatrixClient', () => {
             expect(spy.callCount).toBe(0);
         });
 
-        // @ts-ignore
+
         it('should not get hung up on not having an age available for leaves', async () => {
             const {client: realClient} = createTestClient();
             const client = <ProcessSyncClient>(<any>realClient);
@@ -1196,7 +1196,7 @@ describe('MatrixClient', () => {
             expect(spy.callCount).toBe(1);
         });
 
-        // @ts-ignore
+
         it('should process room invites', async () => {
             const {client: realClient} = createTestClient();
             const client = <ProcessSyncClient>(<any>realClient);
@@ -1227,7 +1227,7 @@ describe('MatrixClient', () => {
             expect(spy.callCount).toBe(1);
         });
 
-        // @ts-ignore
+
         it('should use the most recent invite event', async () => {
             const {client: realClient} = createTestClient();
             const client = <ProcessSyncClient>(<any>realClient);
@@ -1270,7 +1270,7 @@ describe('MatrixClient', () => {
             expect(spy.callCount).toBe(1);
         });
 
-        // @ts-ignore
+
         it('should not be affected by irrelevant events during invites', async () => {
             const {client: realClient} = createTestClient();
             const client = <ProcessSyncClient>(<any>realClient);
@@ -1313,7 +1313,7 @@ describe('MatrixClient', () => {
             expect(spy.callCount).toBe(1);
         });
 
-        // @ts-ignore
+
         it('should not process invites detached from events', async () => {
             const {client: realClient} = createTestClient();
             const client = <ProcessSyncClient>(<any>realClient);
@@ -1357,7 +1357,7 @@ describe('MatrixClient', () => {
             expect(spy.callCount).toBe(0);
         });
 
-        // @ts-ignore
+
         it('should not get hung up by not having an age available for invites', async () => {
             const {client: realClient} = createTestClient();
             const client = <ProcessSyncClient>(<any>realClient);
@@ -1388,7 +1388,7 @@ describe('MatrixClient', () => {
             expect(spy.callCount).toBe(1);
         });
 
-        // @ts-ignore
+
         it('should process room joins', async () => {
             const {client: realClient} = createTestClient();
             const client = <ProcessSyncClient>(<any>realClient);
@@ -1409,7 +1409,7 @@ describe('MatrixClient', () => {
             expect(spy.callCount).toBe(1);
         });
 
-        // @ts-ignore
+
         it('should process joined room account data', async () => {
             const {client: realClient} = createTestClient();
             const client = <ProcessSyncClient>(<any>realClient);
@@ -1439,7 +1439,7 @@ describe('MatrixClient', () => {
             expect(spy.callCount).toBe(1);
         });
 
-        // @ts-ignore
+
         it('should not duplicate room joins', async () => {
             const {client: realClient} = createTestClient();
             const client = <ProcessSyncClient>(<any>realClient);
@@ -1462,7 +1462,7 @@ describe('MatrixClient', () => {
             expect(spy.callCount).toBe(1);
         });
 
-        // @ts-ignore
+
         it('should not break with missing properties', async () => {
             const {client: realClient} = createTestClient();
             const client = <ProcessSyncClient>(<any>realClient);
@@ -1489,7 +1489,7 @@ describe('MatrixClient', () => {
             });
         });
 
-        // @ts-ignore
+
         it('should process events for joined rooms', async () => {
             const {client: realClient} = createTestClient();
             const client = <ProcessSyncClient>(<any>realClient);
@@ -1545,7 +1545,7 @@ describe('MatrixClient', () => {
             expect(eventSpy.callCount).toBe(4);
         });
 
-        // @ts-ignore
+
         it('should process tombstone events', async () => {
             const {client: realClient} = createTestClient();
             const client = <ProcessSyncClient>(<any>realClient);
@@ -1595,7 +1595,7 @@ describe('MatrixClient', () => {
             expect(eventSpy.callCount).toBe(2);
         });
 
-        // @ts-ignore
+
         it('should process create events with a predecessor', async () => {
             const {client: realClient} = createTestClient();
             const client = <ProcessSyncClient>(<any>realClient);
@@ -1645,7 +1645,7 @@ describe('MatrixClient', () => {
             expect(eventSpy.callCount).toBe(2);
         });
 
-        // @ts-ignore
+
         it('should send events through a processor', async () => {
             const {client: realClient} = createTestClient();
             const client = <ProcessSyncClient>(<any>realClient);
@@ -1727,7 +1727,7 @@ describe('MatrixClient', () => {
             expect(eventSpy.callCount).toBe(5);
         });
 
-        // @ts-ignore
+
         it('should send events through the relevant processor', async () => {
             const {client: realClient} = createTestClient();
             const client = <ProcessSyncClient>(<any>realClient);
@@ -1821,9 +1821,9 @@ describe('MatrixClient', () => {
         });
     });
 
-    // @ts-ignore
+
     describe('getEvent', () => {
-        // @ts-ignore
+
         it('should call the right endpoint', async () => {
             const {client, http, hsUrl} = createTestClient();
 
@@ -1841,7 +1841,7 @@ describe('MatrixClient', () => {
             expect(result).toMatchObject(event);
         });
 
-        // @ts-ignore
+
         it('should process events', async () => {
             const {client, http, hsUrl} = createTestClient();
 
@@ -1869,9 +1869,9 @@ describe('MatrixClient', () => {
         });
     });
 
-    // @ts-ignore
+
     describe('getRoomState', () => {
-        // @ts-ignore
+
         it('should call the right endpoint', async () => {
             const {client, http, hsUrl} = createTestClient();
 
@@ -1892,7 +1892,7 @@ describe('MatrixClient', () => {
             }
         });
 
-        // @ts-ignore
+
         it('should process events', async () => {
             const {client, http, hsUrl} = createTestClient();
 
@@ -1927,9 +1927,9 @@ describe('MatrixClient', () => {
         });
     });
 
-    // @ts-ignore
+
     describe('getRoomStateEvent', () => {
-        // @ts-ignore
+
         it('should call the right endpoint with no state key', async () => {
             const {client, http, hsUrl} = createTestClient();
 
@@ -1947,7 +1947,7 @@ describe('MatrixClient', () => {
             expect(result).toMatchObject(event);
         });
 
-        // @ts-ignore
+
         it('should call the right endpoint with a state key', async () => {
             const {client, http, hsUrl} = createTestClient();
 
@@ -1966,7 +1966,7 @@ describe('MatrixClient', () => {
             expect(result).toMatchObject(event);
         });
 
-        // @ts-ignore
+
         it('should process events with no state key', async () => {
             const {client, http, hsUrl} = createTestClient();
 
@@ -1993,7 +1993,7 @@ describe('MatrixClient', () => {
             expect(result["processed"]).toBeTruthy();
         });
 
-        // @ts-ignore
+
         it('should process events with a state key', async () => {
             const {client, http, hsUrl} = createTestClient();
 
@@ -2022,9 +2022,9 @@ describe('MatrixClient', () => {
         });
     });
 
-    // @ts-ignore
+
     describe('getUserProfile', () => {
-        // @ts-ignore
+
         it('should call the right endpoint', async () => {
             const {client, http, hsUrl} = createTestClient();
 
@@ -2042,9 +2042,9 @@ describe('MatrixClient', () => {
         });
     });
 
-    // @ts-ignore
+
     describe('createRoom', () => {
-        // @ts-ignore
+
         it('should call the right endpoint', async () => {
             const {client, http} = createTestClient();
 
@@ -2060,7 +2060,7 @@ describe('MatrixClient', () => {
             expect(result).toEqual(roomId);
         });
 
-        // @ts-ignore
+
         it('should call the right endpoint with all the provided properties', async () => {
             const {client, http} = createTestClient();
 
@@ -2081,9 +2081,9 @@ describe('MatrixClient', () => {
         });
     });
 
-    // @ts-ignore
+
     describe('setDisplayName', () => {
-        // @ts-ignore
+
         it('should call the right endpoint', async () => {
             const {client, http, hsUrl} = createTestClient();
 
@@ -2103,9 +2103,9 @@ describe('MatrixClient', () => {
         });
     });
 
-    // @ts-ignore
+
     describe('setAvatarUrl', () => {
-        // @ts-ignore
+
         it('should call the right endpoint', async () => {
             const {client, http, hsUrl} = createTestClient();
 
@@ -2125,9 +2125,9 @@ describe('MatrixClient', () => {
         });
     });
 
-    // @ts-ignore
+
     describe('joinRoom', () => {
-        // @ts-ignore
+
         it('should call the right endpoint for room IDs', async () => {
             const {client, http, hsUrl} = createTestClient();
 
@@ -2145,7 +2145,7 @@ describe('MatrixClient', () => {
             expect(result).toEqual(roomId);
         });
 
-        // @ts-ignore
+
         it('should call the right endpoint with server names', async () => {
             const {client, http, hsUrl} = createTestClient();
 
@@ -2168,7 +2168,7 @@ describe('MatrixClient', () => {
             expect(result).toEqual(roomId);
         });
 
-        // @ts-ignore
+
         it('should call the right endpoint for room aliases', async () => {
             const {client, http, hsUrl} = createTestClient();
 
@@ -2187,7 +2187,7 @@ describe('MatrixClient', () => {
             expect(result).toEqual(roomId);
         });
 
-        // @ts-ignore
+
         it('should use a join strategy for room IDs', async () => {
             const {client, http, hsUrl} = createTestClient();
 
@@ -2217,7 +2217,7 @@ describe('MatrixClient', () => {
             expect(strategySpy.callCount).toBe(1);
         });
 
-        // @ts-ignore
+
         it('should use a join strategy for room aliases', async () => {
             const {client, http, hsUrl} = createTestClient();
 
@@ -2249,9 +2249,9 @@ describe('MatrixClient', () => {
         });
     });
 
-    // @ts-ignore
+
     describe('getJoinedRooms', () => {
-        // @ts-ignore
+
         it('should call the right endpoint', async () => {
             const {client, http, hsUrl} = createTestClient();
 
@@ -2268,9 +2268,9 @@ describe('MatrixClient', () => {
         });
     });
 
-    // @ts-ignore
+
     describe('getJoinedRoomMembers', () => {
-        // @ts-ignore
+
         it('should call the right endpoint', async () => {
             const {client, http, hsUrl} = createTestClient();
 
@@ -2290,9 +2290,9 @@ describe('MatrixClient', () => {
         });
     });
 
-    // @ts-ignore
+
     describe('getMembers', () => {
-        // @ts-ignore
+
         it('should call the right endpoint', async () => {
             const {client, http, hsUrl} = createTestClient();
 
@@ -2325,7 +2325,7 @@ describe('MatrixClient', () => {
             expectArrayEquals(memberEvents, result);
         });
 
-        // @ts-ignore
+
         it('should call the right endpoint with a batch token', async () => {
             const {client, http, hsUrl} = createTestClient();
 
@@ -2360,7 +2360,7 @@ describe('MatrixClient', () => {
             expectArrayEquals(memberEvents, result);
         });
 
-        // @ts-ignore
+
         it('should call the right endpoint with membership filtering', async () => {
             const {client, http, hsUrl} = createTestClient();
 
@@ -2398,9 +2398,9 @@ describe('MatrixClient', () => {
         });
     });
 
-    // @ts-ignore
+
     describe('leaveRoom', () => {
-        // @ts-ignore
+
         it('should call the right endpoint', async () => {
             const {client, http, hsUrl} = createTestClient();
 
@@ -2416,9 +2416,9 @@ describe('MatrixClient', () => {
         });
     });
 
-    // @ts-ignore
+
     describe('sendReadReceipt', () => {
-        // @ts-ignore
+
         it('should call the right endpoint', async () => {
             const {client, http, hsUrl} = createTestClient();
 
@@ -2435,9 +2435,9 @@ describe('MatrixClient', () => {
         });
     });
 
-    // @ts-ignore
+
     describe('setTyping', () => {
-        // @ts-ignore
+
         it('should call the right endpoint', async () => {
             const {client, http, hsUrl} = createTestClient();
 
@@ -2459,9 +2459,9 @@ describe('MatrixClient', () => {
         });
     });
 
-    // @ts-ignore
+
     describe('replyText', () => {
-        // @ts-ignore
+
         it('should call the right endpoint', async () => {
             const {client, http, hsUrl} = createTestClient();
 
@@ -2502,7 +2502,7 @@ describe('MatrixClient', () => {
             expect(result).toEqual(eventId);
         });
 
-        // @ts-ignore
+
         it('should use encoded plain text as the HTML component', async () => {
             const {client, http, hsUrl} = createTestClient();
 
@@ -2544,9 +2544,9 @@ describe('MatrixClient', () => {
         });
     });
 
-    // @ts-ignore
+
     describe('replyNotice', () => {
-        // @ts-ignore
+
         it('should call the right endpoint', async () => {
             const {client, http, hsUrl} = createTestClient();
 
@@ -2587,7 +2587,7 @@ describe('MatrixClient', () => {
             expect(result).toEqual(eventId);
         });
 
-        // @ts-ignore
+
         it('should use encoded plain text as the HTML component', async () => {
             const {client, http, hsUrl} = createTestClient();
 
@@ -2629,9 +2629,9 @@ describe('MatrixClient', () => {
         });
     });
 
-    // @ts-ignore
+
     describe('sendNotice', () => {
-        // @ts-ignore
+
         it('should call the right endpoint', async () => {
             const {client, http, hsUrl} = createTestClient();
 
@@ -2655,9 +2655,9 @@ describe('MatrixClient', () => {
         });
     });
 
-    // @ts-ignore
+
     describe('sendText', () => {
-        // @ts-ignore
+
         it('should call the right endpoint', async () => {
             const {client, http, hsUrl} = createTestClient();
 
@@ -2681,9 +2681,9 @@ describe('MatrixClient', () => {
         });
     });
 
-    // @ts-ignore
+
     describe('sendMessage', () => {
-        // @ts-ignore
+
         it('should call the right endpoint', async () => {
             const {client, http, hsUrl} = createTestClient();
 
@@ -2708,9 +2708,9 @@ describe('MatrixClient', () => {
         });
     });
 
-    // @ts-ignore
+
     describe('sendEvent', () => {
-        // @ts-ignore
+
         it('should call the right endpoint', async () => {
             const {client, http, hsUrl} = createTestClient();
 
@@ -2735,9 +2735,9 @@ describe('MatrixClient', () => {
         });
     });
 
-    // @ts-ignore
+
     describe('sendStateEvent', () => {
-        // @ts-ignore
+
         it('should call the right endpoint with no state key', async () => {
             const {client, http, hsUrl} = createTestClient();
 
@@ -2763,7 +2763,7 @@ describe('MatrixClient', () => {
             expect(result).toEqual(eventId);
         });
 
-        // @ts-ignore
+
         it('should call the right endpoint with a state key', async () => {
             const {client, http, hsUrl} = createTestClient();
 
@@ -2790,9 +2790,9 @@ describe('MatrixClient', () => {
         });
     });
 
-    // @ts-ignore
+
     describe('redactEvent', () => {
-        // @ts-ignore
+
         it('should call the right endpoint', async () => {
             const {client, http, hsUrl} = createTestClient();
 
@@ -2813,9 +2813,9 @@ describe('MatrixClient', () => {
         });
     });
 
-    // @ts-ignore
+
     describe('userHasPowerLevelFor', () => {
-        // @ts-ignore
+
         it('throws when a power level event cannot be located', async () => {
             const {client} = createTestClient();
 
@@ -2842,7 +2842,7 @@ describe('MatrixClient', () => {
             expect(getStateEventSpy.callCount).toBe(1);
         });
 
-        // @ts-ignore
+
         it('assumes PL50 for state events when no power level information is available', async () => {
             const {client} = createTestClient();
 
@@ -2877,7 +2877,7 @@ describe('MatrixClient', () => {
             expect(getStateEventSpy.callCount).toBe(3);
         });
 
-        // @ts-ignore
+
         it('assumes PL0 for state events when no power level information is available', async () => {
             const {client} = createTestClient();
 
@@ -2917,7 +2917,7 @@ describe('MatrixClient', () => {
             expect(getStateEventSpy.callCount).toBe(4);
         });
 
-        // @ts-ignore
+
         it('uses the state_default parameter', async () => {
             const {client} = createTestClient();
 
@@ -2952,7 +2952,7 @@ describe('MatrixClient', () => {
             expect(getStateEventSpy.callCount).toBe(3);
         });
 
-        // @ts-ignore
+
         it('uses the users_default parameter', async () => {
             const {client} = createTestClient();
 
@@ -2987,7 +2987,7 @@ describe('MatrixClient', () => {
             expect(getStateEventSpy.callCount).toBe(3);
         });
 
-        // @ts-ignore
+
         it('uses the events[event_type] parameter for non-state events', async () => {
             const {client} = createTestClient();
 
@@ -3023,7 +3023,7 @@ describe('MatrixClient', () => {
             expect(getStateEventSpy.callCount).toBe(3);
         });
 
-        // @ts-ignore
+
         it('uses the events[event_type] parameter for state events', async () => {
             const {client} = createTestClient();
 
@@ -3059,7 +3059,7 @@ describe('MatrixClient', () => {
             expect(getStateEventSpy.callCount).toBe(3);
         });
 
-        // @ts-ignore
+
         it('uses the events[event_type] parameter safely', async () => {
             const {client} = createTestClient();
 
@@ -3095,7 +3095,7 @@ describe('MatrixClient', () => {
             expect(getStateEventSpy.callCount).toBe(3);
         });
 
-        // @ts-ignore
+
         it('defaults the user to PL0', async () => {
             const {client} = createTestClient();
 
@@ -3130,7 +3130,7 @@ describe('MatrixClient', () => {
             expect(getStateEventSpy.callCount).toBe(3);
         });
 
-        // @ts-ignore
+
         it('defaults the user to PL0 safely', async () => {
             const {client} = createTestClient();
 
@@ -3166,9 +3166,9 @@ describe('MatrixClient', () => {
         });
     });
 
-    // @ts-ignore
+
     describe('mxcToHttp', () => {
-        // @ts-ignore
+
         it('should convert to the right URL', async () => {
             const {client, hsUrl} = createTestClient();
 
@@ -3180,7 +3180,7 @@ describe('MatrixClient', () => {
             expect(http).toBe(`${hsUrl}/_matrix/media/r0/download/${encodeURIComponent(domain)}/${encodeURIComponent(mediaId)}`);
         });
 
-        // @ts-ignore
+
         it('should error for non-MXC URIs', async () => {
             const {client, hsUrl} = createTestClient();
 
@@ -3199,9 +3199,9 @@ describe('MatrixClient', () => {
         });
     });
 
-    // @ts-ignore
+
     describe('mxcToHttpThumbnail', () => {
-        // @ts-ignore
+
         it('should convert to the right URL', async () => {
             const {client, hsUrl} = createTestClient();
 
@@ -3216,7 +3216,7 @@ describe('MatrixClient', () => {
             expect(http).toBe(`${hsUrl}/_matrix/media/r0/thumbnail/${encodeURIComponent(domain)}/${encodeURIComponent(mediaId)}?width=${width}&height=${height}&method=${encodeURIComponent(method)}`);
         });
 
-        // @ts-ignore
+
         it('should error for non-MXC URIs', async () => {
             const {client, hsUrl} = createTestClient();
 
@@ -3238,9 +3238,9 @@ describe('MatrixClient', () => {
         });
     });
 
-    // @ts-ignore
+
     describe('uploadContent', () => {
-        // @ts-ignore
+
         it('should call the right endpoint', async () => {
             const {client, http} = createTestClient();
 
@@ -3264,7 +3264,7 @@ describe('MatrixClient', () => {
             expect(result).toEqual(uri);
         });
 
-        // @ts-ignore
+
         it('should use the right filename', async () => {
             const {client, http} = createTestClient();
 
@@ -3289,9 +3289,9 @@ describe('MatrixClient', () => {
         });
     });
 
-    // @ts-ignore
+
     describe('downloadContent', () => {
-        // @ts-ignore
+
         it('should call the right endpoint', async () => {
             const {client, http} = createTestClient();
             const urlPart = "example.org/testing";
@@ -3320,9 +3320,9 @@ describe('MatrixClient', () => {
         });
     });
 
-    // @ts-ignore
+
     describe('uploadContentFromUrl', () => {
-        // @ts-ignore
+
         it('should download then upload the content', async () => {
             const {client, http, hsUrl} = createTestClient();
 
@@ -3350,9 +3350,9 @@ describe('MatrixClient', () => {
         });
     });
 
-    // @ts-ignore
+
     describe('getRoomUpgradeHistory', () => {
-        // @ts-ignore
+
         it('should calculate the room upgrade history', async () => {
             const {client} = createTestClient();
 
@@ -3501,7 +3501,7 @@ describe('MatrixClient', () => {
             expect(result).toMatchObject(expected);
         });
 
-        // @ts-ignore
+
         it('should handle cases with no previous rooms', async () => {
             const {client} = createTestClient();
 
@@ -3606,7 +3606,7 @@ describe('MatrixClient', () => {
             expect(result).toMatchObject(expected);
         });
 
-        // @ts-ignore
+
         it('should handle cases with no known newer rooms', async () => {
             const {client} = createTestClient();
 
@@ -3711,7 +3711,7 @@ describe('MatrixClient', () => {
             expect(result).toMatchObject(expected);
         });
 
-        // @ts-ignore
+
         it('should handle cases with no newer rooms', async () => {
             const {client} = createTestClient();
 
@@ -3803,7 +3803,7 @@ describe('MatrixClient', () => {
             expect(result).toMatchObject(expected);
         });
 
-        // @ts-ignore
+
         it('should handle cases with no upgrades', async () => {
             const {client} = createTestClient();
 
@@ -3844,9 +3844,9 @@ describe('MatrixClient', () => {
         });
     });
 
-    // @ts-ignore
+
     describe('redactObjectForLogging', () => {
-        // @ts-ignore
+
         it('should redact multilevel objects', () => {
             const {client} = createTestClient();
 

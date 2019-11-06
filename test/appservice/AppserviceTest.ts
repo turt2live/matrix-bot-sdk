@@ -42,9 +42,9 @@ async function beginAppserviceWithProtocols(protocols: string[]) {
     return { appservice, doCall };
 }
 
-// @ts-ignore
+
 describe('Appservice', () => {
-    // @ts-ignore
+
     it('should throw when there are no registered namespaces', async () => {
         try {
             new Appservice({
@@ -71,7 +71,7 @@ describe('Appservice', () => {
         }
     });
 
-    // @ts-ignore
+
     it('should throw when there are too many registered namespaces', async () => {
         try {
             new Appservice({
@@ -101,7 +101,7 @@ describe('Appservice', () => {
         }
     });
 
-    // @ts-ignore
+
     it('should throw when there is no prefix namespace', async () => {
         try {
             new Appservice({
@@ -128,7 +128,7 @@ describe('Appservice', () => {
         }
     });
 
-    // @ts-ignore
+
     it('should return the right bot user ID', async () => {
         const appservice = new Appservice({
             port: 0,
@@ -150,7 +150,7 @@ describe('Appservice', () => {
         expect(appservice.botUserId).toEqual("@_bot_:example.org");
     });
 
-    // @ts-ignore
+
     it('should return the express app running the webserver', async () => {
         const appservice = new Appservice({
             port: 0,
@@ -173,7 +173,7 @@ describe('Appservice', () => {
         expect(instance).toBeDefined();
     });
 
-    // @ts-ignore
+
     it('should return the bridge APIs for the appservice', async () => {
         const appservice = new Appservice({
             port: 0,
@@ -196,7 +196,7 @@ describe('Appservice', () => {
         expect(instance).toBeDefined();
     });
 
-    // @ts-ignore
+
     it('should return an intent for the bot user', async () => {
         const appservice = new Appservice({
             port: 0,
@@ -220,7 +220,7 @@ describe('Appservice', () => {
         expect(intent.userId).toEqual(appservice.botUserId);
     });
 
-    // @ts-ignore
+
     it('should return a client for the bot user', async () => {
         const appservice = new Appservice({
             port: 0,
@@ -243,7 +243,7 @@ describe('Appservice', () => {
         expect(intent).toBeDefined();
     });
 
-    // @ts-ignore
+
     it('should be able to tell if a given user is the prefix namespace', async () => {
         const appservice = new Appservice({
             port: 0,
@@ -270,7 +270,7 @@ describe('Appservice', () => {
         expect(appservice.isNamespacedUser("@_bot_:example.org")).toBeTruthy();
     });
 
-    // @ts-ignore
+
     it('should return an intent for any namespaced localpart', async () => {
         const appservice = new Appservice({
             port: 0,
@@ -294,7 +294,7 @@ describe('Appservice', () => {
         expect(intent.userId).toEqual("@_prefix_testing:example.org");
     });
 
-    // @ts-ignore
+
     it('should return an intent for any namespaced suffix', async () => {
         const appservice = new Appservice({
             port: 0,
@@ -318,7 +318,7 @@ describe('Appservice', () => {
         expect(intent.userId).toEqual("@_prefix_testing:example.org");
     });
 
-    // @ts-ignore
+
     it('should return an intent for any user ID', async () => {
         const appservice = new Appservice({
             port: 0,
@@ -360,7 +360,7 @@ describe('Appservice', () => {
         expect(intent.userId).toEqual(userId);
     });
 
-    // @ts-ignore
+
     it('should return a user ID for any namespaced localpart', async () => {
         const appservice = new Appservice({
             port: 0,
@@ -382,7 +382,7 @@ describe('Appservice', () => {
         expect(appservice.getUserId("_prefix_testing")).toEqual("@_prefix_testing:example.org");
     });
 
-    // @ts-ignore
+
     it('should return a user ID for any namespaced suffix', async () => {
         const appservice = new Appservice({
             port: 0,
@@ -404,9 +404,9 @@ describe('Appservice', () => {
         expect(appservice.getUserIdForSuffix("testing")).toEqual("@_prefix_testing:example.org");
     });
 
-    // @ts-ignore
+
     describe('getSuffixForUserId', () => {
-        // @ts-ignore
+
         it('should return a suffix for any namespaced user ID', async () => {
             const appservice = new Appservice({
                 port: 0,
@@ -431,7 +431,7 @@ describe('Appservice', () => {
             expect(appservice.getSuffixForUserId(userId)).toBe(suffix);
         });
 
-        // @ts-ignore
+
         it('should return a falsey suffix for any non-namespaced user ID', async () => {
             const appservice = new Appservice({
                 port: 0,
@@ -460,9 +460,9 @@ describe('Appservice', () => {
         });
     });
 
-    // @ts-ignore
+
     describe('isNamespacedAlias', () => {
-        // @ts-ignore
+
         it('should throw on no alias prefix set', async () => {
             try {
                 const appservice = new Appservice({
@@ -493,7 +493,7 @@ describe('Appservice', () => {
             }
         });
 
-        // @ts-ignore
+
         it('should be able to tell if a given alias is the prefix namespace', async () => {
             const appservice = new Appservice({
                 port: 0,
@@ -520,7 +520,7 @@ describe('Appservice', () => {
         });
     });
 
-    // @ts-ignore
+
     it('should return a alia for any namespaced localpart', async () => {
         const appservice = new Appservice({
             port: 0,
@@ -542,9 +542,9 @@ describe('Appservice', () => {
         expect(appservice.getAlias("_prefix_testing")).toEqual("#_prefix_testing:example.org");
     });
 
-    // @ts-ignore
+
     describe('getAliasForSuffix', () => {
-        // @ts-ignore
+
         it('should throw on no alias prefix set', async () => {
             try {
                 const appservice = new Appservice({
@@ -571,7 +571,7 @@ describe('Appservice', () => {
             }
         });
 
-        // @ts-ignore
+
         it('should return an alias for any namespaced suffix', async () => {
             const appservice = new Appservice({
                 port: 0,
@@ -594,9 +594,9 @@ describe('Appservice', () => {
         });
     });
 
-    // @ts-ignore
+
     describe('getAliasLocalpartForSuffix', () => {
-        // @ts-ignore
+
         it('should throw on no alias prefix set', async () => {
             try {
                 const appservice = new Appservice({
@@ -623,7 +623,7 @@ describe('Appservice', () => {
             }
         });
 
-        // @ts-ignore
+
         it('should return an alias localpart for any namespaced suffix', async () => {
             const appservice = new Appservice({
                 port: 0,
@@ -646,9 +646,9 @@ describe('Appservice', () => {
         });
     });
 
-    // @ts-ignore
+
     describe('getSuffixForAlias', () => {
-        // @ts-ignore
+
         it('should throw on no alias prefix set', async () => {
             try {
                 const appservice = new Appservice({
@@ -678,7 +678,7 @@ describe('Appservice', () => {
             }
         });
 
-        // @ts-ignore
+
         it('should return a suffix for any namespaced alias', async () => {
             const appservice = new Appservice({
                 port: 0,
@@ -703,7 +703,7 @@ describe('Appservice', () => {
             expect(appservice.getSuffixForAlias(userId)).toBe(suffix);
         });
 
-        // @ts-ignore
+
         it('should return a falsey suffix for any non-namespaced alias', async () => {
             const appservice = new Appservice({
                 port: 0,
@@ -732,7 +732,7 @@ describe('Appservice', () => {
         });
     });
 
-    // @ts-ignore
+
     it('should 401 requests with bad auth', async () => {
         const port = await getPort();
         const hsToken = "s3cret_token";
@@ -797,7 +797,7 @@ describe('Appservice', () => {
         }
     });
 
-    // @ts-ignore
+
     it('should validate inputs for transactions', async () => {
         const port = await getPort();
         const hsToken = "s3cret_token";
@@ -854,7 +854,7 @@ describe('Appservice', () => {
         }
     });
 
-    // @ts-ignore
+
     it('should emit events from transactions', async () => {
         const port = await getPort();
         const hsToken = "s3cret_token";
@@ -922,7 +922,7 @@ describe('Appservice', () => {
         }
     });
 
-    // @ts-ignore
+
     it('should not duplicate transactions', async () => {
         const port = await getPort();
         const hsToken = "s3cret_token";
@@ -988,7 +988,7 @@ describe('Appservice', () => {
         }
     });
 
-    // @ts-ignore
+
     it('should send transaction events through a processor', async () => {
         const port = await getPort();
         const hsToken = "s3cret_token";
@@ -1067,7 +1067,7 @@ describe('Appservice', () => {
         }
     });
 
-    // @ts-ignore
+
     it('should send transaction events through a relevant processor', async () => {
         const port = await getPort();
         const hsToken = "s3cret_token";
@@ -1166,7 +1166,7 @@ describe('Appservice', () => {
         }
     });
 
-    // @ts-ignore
+
     it('should handle membership events in transactions', async () => {
         const port = await getPort();
         const hsToken = "s3cret_token";
@@ -1292,7 +1292,7 @@ describe('Appservice', () => {
         }
     });
 
-    // @ts-ignore
+
     it('should handle room upgrade events in transactions', async () => {
         const port = await getPort();
         const hsToken = "s3cret_token";
@@ -1382,7 +1382,7 @@ describe('Appservice', () => {
         }
     });
 
-    // @ts-ignore
+
     it('should emit while querying users', async () => {
         const port = await getPort();
         const hsToken = "s3cret_token";
@@ -1455,7 +1455,7 @@ describe('Appservice', () => {
         }
     });
 
-    // @ts-ignore
+
     it('should handle profiles while querying users', async () => {
         const port = await getPort();
         const hsToken = "s3cret_token";
@@ -1540,7 +1540,7 @@ describe('Appservice', () => {
         }
     });
 
-    // @ts-ignore
+
     it('should handle promises for profiles while querying users', async () => {
         const port = await getPort();
         const hsToken = "s3cret_token";
@@ -1625,7 +1625,7 @@ describe('Appservice', () => {
         }
     });
 
-    // @ts-ignore
+
     it('should return user not found when a user is not created', async () => {
         const port = await getPort();
         const hsToken = "s3cret_token";
@@ -1708,7 +1708,7 @@ describe('Appservice', () => {
         }
     });
 
-    // @ts-ignore
+
     it('should return user not found when a promise to not create a user is seen', async () => {
         const port = await getPort();
         const hsToken = "s3cret_token";
@@ -1791,7 +1791,7 @@ describe('Appservice', () => {
         }
     });
 
-    // @ts-ignore
+
     it('should emit while querying rooms', async () => {
         const port = await getPort();
         const hsToken = "s3cret_token";
@@ -1862,7 +1862,7 @@ describe('Appservice', () => {
         }
     });
 
-    // @ts-ignore
+
     it('should handle options while querying rooms', async () => {
         const port = await getPort();
         const hsToken = "s3cret_token";
@@ -1933,7 +1933,7 @@ describe('Appservice', () => {
         }
     });
 
-    // @ts-ignore
+
     it('should handle promises for options while querying rooms', async () => {
         const port = await getPort();
         const hsToken = "s3cret_token";
@@ -2004,7 +2004,7 @@ describe('Appservice', () => {
         }
     });
 
-    // @ts-ignore
+
     it('should return room not found when a room is not created', async () => {
         const port = await getPort();
         const hsToken = "s3cret_token";
@@ -2085,7 +2085,7 @@ describe('Appservice', () => {
         }
     });
 
-    // @ts-ignore
+
     it('should return room not found when a promise to not create a room is seen', async () => {
         const port = await getPort();
         const hsToken = "s3cret_token";
@@ -2166,7 +2166,7 @@ describe('Appservice', () => {
         }
     });
 
-    // @ts-ignore
+
     it("should handle third party protocol requests", async () => {
         const protos = ["fakeproto", "anotherproto"];
         const { appservice, doCall } = await beginAppserviceWithProtocols(protos);
@@ -2186,7 +2186,7 @@ describe('Appservice', () => {
         }
     });
 
-    // @ts-ignore
+
     it("should reject unknown protocols when handling third party protocol requests", async () => {
         const { appservice, doCall } = await beginAppserviceWithProtocols(["fakeproto"]);
         const expectedError = {
@@ -2206,7 +2206,7 @@ describe('Appservice', () => {
         }
     });
 
-    // @ts-ignore
+
     it("should lookup a remote user by given fields and respond with it", async () => {
         const protocolId = "fakeproto";
         const { appservice, doCall } = await beginAppserviceWithProtocols([protocolId]);
@@ -2229,7 +2229,7 @@ describe('Appservice', () => {
         }
     });
 
-    // @ts-ignore
+
     it("should lookup a matrix user by given fields and respond with it", async () => {
         const { appservice, doCall } = await beginAppserviceWithProtocols(["fakeproto"]);
         const responseObj = ["user1", "user2"];
@@ -2247,7 +2247,7 @@ describe('Appservice', () => {
         }
     });
 
-    // @ts-ignore
+
     it("should fail to lookup a remote user if the protocol is wrong", async () => {
         const { appservice, doCall } = await beginAppserviceWithProtocols(["fakeproto"]);
         try {
@@ -2265,7 +2265,7 @@ describe('Appservice', () => {
         }
     });
 
-    // @ts-ignore
+
     it("should return 404 if no matrix users are found when handling a third party user request", async () => {
         const { appservice, doCall } = await beginAppserviceWithProtocols(["fakeproto"]);
         const expectedUserId = "@foobar:localhost";
@@ -2287,7 +2287,7 @@ describe('Appservice', () => {
         }
     });
 
-    // @ts-ignore
+
     it("should return 404 if no remote users are found when handling a thirdparty user request", async () => {
         const protocolId = "fakeproto";
         const { appservice, doCall } = await beginAppserviceWithProtocols([protocolId]);
@@ -2314,7 +2314,7 @@ describe('Appservice', () => {
         }
     });
 
-    // @ts-ignore
+
     it("should fail to lookup a remote user if the mxid is empty", async () => {
         const { appservice, doCall } = await beginAppserviceWithProtocols(["fakeproto"]);
         try {
@@ -2332,7 +2332,7 @@ describe('Appservice', () => {
         }
     });
 
-    // @ts-ignore
+
     it("should lookup a remote location by given fields", async () => {
         const protocolId = "fakeproto";
         const { appservice, doCall } = await beginAppserviceWithProtocols([protocolId]);
@@ -2355,7 +2355,7 @@ describe('Appservice', () => {
         }
     });
 
-    // @ts-ignore
+
     it("should lookup a matrix location by given fields", async () => {
         const { appservice, doCall } = await beginAppserviceWithProtocols(["fakeproto"]);
         const responseObj = ["loc1", "loc2"];
@@ -2373,7 +2373,7 @@ describe('Appservice', () => {
         }
     });
 
-    // @ts-ignore
+
     it("should fail to lookup a remote location if the protocol is wrong", async () => {
         const { appservice, doCall } = await beginAppserviceWithProtocols(["fakeproto"]);
         try {
@@ -2391,7 +2391,7 @@ describe('Appservice', () => {
         }
     });
 
-    // @ts-ignore
+
     it("should return 404 if no matrix locations are found", async () => {
         const { appservice, doCall } = await beginAppserviceWithProtocols(["fakeproto"]);
         const expectedAlias = "#alias:localhost";
@@ -2413,7 +2413,7 @@ describe('Appservice', () => {
         }
     });
 
-    // @ts-ignore
+
     it("should return 404 if no remote location are found", async () => {
         const protocolId = "fakeproto";
         const { appservice, doCall } = await beginAppserviceWithProtocols([protocolId]);
@@ -2440,7 +2440,7 @@ describe('Appservice', () => {
         }
     });
 
-    // @ts-ignore
+
     it("should fail to lookup a matrix location if the alias is empty", async () => {
         const { appservice, doCall } = await beginAppserviceWithProtocols(["fakeproto"]);
         try {
@@ -2458,7 +2458,7 @@ describe('Appservice', () => {
         }
     });
 
-    // @ts-ignore
+
     it("should set visibilty of a room on the appservice's network", async () => {
         const port = await getPort();
         const hsToken = "s3cret_token";

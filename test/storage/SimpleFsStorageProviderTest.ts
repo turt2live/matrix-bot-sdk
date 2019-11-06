@@ -12,9 +12,9 @@ function createSimpleFsStorageProvider(inMemory = false, maxMemTransactions = 20
     return {tmpFile, writeProvider, readProviderFn};
 }
 
-// @ts-ignore
+
 describe('SimpleFsStorageProvider', () => {
-    // @ts-ignore
+
     it('should return the right sync token', async () => {
         const {writeProvider, readProviderFn} = createSimpleFsStorageProvider();
 
@@ -25,7 +25,7 @@ describe('SimpleFsStorageProvider', () => {
         expect(readProviderFn().getSyncToken()).toEqual(value);
     });
 
-    // @ts-ignore
+
     it('should return the right filter object', async () => {
         const {writeProvider, readProviderFn} = createSimpleFsStorageProvider();
 
@@ -36,7 +36,7 @@ describe('SimpleFsStorageProvider', () => {
         expect(readProviderFn().getFilter()).toMatchObject(value);
     });
 
-    // @ts-ignore
+
     it('should track registered users', async () => {
         const {writeProvider, readProviderFn} = createSimpleFsStorageProvider();
 
@@ -62,7 +62,7 @@ describe('SimpleFsStorageProvider', () => {
         expect(readProviderFn().isUserRegistered(userIdB)).toBeTruthy();
     });
 
-    // @ts-ignore
+
     it('should track completed transactions', async () => {
         const {writeProvider, readProviderFn} = createSimpleFsStorageProvider();
 
@@ -88,7 +88,7 @@ describe('SimpleFsStorageProvider', () => {
         expect(readProviderFn().isTransactionCompleted(txnB)).toBeTruthy();
     });
 
-    // @ts-ignore
+
     it('should track a limited number of completed transactions in memory', async () => {
         const maxTransactions = 2;
         const {writeProvider, readProviderFn} = createSimpleFsStorageProvider(true, maxTransactions);
@@ -133,7 +133,7 @@ describe('SimpleFsStorageProvider', () => {
         expect(readProviderFn().isTransactionCompleted(txnC)).toBeFalsy();
     });
 
-    // @ts-ignore
+
     it('should track arbitrary key value pairs', async () => {
         const {writeProvider, readProviderFn} = createSimpleFsStorageProvider();
 

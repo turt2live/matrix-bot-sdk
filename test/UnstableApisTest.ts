@@ -13,11 +13,11 @@ export function createTestUnstableClient(storage: IStorageProvider = null): { cl
     return {...result, client, mxClient};
 }
 
-// @ts-ignore
+
 describe('UnstableApis', () => {
-    // @ts-ignore
+
     describe('createGroup', () => {
-        // @ts-ignore
+
         it('should call the right endpoint', async () => {
             const {client, http} = createTestUnstableClient();
 
@@ -35,9 +35,9 @@ describe('UnstableApis', () => {
         });
     });
 
-    // @ts-ignore
+
     describe('inviteUserToGroup', () => {
-        // @ts-ignore
+
         it('should call the right endpoint', async () => {
             const {client, http, hsUrl} = createTestUnstableClient();
 
@@ -57,9 +57,9 @@ describe('UnstableApis', () => {
         });
     });
 
-    // @ts-ignore
+
     describe('setGroupProfile', () => {
-        // @ts-ignore
+
         it('should call the right endpoint', async () => {
             const {client, http, hsUrl} = createTestUnstableClient();
 
@@ -82,9 +82,9 @@ describe('UnstableApis', () => {
         });
     });
 
-    // @ts-ignore
+
     describe('setGroupJoinPolicy', () => {
-        // @ts-ignore
+
         it('should call the right endpoint', async () => {
             const {client, http, hsUrl} = createTestUnstableClient();
 

@@ -8,11 +8,11 @@ import {
 import * as expect from "expect";
 import * as simple from "simple-mock";
 
-// @ts-ignore
+
 describe('MatrixBridge', () => {
-    // @ts-ignore
+
     describe('getRemoteUserInfo', () => {
-        // @ts-ignore
+
         it('should get remote user information', async () => {
             const userId = "@someone:example.org";
             const asToken = "s3cret";
@@ -47,9 +47,9 @@ describe('MatrixBridge', () => {
         });
     });
 
-    // @ts-ignore
+
     describe('setRemoteUserInfo', () => {
-        // @ts-ignore
+
         it('should set remote user information', async () => {
             const userId = "@someone:example.org";
             const asToken = "s3cret";
@@ -99,9 +99,9 @@ describe('MatrixBridge', () => {
         });
     });
 
-    // @ts-ignore
+
     describe('getRemoteRoomInfo', () => {
-        // @ts-ignore
+
         it('should get remote room information', async () => {
             const userId = "@someone:example.org";
             const roomId = "!a:example.org";
@@ -140,9 +140,9 @@ describe('MatrixBridge', () => {
         });
     });
 
-    // @ts-ignore
+
     describe('setRemoteRoomInfo', () => {
-        // @ts-ignore
+
         it('should set remote room information', async () => {
             const userId = "@someone:example.org";
             const roomId = "!a:example.org";
@@ -188,9 +188,9 @@ describe('MatrixBridge', () => {
         });
     });
 
-    // @ts-ignore
+
     describe('getMatrixRoomIdForRemote', () => {
-        // @ts-ignore
+
         it('should return the right room ID', async () => {
             const userId = "@someone:example.org";
             const roomId = "!a:example.org";
@@ -227,9 +227,9 @@ describe('MatrixBridge', () => {
         });
     });
 
-    // @ts-ignore
+
     describe('getIntentForRemote', () => {
-        // @ts-ignore
+
         it('should return the right user intent', async () => {
             const userId = "@someone:example.org";
             const asToken = "s3cret";

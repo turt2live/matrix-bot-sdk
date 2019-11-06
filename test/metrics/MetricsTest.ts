@@ -6,38 +6,38 @@ function createTestMetricListener(expectedName: string, expectedContext: IMetric
     return {
         onIncrement: simple.stub().callFn((name: string, context: IMetricContext, amount: number) => {
             expect(name).toBe(expectedName);
-            // @ts-ignore
+
             expect(context).toMatchObject(expectedContext);
             validateNumberFn(amount);
         }),
         onDecrement: simple.stub().callFn((name: string, context: IMetricContext, amount: number) => {
             expect(name).toBe(expectedName);
-            // @ts-ignore
+
             expect(context).toMatchObject(expectedContext);
             validateNumberFn(amount);
         }),
         onReset: simple.stub().callFn((name: string, context: IMetricContext) => {
             expect(name).toBe(expectedName);
-            // @ts-ignore
+
             expect(context).toMatchObject(expectedContext);
         }),
         onStartMetric: simple.stub().callFn((name: string, context: IMetricContext) => {
             expect(name).toBe(expectedName);
-            // @ts-ignore
+
             expect(context).toMatchObject(expectedContext);
         }),
         onEndMetric: simple.stub().callFn((name: string, context: IMetricContext, timeMs: number) => {
             expect(name).toBe(expectedName);
-            // @ts-ignore
+
             expect(context).toMatchObject(expectedContext);
             validateNumberFn(timeMs);
         }),
     };
 }
 
-// @ts-ignore
+
 describe('Metrics', () => {
-    // @ts-ignore
+
     it('should support listeners', async () => {
         const metrics = new Metrics();
         const listeners = () => (<any>metrics).listeners;
@@ -56,7 +56,7 @@ describe('Metrics', () => {
         expect(listeners().length).toBe(0);
     });
 
-    // @ts-ignore
+
     it('should track time series metrics', async () => {
         const metrics = new Metrics();
         const context = <IMetricContext>{uniqueId: "test1234", hello: "world"};
@@ -83,7 +83,7 @@ describe('Metrics', () => {
         expect((<any>listener.onReset).callCount).toBe(0);
     });
 
-    // @ts-ignore
+
     it('should track time series metrics with parent', async () => {
         const parentMetrics = new Metrics();
         const metrics = new Metrics(parentMetrics);
@@ -123,9 +123,9 @@ describe('Metrics', () => {
         expect((<any>listener.onReset).callCount).toBe(0);
     });
 
-    // @ts-ignore
+
     describe('increment', () => {
-        // @ts-ignore
+
         it('should increment', async () => {
             const metrics = new Metrics();
             const context = <IMetricContext>{uniqueId: "test1234", hello: "world"};
@@ -146,7 +146,7 @@ describe('Metrics', () => {
             expect((<any>listener.onReset).callCount).toBe(0);
         });
 
-        // @ts-ignore
+
         it('should increment with parent', async () => {
             const parentMetrics = new Metrics();
             const metrics = new Metrics(parentMetrics);
@@ -180,9 +180,9 @@ describe('Metrics', () => {
         });
     });
 
-    // @ts-ignore
+
     describe('decrement', () => {
-        // @ts-ignore
+
         it('should decrement', async () => {
             const metrics = new Metrics();
             const context = <IMetricContext>{uniqueId: "test1234", hello: "world"};
@@ -203,7 +203,7 @@ describe('Metrics', () => {
             expect((<any>listener.onReset).callCount).toBe(0);
         });
 
-        // @ts-ignore
+
         it('should decrement with parent', async () => {
             const parentMetrics = new Metrics();
             const metrics = new Metrics(parentMetrics);
@@ -237,9 +237,9 @@ describe('Metrics', () => {
         });
     });
 
-    // @ts-ignore
+
     describe('reset', () => {
-        // @ts-ignore
+
         it('should reset', async () => {
             const metrics = new Metrics();
             const context = <IMetricContext>{uniqueId: "test1234", hello: "world"};
@@ -259,7 +259,7 @@ describe('Metrics', () => {
             expect((<any>listener.onReset).callCount).toBe(1);
         });
 
-        // @ts-ignore
+
         it('should reset with parent', async () => {
             const parentMetrics = new Metrics();
             const metrics = new Metrics(parentMetrics);

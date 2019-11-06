@@ -1,25 +1,25 @@
 import * as expect from "expect";
 import { PermalinkParts, Permalinks } from "../src";
 
-// @ts-ignore
+
 describe('Permalinks', () => {
-    // @ts-ignore
+
     describe('forRoom', () => {
-        // @ts-ignore
+
         it('should generate a URL for a room ID', () => {
             const roomId = "!test:example.org";
             const expected = `https://matrix.to/#/${roomId}`;
             expect(Permalinks.forRoom(roomId)).toBe(expected);
         });
 
-        // @ts-ignore
+
         it('should generate a URL for a room alias', () => {
             const roomAlias = "#test:example.org";
             const expected = `https://matrix.to/#/${roomAlias}`;
             expect(Permalinks.forRoom(roomAlias)).toBe(expected);
         });
 
-        // @ts-ignore
+
         it('should generate a URL for a room ID with via', () => {
             const roomId = "!test:example.org";
             const via = ['one.example.org', 'two.example.org'];
@@ -27,7 +27,7 @@ describe('Permalinks', () => {
             expect(Permalinks.forRoom(roomId, via)).toBe(expected);
         });
 
-        // @ts-ignore
+
         it('should generate a URL for a room alias with via', () => {
             const roomAlias = "#test:example.org";
             const via = ['one.example.org', 'two.example.org'];
@@ -36,9 +36,9 @@ describe('Permalinks', () => {
         });
     });
 
-    // @ts-ignore
+
     describe('forEvent', () => {
-        // @ts-ignore
+
         it('should generate a URL for an event ID with room ID', () => {
             const roomId = "!test:example.org";
             const eventId = "$test:example.org";
@@ -46,7 +46,7 @@ describe('Permalinks', () => {
             expect(Permalinks.forEvent(roomId, eventId)).toBe(expected);
         });
 
-        // @ts-ignore
+
         it('should generate a URL for an event ID with room alias', () => {
             const roomAlias = "#test:example.org";
             const eventId = "$test:example.org";
@@ -54,7 +54,7 @@ describe('Permalinks', () => {
             expect(Permalinks.forEvent(roomAlias, eventId)).toBe(expected);
         });
 
-        // @ts-ignore
+
         it('should generate a URL for an event ID with room ID with via', () => {
             const roomId = "!test:example.org";
             const eventId = "$test:example.org";
@@ -63,7 +63,7 @@ describe('Permalinks', () => {
             expect(Permalinks.forEvent(roomId, eventId, via)).toBe(expected);
         });
 
-        // @ts-ignore
+
         it('should generate a URL for an event ID with room alias with via', () => {
             const roomAlias = "#test:example.org";
             const eventId = "$test:example.org";
@@ -73,9 +73,9 @@ describe('Permalinks', () => {
         });
     });
 
-    // @ts-ignore
+
     describe('forUser', () => {
-        // @ts-ignore
+
         it('should generate a URL for a user ID', () => {
             const userId = "@test:example.org";
             const expected = `https://matrix.to/#/${userId}`;
@@ -83,9 +83,9 @@ describe('Permalinks', () => {
         });
     });
 
-    // @ts-ignore
+
     describe('parseUrl', () => {
-        // @ts-ignore
+
         it('should parse user URLs', () => {
             const userId = "@test:example.org";
             const expected: PermalinkParts = {userId, roomIdOrAlias: undefined, viaServers: undefined, eventId: undefined};
@@ -94,7 +94,7 @@ describe('Permalinks', () => {
             expect(parsed).toMatchObject(<any>expected);
         });
 
-        // @ts-ignore
+
         it('should parse room alias URLs', () => {
             const roomId = "#test:example.org";
             const expected: PermalinkParts = {userId: undefined, roomIdOrAlias: roomId, viaServers: [], eventId: undefined};
@@ -103,7 +103,7 @@ describe('Permalinks', () => {
             expect(parsed).toMatchObject(<any>expected);
         });
 
-        // @ts-ignore
+
         it('should parse room ID URLs', () => {
             const roomId = "!test:example.org";
             const expected: PermalinkParts = {userId: undefined, roomIdOrAlias: roomId, viaServers: [], eventId: undefined};
@@ -112,7 +112,7 @@ describe('Permalinks', () => {
             expect(parsed).toMatchObject(<any>expected);
         });
 
-        // @ts-ignore
+
         it('should parse room alias permalink URLs', () => {
             const roomId = "#test:example.org";
             const eventId = "$ev:example.org";
@@ -122,7 +122,7 @@ describe('Permalinks', () => {
             expect(parsed).toMatchObject(<any>expected);
         });
 
-        // @ts-ignore
+
         it('should parse room ID permalink URLs', () => {
             const roomId = "!test:example.org";
             const eventId = "$ev:example.org";
@@ -132,7 +132,7 @@ describe('Permalinks', () => {
             expect(parsed).toMatchObject(<any>expected);
         });
 
-        // @ts-ignore
+
         it('should parse room alias permalink URLs with via servers', () => {
             const roomId = "#test:example.org";
             const eventId = "$ev:example.org";
@@ -143,7 +143,7 @@ describe('Permalinks', () => {
             expect(parsed).toMatchObject(<any>expected);
         });
 
-        // @ts-ignore
+
         it('should parse room ID permalink URLs with via servers', () => {
             const roomId = "!test:example.org";
             const eventId = "$ev:example.org";

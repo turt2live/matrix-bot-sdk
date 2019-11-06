@@ -2,12 +2,12 @@ import { ConsoleLogger, LogLevel, LogService } from "../../src";
 import * as expect from "expect";
 import * as simple from "simple-mock";
 
-// @ts-ignore
+
 describe('LogService', () => {
-    // @ts-ignore
+
     afterEach(() => LogService.setLogger(new ConsoleLogger()));
 
-    // @ts-ignore
+
     it('should log to the INFO channel', () => {
         const module = "Testing Module";
         const a1 = "This is a message";
@@ -24,7 +24,7 @@ describe('LogService', () => {
         expect(logSpy.callCount).toBe(1);
     });
 
-    // @ts-ignore
+
     it('should log to the ERROR channel', () => {
         const module = "Testing Module";
         const a1 = "This is a message";
@@ -41,7 +41,7 @@ describe('LogService', () => {
         expect(logSpy.callCount).toBe(1);
     });
 
-    // @ts-ignore
+
     it('should log to the WARN channel', () => {
         const module = "Testing Module";
         const a1 = "This is a message";
@@ -58,7 +58,7 @@ describe('LogService', () => {
         expect(logSpy.callCount).toBe(1);
     });
 
-    // @ts-ignore
+
     it('should log to the DEBUG channel', () => {
         const module = "Testing Module";
         const a1 = "This is a message";
@@ -75,7 +75,7 @@ describe('LogService', () => {
         expect(logSpy.callCount).toBe(1);
     });
 
-    // @ts-ignore
+
     it('should not log to the DEBUG channel when the log level is higher', () => {
         const module = "Testing Module";
         const a1 = "This is a message";
@@ -93,7 +93,7 @@ describe('LogService', () => {
         expect(logSpy.callCount).toBe(0);
     });
 
-    // @ts-ignore
+
     it('should not log to the INFO channel when the log level is higher', () => {
         const module = "Testing Module";
         const a1 = "This is a message";
@@ -111,7 +111,7 @@ describe('LogService', () => {
         expect(logSpy.callCount).toBe(0);
     });
 
-    // @ts-ignore
+
     it('should not log to the WARN channel when the log level is higher', () => {
         const module = "Testing Module";
         const a1 = "This is a message";

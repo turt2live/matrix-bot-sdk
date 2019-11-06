@@ -13,11 +13,11 @@ export function createTestAdminClient(storage: IStorageProvider = null): { clien
     return {...result, client, mxClient};
 }
 
-// @ts-ignore
+
 describe('AdminApis', () => {
-    // @ts-ignore
+
     describe('whoisUser', () => {
-        // @ts-ignore
+
         it('should call the right endpoint', async () => {
             const {client, http, hsUrl} = createTestAdminClient();
 
