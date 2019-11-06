@@ -13,7 +13,6 @@
   },
   "homepage": "https://github.com/turt2live/matrix-js-bot-sdk#readme",
   "scripts": {
-    "prepare": "node scripts/try_build.js",
     "prepublishOnly": "npm run build",
     "docs": "npm run build && node_modules/jsdoc/jsdoc.js -R README.md -P package.json -r lib/**/*.js -d .jsdoc",
     "build": "tsc",
@@ -30,9 +29,7 @@
     "npm": ">= 5.0.0"
   },
   "dependencies": {
-    "@types/express": "^4.17.1",
-    "@types/node": "^10.14.9",
-    "bluebird": "^3.5.5",
+    "bluebird": "^3.7.1",
     "chalk": "^2.4.2",
     "express": "^4.17.1",
     "glob-to-regexp": "^0.4.1",
@@ -43,10 +40,8 @@
     "mkdirp": "^0.5.1",
     "morgan": "^1.9.1",
     "request": "^2.88.0",
-    "request-promise": "^4.2.4",
-    "sanitize-html": "^1.20.1",
-    "tslint": "^5.17.0",
-    "typescript": "^3.5.2"
+    "request-promise": "^4.2.5",
+    "sanitize-html": "^1.20.1"
   },
   "keywords": [
     "matrix",
@@ -67,14 +62,18 @@
   ],
   "devDependencies": {
     "@types/expect": "^1.20.4",
+    "@types/express": "^4.17.2",
     "@types/mocha": "^5.2.7",
-    "expect": "^24.8.0",
+    "@types/node": "^10.17.4",
+    "expect": "^24.9.0",
     "get-port": "^5.0.0",
+    "jsdoc": "^3.6.3",
     "matrix-mock-request": "^1.2.3",
-    "mocha": "^6.1.4",
+    "mocha": "^6.2.2",
     "simple-mock": "^0.8.0",
     "tmp": "^0.1.0",
     "ts-mocha": "^6.0.0",
-    "jsdoc": "^3.6.3"
+    "tslint": "^5.20.1",
+    "typescript": "^3.7.2"
   }
 }
