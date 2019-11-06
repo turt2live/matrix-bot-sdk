@@ -1,4 +1,3 @@
-import { Metrics } from "./Metrics";
 import {
     METRIC_MATRIX_CLIENT_FAILED_FUNCTION_CALL,
     METRIC_MATRIX_CLIENT_FUNCTION_CALL,

@@ -1,12 +1,12 @@
 import * as express from "express";
-import { Request, Response } from "express";
 import { Intent } from "./Intent";
 import {
     AppserviceJoinRoomStrategy,
     IAppserviceStorageProvider,
     IJoinRoomStrategy,
     IPreprocessor,
-    LogService, MatrixClient,
+    LogService,
+    MatrixClient,
     MemoryStorageProvider
 } from "..";
 import { EventEmitter } from "events";
@@ -496,7 +496,7 @@ export class Appservice extends EventEmitter {
      * @param {"public" | "private"} visibility The visibility to set for the room.
      * @return {Promise<*>} resolves when the visibility has been updated.
      */
-    public setRoomDirectoryVisibility(networkId: string, roomId: string, visibility: "public"|"private") {
+    public setRoomDirectoryVisibility(networkId: string, roomId: string, visibility: "public" | "private") {
         roomId = encodeURIComponent(roomId);
         networkId = encodeURIComponent(networkId);
         return this.botClient.doRequest("PUT", `/_matrix/client/r0/directory/list/appservice/${networkId}/${roomId}`, null, {

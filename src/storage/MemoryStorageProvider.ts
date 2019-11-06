@@ -8,7 +8,7 @@ export class MemoryStorageProvider implements IStorageProvider, IAppserviceStora
     private filter: IFilterInfo;
     private appserviceUsers: { [userId: string]: { registered: boolean } } = {};
     private appserviceTransactions: { [txnId: string]: boolean } = {};
-    private kvStore: {[key: string]: string} = {};
+    private kvStore: { [key: string]: string } = {};
 
     setSyncToken(token: string | null): void {
         this.syncToken = token;

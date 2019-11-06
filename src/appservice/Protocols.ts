@@ -6,8 +6,8 @@ export interface IApplicationServiceProtocol {
     user_fields: string[],
     location_fields: string[],
     icon: string,
-    field_types: {[field: string]: IFieldType}
-    instances: {[name: string]: IProtocolInstance}
+    field_types: { [field: string]: IFieldType }
+    instances: { [name: string]: IProtocolInstance }
 }
 
 interface IFieldType {
@@ -18,6 +18,6 @@ interface IFieldType {
 interface IProtocolInstance {
     desc: string;
     icon: string;
-    fields: {[field: string]: string}
+    fields: { [field: string]: string }
     network_id: string;
 }
