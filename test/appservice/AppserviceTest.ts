@@ -28,6 +28,7 @@ async function beginAppserviceWithProtocols(protocols: string[]) {
     appservice.botIntent.ensureRegistered = () => {
         return null;
     };
+
     async function doCall(route: string, opts: any = {}, qs: any = {}) {
         return await requestPromise({
             uri: `http://localhost:${port}${route}`,
@@ -39,9 +40,8 @@ async function beginAppserviceWithProtocols(protocols: string[]) {
     }
 
     await appservice.begin();
-    return { appservice, doCall };
+    return {appservice, doCall};
 }
-
 
 describe('Appservice', () => {
 
@@ -70,7 +70,6 @@ describe('Appservice', () => {
             expect(e.message).toEqual("No user namespaces in registration");
         }
     });
-
 
     it('should throw when there are too many registered namespaces', async () => {
         try {
@@ -101,7 +100,6 @@ describe('Appservice', () => {
         }
     });
 
-
     it('should throw when there is no prefix namespace', async () => {
         try {
             new Appservice({
@@ -128,7 +126,6 @@ describe('Appservice', () => {
         }
     });
 
-
     it('should return the right bot user ID', async () => {
         const appservice = new Appservice({
             port: 0,
@@ -149,7 +146,6 @@ describe('Appservice', () => {
 
         expect(appservice.botUserId).toEqual("@_bot_:example.org");
     });
-
 
     it('should return the express app running the webserver', async () => {
         const appservice = new Appservice({
@@ -173,7 +169,6 @@ describe('Appservice', () => {
         expect(instance).toBeDefined();
     });
 
-
     it('should return the bridge APIs for the appservice', async () => {
         const appservice = new Appservice({
             port: 0,
@@ -195,7 +190,6 @@ describe('Appservice', () => {
         const instance = appservice.bridge;
         expect(instance).toBeDefined();
     });
-
 
     it('should return an intent for the bot user', async () => {
         const appservice = new Appservice({
@@ -220,7 +214,6 @@ describe('Appservice', () => {
         expect(intent.userId).toEqual(appservice.botUserId);
     });
 
-
     it('should return a client for the bot user', async () => {
         const appservice = new Appservice({
             port: 0,
@@ -242,7 +235,6 @@ describe('Appservice', () => {
         const intent = appservice.botClient;
         expect(intent).toBeDefined();
     });
-
 
     it('should be able to tell if a given user is the prefix namespace', async () => {
         const appservice = new Appservice({
@@ -270,7 +262,6 @@ describe('Appservice', () => {
         expect(appservice.isNamespacedUser("@_bot_:example.org")).toBeTruthy();
     });
 
-
     it('should return an intent for any namespaced localpart', async () => {
         const appservice = new Appservice({
             port: 0,
@@ -294,7 +285,6 @@ describe('Appservice', () => {
         expect(intent.userId).toEqual("@_prefix_testing:example.org");
     });
 
-
     it('should return an intent for any namespaced suffix', async () => {
         const appservice = new Appservice({
             port: 0,
@@ -317,7 +307,6 @@ describe('Appservice', () => {
         expect(intent).toBeDefined();
         expect(intent.userId).toEqual("@_prefix_testing:example.org");
     });
-
 
     it('should return an intent for any user ID', async () => {
         const appservice = new Appservice({
@@ -360,7 +349,6 @@ describe('Appservice', () => {
         expect(intent.userId).toEqual(userId);
     });
 
-
     it('should return a user ID for any namespaced localpart', async () => {
         const appservice = new Appservice({
             port: 0,
@@ -382,7 +370,6 @@ describe('Appservice', () => {
         expect(appservice.getUserId("_prefix_testing")).toEqual("@_prefix_testing:example.org");
     });
 
-
     it('should return a user ID for any namespaced suffix', async () => {
         const appservice = new Appservice({
             port: 0,
@@ -403,7 +390,6 @@ describe('Appservice', () => {
 
         expect(appservice.getUserIdForSuffix("testing")).toEqual("@_prefix_testing:example.org");
     });
-
 
     describe('getSuffixForUserId', () => {
 
@@ -430,7 +416,6 @@ describe('Appservice', () => {
 
             expect(appservice.getSuffixForUserId(userId)).toBe(suffix);
         });
-
 
         it('should return a falsey suffix for any non-namespaced user ID', async () => {
             const appservice = new Appservice({
@@ -460,7 +445,6 @@ describe('Appservice', () => {
         });
     });
 
-
     describe('isNamespacedAlias', () => {
 
         it('should throw on no alias prefix set', async () => {
@@ -481,10 +465,10 @@ describe('Appservice', () => {
                         },
                     },
                 });
-                
+
                 const userA = "#_prefix_test:example.org";
                 const userB = "#alice_prefix_:example.org";
-                
+
                 expect(appservice.isNamespacedAlias(userA)).toBeTruthy();
                 expect(appservice.isNamespacedAlias(userB)).toBeFalsy();
                 throw new Error("Did not throw when expecting it");
@@ -492,7 +476,6 @@ describe('Appservice', () => {
                 expect(e.message).toEqual("Invalid configured alias prefix");
             }
         });
-
 
         it('should be able to tell if a given alias is the prefix namespace', async () => {
             const appservice = new Appservice({
@@ -520,7 +503,6 @@ describe('Appservice', () => {
         });
     });
 
-
     it('should return a alia for any namespaced localpart', async () => {
         const appservice = new Appservice({
             port: 0,
@@ -541,7 +523,6 @@ describe('Appservice', () => {
 
         expect(appservice.getAlias("_prefix_testing")).toEqual("#_prefix_testing:example.org");
     });
-
 
     describe('getAliasForSuffix', () => {
 
@@ -571,7 +552,6 @@ describe('Appservice', () => {
             }
         });
 
-
         it('should return an alias for any namespaced suffix', async () => {
             const appservice = new Appservice({
                 port: 0,
@@ -593,7 +573,6 @@ describe('Appservice', () => {
             expect(appservice.getAliasForSuffix("testing")).toEqual("#_prefix_testing:example.org");
         });
     });
-
 
     describe('getAliasLocalpartForSuffix', () => {
 
@@ -623,7 +602,6 @@ describe('Appservice', () => {
             }
         });
 
-
         it('should return an alias localpart for any namespaced suffix', async () => {
             const appservice = new Appservice({
                 port: 0,
@@ -645,7 +623,6 @@ describe('Appservice', () => {
             expect(appservice.getAliasLocalpartForSuffix("testing")).toEqual("_prefix_testing");
         });
     });
-
 
     describe('getSuffixForAlias', () => {
 
@@ -678,7 +655,6 @@ describe('Appservice', () => {
             }
         });
 
-
         it('should return a suffix for any namespaced alias', async () => {
             const appservice = new Appservice({
                 port: 0,
@@ -702,7 +678,6 @@ describe('Appservice', () => {
 
             expect(appservice.getSuffixForAlias(userId)).toBe(suffix);
         });
-
 
         it('should return a falsey suffix for any non-namespaced alias', async () => {
             const appservice = new Appservice({
@@ -731,7 +706,6 @@ describe('Appservice', () => {
             expect(appservice.getSuffixForAlias("#_invalid_testing:example.org")).toBeFalsy();
         });
     });
-
 
     it('should 401 requests with bad auth', async () => {
         const port = await getPort();
@@ -797,7 +771,6 @@ describe('Appservice', () => {
         }
     });
 
-
     it('should validate inputs for transactions', async () => {
         const port = await getPort();
         const hsToken = "s3cret_token";
@@ -853,7 +826,6 @@ describe('Appservice', () => {
             appservice.stop();
         }
     });
-
 
     it('should emit events from transactions', async () => {
         const port = await getPort();
@@ -922,7 +894,6 @@ describe('Appservice', () => {
         }
     });
 
-
     it('should not duplicate transactions', async () => {
         const port = await getPort();
         const hsToken = "s3cret_token";
@@ -987,7 +958,6 @@ describe('Appservice', () => {
             appservice.stop();
         }
     });
-
 
     it('should send transaction events through a processor', async () => {
         const port = await getPort();
@@ -1066,7 +1036,6 @@ describe('Appservice', () => {
             appservice.stop();
         }
     });
-
 
     it('should send transaction events through a relevant processor', async () => {
         const port = await getPort();
@@ -1165,7 +1134,6 @@ describe('Appservice', () => {
             appservice.stop();
         }
     });
-
 
     it('should handle membership events in transactions', async () => {
         const port = await getPort();
@@ -1292,7 +1260,6 @@ describe('Appservice', () => {
         }
     });
 
-
     it('should handle room upgrade events in transactions', async () => {
         const port = await getPort();
         const hsToken = "s3cret_token";
@@ -1382,7 +1349,6 @@ describe('Appservice', () => {
         }
     });
 
-
     it('should emit while querying users', async () => {
         const port = await getPort();
         const hsToken = "s3cret_token";
@@ -1454,7 +1420,6 @@ describe('Appservice', () => {
             appservice.stop();
         }
     });
-
 
     it('should handle profiles while querying users', async () => {
         const port = await getPort();
@@ -1540,7 +1505,6 @@ describe('Appservice', () => {
         }
     });
 
-
     it('should handle promises for profiles while querying users', async () => {
         const port = await getPort();
         const hsToken = "s3cret_token";
@@ -1625,7 +1589,6 @@ describe('Appservice', () => {
         }
     });
 
-
     it('should return user not found when a user is not created', async () => {
         const port = await getPort();
         const hsToken = "s3cret_token";
@@ -1707,7 +1670,6 @@ describe('Appservice', () => {
             appservice.stop();
         }
     });
-
 
     it('should return user not found when a promise to not create a user is seen', async () => {
         const port = await getPort();
@@ -1791,7 +1753,6 @@ describe('Appservice', () => {
         }
     });
 
-
     it('should emit while querying rooms', async () => {
         const port = await getPort();
         const hsToken = "s3cret_token";
@@ -1861,7 +1822,6 @@ describe('Appservice', () => {
             appservice.stop();
         }
     });
-
 
     it('should handle options while querying rooms', async () => {
         const port = await getPort();
@@ -1933,7 +1893,6 @@ describe('Appservice', () => {
         }
     });
 
-
     it('should handle promises for options while querying rooms', async () => {
         const port = await getPort();
         const hsToken = "s3cret_token";
@@ -2003,7 +1962,6 @@ describe('Appservice', () => {
             appservice.stop();
         }
     });
-
 
     it('should return room not found when a room is not created', async () => {
         const port = await getPort();
@@ -2085,7 +2043,6 @@ describe('Appservice', () => {
         }
     });
 
-
     it('should return room not found when a promise to not create a room is seen', async () => {
         const port = await getPort();
         const hsToken = "s3cret_token";
@@ -2166,10 +2123,9 @@ describe('Appservice', () => {
         }
     });
 
-
     it("should handle third party protocol requests", async () => {
         const protos = ["fakeproto", "anotherproto"];
-        const { appservice, doCall } = await beginAppserviceWithProtocols(protos);
+        const {appservice, doCall} = await beginAppserviceWithProtocols(protos);
         const responseObj = {notarealresponse: true};
         const getProtoSpy = simple.stub().callFn((protocol, fn) => {
             expect(protos).toContain(protocol);
@@ -2179,16 +2135,15 @@ describe('Appservice', () => {
             appservice.on("thirdparty.protocol", getProtoSpy);
             const result = await doCall("/_matrix/app/v1/thirdparty/protocol/" + protos[0]);
             expect(result).toEqual(responseObj);
-            const result2 = await doCall("/_matrix/app/v1/thirdparty/protocol/"  + protos[1]);
+            const result2 = await doCall("/_matrix/app/v1/thirdparty/protocol/" + protos[1]);
             expect(result2).toEqual(responseObj);
         } finally {
             appservice.stop();
         }
     });
 
-
     it("should reject unknown protocols when handling third party protocol requests", async () => {
-        const { appservice, doCall } = await beginAppserviceWithProtocols(["fakeproto"]);
+        const {appservice, doCall} = await beginAppserviceWithProtocols(["fakeproto"]);
         const expectedError = {
             errcode: "PROTOCOL_NOT_HANDLED",
             error: "Protocol is not handled by this appservice",
@@ -2206,10 +2161,9 @@ describe('Appservice', () => {
         }
     });
 
-
     it("should lookup a remote user by given fields and respond with it", async () => {
         const protocolId = "fakeproto";
-        const { appservice, doCall } = await beginAppserviceWithProtocols([protocolId]);
+        const {appservice, doCall} = await beginAppserviceWithProtocols([protocolId]);
         const responseObj = ["user1", "user2"];
         const userFields = {
             "foo": "bar",
@@ -2229,9 +2183,8 @@ describe('Appservice', () => {
         }
     });
 
-
     it("should lookup a matrix user by given fields and respond with it", async () => {
-        const { appservice, doCall } = await beginAppserviceWithProtocols(["fakeproto"]);
+        const {appservice, doCall} = await beginAppserviceWithProtocols(["fakeproto"]);
         const responseObj = ["user1", "user2"];
         const expectedUserId = "@foobar:localhost";
         const getUserSpy = simple.stub().callFn((userid, fn) => {
@@ -2247,9 +2200,8 @@ describe('Appservice', () => {
         }
     });
 
-
     it("should fail to lookup a remote user if the protocol is wrong", async () => {
-        const { appservice, doCall } = await beginAppserviceWithProtocols(["fakeproto"]);
+        const {appservice, doCall} = await beginAppserviceWithProtocols(["fakeproto"]);
         try {
             await doCall("/_matrix/app/v1/thirdparty/user/pr0tocol");
             // noinspection ExceptionCaughtLocallyJS
@@ -2265,9 +2217,8 @@ describe('Appservice', () => {
         }
     });
 
-
     it("should return 404 if no matrix users are found when handling a third party user request", async () => {
-        const { appservice, doCall } = await beginAppserviceWithProtocols(["fakeproto"]);
+        const {appservice, doCall} = await beginAppserviceWithProtocols(["fakeproto"]);
         const expectedUserId = "@foobar:localhost";
         const getUserSpy = simple.stub().callFn((userid, fn) => {
             expect(userid).toEqual(expectedUserId);
@@ -2287,10 +2238,9 @@ describe('Appservice', () => {
         }
     });
 
-
     it("should return 404 if no remote users are found when handling a thirdparty user request", async () => {
         const protocolId = "fakeproto";
-        const { appservice, doCall } = await beginAppserviceWithProtocols([protocolId]);
+        const {appservice, doCall} = await beginAppserviceWithProtocols([protocolId]);
         const userFields = {
             "foo": "bar",
             "bar": "baz"
@@ -2314,9 +2264,8 @@ describe('Appservice', () => {
         }
     });
 
-
     it("should fail to lookup a remote user if the mxid is empty", async () => {
-        const { appservice, doCall } = await beginAppserviceWithProtocols(["fakeproto"]);
+        const {appservice, doCall} = await beginAppserviceWithProtocols(["fakeproto"]);
         try {
             await doCall("/_matrix/app/v1/thirdparty/user");
             // noinspection ExceptionCaughtLocallyJS
@@ -2332,10 +2281,9 @@ describe('Appservice', () => {
         }
     });
 
-
     it("should lookup a remote location by given fields", async () => {
         const protocolId = "fakeproto";
-        const { appservice, doCall } = await beginAppserviceWithProtocols([protocolId]);
+        const {appservice, doCall} = await beginAppserviceWithProtocols([protocolId]);
         const responseObj = ["loc1", "loc2"];
         const locationFields = {
             "foo": "bar",
@@ -2355,9 +2303,8 @@ describe('Appservice', () => {
         }
     });
 
-
     it("should lookup a matrix location by given fields", async () => {
-        const { appservice, doCall } = await beginAppserviceWithProtocols(["fakeproto"]);
+        const {appservice, doCall} = await beginAppserviceWithProtocols(["fakeproto"]);
         const responseObj = ["loc1", "loc2"];
         const expectedAlias = "#alias:localhost";
         const getLocationSpy = simple.stub().callFn((alias, fn) => {
@@ -2373,9 +2320,8 @@ describe('Appservice', () => {
         }
     });
 
-
     it("should fail to lookup a remote location if the protocol is wrong", async () => {
-        const { appservice, doCall } = await beginAppserviceWithProtocols(["fakeproto"]);
+        const {appservice, doCall} = await beginAppserviceWithProtocols(["fakeproto"]);
         try {
             await doCall("/_matrix/app/v1/thirdparty/location/pr0tocol");
             // noinspection ExceptionCaughtLocallyJS
@@ -2391,9 +2337,8 @@ describe('Appservice', () => {
         }
     });
 
-
     it("should return 404 if no matrix locations are found", async () => {
-        const { appservice, doCall } = await beginAppserviceWithProtocols(["fakeproto"]);
+        const {appservice, doCall} = await beginAppserviceWithProtocols(["fakeproto"]);
         const expectedAlias = "#alias:localhost";
         const getUserSpy = simple.stub().callFn((alias, fn) => {
             expect(alias).toEqual(expectedAlias);
@@ -2413,10 +2358,9 @@ describe('Appservice', () => {
         }
     });
 
-
     it("should return 404 if no remote location are found", async () => {
         const protocolId = "fakeproto";
-        const { appservice, doCall } = await beginAppserviceWithProtocols([protocolId]);
+        const {appservice, doCall} = await beginAppserviceWithProtocols([protocolId]);
         const locationFields = {
             "foo": "bar",
             "bar": "baz"
@@ -2440,9 +2384,8 @@ describe('Appservice', () => {
         }
     });
 
-
     it("should fail to lookup a matrix location if the alias is empty", async () => {
-        const { appservice, doCall } = await beginAppserviceWithProtocols(["fakeproto"]);
+        const {appservice, doCall} = await beginAppserviceWithProtocols(["fakeproto"]);
         try {
             await doCall("/_matrix/app/v1/thirdparty/location");
             // noinspection ExceptionCaughtLocallyJS
@@ -2457,7 +2400,6 @@ describe('Appservice', () => {
             appservice.stop();
         }
     });
-
 
     it("should set visibilty of a room on the appservice's network", async () => {
         const port = await getPort();
@@ -2484,7 +2426,6 @@ describe('Appservice', () => {
         appservice.botIntent.ensureRegistered = () => {
             return null;
         };
-
 
         const http = new MockHttpBackend();
         setRequestFn(http.requestFn);

@@ -2,11 +2,9 @@ import { ConsoleLogger, LogLevel, LogService } from "../../src";
 import * as expect from "expect";
 import * as simple from "simple-mock";
 
-
 describe('LogService', () => {
 
     afterEach(() => LogService.setLogger(new ConsoleLogger()));
-
 
     it('should log to the INFO channel', () => {
         const module = "Testing Module";
@@ -24,7 +22,6 @@ describe('LogService', () => {
         expect(logSpy.callCount).toBe(1);
     });
 
-
     it('should log to the ERROR channel', () => {
         const module = "Testing Module";
         const a1 = "This is a message";
@@ -40,7 +37,6 @@ describe('LogService', () => {
         LogService.error(module, a1, a2);
         expect(logSpy.callCount).toBe(1);
     });
-
 
     it('should log to the WARN channel', () => {
         const module = "Testing Module";
@@ -58,7 +54,6 @@ describe('LogService', () => {
         expect(logSpy.callCount).toBe(1);
     });
 
-
     it('should log to the DEBUG channel', () => {
         const module = "Testing Module";
         const a1 = "This is a message";
@@ -74,7 +69,6 @@ describe('LogService', () => {
         LogService.debug(module, a1, a2);
         expect(logSpy.callCount).toBe(1);
     });
-
 
     it('should not log to the DEBUG channel when the log level is higher', () => {
         const module = "Testing Module";
@@ -93,7 +87,6 @@ describe('LogService', () => {
         expect(logSpy.callCount).toBe(0);
     });
 
-
     it('should not log to the INFO channel when the log level is higher', () => {
         const module = "Testing Module";
         const a1 = "This is a message";
@@ -110,7 +103,6 @@ describe('LogService', () => {
         LogService.info(module, a1, a2);
         expect(logSpy.callCount).toBe(0);
     });
-
 
     it('should not log to the WARN channel when the log level is higher', () => {
         const module = "Testing Module";

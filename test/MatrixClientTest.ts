@@ -21,11 +21,8 @@ export function createTestClient(storage: IStorageProvider = null): { client: Ma
     return {http, hsUrl, accessToken, client};
 }
 
-
 describe('MatrixClient', () => {
-
     describe("constructor", () => {
-
         it('should pass through the homeserver URL and access token', () => {
             const homeserverUrl = "https://example.org";
             const accessToken = "example_token";
@@ -35,7 +32,6 @@ describe('MatrixClient', () => {
             expect(client.homeserverUrl).toEqual(homeserverUrl);
             expect(client.accessToken).toEqual(accessToken);
         });
-
 
         it('should strip trailing slashes from the homeserver URL', () => {
             const homeserverUrl = "https://example.org";
@@ -48,9 +44,7 @@ describe('MatrixClient', () => {
         });
     });
 
-
     describe("doRequest", () => {
-
         it('should use the request function defined', async () => {
             const {client} = createTestClient();
 
@@ -61,7 +55,6 @@ describe('MatrixClient', () => {
             await client.doRequest("GET", "/test");
             expect(spy.callCount).toBe(1);
         });
-
 
         it('should reject upon error', async () => {
             const {client, http} = createTestClient();
@@ -78,7 +71,6 @@ describe('MatrixClient', () => {
             }
         });
 
-
         it('should return a parsed JSON body', async () => {
             const {client, http} = createTestClient();
 
@@ -90,7 +82,6 @@ describe('MatrixClient', () => {
             expect(response).toMatchObject(expectedResponse);
         });
 
-
         it('should be kind with prefixed slashes', async () => {
             const {client, http} = createTestClient();
 
@@ -101,7 +92,6 @@ describe('MatrixClient', () => {
             const response = await client.doRequest("GET", "test");
             expect(response).toMatchObject(expectedResponse);
         });
-
 
         it('should send the appropriate body', async () => {
             const {client, http} = createTestClient();
@@ -116,7 +106,6 @@ describe('MatrixClient', () => {
             await client.doRequest("PUT", "/test", null, expectedInput);
         });
 
-
         it('should send the appropriate query string', async () => {
             const {client, http} = createTestClient();
 
@@ -130,7 +119,6 @@ describe('MatrixClient', () => {
             await client.doRequest("GET", "/test", expectedInput);
         });
 
-
         it('should send the access token in the Authorization header', async () => {
             const {client, http, accessToken} = createTestClient();
 
@@ -142,7 +130,6 @@ describe('MatrixClient', () => {
             http.flushAllExpected();
             await client.doRequest("GET", "/test");
         });
-
 
         it('should send application/json by default', async () => {
             const {client, http} = createTestClient();
@@ -156,14 +143,12 @@ describe('MatrixClient', () => {
             await client.doRequest("PUT", "/test", null, {test: 1});
         });
 
-
         it('should send the content-type of choice where possible', async () => {
             const {client, http} = createTestClient();
 
             const contentType = "testing/type";
             const fakeJson = `{"BUFFER": "HACK"}`;
             Buffer.isBuffer = <any>(i => i === fakeJson);
-
 
             http.when("PUT", "/test").respond(200, (path, content, req) => {
                 expect(req.opts.headers["Content-Type"]).toEqual(contentType);
@@ -173,7 +158,6 @@ describe('MatrixClient', () => {
             http.flushAllExpected();
             await client.doRequest("PUT", "/test", null, fakeJson, 60000, false, contentType);
         });
-
 
         it('should return raw responses if requested', async () => {
             const {client, http} = createTestClient();
@@ -187,7 +171,6 @@ describe('MatrixClient', () => {
             // HACK: We can't check the body because of the mock library. Check the status code instead.
             expect(result.statusCode).toBe(200);
         });
-
 
         it('should proxy the timeout to request', async () => {
             const {client, http} = createTestClient();
@@ -203,9 +186,7 @@ describe('MatrixClient', () => {
         });
     });
 
-
     describe('impersonateUserId', () => {
-
         it('should set a user_id param on requests', async () => {
             const {client, http} = createTestClient();
 
@@ -216,15 +197,12 @@ describe('MatrixClient', () => {
                 expect(req.opts.qs.user_id).toBe(userId);
             });
 
-
             http.flushAllExpected();
             await client.doRequest("GET", "/test");
         });
     });
 
-
     describe('unstableApis', () => {
-
         it('should always return an object', async () => {
             const {client} = createTestClient();
 
@@ -233,9 +211,7 @@ describe('MatrixClient', () => {
         });
     });
 
-
     describe('getAccountData', () => {
-
         it('should call the right endpoint', async () => {
             const {client, http, hsUrl} = createTestClient();
 
@@ -254,9 +230,7 @@ describe('MatrixClient', () => {
         });
     });
 
-
     describe('getPresenceStatus', () => {
-
         it('should call the right endpoint', async () => {
             const {client, http, hsUrl} = createTestClient();
 
@@ -281,9 +255,7 @@ describe('MatrixClient', () => {
         });
     });
 
-
     describe('getPresenceStatusFor', () => {
-
         it('should call the right endpoint', async () => {
             const {client, http, hsUrl} = createTestClient();
 
@@ -306,9 +278,7 @@ describe('MatrixClient', () => {
         });
     });
 
-
     describe('setPresenceStatus', () => {
-
         it('should call the right endpoint', async () => {
             const {client, http, hsUrl} = createTestClient();
 
@@ -332,9 +302,7 @@ describe('MatrixClient', () => {
         });
     });
 
-
     describe('getRoomAccountData', () => {
-
         it('should call the right endpoint', async () => {
             const {client, http, hsUrl} = createTestClient();
 
@@ -354,9 +322,7 @@ describe('MatrixClient', () => {
         });
     });
 
-
     describe('setAccountData', () => {
-
         it('should call the right endpoint', async () => {
             const {client, http, hsUrl} = createTestClient();
 
@@ -377,9 +343,7 @@ describe('MatrixClient', () => {
         });
     });
 
-
     describe('setRoomAccountData', () => {
-
         it('should call the right endpoint', async () => {
             const {client, http, hsUrl} = createTestClient();
 
@@ -401,9 +365,7 @@ describe('MatrixClient', () => {
         });
     });
 
-
     describe('createRoomAlias', () => {
-
         it('should call the right endpoint', async () => {
             const {client, http, hsUrl} = createTestClient();
 
@@ -421,9 +383,7 @@ describe('MatrixClient', () => {
         });
     });
 
-
     describe('deleteRoomAlias', () => {
-
         it('should call the right endpoint', async () => {
             const {client, http, hsUrl} = createTestClient();
 
@@ -439,9 +399,7 @@ describe('MatrixClient', () => {
         });
     });
 
-
     describe('setDirectoryVisibility', () => {
-
         it('should call the right endpoint', async () => {
             const {client, http, hsUrl} = createTestClient();
 
@@ -459,9 +417,7 @@ describe('MatrixClient', () => {
         });
     });
 
-
     describe('getDirectoryVisibility', () => {
-
         it('should call the right endpoint', async () => {
             const {client, http, hsUrl} = createTestClient();
 
@@ -475,7 +431,6 @@ describe('MatrixClient', () => {
             http.flushAllExpected();
             await client.getDirectoryVisibility(roomId);
         });
-
 
         it('should return the right visibility string', async () => {
             const {client, http} = createTestClient();
@@ -491,9 +446,7 @@ describe('MatrixClient', () => {
         });
     });
 
-
     describe('resolveRoom', () => {
-
         it('should return the raw room ID if given an ID', async () => {
             const {client} = createTestClient();
 
@@ -501,7 +454,6 @@ describe('MatrixClient', () => {
             const result = await client.resolveRoom(roomId);
             expect(result).toEqual(roomId);
         });
-
 
         it('should try to look up room aliases', async () => {
             const {client} = createTestClient();
@@ -520,7 +472,6 @@ describe('MatrixClient', () => {
             expect(spy.callCount).toBe(1);
         });
 
-
         it('should error on invalid identifiers', async () => {
             const {client} = createTestClient();
 
@@ -535,9 +486,7 @@ describe('MatrixClient', () => {
         });
     });
 
-
     describe('lookupRoomAlias', () => {
-
         it('should call the right endpoint', async () => {
             const {client, http, hsUrl} = createTestClient();
 
@@ -554,7 +503,6 @@ describe('MatrixClient', () => {
             await client.lookupRoomAlias(alias);
         });
 
-
         it('should return a translated response', async () => {
             const {client, http} = createTestClient();
 
@@ -570,9 +518,7 @@ describe('MatrixClient', () => {
         });
     });
 
-
     describe('inviteUser', () => {
-
         it('should call the right endpoint', async () => {
             const {client, http, hsUrl} = createTestClient();
 
@@ -590,9 +536,7 @@ describe('MatrixClient', () => {
         });
     });
 
-
     describe('kickUser', () => {
-
         it('should call the right endpoint', async () => {
             const {client, http, hsUrl} = createTestClient();
 
@@ -608,7 +552,6 @@ describe('MatrixClient', () => {
             http.flushAllExpected();
             await client.kickUser(userId, roomId);
         });
-
 
         it('should support a reason', async () => {
             const {client, http, hsUrl} = createTestClient();
@@ -628,9 +571,7 @@ describe('MatrixClient', () => {
         });
     });
 
-
     describe('banUser', () => {
-
         it('should call the right endpoint', async () => {
             const {client, http, hsUrl} = createTestClient();
 
@@ -646,7 +587,6 @@ describe('MatrixClient', () => {
             http.flushAllExpected();
             await client.banUser(userId, roomId);
         });
-
 
         it('should support a reason', async () => {
             const {client, http, hsUrl} = createTestClient();
@@ -665,7 +605,6 @@ describe('MatrixClient', () => {
             await client.banUser(userId, roomId, reason);
         });
     });
-
 
     describe('unbanUser', () => {
 
@@ -686,7 +625,6 @@ describe('MatrixClient', () => {
         });
     });
 
-
     describe('getUserId', () => {
 
         it('should return the user ID if it is already known', async () => {
@@ -698,7 +636,6 @@ describe('MatrixClient', () => {
             const result = await client.getUserId();
             expect(result).toEqual(userId);
         });
-
 
         it('should request the user ID if it is not known', async () => {
             const {client, http} = createTestClient();
@@ -712,7 +649,6 @@ describe('MatrixClient', () => {
             expect(result).toEqual(userId);
         });
     });
-
 
     describe('stop', () => {
 
@@ -748,7 +684,6 @@ describe('MatrixClient', () => {
         }).timeout(10000);
     });
 
-
     describe('start', () => {
 
         it('should use an existing filter if one is present', async () => {
@@ -769,7 +704,6 @@ describe('MatrixClient', () => {
             http.flushAllExpected();
             await client.start(filter);
         });
-
 
         it('should create a filter when the stored filter is outdated', async () => {
             const storage = new MemoryStorageProvider();
@@ -799,7 +733,6 @@ describe('MatrixClient', () => {
             await client.start(filter);
             expect(setFilterFn.callCount).toBe(1);
         });
-
 
         it('should create a filter when there is no stored filter', async () => {
             const storage = new MemoryStorageProvider();
@@ -831,7 +764,6 @@ describe('MatrixClient', () => {
             expect(setFilterFn.callCount).toBe(1);
         });
 
-
         it('should use the filter ID when syncing', async () => {
             const storage = new MemoryStorageProvider();
             const {client, http} = createTestClient(storage);
@@ -853,7 +785,6 @@ describe('MatrixClient', () => {
             http.flushAllExpected();
             await client.start(filter);
         });
-
 
         it('should make sync requests with the new token', async () => {
             const storage = new MemoryStorageProvider();
@@ -890,7 +821,6 @@ describe('MatrixClient', () => {
             await waitPromise;
         });
 
-
         it('should read the sync token from the store', async () => {
             const storage = new MemoryStorageProvider();
             const {client, http} = createTestClient(storage);
@@ -925,7 +855,6 @@ describe('MatrixClient', () => {
             await waitPromise;
         });
 
-
         it('should use the syncing presence variable', async () => {
             const storage = new MemoryStorageProvider();
             const {client, http} = createTestClient(storage);
@@ -956,7 +885,6 @@ describe('MatrixClient', () => {
         });
     });
 
-
     describe('processSync', () => {
 
         interface ProcessSyncClient {
@@ -964,7 +892,6 @@ describe('MatrixClient', () => {
 
             processSync(raw: any): Promise<any>;
         }
-
 
         it('should process non-room account data', async () => {
             const {client: realClient} = createTestClient();
@@ -990,7 +917,6 @@ describe('MatrixClient', () => {
             await client.processSync({account_data: {events: events}});
             expect(spy.callCount).toBe(1);
         });
-
 
         it('should process left rooms', async () => {
             const {client: realClient} = createTestClient();
@@ -1020,7 +946,6 @@ describe('MatrixClient', () => {
             expect(spy.callCount).toBe(1);
         });
 
-
         it('should process left rooms account data', async () => {
             const {client: realClient} = createTestClient();
             const client = <ProcessSyncClient>(<any>realClient);
@@ -1049,7 +974,6 @@ describe('MatrixClient', () => {
             await client.processSync({rooms: {leave: roomsObj}});
             expect(spy.callCount).toBe(1);
         });
-
 
         it('should use the most recent leave event', async () => {
             const {client: realClient} = createTestClient();
@@ -1089,7 +1013,6 @@ describe('MatrixClient', () => {
             expect(spy.callCount).toBe(1);
         });
 
-
         it('should not be affected by irrelevant events during leaves', async () => {
             const {client: realClient} = createTestClient();
             const client = <ProcessSyncClient>(<any>realClient);
@@ -1127,7 +1050,6 @@ describe('MatrixClient', () => {
             await client.processSync({rooms: {leave: roomsObj}});
             expect(spy.callCount).toBe(1);
         });
-
 
         it('should not process leaves detached from events', async () => {
             const {client: realClient} = createTestClient();
@@ -1168,7 +1090,6 @@ describe('MatrixClient', () => {
             expect(spy.callCount).toBe(0);
         });
 
-
         it('should not get hung up on not having an age available for leaves', async () => {
             const {client: realClient} = createTestClient();
             const client = <ProcessSyncClient>(<any>realClient);
@@ -1195,7 +1116,6 @@ describe('MatrixClient', () => {
             await client.processSync({rooms: {leave: roomsObj}});
             expect(spy.callCount).toBe(1);
         });
-
 
         it('should process room invites', async () => {
             const {client: realClient} = createTestClient();
@@ -1226,7 +1146,6 @@ describe('MatrixClient', () => {
             await client.processSync({rooms: {invite: roomsObj}});
             expect(spy.callCount).toBe(1);
         });
-
 
         it('should use the most recent invite event', async () => {
             const {client: realClient} = createTestClient();
@@ -1270,7 +1189,6 @@ describe('MatrixClient', () => {
             expect(spy.callCount).toBe(1);
         });
 
-
         it('should not be affected by irrelevant events during invites', async () => {
             const {client: realClient} = createTestClient();
             const client = <ProcessSyncClient>(<any>realClient);
@@ -1312,7 +1230,6 @@ describe('MatrixClient', () => {
             await client.processSync({rooms: {invite: roomsObj}});
             expect(spy.callCount).toBe(1);
         });
-
 
         it('should not process invites detached from events', async () => {
             const {client: realClient} = createTestClient();
@@ -1357,7 +1274,6 @@ describe('MatrixClient', () => {
             expect(spy.callCount).toBe(0);
         });
 
-
         it('should not get hung up by not having an age available for invites', async () => {
             const {client: realClient} = createTestClient();
             const client = <ProcessSyncClient>(<any>realClient);
@@ -1388,7 +1304,6 @@ describe('MatrixClient', () => {
             expect(spy.callCount).toBe(1);
         });
 
-
         it('should process room joins', async () => {
             const {client: realClient} = createTestClient();
             const client = <ProcessSyncClient>(<any>realClient);
@@ -1408,7 +1323,6 @@ describe('MatrixClient', () => {
             await client.processSync({rooms: {join: roomsObj}});
             expect(spy.callCount).toBe(1);
         });
-
 
         it('should process joined room account data', async () => {
             const {client: realClient} = createTestClient();
@@ -1439,7 +1353,6 @@ describe('MatrixClient', () => {
             expect(spy.callCount).toBe(1);
         });
 
-
         it('should not duplicate room joins', async () => {
             const {client: realClient} = createTestClient();
             const client = <ProcessSyncClient>(<any>realClient);
@@ -1461,7 +1374,6 @@ describe('MatrixClient', () => {
             await client.processSync({rooms: {join: roomsObj}});
             expect(spy.callCount).toBe(1);
         });
-
 
         it('should not break with missing properties', async () => {
             const {client: realClient} = createTestClient();
@@ -1488,7 +1400,6 @@ describe('MatrixClient', () => {
                 }
             });
         });
-
 
         it('should process events for joined rooms', async () => {
             const {client: realClient} = createTestClient();
@@ -1545,7 +1456,6 @@ describe('MatrixClient', () => {
             expect(eventSpy.callCount).toBe(4);
         });
 
-
         it('should process tombstone events', async () => {
             const {client: realClient} = createTestClient();
             const client = <ProcessSyncClient>(<any>realClient);
@@ -1595,7 +1505,6 @@ describe('MatrixClient', () => {
             expect(eventSpy.callCount).toBe(2);
         });
 
-
         it('should process create events with a predecessor', async () => {
             const {client: realClient} = createTestClient();
             const client = <ProcessSyncClient>(<any>realClient);
@@ -1644,7 +1553,6 @@ describe('MatrixClient', () => {
             expect(upgradedSpy.callCount).toBe(1);
             expect(eventSpy.callCount).toBe(2);
         });
-
 
         it('should send events through a processor', async () => {
             const {client: realClient} = createTestClient();
@@ -1726,7 +1634,6 @@ describe('MatrixClient', () => {
             expect(messageSpy.callCount).toBe(1);
             expect(eventSpy.callCount).toBe(5);
         });
-
 
         it('should send events through the relevant processor', async () => {
             const {client: realClient} = createTestClient();
@@ -1821,7 +1728,6 @@ describe('MatrixClient', () => {
         });
     });
 
-
     describe('getEvent', () => {
 
         it('should call the right endpoint', async () => {
@@ -1840,7 +1746,6 @@ describe('MatrixClient', () => {
             const result = await client.getEvent(roomId, eventId);
             expect(result).toMatchObject(event);
         });
-
 
         it('should process events', async () => {
             const {client, http, hsUrl} = createTestClient();
@@ -1869,7 +1774,6 @@ describe('MatrixClient', () => {
         });
     });
 
-
     describe('getRoomState', () => {
 
         it('should call the right endpoint', async () => {
@@ -1891,7 +1795,6 @@ describe('MatrixClient', () => {
                 expect(result[i]).toMatchObject(events[i]);
             }
         });
-
 
         it('should process events', async () => {
             const {client, http, hsUrl} = createTestClient();
@@ -1927,7 +1830,6 @@ describe('MatrixClient', () => {
         });
     });
 
-
     describe('getRoomStateEvent', () => {
 
         it('should call the right endpoint with no state key', async () => {
@@ -1947,7 +1849,6 @@ describe('MatrixClient', () => {
             expect(result).toMatchObject(event);
         });
 
-
         it('should call the right endpoint with a state key', async () => {
             const {client, http, hsUrl} = createTestClient();
 
@@ -1965,7 +1866,6 @@ describe('MatrixClient', () => {
             const result = await client.getRoomStateEvent(roomId, eventType, stateKey);
             expect(result).toMatchObject(event);
         });
-
 
         it('should process events with no state key', async () => {
             const {client, http, hsUrl} = createTestClient();
@@ -1992,7 +1892,6 @@ describe('MatrixClient', () => {
             expect(result).toMatchObject(event);
             expect(result["processed"]).toBeTruthy();
         });
-
 
         it('should process events with a state key', async () => {
             const {client, http, hsUrl} = createTestClient();
@@ -2022,7 +1921,6 @@ describe('MatrixClient', () => {
         });
     });
 
-
     describe('getUserProfile', () => {
 
         it('should call the right endpoint', async () => {
@@ -2042,7 +1940,6 @@ describe('MatrixClient', () => {
         });
     });
 
-
     describe('createRoom', () => {
 
         it('should call the right endpoint', async () => {
@@ -2059,7 +1956,6 @@ describe('MatrixClient', () => {
             const result = await client.createRoom();
             expect(result).toEqual(roomId);
         });
-
 
         it('should call the right endpoint with all the provided properties', async () => {
             const {client, http} = createTestClient();
@@ -2080,7 +1976,6 @@ describe('MatrixClient', () => {
             expect(result).toEqual(roomId);
         });
     });
-
 
     describe('setDisplayName', () => {
 
@@ -2103,7 +1998,6 @@ describe('MatrixClient', () => {
         });
     });
 
-
     describe('setAvatarUrl', () => {
 
         it('should call the right endpoint', async () => {
@@ -2125,7 +2019,6 @@ describe('MatrixClient', () => {
         });
     });
 
-
     describe('joinRoom', () => {
 
         it('should call the right endpoint for room IDs', async () => {
@@ -2144,7 +2037,6 @@ describe('MatrixClient', () => {
             const result = await client.joinRoom(roomId);
             expect(result).toEqual(roomId);
         });
-
 
         it('should call the right endpoint with server names', async () => {
             const {client, http, hsUrl} = createTestClient();
@@ -2168,7 +2060,6 @@ describe('MatrixClient', () => {
             expect(result).toEqual(roomId);
         });
 
-
         it('should call the right endpoint for room aliases', async () => {
             const {client, http, hsUrl} = createTestClient();
 
@@ -2186,7 +2077,6 @@ describe('MatrixClient', () => {
             const result = await client.joinRoom(roomAlias);
             expect(result).toEqual(roomId);
         });
-
 
         it('should use a join strategy for room IDs', async () => {
             const {client, http, hsUrl} = createTestClient();
@@ -2216,7 +2106,6 @@ describe('MatrixClient', () => {
             expect(result).toEqual(roomId);
             expect(strategySpy.callCount).toBe(1);
         });
-
 
         it('should use a join strategy for room aliases', async () => {
             const {client, http, hsUrl} = createTestClient();
@@ -2249,7 +2138,6 @@ describe('MatrixClient', () => {
         });
     });
 
-
     describe('getJoinedRooms', () => {
 
         it('should call the right endpoint', async () => {
@@ -2267,7 +2155,6 @@ describe('MatrixClient', () => {
             expectArrayEquals(roomIds, result);
         });
     });
-
 
     describe('getJoinedRoomMembers', () => {
 
@@ -2289,7 +2176,6 @@ describe('MatrixClient', () => {
             expectArrayEquals(members, result);
         });
     });
-
 
     describe('getMembers', () => {
 
@@ -2325,7 +2211,6 @@ describe('MatrixClient', () => {
             expectArrayEquals(memberEvents, result);
         });
 
-
         it('should call the right endpoint with a batch token', async () => {
             const {client, http, hsUrl} = createTestClient();
 
@@ -2359,7 +2244,6 @@ describe('MatrixClient', () => {
             const result = await client.getMembers(roomId, atToken);
             expectArrayEquals(memberEvents, result);
         });
-
 
         it('should call the right endpoint with membership filtering', async () => {
             const {client, http, hsUrl} = createTestClient();
@@ -2398,7 +2282,6 @@ describe('MatrixClient', () => {
         });
     });
 
-
     describe('leaveRoom', () => {
 
         it('should call the right endpoint', async () => {
@@ -2415,7 +2298,6 @@ describe('MatrixClient', () => {
             await client.leaveRoom(roomId);
         });
     });
-
 
     describe('sendReadReceipt', () => {
 
@@ -2434,7 +2316,6 @@ describe('MatrixClient', () => {
             await client.sendReadReceipt(roomId, eventId);
         });
     });
-
 
     describe('setTyping', () => {
 
@@ -2458,7 +2339,6 @@ describe('MatrixClient', () => {
             await client.setTyping(roomId, typing, timeout);
         });
     });
-
 
     describe('replyText', () => {
 
@@ -2502,7 +2382,6 @@ describe('MatrixClient', () => {
             expect(result).toEqual(eventId);
         });
 
-
         it('should use encoded plain text as the HTML component', async () => {
             const {client, http, hsUrl} = createTestClient();
 
@@ -2543,7 +2422,6 @@ describe('MatrixClient', () => {
             expect(result).toEqual(eventId);
         });
     });
-
 
     describe('replyNotice', () => {
 
@@ -2587,7 +2465,6 @@ describe('MatrixClient', () => {
             expect(result).toEqual(eventId);
         });
 
-
         it('should use encoded plain text as the HTML component', async () => {
             const {client, http, hsUrl} = createTestClient();
 
@@ -2629,7 +2506,6 @@ describe('MatrixClient', () => {
         });
     });
 
-
     describe('sendNotice', () => {
 
         it('should call the right endpoint', async () => {
@@ -2655,7 +2531,6 @@ describe('MatrixClient', () => {
         });
     });
 
-
     describe('sendText', () => {
 
         it('should call the right endpoint', async () => {
@@ -2680,7 +2555,6 @@ describe('MatrixClient', () => {
             expect(result).toEqual(eventId);
         });
     });
-
 
     describe('sendMessage', () => {
 
@@ -2708,7 +2582,6 @@ describe('MatrixClient', () => {
         });
     });
 
-
     describe('sendEvent', () => {
 
         it('should call the right endpoint', async () => {
@@ -2734,7 +2607,6 @@ describe('MatrixClient', () => {
             expect(result).toEqual(eventId);
         });
     });
-
 
     describe('sendStateEvent', () => {
 
@@ -2763,7 +2635,6 @@ describe('MatrixClient', () => {
             expect(result).toEqual(eventId);
         });
 
-
         it('should call the right endpoint with a state key', async () => {
             const {client, http, hsUrl} = createTestClient();
 
@@ -2790,7 +2661,6 @@ describe('MatrixClient', () => {
         });
     });
 
-
     describe('redactEvent', () => {
 
         it('should call the right endpoint', async () => {
@@ -2812,7 +2682,6 @@ describe('MatrixClient', () => {
             expect(result).toEqual(eventId);
         });
     });
-
 
     describe('userHasPowerLevelFor', () => {
 
@@ -2841,7 +2710,6 @@ describe('MatrixClient', () => {
             }
             expect(getStateEventSpy.callCount).toBe(1);
         });
-
 
         it('assumes PL50 for state events when no power level information is available', async () => {
             const {client} = createTestClient();
@@ -2876,7 +2744,6 @@ describe('MatrixClient', () => {
             expect(result).toBe(true);
             expect(getStateEventSpy.callCount).toBe(3);
         });
-
 
         it('assumes PL0 for state events when no power level information is available', async () => {
             const {client} = createTestClient();
@@ -2917,7 +2784,6 @@ describe('MatrixClient', () => {
             expect(getStateEventSpy.callCount).toBe(4);
         });
 
-
         it('uses the state_default parameter', async () => {
             const {client} = createTestClient();
 
@@ -2952,7 +2818,6 @@ describe('MatrixClient', () => {
             expect(getStateEventSpy.callCount).toBe(3);
         });
 
-
         it('uses the users_default parameter', async () => {
             const {client} = createTestClient();
 
@@ -2986,7 +2851,6 @@ describe('MatrixClient', () => {
             expect(result).toBe(false);
             expect(getStateEventSpy.callCount).toBe(3);
         });
-
 
         it('uses the events[event_type] parameter for non-state events', async () => {
             const {client} = createTestClient();
@@ -3023,7 +2887,6 @@ describe('MatrixClient', () => {
             expect(getStateEventSpy.callCount).toBe(3);
         });
 
-
         it('uses the events[event_type] parameter for state events', async () => {
             const {client} = createTestClient();
 
@@ -3058,7 +2921,6 @@ describe('MatrixClient', () => {
             expect(result).toBe(false);
             expect(getStateEventSpy.callCount).toBe(3);
         });
-
 
         it('uses the events[event_type] parameter safely', async () => {
             const {client} = createTestClient();
@@ -3095,7 +2957,6 @@ describe('MatrixClient', () => {
             expect(getStateEventSpy.callCount).toBe(3);
         });
 
-
         it('defaults the user to PL0', async () => {
             const {client} = createTestClient();
 
@@ -3129,7 +2990,6 @@ describe('MatrixClient', () => {
             expect(result).toBe(true);
             expect(getStateEventSpy.callCount).toBe(3);
         });
-
 
         it('defaults the user to PL0 safely', async () => {
             const {client} = createTestClient();
@@ -3166,7 +3026,6 @@ describe('MatrixClient', () => {
         });
     });
 
-
     describe('mxcToHttp', () => {
 
         it('should convert to the right URL', async () => {
@@ -3179,7 +3038,6 @@ describe('MatrixClient', () => {
             const http = client.mxcToHttp(mxc);
             expect(http).toBe(`${hsUrl}/_matrix/media/r0/download/${encodeURIComponent(domain)}/${encodeURIComponent(mediaId)}`);
         });
-
 
         it('should error for non-MXC URIs', async () => {
             const {client, hsUrl} = createTestClient();
@@ -3199,7 +3057,6 @@ describe('MatrixClient', () => {
         });
     });
 
-
     describe('mxcToHttpThumbnail', () => {
 
         it('should convert to the right URL', async () => {
@@ -3215,7 +3072,6 @@ describe('MatrixClient', () => {
             const http = client.mxcToHttpThumbnail(mxc, width, height, method);
             expect(http).toBe(`${hsUrl}/_matrix/media/r0/thumbnail/${encodeURIComponent(domain)}/${encodeURIComponent(mediaId)}?width=${width}&height=${height}&method=${encodeURIComponent(method)}`);
         });
-
 
         it('should error for non-MXC URIs', async () => {
             const {client, hsUrl} = createTestClient();
@@ -3237,7 +3093,6 @@ describe('MatrixClient', () => {
             }
         });
     });
-
 
     describe('uploadContent', () => {
 
@@ -3264,7 +3119,6 @@ describe('MatrixClient', () => {
             expect(result).toEqual(uri);
         });
 
-
         it('should use the right filename', async () => {
             const {client, http} = createTestClient();
 
@@ -3288,7 +3142,6 @@ describe('MatrixClient', () => {
             expect(result).toEqual(uri);
         });
     });
-
 
     describe('downloadContent', () => {
 
@@ -3320,7 +3173,6 @@ describe('MatrixClient', () => {
         });
     });
 
-
     describe('uploadContentFromUrl', () => {
 
         it('should download then upload the content', async () => {
@@ -3349,7 +3201,6 @@ describe('MatrixClient', () => {
             expect(result).toEqual(uri);
         });
     });
-
 
     describe('getRoomUpgradeHistory', () => {
 
@@ -3501,7 +3352,6 @@ describe('MatrixClient', () => {
             expect(result).toMatchObject(expected);
         });
 
-
         it('should handle cases with no previous rooms', async () => {
             const {client} = createTestClient();
 
@@ -3605,7 +3455,6 @@ describe('MatrixClient', () => {
             const result = await client.getRoomUpgradeHistory("!current:localhost");
             expect(result).toMatchObject(expected);
         });
-
 
         it('should handle cases with no known newer rooms', async () => {
             const {client} = createTestClient();
@@ -3711,7 +3560,6 @@ describe('MatrixClient', () => {
             expect(result).toMatchObject(expected);
         });
 
-
         it('should handle cases with no newer rooms', async () => {
             const {client} = createTestClient();
 
@@ -3803,7 +3651,6 @@ describe('MatrixClient', () => {
             expect(result).toMatchObject(expected);
         });
 
-
         it('should handle cases with no upgrades', async () => {
             const {client} = createTestClient();
 
@@ -3843,7 +3690,6 @@ describe('MatrixClient', () => {
             expect(result).toMatchObject(expected);
         });
     });
-
 
     describe('redactObjectForLogging', () => {
 

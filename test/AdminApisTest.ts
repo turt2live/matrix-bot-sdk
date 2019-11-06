@@ -13,7 +13,6 @@ export function createTestAdminClient(storage: IStorageProvider = null): { clien
     return {...result, client, mxClient};
 }
 
-
 describe('AdminApis', () => {
 
     describe('whoisUser', () => {

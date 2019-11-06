@@ -2,7 +2,6 @@ import { SimpleRetryJoinStrategy } from "../../src";
 import * as expect from "expect";
 import * as simple from "simple-mock";
 
-
 describe('SimpleRetryJoinStrategy', () => {
 
     it('should retry joins when they fail', async () => {
@@ -28,7 +27,6 @@ describe('SimpleRetryJoinStrategy', () => {
         await strategy.joinRoom(roomId, userId, apiCallSpy);
         expect(apiCallSpy.callCount).toBe(schedule.length);
     });
-
 
     it('should retry joins on a schedule', async () => {
         const strategy = new SimpleRetryJoinStrategy();
@@ -62,7 +60,6 @@ describe('SimpleRetryJoinStrategy', () => {
         await strategy.joinRoom(roomId, userId, apiCallSpy);
         expect(apiCallSpy.callCount).toBe(schedule.length);
     });
-
 
     it('should fail if all attempts fail', async () => {
         const strategy = new SimpleRetryJoinStrategy();

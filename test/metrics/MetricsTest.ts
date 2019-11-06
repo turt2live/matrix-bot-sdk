@@ -35,7 +35,6 @@ function createTestMetricListener(expectedName: string, expectedContext: IMetric
     };
 }
 
-
 describe('Metrics', () => {
 
     it('should support listeners', async () => {
@@ -55,7 +54,6 @@ describe('Metrics', () => {
         expect(listeners()).toBeDefined();
         expect(listeners().length).toBe(0);
     });
-
 
     it('should track time series metrics', async () => {
         const metrics = new Metrics();
@@ -82,7 +80,6 @@ describe('Metrics', () => {
         expect((<any>listener.onDecrement).callCount).toBe(0);
         expect((<any>listener.onReset).callCount).toBe(0);
     });
-
 
     it('should track time series metrics with parent', async () => {
         const parentMetrics = new Metrics();
@@ -123,7 +120,6 @@ describe('Metrics', () => {
         expect((<any>listener.onReset).callCount).toBe(0);
     });
 
-
     describe('increment', () => {
 
         it('should increment', async () => {
@@ -145,7 +141,6 @@ describe('Metrics', () => {
             expect((<any>listener.onDecrement).callCount).toBe(0);
             expect((<any>listener.onReset).callCount).toBe(0);
         });
-
 
         it('should increment with parent', async () => {
             const parentMetrics = new Metrics();
@@ -180,7 +175,6 @@ describe('Metrics', () => {
         });
     });
 
-
     describe('decrement', () => {
 
         it('should decrement', async () => {
@@ -202,7 +196,6 @@ describe('Metrics', () => {
             expect((<any>listener.onDecrement).callCount).toBe(1);
             expect((<any>listener.onReset).callCount).toBe(0);
         });
-
 
         it('should decrement with parent', async () => {
             const parentMetrics = new Metrics();
@@ -237,7 +230,6 @@ describe('Metrics', () => {
         });
     });
 
-
     describe('reset', () => {
 
         it('should reset', async () => {
@@ -258,7 +250,6 @@ describe('Metrics', () => {
             expect((<any>listener.onDecrement).callCount).toBe(0);
             expect((<any>listener.onReset).callCount).toBe(1);
         });
-
 
         it('should reset with parent', async () => {
             const parentMetrics = new Metrics();

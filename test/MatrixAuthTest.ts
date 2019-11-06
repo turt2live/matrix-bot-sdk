@@ -1,5 +1,5 @@
 import * as expect from "expect";
-import { GroupProfile, IStorageProvider, MatrixAuth, MatrixClient, UnstableApis } from "../src";
+import { MatrixAuth } from "../src";
 import * as MockHttpBackend from 'matrix-mock-request';
 import { createTestClient } from "./MatrixClientTest";
 
@@ -19,11 +19,10 @@ export function createTestAuth(): { auth: MatrixAuth, http: MockHttpBackend, hsU
     return {hsUrl, http, auth};
 }
 
-
 describe('MatrixAuth', () => {
 
     describe('passwordRegister', () => {
-        
+
         it('should call the right endpoint', async () => {
             const {auth, http, hsUrl} = createTestAuth();
 
@@ -45,7 +44,7 @@ describe('MatrixAuth', () => {
         // TODO: Enable test.
         // We can't test this currently because matrix-mock-request doesn't support sending the response
         // object for errors.
-        
+
         xit('should support UIA', async () => {
             const {auth, http, hsUrl} = createTestAuth();
 
@@ -84,9 +83,8 @@ describe('MatrixAuth', () => {
         });
     });
 
-    
     describe('passwordLogin', () => {
-        
+
         it('should call the right endpoint', async () => {
             const {auth, http, hsUrl} = createTestAuth();
 

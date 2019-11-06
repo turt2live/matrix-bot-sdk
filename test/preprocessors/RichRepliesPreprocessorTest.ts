@@ -3,9 +3,8 @@ import * as expect from "expect";
 import * as simple from "simple-mock";
 import { createTestClient } from "../MatrixClientTest";
 
-
 describe('RichRepliesPreprocessor', () => {
-    
+
     it('should parse single-line events', async () => {
         const {client} = createTestClient();
 
@@ -53,7 +52,6 @@ describe('RichRepliesPreprocessor', () => {
         });
     });
 
-    
     it('should parse multi-line events', async () => {
         const {client} = createTestClient();
 
@@ -101,7 +99,6 @@ describe('RichRepliesPreprocessor', () => {
         });
     });
 
-    
     it('should only support messages', () => {
         const processor = new RichRepliesPreprocessor();
         const types = processor.getSupportedEventTypes();
@@ -109,7 +106,6 @@ describe('RichRepliesPreprocessor', () => {
         expect(types).toContain("m.room.message");
     });
 
-    
     it('should fetch the real message when instructed', async () => {
         const {client} = createTestClient();
 

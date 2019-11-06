@@ -2,7 +2,6 @@ import { Appservice, AppserviceJoinRoomStrategy, IJoinRoomStrategy } from "../..
 import * as expect from "expect";
 import * as simple from "simple-mock";
 
-
 describe('AppserviceJoinRoomStrategy', () => {
 
     it('should be able to join the room normally', async () => {
@@ -48,7 +47,6 @@ describe('AppserviceJoinRoomStrategy', () => {
         expect(apiCallSpy.callCount).toBe(1);
         expect(underlyingSpy.callCount).toBe(0);
     });
-
 
     it('should call the underlying strategy after the first failure', async () => {
         const appservice = new Appservice({
@@ -105,7 +103,6 @@ describe('AppserviceJoinRoomStrategy', () => {
         expect(inviteSpy.callCount).toBe(1);
     });
 
-
     it('should not invite the bot user if the bot user is joining', async () => {
         const appservice = new Appservice({
             port: 0,
@@ -161,7 +158,6 @@ describe('AppserviceJoinRoomStrategy', () => {
         expect(inviteSpy.callCount).toBe(0);
     });
 
-
     it('should call the API twice when there is no strategy', async () => {
         const appservice = new Appservice({
             port: 0,
@@ -210,7 +206,6 @@ describe('AppserviceJoinRoomStrategy', () => {
         expect(apiCallSpy.callCount).toBe(2);
         expect(inviteSpy.callCount).toBe(1);
     });
-
 
     it('should call the API once when there is no strategy for the bot user', async () => {
         const appservice = new Appservice({
@@ -264,7 +259,6 @@ describe('AppserviceJoinRoomStrategy', () => {
         expect(apiCallSpy.callCount).toBe(1);
         expect(inviteSpy.callCount).toBe(0);
     });
-
 
     it('should fail if the underlying strategy fails', async () => {
         const appservice = new Appservice({
@@ -328,7 +322,6 @@ describe('AppserviceJoinRoomStrategy', () => {
         expect(inviteSpy.callCount).toBe(1);
     });
 
-
     it('should handle invite failures', async () => {
         const appservice = new Appservice({
             port: 0,
@@ -381,7 +374,6 @@ describe('AppserviceJoinRoomStrategy', () => {
         expect(apiCallSpy.callCount).toBe(1);
         expect(inviteSpy.callCount).toBe(1);
     });
-
 
     it('should pass to the underlying strategy on invite failures', async () => {
         const appservice = new Appservice({

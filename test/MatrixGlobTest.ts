@@ -1,10 +1,7 @@
 import * as expect from "expect";
-import { PermalinkParts, Permalinks } from "../src";
 import { MatrixGlob } from "../src/MatrixGlob";
 
-
 describe('MatrixGlob', () => {
-
     it('should work with no glob characters', () => {
         const glob = "example.org";
         const passingTest = "example.org";
@@ -14,7 +11,6 @@ describe('MatrixGlob', () => {
         expect(mtxGlob.test(passingTest)).toBe(true);
         expect(mtxGlob.test(failingTest)).toBe(false);
     });
-
 
     it('should work with leading glob characters: *', () => {
         const glob = "*example.org";
@@ -26,7 +22,6 @@ describe('MatrixGlob', () => {
         expect(mtxGlob.test(failingTest)).toBe(false);
     });
 
-
     it('should work with trailing glob characters: *', () => {
         const glob = "example.org*";
         const passingTest = "example.org.123";
@@ -36,7 +31,6 @@ describe('MatrixGlob', () => {
         expect(mtxGlob.test(passingTest)).toBe(true);
         expect(mtxGlob.test(failingTest)).toBe(false);
     });
-
 
     it('should work with middle glob characters: *', () => {
         const glob = "example*.org";
@@ -48,7 +42,6 @@ describe('MatrixGlob', () => {
         expect(mtxGlob.test(failingTest)).toBe(false);
     });
 
-
     it('should work with leading glob characters: ?', () => {
         const glob = "?example.org";
         const passingTest = "1example.org";
@@ -59,7 +52,6 @@ describe('MatrixGlob', () => {
         expect(mtxGlob.test(failingTest)).toBe(false);
     });
 
-
     it('should work with trailing glob characters: ?', () => {
         const glob = "example.org?";
         const passingTest = "example.org1";
@@ -69,7 +61,6 @@ describe('MatrixGlob', () => {
         expect(mtxGlob.test(passingTest)).toBe(true);
         expect(mtxGlob.test(failingTest)).toBe(false);
     });
-
 
     it('should work with middle glob characters: ?', () => {
         const glob = "example?.org";

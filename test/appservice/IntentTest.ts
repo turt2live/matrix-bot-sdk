@@ -12,7 +12,6 @@ import * as simple from "simple-mock";
 import * as MockHttpBackend from 'matrix-mock-request';
 import { expectArrayEquals } from "../TestUtils";
 
-
 describe('Intent', () => {
 
     it('should prepare the underlying client for a bot user', async () => {
@@ -34,7 +33,6 @@ describe('Intent', () => {
         expect((<any>intent.underlyingClient).accessToken).toEqual(asToken);
         expect((<any>intent.underlyingClient).homeserverUrl).toEqual(hsUrl);
     });
-
 
     it('should prepare the underlying client for a bot user with a join strategy', async () => {
         const userId = "@someone:example.org";
@@ -59,7 +57,6 @@ describe('Intent', () => {
         expect((<any>intent.underlyingClient).joinStrategy).toEqual(joinStrategy);
     });
 
-
     it('should prepare the underlying client for an impersonated user', async () => {
         const userId = "@someone:example.org";
         const botUserId = "@bot:example.org";
@@ -80,7 +77,6 @@ describe('Intent', () => {
         expect((<any>intent.underlyingClient).accessToken).toEqual(asToken);
         expect((<any>intent.underlyingClient).homeserverUrl).toEqual(hsUrl);
     });
-
 
     it('should prepare the underlying client for an impersonated user with a join strategy', async () => {
         const userId = "@someone:example.org";
@@ -105,7 +101,6 @@ describe('Intent', () => {
         expect((<any>intent.underlyingClient).homeserverUrl).toEqual(hsUrl);
         expect((<any>intent.underlyingClient).joinStrategy).toEqual(joinStrategy);
     });
-
 
     describe('ensureRegistered', () => {
 
@@ -139,7 +134,6 @@ describe('Intent', () => {
             expect(isRegisteredSpy.callCount).toBe(1);
             expect(addRegisteredSpy.callCount).toBe(0);
         });
-
 
         it('should try to register the user when not flagged as such', async () => {
             const http = new MockHttpBackend();
@@ -181,7 +175,6 @@ describe('Intent', () => {
             expect(addRegisteredSpy.callCount).toBe(1);
         });
 
-
         it('should gracefully handle M_USER_IN_USE', async () => {
             const http = new MockHttpBackend();
             setRequestFn(http.requestFn);
@@ -222,7 +215,6 @@ describe('Intent', () => {
             expect(isRegisteredSpy.callCount).toBe(1);
             expect(addRegisteredSpy.callCount).toBe(1);
         });
-
 
         it('should handle unexpected errors', async () => {
             const http = new MockHttpBackend();
@@ -272,7 +264,6 @@ describe('Intent', () => {
         });
     });
 
-
     describe('getJoinedRooms', () => {
 
         it('should fetch rooms if none are cached', async () => {
@@ -307,7 +298,6 @@ describe('Intent', () => {
             expect(registeredSpy.callCount).toBe(1);
             expect(getJoinedSpy.callCount).toBe(1);
         });
-
 
         it('should cache rooms on join', async () => {
             const userId = "@someone:example.org";
@@ -358,7 +348,6 @@ describe('Intent', () => {
             expect(joinSpy.callCount).toBe(1);
         });
 
-
         it('should cache rooms on leave', async () => {
             const userId = "@someone:example.org";
             const botUserId = "@bot:example.org";
@@ -407,7 +396,6 @@ describe('Intent', () => {
             expect(getJoinedSpy.callCount).toBe(3);
             expect(leaveSpy.callCount).toBe(1);
         });
-
 
         it('should cache rooms on ensureJoined', async () => {
             const userId = "@someone:example.org";
@@ -468,7 +456,6 @@ describe('Intent', () => {
         });
     });
 
-
     describe('refreshJoinedRooms', () => {
 
         it('should overwrite any previously known joined rooms', async () => {
@@ -516,7 +503,6 @@ describe('Intent', () => {
         });
     });
 
-
     describe('ensureJoined', () => {
 
         it('should fetch the rooms the user is joined to', async () => {
@@ -553,7 +539,6 @@ describe('Intent', () => {
             expect(joinSpy.callCount).toBe(0);
         });
 
-
         it('should attempt to join rooms a user is not in', async () => {
             const userId = "@someone:example.org";
             const botUserId = "@bot:example.org";
@@ -587,7 +572,6 @@ describe('Intent', () => {
             expect(getJoinedSpy.callCount).toBe(1);
             expect(joinSpy.callCount).toBe(1);
         });
-
 
         it('should proxy failure for joining a room', async () => {
             const userId = "@someone:example.org";
@@ -629,7 +613,6 @@ describe('Intent', () => {
             expect(getJoinedSpy.callCount).toBe(1);
             expect(joinSpy.callCount).toBe(1);
         });
-
 
         it('should proxy failure for getting joined rooms', async () => {
             const userId = "@someone:example.org";
@@ -673,7 +656,6 @@ describe('Intent', () => {
         });
     });
 
-
     describe('ensureRegisteredAndJoined', () => {
 
         it('should call both ensureRegistered and ensureJoined', async () => {
@@ -706,7 +688,6 @@ describe('Intent', () => {
             expect(registeredSpy.callCount).toBe(1);
             expect(joinSpy.callCount).toBe(1);
         });
-
 
         it('should proxy failure from ensureRegistered', async () => {
             const userId = "@someone:example.org";
@@ -746,7 +727,6 @@ describe('Intent', () => {
             expect(joinSpy.callCount).toBe(0);
         });
 
-
         it('should proxy failure from ensureJoined', async () => {
             const userId = "@someone:example.org";
             const botUserId = "@bot:example.org";
@@ -785,7 +765,6 @@ describe('Intent', () => {
             expect(joinSpy.callCount).toBe(1);
         });
     });
-
 
     describe('sendEvent', () => {
 
@@ -830,7 +809,6 @@ describe('Intent', () => {
             expect(registeredSpy.callCount).toBe(1);
             expect(joinSpy.callCount).toBe(1);
         });
-
 
         it('should proxy errors upwards', async () => {
             const userId = "@someone:example.org";
@@ -880,7 +858,6 @@ describe('Intent', () => {
         });
     });
 
-
     describe('sendText', () => {
 
         it('should proxy through to the client while ensuring they are registered and joined', async () => {
@@ -924,7 +901,6 @@ describe('Intent', () => {
             expect(registeredSpy.callCount).toBe(1);
             expect(joinSpy.callCount).toBe(1);
         });
-
 
         it('should proxy errors upwards', async () => {
             const userId = "@someone:example.org";
@@ -974,7 +950,6 @@ describe('Intent', () => {
         });
     });
 
-
     describe('joinRoom', () => {
 
         it('should proxy through to the client while ensuring they are registered', async () => {
@@ -1020,7 +995,6 @@ describe('Intent', () => {
             expect(joinSpy.callCount).toBe(0);
             expect(refreshJoinedRoomsSpy.callCount).toBe(1);
         });
-
 
         it('should proxy errors upwards', async () => {
             const userId = "@someone:example.org";
@@ -1068,7 +1042,6 @@ describe('Intent', () => {
         });
     });
 
-
     describe('leaveRoom', () => {
 
         it('should proxy through to the client while ensuring they are registered', async () => {
@@ -1113,7 +1086,6 @@ describe('Intent', () => {
             expect(joinSpy.callCount).toBe(0);
             expect(refreshJoinedRoomsSpy.callCount).toBe(1);
         });
-
 
         it('should proxy errors upwards', async () => {
             const userId = "@someone:example.org";

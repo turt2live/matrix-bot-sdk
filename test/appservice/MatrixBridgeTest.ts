@@ -2,12 +2,14 @@ import {
     Appservice,
     IAppserviceOptions,
     Intent,
-    MatrixBridge, REMOTE_ROOM_INFO_ACCOUNT_DATA_EVENT_TYPE, REMOTE_ROOM_MAP_ACCOUNT_DATA_EVENT_TYPE_PREFIX,
-    REMOTE_USER_INFO_ACCOUNT_DATA_EVENT_TYPE, REMOTE_USER_MAP_ACCOUNT_DATA_EVENT_TYPE_PREFIX
+    MatrixBridge,
+    REMOTE_ROOM_INFO_ACCOUNT_DATA_EVENT_TYPE,
+    REMOTE_ROOM_MAP_ACCOUNT_DATA_EVENT_TYPE_PREFIX,
+    REMOTE_USER_INFO_ACCOUNT_DATA_EVENT_TYPE,
+    REMOTE_USER_MAP_ACCOUNT_DATA_EVENT_TYPE_PREFIX
 } from "../../src";
 import * as expect from "expect";
 import * as simple from "simple-mock";
-
 
 describe('MatrixBridge', () => {
 
@@ -46,7 +48,6 @@ describe('MatrixBridge', () => {
             expect(accountDataSpy.callCount).toBe(1);
         });
     });
-
 
     describe('setRemoteUserInfo', () => {
 
@@ -99,7 +100,6 @@ describe('MatrixBridge', () => {
         });
     });
 
-
     describe('getRemoteRoomInfo', () => {
 
         it('should get remote room information', async () => {
@@ -139,7 +139,6 @@ describe('MatrixBridge', () => {
             expect(accountDataSpy.callCount).toBe(1);
         });
     });
-
 
     describe('setRemoteRoomInfo', () => {
 
@@ -188,7 +187,6 @@ describe('MatrixBridge', () => {
         });
     });
 
-
     describe('getMatrixRoomIdForRemote', () => {
 
         it('should return the right room ID', async () => {
@@ -226,7 +224,6 @@ describe('MatrixBridge', () => {
             expect(accountDataSpy.callCount).toBe(1);
         });
     });
-
 
     describe('getIntentForRemote', () => {
 

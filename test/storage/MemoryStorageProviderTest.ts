@@ -1,7 +1,6 @@
 import { IFilterInfo, MemoryStorageProvider } from "../../src";
 import * as expect from "expect";
 
-
 describe('MemoryStorageProvider', () => {
 
     it('should return the right sync token', async () => {
@@ -13,7 +12,6 @@ describe('MemoryStorageProvider', () => {
         expect(provider.getSyncToken()).toEqual(value);
     });
 
-
     it('should return the right filter object', async () => {
         const provider = new MemoryStorageProvider();
 
@@ -22,7 +20,6 @@ describe('MemoryStorageProvider', () => {
         provider.setFilter(value);
         expect(provider.getFilter()).toMatchObject(value);
     });
-
 
     it('should track registered users', async () => {
         const provider = new MemoryStorageProvider();
@@ -43,7 +40,6 @@ describe('MemoryStorageProvider', () => {
         expect(provider.isUserRegistered(userIdB)).toBeTruthy();
     });
 
-
     it('should track completed transactions', async () => {
         const provider = new MemoryStorageProvider();
 
@@ -62,7 +58,6 @@ describe('MemoryStorageProvider', () => {
         expect(provider.isTransactionCompleted(txnA)).toBeTruthy();
         expect(provider.isTransactionCompleted(txnB)).toBeTruthy();
     });
-
 
     it('should track arbitrary key value pairs', async () => {
         const provider = new MemoryStorageProvider();

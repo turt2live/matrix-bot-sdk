@@ -1,4 +1,4 @@
-import { IFilterInfo, MemoryStorageProvider, SimpleFsStorageProvider } from "../../src";
+import { IFilterInfo, SimpleFsStorageProvider } from "../../src";
 import * as expect from "expect";
 import * as tmp from "tmp";
 
@@ -12,7 +12,6 @@ function createSimpleFsStorageProvider(inMemory = false, maxMemTransactions = 20
     return {tmpFile, writeProvider, readProviderFn};
 }
 
-
 describe('SimpleFsStorageProvider', () => {
 
     it('should return the right sync token', async () => {
@@ -25,7 +24,6 @@ describe('SimpleFsStorageProvider', () => {
         expect(readProviderFn().getSyncToken()).toEqual(value);
     });
 
-
     it('should return the right filter object', async () => {
         const {writeProvider, readProviderFn} = createSimpleFsStorageProvider();
 
@@ -35,7 +33,6 @@ describe('SimpleFsStorageProvider', () => {
         expect(writeProvider.getFilter()).toMatchObject(value);
         expect(readProviderFn().getFilter()).toMatchObject(value);
     });
-
 
     it('should track registered users', async () => {
         const {writeProvider, readProviderFn} = createSimpleFsStorageProvider();
@@ -62,7 +59,6 @@ describe('SimpleFsStorageProvider', () => {
         expect(readProviderFn().isUserRegistered(userIdB)).toBeTruthy();
     });
 
-
     it('should track completed transactions', async () => {
         const {writeProvider, readProviderFn} = createSimpleFsStorageProvider();
 
@@ -87,7 +83,6 @@ describe('SimpleFsStorageProvider', () => {
         expect(readProviderFn().isTransactionCompleted(txnA)).toBeTruthy();
         expect(readProviderFn().isTransactionCompleted(txnB)).toBeTruthy();
     });
-
 
     it('should track a limited number of completed transactions in memory', async () => {
         const maxTransactions = 2;
@@ -132,7 +127,6 @@ describe('SimpleFsStorageProvider', () => {
         expect(readProviderFn().isTransactionCompleted(txnB)).toBeFalsy();
         expect(readProviderFn().isTransactionCompleted(txnC)).toBeFalsy();
     });
-
 
     it('should track arbitrary key value pairs', async () => {
         const {writeProvider, readProviderFn} = createSimpleFsStorageProvider();

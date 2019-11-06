@@ -17,7 +17,6 @@ export class Permalinks {
         return `?via=${servers.join("via=")}`;
     }
 
-
     public static forRoom(roomIdOrAlias: string, viaServers: string[] = []): string {
         return `https://matrix.to/#/${roomIdOrAlias}${Permalinks.encodeViaArgs(viaServers)}`;
     }
