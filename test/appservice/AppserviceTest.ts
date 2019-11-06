@@ -460,6 +460,7 @@ describe('Appservice', () => {
         });
     });
 
+    // @ts-ignore
     describe('isNamespacedAlias', () => {
         // @ts-ignore
         it('should throw on no alias prefix set', async () => {
@@ -541,6 +542,7 @@ describe('Appservice', () => {
         expect(appservice.getAlias("_prefix_testing")).toEqual("#_prefix_testing:example.org");
     });
 
+    // @ts-ignore
     describe('getAliasForSuffix', () => {
         // @ts-ignore
         it('should throw on no alias prefix set', async () => {
@@ -592,6 +594,7 @@ describe('Appservice', () => {
         });
     });
 
+    // @ts-ignore
     describe('getAliasLocalpartForSuffix', () => {
         // @ts-ignore
         it('should throw on no alias prefix set', async () => {
@@ -2163,6 +2166,7 @@ describe('Appservice', () => {
         }
     });
 
+    // @ts-ignore
     it("should handle third party protocol requests", async () => {
         const protos = ["fakeproto", "anotherproto"];
         const { appservice, doCall } = await beginAppserviceWithProtocols(protos);
@@ -2182,6 +2186,7 @@ describe('Appservice', () => {
         }
     });
 
+    // @ts-ignore
     it("should reject unknown protocols when handling third party protocol requests", async () => {
         const { appservice, doCall } = await beginAppserviceWithProtocols(["fakeproto"]);
         const expectedError = {
@@ -2201,6 +2206,7 @@ describe('Appservice', () => {
         }
     });
 
+    // @ts-ignore
     it("should lookup a remote user by given fields and respond with it", async () => {
         const protocolId = "fakeproto";
         const { appservice, doCall } = await beginAppserviceWithProtocols([protocolId]);
@@ -2223,6 +2229,7 @@ describe('Appservice', () => {
         }
     });
 
+    // @ts-ignore
     it("should lookup a matrix user by given fields and respond with it", async () => {
         const { appservice, doCall } = await beginAppserviceWithProtocols(["fakeproto"]);
         const responseObj = ["user1", "user2"];
@@ -2240,6 +2247,7 @@ describe('Appservice', () => {
         }
     });
 
+    // @ts-ignore
     it("should fail to lookup a remote user if the protocol is wrong", async () => {
         const { appservice, doCall } = await beginAppserviceWithProtocols(["fakeproto"]);
         try {
@@ -2257,6 +2265,7 @@ describe('Appservice', () => {
         }
     });
 
+    // @ts-ignore
     it("should return 404 if no matrix users are found when handling a third party user request", async () => {
         const { appservice, doCall } = await beginAppserviceWithProtocols(["fakeproto"]);
         const expectedUserId = "@foobar:localhost";
@@ -2278,6 +2287,7 @@ describe('Appservice', () => {
         }
     });
 
+    // @ts-ignore
     it("should return 404 if no remote users are found when handling a thirdparty user request", async () => {
         const protocolId = "fakeproto";
         const { appservice, doCall } = await beginAppserviceWithProtocols([protocolId]);
@@ -2304,6 +2314,7 @@ describe('Appservice', () => {
         }
     });
 
+    // @ts-ignore
     it("should fail to lookup a remote user if the mxid is empty", async () => {
         const { appservice, doCall } = await beginAppserviceWithProtocols(["fakeproto"]);
         try {
@@ -2321,6 +2332,7 @@ describe('Appservice', () => {
         }
     });
 
+    // @ts-ignore
     it("should lookup a remote location by given fields", async () => {
         const protocolId = "fakeproto";
         const { appservice, doCall } = await beginAppserviceWithProtocols([protocolId]);
@@ -2343,6 +2355,7 @@ describe('Appservice', () => {
         }
     });
 
+    // @ts-ignore
     it("should lookup a matrix location by given fields", async () => {
         const { appservice, doCall } = await beginAppserviceWithProtocols(["fakeproto"]);
         const responseObj = ["loc1", "loc2"];
@@ -2360,6 +2373,7 @@ describe('Appservice', () => {
         }
     });
 
+    // @ts-ignore
     it("should fail to lookup a remote location if the protocol is wrong", async () => {
         const { appservice, doCall } = await beginAppserviceWithProtocols(["fakeproto"]);
         try {
@@ -2377,6 +2391,7 @@ describe('Appservice', () => {
         }
     });
 
+    // @ts-ignore
     it("should return 404 if no matrix locations are found", async () => {
         const { appservice, doCall } = await beginAppserviceWithProtocols(["fakeproto"]);
         const expectedAlias = "#alias:localhost";
@@ -2398,6 +2413,7 @@ describe('Appservice', () => {
         }
     });
 
+    // @ts-ignore
     it("should return 404 if no remote location are found", async () => {
         const protocolId = "fakeproto";
         const { appservice, doCall } = await beginAppserviceWithProtocols([protocolId]);
@@ -2424,6 +2440,7 @@ describe('Appservice', () => {
         }
     });
 
+    // @ts-ignore
     it("should fail to lookup a matrix location if the alias is empty", async () => {
         const { appservice, doCall } = await beginAppserviceWithProtocols(["fakeproto"]);
         try {
@@ -2441,6 +2458,7 @@ describe('Appservice', () => {
         }
     });
 
+    // @ts-ignore
     it("should set visibilty of a room on the appservice's network", async () => {
         const port = await getPort();
         const hsToken = "s3cret_token";

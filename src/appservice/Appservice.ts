@@ -103,6 +103,9 @@ export interface IAppserviceRegistration {
         }[];
     };
 
+    /**
+     * The protocols the application service supports. Optional.
+     */
     protocols?: string[];
 
     // not interested in other options
