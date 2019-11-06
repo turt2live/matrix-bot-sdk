@@ -541,32 +541,32 @@ export class Appservice extends EventEmitter {
 
     private async onTransaction(req, res): Promise<any> {
         if (!this.isAuthed(req)) {
-            res.status(401).send({errcode: "AUTH_FAILED", error: "Authentication failed"});
+            res.status(401).json({errcode: "AUTH_FAILED", error: "Authentication failed"});
         }
 
         if (typeof (req.body) !== "object") {
-            res.status(400).send({errcode: "BAD_REQUEST", error: "Expected JSON"});
+            res.status(400).json({errcode: "BAD_REQUEST", error: "Expected JSON"});
             return;
         }
 
         if (!req.body["events"] || !Array.isArray(req.body["events"])) {
-            res.status(400).send({errcode: "BAD_REQUEST", error: "Invalid JSON: expected events"});
+            res.status(400).json({errcode: "BAD_REQUEST", error: "Invalid JSON: expected events"});
             return;
         }
 
         const txnId = req.params["txnId"];
 
         if (this.storage.isTransactionCompleted(txnId)) {
-            res.status(200).send({});
+            res.status(200).json({});
         }
 
         if (this.pendingTransactions[txnId]) {
             try {
                 await this.pendingTransactions[txnId];
-                res.status(200).send({});
+                res.status(200).json({});
             } catch (e) {
                 LogService.error("Appservice", e);
-                res.status(500).send({});
+                res.status(500).json({});
             }
         }
 
@@ -596,43 +596,43 @@ export class Appservice extends EventEmitter {
         try {
             await this.pendingTransactions[txnId];
             this.storage.setTransactionCompleted(txnId);
-            res.status(200).send({});
+            res.status(200).json({});
         } catch (e) {
             LogService.error("Appservice", e);
-            res.status(500).send({});
+            res.status(500).json({});
         }
     }
 
     private async onUser(req, res): Promise<any> {
         if (!this.isAuthed(req)) {
-            res.status(401).send({errcode: "AUTH_FAILED", error: "Authentication failed"});
+            res.status(401).json({errcode: "AUTH_FAILED", error: "Authentication failed"});
         }
 
         const userId = req.params["userId"];
         this.emit("query.user", userId, async (result) => {
             if (result.then) result = await result;
             if (result === false) {
-                res.status(404).send({errcode: "USER_DOES_NOT_EXIST", error: "User not created"});
+                res.status(404).json({errcode: "USER_DOES_NOT_EXIST", error: "User not created"});
             } else {
                 const intent = this.getIntentForUserId(userId);
                 await intent.ensureRegistered();
                 if (result.display_name) await intent.underlyingClient.setDisplayName(result.display_name);
                 if (result.avatar_mxc) await intent.underlyingClient.setAvatarUrl(result.avatar_mxc);
-                res.status(200).send(result); // return result for debugging + testing
+                res.status(200).json(result); // return result for debugging + testing
             }
         });
     }
 
     private async onRoomAlias(req, res): Promise<any> {
         if (!this.isAuthed(req)) {
-            res.status(401).send({errcode: "AUTH_FAILED", error: "Authentication failed"});
+            res.status(401).json({errcode: "AUTH_FAILED", error: "Authentication failed"});
         }
 
         const roomAlias = req.params["roomAlias"];
         this.emit("query.room", roomAlias, async (result) => {
             if (result.then) result = await result;
             if (result === false) {
-                res.status(404).send({errcode: "ROOM_DOES_NOT_EXIST", error: "Room not created"});
+                res.status(404).json({errcode: "ROOM_DOES_NOT_EXIST", error: "Room not created"});
             } else {
                 const intent = this.botIntent;
                 await intent.ensureRegistered();
@@ -640,39 +640,39 @@ export class Appservice extends EventEmitter {
                 result["room_alias_name"] = roomAlias.substring(1).split(':')[0];
                 result["__roomId"] = await intent.underlyingClient.createRoom(result);
 
-                res.status(200).send(result); // return result for debugging + testing
+                res.status(200).json(result); // return result for debugging + testing
             }
         });
     }
 
     private onThirdpartyProtocol(req: express.Request, res: express.Response) {
         if (!this.isAuthed(req)) {
-            res.status(401).send({errcode: "AUTH_FAILED", error: "Authentication failed"});
+            res.status(401).json({errcode: "AUTH_FAILED", error: "Authentication failed"});
         }
         const protocol = req.params["protocol"];
         if (!this.registration.protocols.includes(protocol)) {
-            res.status(404).send({
+            res.status(404).json({
                 errcode: "PROTOCOL_NOT_HANDLED",
                 error: "Protocol is not handled by this appservice"
-            })
+            });
             return;
         }
         this.emit("thirdparty.protocol", protocol, (protocolResponse: IApplicationServiceProtocol) => {
-            res.status(200).send(protocolResponse);
+            res.status(200).json(protocolResponse);
         });
     }
 
     private handleThirdpartyObject(req: express.Request, res: express.Response, objType: string, matrixId?: string) {
         if (!this.isAuthed(req)) {
-            res.status(401).send({errcode: "AUTH_FAILED", error: "Authentication failed"});
+            res.status(401).json({errcode: "AUTH_FAILED", error: "Authentication failed"});
         }
         const protocol = req.params["protocol"];
         const responseFunc = (items: any[]) => {
             if (items && items.length > 0) {
-                res.status(200).send(items);
+                res.status(200).json(items);
                 return;
             }
-            res.status(404).send({
+            res.status(404).json({
                 errcode: "NO_MAPPING_FOUND",
                 error: "No mappings found"
             });
@@ -681,10 +681,10 @@ export class Appservice extends EventEmitter {
         // Lookup remote objects(s)
         if (protocol) { // If protocol is given, we are looking up a objects based on fields
             if (!this.registration.protocols.includes(protocol)) {
-                res.status(404).send({
+                res.status(404).json({
                     errcode: "PROTOCOL_NOT_HANDLED",
                     error: "Protocol is not handled by this appservice"
-                })
+                });
                 return;
             }
             // Remove the access_token
@@ -696,7 +696,7 @@ export class Appservice extends EventEmitter {
             return;
         }
 
-        res.status(400).send({
+        res.status(400).json({
             errcode: "INVALID_PARAMETERS",
             error: "Invalid parameters given"
         });
