@@ -1,4 +1,5 @@
 import * as express from "express";
+import { Request, Response } from "express";
 import { Intent } from "./Intent";
 import {
     AppserviceJoinRoomStrategy,
@@ -12,6 +13,7 @@ import { EventEmitter } from "events";
 import * as morgan from "morgan";
 import { MatrixBridge } from "./MatrixBridge";
 import * as LRU from "lru-cache";
+import { IApplicationServiceProtocol } from "./Protocols";
 
 /**
  * Represents an application service's registration file. This is expected to be
@@ -100,6 +102,8 @@ export interface IAppserviceRegistration {
             regex: string;
         }[];
     };
+
+    protocols?: string[];
 
     // not interested in other options
 }
@@ -198,6 +202,12 @@ export class Appservice extends EventEmitter {
         });
 
         this.registration = options.registration;
+
+        // If protocol is not defined, define an empty array.
+        if (!this.registration.protocols) {
+            this.registration.protocols = [];
+        }
+
         this.storage = options.storage || new MemoryStorageProvider();
         options.storage = this.storage;
 
@@ -210,6 +220,12 @@ export class Appservice extends EventEmitter {
         this.app.get("/_matrix/app/v1/users/:userId", this.onUser.bind(this));
         this.app.get("/_matrix/app/v1/rooms/:roomAlias", this.onRoomAlias.bind(this));
         this.app.put("/_matrix/app/v1/transactions/:txnId", this.onTransaction.bind(this));
+        this.app.get("/_matrix/app/v1/thirdparty/protocol/:protocol", this.onThirdpartyProtocol.bind(this));
+        this.app.get("/_matrix/app/v1/thirdparty/user/:protocol", this.onThirdpartyUser.bind(this));
+        this.app.get("/_matrix/app/v1/thirdparty/user", this.onThirdpartyUser.bind(this));
+        this.app.get("/_matrix/app/v1/thirdparty/location/:protocol", this.onThirdpartyLocation.bind(this));
+        this.app.get("/_matrix/app/v1/thirdparty/location", this.onThirdpartyLocation.bind(this));
+
         // Everything else can 404
 
         // TODO: Should we permit other user namespaces and instead error when trying to use doSomethingBySuffix()?
@@ -624,5 +640,71 @@ export class Appservice extends EventEmitter {
                 res.status(200).send(result); // return result for debugging + testing
             }
         });
+    }
+
+    private onThirdpartyProtocol(req: express.Request, res: express.Response) {
+        if (!this.isAuthed(req)) {
+            res.status(401).send({errcode: "AUTH_FAILED", error: "Authentication failed"});
+        }
+        const protocol = req.params["protocol"];
+        if (!this.registration.protocols.includes(protocol)) {
+            res.status(404).send({
+                errcode: "PROTOCOL_NOT_HANDLED",
+                error: "Protocol is not handled by this appservice"
+            })
+            return;
+        }
+        this.emit("thirdparty.protocol", protocol, (protocolResponse: IApplicationServiceProtocol) => {
+            res.status(200).send(protocolResponse);
+        });
+    }
+
+    private handleThirdpartyObject(req: express.Request, res: express.Response, objType: string, matrixId?: string) {
+        if (!this.isAuthed(req)) {
+            res.status(401).send({errcode: "AUTH_FAILED", error: "Authentication failed"});
+        }
+        const protocol = req.params["protocol"];
+        const responseFunc = (items: any[]) => {
+            if (items && items.length > 0) {
+                res.status(200).send(items);
+                return;
+            }
+            res.status(404).send({
+                errcode: "NO_MAPPING_FOUND",
+                error: "No mappings found"
+            });
+        };
+
+        // Lookup remote objects(s)
+        if (protocol) { // If protocol is given, we are looking up a objects based on fields
+            if (!this.registration.protocols.includes(protocol)) {
+                res.status(404).send({
+                    errcode: "PROTOCOL_NOT_HANDLED",
+                    error: "Protocol is not handled by this appservice"
+                })
+                return;
+            }
+            // Remove the access_token
+            delete req.query.access_token;
+            this.emit(`thirdparty.${objType}.remote`, protocol, req.query, responseFunc);
+            return;
+        } else if (matrixId) { // If a user ID is given, we are looking up a remote objects based on a id
+            this.emit(`thirdparty.${objType}.matrix`, matrixId, responseFunc);
+            return;
+        }
+
+        res.status(400).send({
+            errcode: "INVALID_PARAMETERS",
+            error: "Invalid parameters given"
+        });
+
+    }
+
+    private onThirdpartyUser(req: express.Request, res: express.Response) {
+        return this.handleThirdpartyObject(req, res, "user", req.query["userid"]);
+    }
+
+    private onThirdpartyLocation(req: express.Request, res: express.Response) {
+        return this.handleThirdpartyObject(req, res, "location", req.query["alias"]);
     }
 }

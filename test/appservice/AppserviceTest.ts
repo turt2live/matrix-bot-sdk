@@ -5,6 +5,43 @@ import * as requestPromise from "request-promise";
 import * as simple from "simple-mock";
 import * as MockHttpBackend from 'matrix-mock-request';
 
+async function beginAppserviceWithProtocols(protocols: string[]) {
+    const port = await getPort();
+    const hsToken = "s3cret_token";
+    const appservice = new Appservice({
+        port: port,
+        bindAddress: '127.0.0.1',
+        homeserverName: 'example.org',
+        homeserverUrl: 'https://localhost',
+        registration: {
+            as_token: "",
+            hs_token: hsToken,
+            sender_localpart: "_bot_",
+            namespaces: {
+                users: [{exclusive: true, regex: "@_prefix_.*:.+"}],
+                rooms: [],
+                aliases: [],
+            },
+            protocols,
+        },
+    });
+    appservice.botIntent.ensureRegistered = () => {
+        return null;
+    };
+    async function doCall(route: string, opts: any = {}, qs: any = {}) {
+        return await requestPromise({
+            uri: `http://localhost:${port}${route}`,
+            method: "GET",
+            qs: {access_token: hsToken, ...qs},
+            json: true,
+            ...opts,
+        });
+    }
+
+    await appservice.begin();
+    return { appservice, doCall };
+}
+
 // @ts-ignore
 describe('Appservice', () => {
     // @ts-ignore
@@ -506,7 +543,7 @@ describe('Appservice', () => {
 
     describe('getAliasForSuffix', () => {
         // @ts-ignore
-        if('should throw on no alias prefix set', async () => {
+        it('should throw on no alias prefix set', async () => {
             try {
                 const appservice = new Appservice({
                     port: 0,
@@ -2126,6 +2163,284 @@ describe('Appservice', () => {
         }
     });
 
+    it("should handle third party protocol requests", async () => {
+        const protos = ["fakeproto", "anotherproto"];
+        const { appservice, doCall } = await beginAppserviceWithProtocols(protos);
+        const responseObj = {notarealresponse: true};
+        const getProtoSpy = simple.stub().callFn((protocol, fn) => {
+            expect(protos).toContain(protocol);
+            fn(responseObj);
+        });
+        try {
+            appservice.on("thirdparty.protocol", getProtoSpy);
+            const result = await doCall("/_matrix/app/v1/thirdparty/protocol/" + protos[0]);
+            expect(result).toEqual(responseObj);
+            const result2 = await doCall("/_matrix/app/v1/thirdparty/protocol/"  + protos[1]);
+            expect(result2).toEqual(responseObj);
+        } finally {
+            appservice.stop();
+        }
+    });
+
+    it("should reject unknown protocols when handling third party protocol requests", async () => {
+        const { appservice, doCall } = await beginAppserviceWithProtocols(["fakeproto"]);
+        const expectedError = {
+            errcode: "PROTOCOL_NOT_HANDLED",
+            error: "Protocol is not handled by this appservice",
+        };
+        const expectedStatus = 404;
+        try {
+            await doCall("/_matrix/app/v1/thirdparty/protocol/notaproto");
+            // noinspection ExceptionCaughtLocallyJS
+            throw new Error("Request finished when it should not have");
+        } catch (e) {
+            expect(e.error).toMatchObject(expectedError);
+            expect(e.statusCode).toBe(expectedStatus);
+        } finally {
+            appservice.stop();
+        }
+    });
+
+    it("should lookup a remote user by given fields and respond with it", async () => {
+        const protocolId = "fakeproto";
+        const { appservice, doCall } = await beginAppserviceWithProtocols([protocolId]);
+        const responseObj = ["user1", "user2"];
+        const userFields = {
+            "foo": "bar",
+            "bar": "baz"
+        };
+        const getUserSpy = simple.stub().callFn((protocol, fields, fn) => {
+            expect(protocol).toEqual(protocolId);
+            expect(fields).toEqual(userFields);
+            fn(responseObj);
+        });
+        appservice.on("thirdparty.user.remote", getUserSpy);
+        try {
+            const result = await doCall("/_matrix/app/v1/thirdparty/user/" + protocolId, {}, userFields);
+            expect(result).toEqual(responseObj);
+        } finally {
+            appservice.stop();
+        }
+    });
+
+    it("should lookup a matrix user by given fields and respond with it", async () => {
+        const { appservice, doCall } = await beginAppserviceWithProtocols(["fakeproto"]);
+        const responseObj = ["user1", "user2"];
+        const expectedUserId = "@foobar:localhost";
+        const getUserSpy = simple.stub().callFn((userid, fn) => {
+            expect(userid).toEqual(expectedUserId);
+            fn(responseObj);
+        });
+        appservice.on("thirdparty.user.matrix", getUserSpy);
+        try {
+            const result = await doCall("/_matrix/app/v1/thirdparty/user", {}, {userid: expectedUserId});
+            expect(result).toEqual(responseObj);
+        } finally {
+            appservice.stop();
+        }
+    });
+
+    it("should fail to lookup a remote user if the protocol is wrong", async () => {
+        const { appservice, doCall } = await beginAppserviceWithProtocols(["fakeproto"]);
+        try {
+            await doCall("/_matrix/app/v1/thirdparty/user/pr0tocol");
+            // noinspection ExceptionCaughtLocallyJS
+            throw new Error("Request finished when it should not have");
+        } catch (e) {
+            expect(e.error).toMatchObject({
+                errcode: "PROTOCOL_NOT_HANDLED",
+                error: "Protocol is not handled by this appservice",
+            });
+            expect(e.statusCode).toBe(404);
+        } finally {
+            appservice.stop();
+        }
+    });
+
+    it("should return 404 if no matrix users are found when handling a third party user request", async () => {
+        const { appservice, doCall } = await beginAppserviceWithProtocols(["fakeproto"]);
+        const expectedUserId = "@foobar:localhost";
+        const getUserSpy = simple.stub().callFn((userid, fn) => {
+            expect(userid).toEqual(expectedUserId);
+            fn([]);
+        });
+        appservice.on("thirdparty.user.matrix", getUserSpy);
+        try {
+            await doCall("/_matrix/app/v1/thirdparty/user", {}, {userid: expectedUserId});
+        } catch (e) {
+            expect(e.error).toMatchObject({
+                errcode: "NO_MAPPING_FOUND",
+                error: "No mappings found"
+            });
+            expect(e.statusCode).toBe(404);
+        } finally {
+            appservice.stop();
+        }
+    });
+
+    it("should return 404 if no remote users are found when handling a thirdparty user request", async () => {
+        const protocolId = "fakeproto";
+        const { appservice, doCall } = await beginAppserviceWithProtocols([protocolId]);
+        const userFields = {
+            "foo": "bar",
+            "bar": "baz"
+        };
+        const getUserSpy = simple.stub().callFn((proto, fields, fn) => {
+            expect(proto).toEqual(protocolId);
+            expect(fields).toEqual(userFields);
+            fn([]);
+        });
+        appservice.on("thirdparty.user.remote", getUserSpy);
+        try {
+            await doCall("/_matrix/app/v1/thirdparty/user/" + protocolId, {}, userFields);
+        } catch (e) {
+            expect(e.error).toMatchObject({
+                errcode: "NO_MAPPING_FOUND",
+                error: "No mappings found"
+            });
+            expect(e.statusCode).toBe(404);
+        } finally {
+            appservice.stop();
+        }
+    });
+
+    it("should fail to lookup a remote user if the mxid is empty", async () => {
+        const { appservice, doCall } = await beginAppserviceWithProtocols(["fakeproto"]);
+        try {
+            await doCall("/_matrix/app/v1/thirdparty/user");
+            // noinspection ExceptionCaughtLocallyJS
+            throw new Error("Request finished when it should not have");
+        } catch (e) {
+            expect(e.error).toMatchObject({
+                errcode: "INVALID_PARAMETERS",
+                error: "Invalid parameters given",
+            });
+            expect(e.statusCode).toBe(400);
+        } finally {
+            appservice.stop();
+        }
+    });
+
+    it("should lookup a remote location by given fields", async () => {
+        const protocolId = "fakeproto";
+        const { appservice, doCall } = await beginAppserviceWithProtocols([protocolId]);
+        const responseObj = ["loc1", "loc2"];
+        const locationFields = {
+            "foo": "bar",
+            "bar": "baz"
+        };
+        const getLocationSpy = simple.stub().callFn((protocol, fields, fn) => {
+            expect(protocol).toEqual(protocolId);
+            expect(fields).toEqual(locationFields);
+            fn(responseObj);
+        });
+        appservice.on("thirdparty.location.remote", getLocationSpy);
+        try {
+            const result = await doCall("/_matrix/app/v1/thirdparty/location/" + protocolId, {}, locationFields);
+            expect(result).toEqual(responseObj);
+        } finally {
+            appservice.stop();
+        }
+    });
+
+    it("should lookup a matrix location by given fields", async () => {
+        const { appservice, doCall } = await beginAppserviceWithProtocols(["fakeproto"]);
+        const responseObj = ["loc1", "loc2"];
+        const expectedAlias = "#alias:localhost";
+        const getLocationSpy = simple.stub().callFn((alias, fn) => {
+            expect(alias).toEqual(expectedAlias);
+            fn(responseObj);
+        });
+        appservice.on("thirdparty.location.matrix", getLocationSpy);
+        try {
+            const result = await doCall("/_matrix/app/v1/thirdparty/location", {}, {alias: expectedAlias});
+            expect(result).toEqual(responseObj);
+        } finally {
+            appservice.stop();
+        }
+    });
+
+    it("should fail to lookup a remote location if the protocol is wrong", async () => {
+        const { appservice, doCall } = await beginAppserviceWithProtocols(["fakeproto"]);
+        try {
+            await doCall("/_matrix/app/v1/thirdparty/location/pr0tocol");
+            // noinspection ExceptionCaughtLocallyJS
+            throw new Error("Request finished when it should not have");
+        } catch (e) {
+            expect(e.error).toMatchObject({
+                errcode: "PROTOCOL_NOT_HANDLED",
+                error: "Protocol is not handled by this appservice",
+            });
+            expect(e.statusCode).toBe(404);
+        } finally {
+            appservice.stop();
+        }
+    });
+
+    it("should return 404 if no matrix locations are found", async () => {
+        const { appservice, doCall } = await beginAppserviceWithProtocols(["fakeproto"]);
+        const expectedAlias = "#alias:localhost";
+        const getUserSpy = simple.stub().callFn((alias, fn) => {
+            expect(alias).toEqual(expectedAlias);
+            fn([]);
+        });
+        appservice.on("thirdparty.location.matrix", getUserSpy);
+        try {
+            await doCall("/_matrix/app/v1/thirdparty/location", {}, {alias: expectedAlias});
+        } catch (e) {
+            expect(e.error).toMatchObject({
+                errcode: "NO_MAPPING_FOUND",
+                error: "No mappings found"
+            });
+            expect(e.statusCode).toBe(404);
+        } finally {
+            appservice.stop();
+        }
+    });
+
+    it("should return 404 if no remote location are found", async () => {
+        const protocolId = "fakeproto";
+        const { appservice, doCall } = await beginAppserviceWithProtocols([protocolId]);
+        const locationFields = {
+            "foo": "bar",
+            "bar": "baz"
+        };
+        const getLocationSpy = simple.stub().callFn((proto, fields, fn) => {
+            expect(proto).toEqual("fakeproto");
+            expect(fields).toEqual(locationFields);
+            fn([]);
+        });
+        appservice.on("thirdparty.location.remote", getLocationSpy);
+        try {
+            await doCall("/_matrix/app/v1/thirdparty/location/" + protocolId, {}, locationFields);
+        } catch (e) {
+            expect(e.error).toMatchObject({
+                errcode: "NO_MAPPING_FOUND",
+                error: "No mappings found"
+            });
+            expect(e.statusCode).toBe(404);
+        } finally {
+            appservice.stop();
+        }
+    });
+
+    it("should fail to lookup a matrix location if the alias is empty", async () => {
+        const { appservice, doCall } = await beginAppserviceWithProtocols(["fakeproto"]);
+        try {
+            await doCall("/_matrix/app/v1/thirdparty/location");
+            // noinspection ExceptionCaughtLocallyJS
+            throw new Error("Request finished when it should not have");
+        } catch (e) {
+            expect(e.error).toMatchObject({
+                errcode: "INVALID_PARAMETERS",
+                error: "Invalid parameters given",
+            });
+            expect(e.statusCode).toBe(400);
+        } finally {
+            appservice.stop();
+        }
+    });
+
     it("should set visibilty of a room on the appservice's network", async () => {
         const port = await getPort();
         const hsToken = "s3cret_token";
@@ -2164,5 +2479,5 @@ describe('Appservice', () => {
 
         http.flushAllExpected();
         await appservice.setRoomDirectoryVisibility("foonetwork", "!aroomid:example.org", "public");
-    })
+    });
 });
