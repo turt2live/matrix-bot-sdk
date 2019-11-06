@@ -659,7 +659,7 @@ export class Appservice extends EventEmitter {
         });
     }
 
-    private onThirdpartyObject(req: express.Request, res: express.Response, objType: string, matrixId?: string) {
+    private handleThirdpartyObject(req: express.Request, res: express.Response, objType: string, matrixId?: string) {
         if (!this.isAuthed(req)) {
             res.status(401).send({errcode: "AUTH_FAILED", error: "Authentication failed"});
         }
@@ -688,7 +688,7 @@ export class Appservice extends EventEmitter {
             delete req.query.access_token;
             this.emit(`thirdparty.${objType}.remote`, protocol, req.query, responseFunc);
             return;
-        } else if (matrixId) { // If a userid is given, we are looking up a remote objects based on a id
+        } else if (matrixId) { // If a user ID is given, we are looking up a remote objects based on a id
             this.emit(`thirdparty.${objType}.matrix`, matrixId, responseFunc);
             return;
         }
@@ -701,10 +701,10 @@ export class Appservice extends EventEmitter {
     }
 
     private onThirdpartyUser(req: express.Request, res: express.Response) {
-        return this.onThirdpartyObject(req, res, "user", req.query["userid"]);
+        return this.handleThirdpartyObject(req, res, "user", req.query["userid"]);
     }
 
     private onThirdpartyLocation(req: express.Request, res: express.Response) {
-        return this.onThirdpartyObject(req, res, "location", req.query["alias"]);
+        return this.handleThirdpartyObject(req, res, "location", req.query["alias"]);
     }
 }

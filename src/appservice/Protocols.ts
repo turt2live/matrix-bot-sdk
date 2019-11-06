@@ -1,6 +1,6 @@
 /**
  * This is the response format documented in
- * https://matrix.org/docs/spec/application_service/unstable#get-matrix-app-v1-thirdparty-protocol-protocol
+ * https://matrix.org/docs/spec/application_service/r0.1.2#get-matrix-app-v1-thirdparty-protocol-protocol
  */
 export interface IApplicationServiceProtocol {
     user_fields: string[],
