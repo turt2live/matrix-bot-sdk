@@ -1149,7 +1149,8 @@ export class MatrixClient extends EventEmitter {
         const requestId = ++this.requestId;
         const url = this.homeserverUrl + endpoint;
 
-        LogService.debug("MatrixLiteClient (REQ-" + requestId + ")", method + " " + url);
+        // This is logged at info so that when a request fails people can figure out which one.
+        LogService.info("MatrixLiteClient (REQ-" + requestId + ")", method + " " + url);
 
         if (this.impersonatedUserId) {
             if (!qs) qs = {"user_id": this.impersonatedUserId};
