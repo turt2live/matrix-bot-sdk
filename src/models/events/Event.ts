@@ -1,5 +1,3 @@
-import { TypicalUnsigned } from "./RoomEvent";
-
 /**
  * A Matrix event.
  */

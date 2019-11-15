@@ -1,4 +1,3 @@
-import { MembershipEvent } from "./MembershipEvent";
 import { MatrixEvent } from "./Event";
 
 /**
@@ -70,21 +69,3 @@ export class StateEvent<T extends Object> extends RoomEvent<T> {
     }
 }
 
-/**
- * Wraps a room event into a more suitable container.
- * @param {*} event The event object to wrap.
- * @returns {RoomEvent<*>} An instance of the most suitable container for the event.
- */
-export function wrapRoomEvent(event: any): RoomEvent<any> {
-    if (!event) return null;
-
-    if (event['state_key'] || event['state_key'] !== '') {
-        if (event['type'] === 'm.room.member') {
-            return new MembershipEvent(event);
-        } else {
-            return new StateEvent<any>(event);
-        }
-    } else {
-        return new RoomEvent<any>(event)
-    }
-}

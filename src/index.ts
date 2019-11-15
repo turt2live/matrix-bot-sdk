@@ -27,6 +27,7 @@ export * from "./mixins/AutojoinUpgradedRoomsMixin";
 
 // Models
 export * from "./models/Presence";
+export * from "./models/events/converter";
 export * from "./models/events/InvalidEventError";
 export * from "./models/events/Event";
 export * from "./models/events/RoomEvent";
