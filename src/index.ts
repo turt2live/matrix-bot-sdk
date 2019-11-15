@@ -25,6 +25,12 @@ export * from "./metrics/Metrics";
 export * from "./mixins/AutojoinRoomsMixin";
 export * from "./mixins/AutojoinUpgradedRoomsMixin";
 
+// Models
+export * from "./models/events/InvalidEventError";
+export * from "./models/events/RoomEvent";
+export * from "./models/events/MessageEvent";
+export * from "./models/events/MessageEvent";
+
 // Preprocessors
 export * from "./preprocessors/IPreprocessor";
 export * from "./preprocessors/RichRepliesPreprocessor";
