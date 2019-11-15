@@ -26,8 +26,11 @@ export * from "./mixins/AutojoinRoomsMixin";
 export * from "./mixins/AutojoinUpgradedRoomsMixin";
 
 // Models
+export * from "./models/Presence";
 export * from "./models/events/InvalidEventError";
+export * from "./models/events/Event";
 export * from "./models/events/RoomEvent";
+export * from "./models/events/PresenceEvent";
 export * from "./models/events/MessageEvent";
 export * from "./models/events/MessageEvent";
 
@@ -54,6 +57,3 @@ export * from "./AdminApis";
 export * from "./request";
 export * from "./Permalinks";
 export * from "./PantalaimonClient";
-
-// Models
-export * from "./models/MatrixPresence";

@@ -1,4 +1,5 @@
 import { MembershipEvent } from "./MembershipEvent";
+import { MatrixEvent } from "./Event";
 
 /**
  * The typical unsigned data found on an event.
@@ -18,8 +19,9 @@ export interface TypicalUnsigned {
 /**
  * A Matrix room event.
  */
-export class RoomEvent<T extends Object> {
+export class RoomEvent<T extends Object> extends MatrixEvent<T> {
     constructor(protected event: any) {
+        super(event);
     }
 
     /**
@@ -27,20 +29,6 @@ export class RoomEvent<T extends Object> {
      */
     public get eventId(): string {
         return this.event['event_id'];
-    }
-
-    /**
-     * The user ID who sent this event.
-     */
-    public get sender(): string {
-        return this.event['sender'];
-    }
-
-    /**
-     * The type of this event.
-     */
-    public get type(): string {
-        return this.event['type'];
     }
 
     /**
@@ -55,13 +43,6 @@ export class RoomEvent<T extends Object> {
      */
     public get unsigned(): TypicalUnsigned {
         return this.event['unsigned'] || {};
-    }
-
-    /**
-     * The content for this event. May have no properties.
-     */
-    public get content(): T {
-        return this.event['content'] || {};
     }
 }
 

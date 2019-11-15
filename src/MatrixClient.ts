@@ -9,10 +9,10 @@ import { getRequestFn } from "./request";
 import { LogLevel, LogService } from "./logging/LogService";
 import { htmlEncode } from "htmlencode";
 import { RichReply } from "./helpers/RichReply";
-import { MatrixPresence } from "./models/MatrixPresence";
 import { Metrics } from "./metrics/Metrics";
 import { timedMatrixClientFunctionCall } from "./metrics/decorators";
 import { AdminApis } from "./AdminApis";
+import { Presence } from "./models/Presence";
 
 /**
  * A client that is capable of interacting with a matrix homeserver.
@@ -186,21 +186,21 @@ export class MatrixClient extends EventEmitter {
 
     /**
      * Gets the presence information for the current user.
-     * @returns {Promise<MatrixPresence>} Resolves to the presence status of the user.
+     * @returns {Promise<Presence>} Resolves to the presence status of the user.
      */
     @timedMatrixClientFunctionCall()
-    public async getPresenceStatus(): Promise<MatrixPresence> {
+    public async getPresenceStatus(): Promise<Presence> {
         return this.getPresenceStatusFor(await this.getUserId());
     }
 
     /**
      * Gets the presence information for a given user.
      * @param {string} userId The user ID to look up the presence of.
-     * @returns {Promise<MatrixPresence>} Resolves to the presence status of the user.
+     * @returns {Promise<Presence>} Resolves to the presence status of the user.
      */
     @timedMatrixClientFunctionCall()
-    public async getPresenceStatusFor(userId: string): Promise<MatrixPresence> {
-        return this.doRequest("GET", "/_matrix/client/r0/presence/" + encodeURIComponent(userId) + "/status");
+    public async getPresenceStatusFor(userId: string): Promise<Presence> {
+        return this.doRequest("GET", "/_matrix/client/r0/presence/" + encodeURIComponent(userId) + "/status").then(r => new Presence(r));
     }
 
     /**
