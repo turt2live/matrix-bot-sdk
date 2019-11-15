@@ -546,6 +546,7 @@ export class Appservice extends EventEmitter {
     private async onTransaction(req, res): Promise<any> {
         if (!this.isAuthed(req)) {
             res.status(401).json({errcode: "AUTH_FAILED", error: "Authentication failed"});
+            return;
         }
 
         if (typeof (req.body) !== "object") {
@@ -562,6 +563,7 @@ export class Appservice extends EventEmitter {
 
         if (this.storage.isTransactionCompleted(txnId)) {
             res.status(200).json({});
+            return;
         }
 
         if (this.pendingTransactions[txnId]) {
@@ -572,6 +574,7 @@ export class Appservice extends EventEmitter {
                 LogService.error("Appservice", e);
                 res.status(500).json({});
             }
+            return;
         }
 
         LogService.info("Appservice", "Processing transaction " + txnId);
@@ -610,6 +613,7 @@ export class Appservice extends EventEmitter {
     private async onUser(req, res): Promise<any> {
         if (!this.isAuthed(req)) {
             res.status(401).json({errcode: "AUTH_FAILED", error: "Authentication failed"});
+            return;
         }
 
         const userId = req.params["userId"];
@@ -630,6 +634,7 @@ export class Appservice extends EventEmitter {
     private async onRoomAlias(req, res): Promise<any> {
         if (!this.isAuthed(req)) {
             res.status(401).json({errcode: "AUTH_FAILED", error: "Authentication failed"});
+            return;
         }
 
         const roomAlias = req.params["roomAlias"];
@@ -652,6 +657,7 @@ export class Appservice extends EventEmitter {
     private onThirdpartyProtocol(req: express.Request, res: express.Response) {
         if (!this.isAuthed(req)) {
             res.status(401).json({errcode: "AUTH_FAILED", error: "Authentication failed"});
+            return;
         }
         const protocol = req.params["protocol"];
         if (!this.registration.protocols.includes(protocol)) {
@@ -669,6 +675,7 @@ export class Appservice extends EventEmitter {
     private handleThirdpartyObject(req: express.Request, res: express.Response, objType: string, matrixId?: string) {
         if (!this.isAuthed(req)) {
             res.status(401).json({errcode: "AUTH_FAILED", error: "Authentication failed"});
+            return;
         }
         const protocol = req.params["protocol"];
         const responseFunc = (items: any[]) => {
