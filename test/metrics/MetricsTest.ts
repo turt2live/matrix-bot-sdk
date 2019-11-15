@@ -7,36 +7,35 @@ function createTestMetricListener(expectedName: string, expectedContext: IMetric
         onIncrement: simple.stub().callFn((name: string, context: IMetricContext, amount: number) => {
             expect(name).toBe(expectedName);
 
-            expect(context).toMatchObject(expectedContext);
+            expect(context).toMatchObject(<any>expectedContext);
             validateNumberFn(amount);
         }),
         onDecrement: simple.stub().callFn((name: string, context: IMetricContext, amount: number) => {
             expect(name).toBe(expectedName);
 
-            expect(context).toMatchObject(expectedContext);
+            expect(context).toMatchObject(<any>expectedContext);
             validateNumberFn(amount);
         }),
         onReset: simple.stub().callFn((name: string, context: IMetricContext) => {
             expect(name).toBe(expectedName);
 
-            expect(context).toMatchObject(expectedContext);
+            expect(context).toMatchObject(<any>expectedContext);
         }),
         onStartMetric: simple.stub().callFn((name: string, context: IMetricContext) => {
             expect(name).toBe(expectedName);
 
-            expect(context).toMatchObject(expectedContext);
+            expect(context).toMatchObject(<any>expectedContext);
         }),
         onEndMetric: simple.stub().callFn((name: string, context: IMetricContext, timeMs: number) => {
             expect(name).toBe(expectedName);
 
-            expect(context).toMatchObject(expectedContext);
+            expect(context).toMatchObject(<any>expectedContext);
             validateNumberFn(timeMs);
         }),
     };
 }
 
 describe('Metrics', () => {
-
     it('should support listeners', async () => {
         const metrics = new Metrics();
         const listeners = () => (<any>metrics).listeners;
@@ -121,7 +120,6 @@ describe('Metrics', () => {
     });
 
     describe('increment', () => {
-
         it('should increment', async () => {
             const metrics = new Metrics();
             const context = <IMetricContext>{uniqueId: "test1234", hello: "world"};
@@ -176,7 +174,6 @@ describe('Metrics', () => {
     });
 
     describe('decrement', () => {
-
         it('should decrement', async () => {
             const metrics = new Metrics();
             const context = <IMetricContext>{uniqueId: "test1234", hello: "world"};
@@ -231,7 +228,6 @@ describe('Metrics', () => {
     });
 
     describe('reset', () => {
-
         it('should reset', async () => {
             const metrics = new Metrics();
             const context = <IMetricContext>{uniqueId: "test1234", hello: "world"};

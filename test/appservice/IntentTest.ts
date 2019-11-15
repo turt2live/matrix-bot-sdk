@@ -13,7 +13,6 @@ import * as MockHttpBackend from 'matrix-mock-request';
 import { expectArrayEquals } from "../TestUtils";
 
 describe('Intent', () => {
-
     it('should prepare the underlying client for a bot user', async () => {
         const userId = "@someone:example.org";
         const asToken = "s3cret";
@@ -103,7 +102,6 @@ describe('Intent', () => {
     });
 
     describe('ensureRegistered', () => {
-
         it('should do nothing if the user is flagged as registered', async () => {
             const userId = "@someone:example.org";
             const botUserId = "@bot:example.org";
@@ -265,7 +263,6 @@ describe('Intent', () => {
     });
 
     describe('getJoinedRooms', () => {
-
         it('should fetch rooms if none are cached', async () => {
             const userId = "@someone:example.org";
             const botUserId = "@bot:example.org";
@@ -457,7 +454,6 @@ describe('Intent', () => {
     });
 
     describe('refreshJoinedRooms', () => {
-
         it('should overwrite any previously known joined rooms', async () => {
             const userId = "@someone:example.org";
             const botUserId = "@bot:example.org";
@@ -504,7 +500,6 @@ describe('Intent', () => {
     });
 
     describe('ensureJoined', () => {
-
         it('should fetch the rooms the user is joined to', async () => {
             const userId = "@someone:example.org";
             const botUserId = "@bot:example.org";
@@ -657,7 +652,6 @@ describe('Intent', () => {
     });
 
     describe('ensureRegisteredAndJoined', () => {
-
         it('should call both ensureRegistered and ensureJoined', async () => {
             const userId = "@someone:example.org";
             const botUserId = "@bot:example.org";
@@ -767,7 +761,6 @@ describe('Intent', () => {
     });
 
     describe('sendEvent', () => {
-
         it('should proxy through to the client while ensuring they are registered and joined', async () => {
             const userId = "@someone:example.org";
             const botUserId = "@bot:example.org";
@@ -859,7 +852,6 @@ describe('Intent', () => {
     });
 
     describe('sendText', () => {
-
         it('should proxy through to the client while ensuring they are registered and joined', async () => {
             const userId = "@someone:example.org";
             const botUserId = "@bot:example.org";
@@ -951,7 +943,6 @@ describe('Intent', () => {
     });
 
     describe('joinRoom', () => {
-
         it('should proxy through to the client while ensuring they are registered', async () => {
             const userId = "@someone:example.org";
             const botUserId = "@bot:example.org";
@@ -1043,7 +1034,6 @@ describe('Intent', () => {
     });
 
     describe('leaveRoom', () => {
-
         it('should proxy through to the client while ensuring they are registered', async () => {
             const userId = "@someone:example.org";
             const botUserId = "@bot:example.org";

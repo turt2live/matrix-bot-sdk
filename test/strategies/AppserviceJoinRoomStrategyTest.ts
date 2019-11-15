@@ -3,7 +3,6 @@ import * as expect from "expect";
 import * as simple from "simple-mock";
 
 describe('AppserviceJoinRoomStrategy', () => {
-
     it('should be able to join the room normally', async () => {
         const appservice = new Appservice({
             port: 0,

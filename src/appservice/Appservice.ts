@@ -543,7 +543,7 @@ export class Appservice extends EventEmitter {
         return providedToken === this.registration.hs_token;
     }
 
-    private async onTransaction(req, res): Promise<any> {
+    private async onTransaction(req: express.Request, res: express.Response): Promise<any> {
         if (!this.isAuthed(req)) {
             res.status(401).json({errcode: "AUTH_FAILED", error: "Authentication failed"});
             return;
@@ -610,7 +610,7 @@ export class Appservice extends EventEmitter {
         }
     }
 
-    private async onUser(req, res): Promise<any> {
+    private async onUser(req: express.Request, res: express.Response): Promise<any> {
         if (!this.isAuthed(req)) {
             res.status(401).json({errcode: "AUTH_FAILED", error: "Authentication failed"});
             return;
@@ -631,7 +631,7 @@ export class Appservice extends EventEmitter {
         });
     }
 
-    private async onRoomAlias(req, res): Promise<any> {
+    private async onRoomAlias(req: express.Request, res: express.Response): Promise<any> {
         if (!this.isAuthed(req)) {
             res.status(401).json({errcode: "AUTH_FAILED", error: "Authentication failed"});
             return;
@@ -659,6 +659,7 @@ export class Appservice extends EventEmitter {
             res.status(401).json({errcode: "AUTH_FAILED", error: "Authentication failed"});
             return;
         }
+
         const protocol = req.params["protocol"];
         if (!this.registration.protocols.includes(protocol)) {
             res.status(404).json({
@@ -677,6 +678,7 @@ export class Appservice extends EventEmitter {
             res.status(401).json({errcode: "AUTH_FAILED", error: "Authentication failed"});
             return;
         }
+
         const protocol = req.params["protocol"];
         const responseFunc = (items: any[]) => {
             if (items && items.length > 0) {
@@ -711,7 +713,6 @@ export class Appservice extends EventEmitter {
             errcode: "INVALID_PARAMETERS",
             error: "Invalid parameters given"
         });
-
     }
 
     private onThirdpartyUser(req: express.Request, res: express.Response) {

@@ -3,7 +3,6 @@ import * as expect from "expect";
 import * as simple from "simple-mock";
 
 describe('SimpleRetryJoinStrategy', () => {
-
     it('should retry joins when they fail', async () => {
         const strategy = new SimpleRetryJoinStrategy();
 

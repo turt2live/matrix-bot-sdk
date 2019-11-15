@@ -4,7 +4,6 @@ import * as simple from "simple-mock";
 import { createTestClient } from "../MatrixClientTest";
 
 describe('RichRepliesPreprocessor', () => {
-
     it('should parse single-line events', async () => {
         const {client} = createTestClient();
 

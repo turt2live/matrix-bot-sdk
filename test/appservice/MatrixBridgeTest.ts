@@ -12,9 +12,7 @@ import * as expect from "expect";
 import * as simple from "simple-mock";
 
 describe('MatrixBridge', () => {
-
     describe('getRemoteUserInfo', () => {
-
         it('should get remote user information', async () => {
             const userId = "@someone:example.org";
             const asToken = "s3cret";
@@ -50,7 +48,6 @@ describe('MatrixBridge', () => {
     });
 
     describe('setRemoteUserInfo', () => {
-
         it('should set remote user information', async () => {
             const userId = "@someone:example.org";
             const asToken = "s3cret";
@@ -101,7 +98,6 @@ describe('MatrixBridge', () => {
     });
 
     describe('getRemoteRoomInfo', () => {
-
         it('should get remote room information', async () => {
             const userId = "@someone:example.org";
             const roomId = "!a:example.org";
@@ -141,7 +137,6 @@ describe('MatrixBridge', () => {
     });
 
     describe('setRemoteRoomInfo', () => {
-
         it('should set remote room information', async () => {
             const userId = "@someone:example.org";
             const roomId = "!a:example.org";
@@ -188,7 +183,6 @@ describe('MatrixBridge', () => {
     });
 
     describe('getMatrixRoomIdForRemote', () => {
-
         it('should return the right room ID', async () => {
             const userId = "@someone:example.org";
             const roomId = "!a:example.org";
@@ -226,7 +220,6 @@ describe('MatrixBridge', () => {
     });
 
     describe('getIntentForRemote', () => {
-
         it('should return the right user intent', async () => {
             const userId = "@someone:example.org";
             const asToken = "s3cret";

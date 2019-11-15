@@ -13,7 +13,6 @@ function createSimpleFsStorageProvider(inMemory = false, maxMemTransactions = 20
 }
 
 describe('SimpleFsStorageProvider', () => {
-
     it('should return the right sync token', async () => {
         const {writeProvider, readProviderFn} = createSimpleFsStorageProvider();
 
@@ -30,8 +29,8 @@ describe('SimpleFsStorageProvider', () => {
         const value: IFilterInfo = {id: 12, filter: {hello: "world"}};
         expect(writeProvider.getFilter()).toBeFalsy();
         writeProvider.setFilter(value);
-        expect(writeProvider.getFilter()).toMatchObject(value);
-        expect(readProviderFn().getFilter()).toMatchObject(value);
+        expect(writeProvider.getFilter()).toMatchObject(<any>value);
+        expect(readProviderFn().getFilter()).toMatchObject(<any>value);
     });
 
     it('should track registered users', async () => {

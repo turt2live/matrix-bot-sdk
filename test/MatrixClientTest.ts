@@ -607,7 +607,6 @@ describe('MatrixClient', () => {
     });
 
     describe('unbanUser', () => {
-
         it('should call the right endpoint', async () => {
             const {client, http, hsUrl} = createTestClient();
 
@@ -626,7 +625,6 @@ describe('MatrixClient', () => {
     });
 
     describe('getUserId', () => {
-
         it('should return the user ID if it is already known', async () => {
             const {client} = createTestClient();
 
@@ -651,7 +649,6 @@ describe('MatrixClient', () => {
     });
 
     describe('stop', () => {
-
         it('should stop when requested', async () => {
             const {client, http} = createTestClient();
 
@@ -685,7 +682,6 @@ describe('MatrixClient', () => {
     });
 
     describe('start', () => {
-
         it('should use an existing filter if one is present', async () => {
             const storage = new MemoryStorageProvider();
             const {client, http} = createTestClient(storage);
@@ -886,7 +882,6 @@ describe('MatrixClient', () => {
     });
 
     describe('processSync', () => {
-
         interface ProcessSyncClient {
             userId: string;
 
@@ -1729,7 +1724,6 @@ describe('MatrixClient', () => {
     });
 
     describe('getEvent', () => {
-
         it('should call the right endpoint', async () => {
             const {client, http, hsUrl} = createTestClient();
 
@@ -1775,7 +1769,6 @@ describe('MatrixClient', () => {
     });
 
     describe('getRoomState', () => {
-
         it('should call the right endpoint', async () => {
             const {client, http, hsUrl} = createTestClient();
 
@@ -1831,7 +1824,6 @@ describe('MatrixClient', () => {
     });
 
     describe('getRoomStateEvent', () => {
-
         it('should call the right endpoint with no state key', async () => {
             const {client, http, hsUrl} = createTestClient();
 
@@ -1922,7 +1914,6 @@ describe('MatrixClient', () => {
     });
 
     describe('getUserProfile', () => {
-
         it('should call the right endpoint', async () => {
             const {client, http, hsUrl} = createTestClient();
 
@@ -1941,7 +1932,6 @@ describe('MatrixClient', () => {
     });
 
     describe('createRoom', () => {
-
         it('should call the right endpoint', async () => {
             const {client, http} = createTestClient();
 
@@ -1978,7 +1968,6 @@ describe('MatrixClient', () => {
     });
 
     describe('setDisplayName', () => {
-
         it('should call the right endpoint', async () => {
             const {client, http, hsUrl} = createTestClient();
 
@@ -1999,7 +1988,6 @@ describe('MatrixClient', () => {
     });
 
     describe('setAvatarUrl', () => {
-
         it('should call the right endpoint', async () => {
             const {client, http, hsUrl} = createTestClient();
 
@@ -2020,7 +2008,6 @@ describe('MatrixClient', () => {
     });
 
     describe('joinRoom', () => {
-
         it('should call the right endpoint for room IDs', async () => {
             const {client, http, hsUrl} = createTestClient();
 
@@ -2139,7 +2126,6 @@ describe('MatrixClient', () => {
     });
 
     describe('getJoinedRooms', () => {
-
         it('should call the right endpoint', async () => {
             const {client, http, hsUrl} = createTestClient();
 
@@ -2157,7 +2143,6 @@ describe('MatrixClient', () => {
     });
 
     describe('getJoinedRoomMembers', () => {
-
         it('should call the right endpoint', async () => {
             const {client, http, hsUrl} = createTestClient();
 
@@ -2178,7 +2163,6 @@ describe('MatrixClient', () => {
     });
 
     describe('getMembers', () => {
-
         it('should call the right endpoint', async () => {
             const {client, http, hsUrl} = createTestClient();
 
@@ -2283,7 +2267,6 @@ describe('MatrixClient', () => {
     });
 
     describe('leaveRoom', () => {
-
         it('should call the right endpoint', async () => {
             const {client, http, hsUrl} = createTestClient();
 
@@ -2300,7 +2283,6 @@ describe('MatrixClient', () => {
     });
 
     describe('sendReadReceipt', () => {
-
         it('should call the right endpoint', async () => {
             const {client, http, hsUrl} = createTestClient();
 
@@ -2318,7 +2300,6 @@ describe('MatrixClient', () => {
     });
 
     describe('setTyping', () => {
-
         it('should call the right endpoint', async () => {
             const {client, http, hsUrl} = createTestClient();
 
@@ -2341,7 +2322,6 @@ describe('MatrixClient', () => {
     });
 
     describe('replyText', () => {
-
         it('should call the right endpoint', async () => {
             const {client, http, hsUrl} = createTestClient();
 
@@ -2424,7 +2404,6 @@ describe('MatrixClient', () => {
     });
 
     describe('replyNotice', () => {
-
         it('should call the right endpoint', async () => {
             const {client, http, hsUrl} = createTestClient();
 
@@ -2507,7 +2486,6 @@ describe('MatrixClient', () => {
     });
 
     describe('sendNotice', () => {
-
         it('should call the right endpoint', async () => {
             const {client, http, hsUrl} = createTestClient();
 
@@ -2532,7 +2510,6 @@ describe('MatrixClient', () => {
     });
 
     describe('sendText', () => {
-
         it('should call the right endpoint', async () => {
             const {client, http, hsUrl} = createTestClient();
 
@@ -2557,7 +2534,6 @@ describe('MatrixClient', () => {
     });
 
     describe('sendMessage', () => {
-
         it('should call the right endpoint', async () => {
             const {client, http, hsUrl} = createTestClient();
 
@@ -2583,7 +2559,6 @@ describe('MatrixClient', () => {
     });
 
     describe('sendEvent', () => {
-
         it('should call the right endpoint', async () => {
             const {client, http, hsUrl} = createTestClient();
 
@@ -2609,7 +2584,6 @@ describe('MatrixClient', () => {
     });
 
     describe('sendStateEvent', () => {
-
         it('should call the right endpoint with no state key', async () => {
             const {client, http, hsUrl} = createTestClient();
 
@@ -2662,7 +2636,6 @@ describe('MatrixClient', () => {
     });
 
     describe('redactEvent', () => {
-
         it('should call the right endpoint', async () => {
             const {client, http, hsUrl} = createTestClient();
 
@@ -2684,7 +2657,6 @@ describe('MatrixClient', () => {
     });
 
     describe('userHasPowerLevelFor', () => {
-
         it('throws when a power level event cannot be located', async () => {
             const {client} = createTestClient();
 
@@ -3027,7 +2999,6 @@ describe('MatrixClient', () => {
     });
 
     describe('mxcToHttp', () => {
-
         it('should convert to the right URL', async () => {
             const {client, hsUrl} = createTestClient();
 
@@ -3058,7 +3029,6 @@ describe('MatrixClient', () => {
     });
 
     describe('mxcToHttpThumbnail', () => {
-
         it('should convert to the right URL', async () => {
             const {client, hsUrl} = createTestClient();
 
@@ -3095,7 +3065,6 @@ describe('MatrixClient', () => {
     });
 
     describe('uploadContent', () => {
-
         it('should call the right endpoint', async () => {
             const {client, http} = createTestClient();
 
@@ -3144,7 +3113,6 @@ describe('MatrixClient', () => {
     });
 
     describe('downloadContent', () => {
-
         it('should call the right endpoint', async () => {
             const {client, http} = createTestClient();
             const urlPart = "example.org/testing";
@@ -3174,7 +3142,6 @@ describe('MatrixClient', () => {
     });
 
     describe('uploadContentFromUrl', () => {
-
         it('should download then upload the content', async () => {
             const {client, http, hsUrl} = createTestClient();
 
@@ -3203,7 +3170,6 @@ describe('MatrixClient', () => {
     });
 
     describe('getRoomUpgradeHistory', () => {
-
         it('should calculate the room upgrade history', async () => {
             const {client} = createTestClient();
 
@@ -3692,7 +3658,6 @@ describe('MatrixClient', () => {
     });
 
     describe('redactObjectForLogging', () => {
-
         it('should redact multilevel objects', () => {
             const {client} = createTestClient();
 

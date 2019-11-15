@@ -2,7 +2,6 @@ import { IFilterInfo, MemoryStorageProvider } from "../../src";
 import * as expect from "expect";
 
 describe('MemoryStorageProvider', () => {
-
     it('should return the right sync token', async () => {
         const provider = new MemoryStorageProvider();
 
@@ -18,7 +17,7 @@ describe('MemoryStorageProvider', () => {
         const value: IFilterInfo = {id: 12, filter: {hello: "world"}};
         expect(provider.getFilter()).toBeFalsy();
         provider.setFilter(value);
-        expect(provider.getFilter()).toMatchObject(value);
+        expect(provider.getFilter()).toMatchObject(<any>value);
     });
 
     it('should track registered users', async () => {

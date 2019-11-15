@@ -4,7 +4,6 @@ import * as simple from "simple-mock";
 import { createTestClient } from "../MatrixClientTest";
 
 describe('AutojoinUpgradedRoomsMixin', () => {
-
     it('should join rooms for regular upgrades', () => {
         const {client} = createTestClient();
 

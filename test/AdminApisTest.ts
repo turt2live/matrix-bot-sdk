@@ -14,9 +14,7 @@ export function createTestAdminClient(storage: IStorageProvider = null): { clien
 }
 
 describe('AdminApis', () => {
-
     describe('whoisUser', () => {
-
         it('should call the right endpoint', async () => {
             const {client, http, hsUrl} = createTestAdminClient();
 

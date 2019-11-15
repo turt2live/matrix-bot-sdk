@@ -2,7 +2,6 @@ import { RichReply } from "../../src";
 import * as expect from "expect";
 
 describe('RichReply', () => {
-
     it('should return a well-formatted reply', () => {
         const inputEvent = {
             content: {

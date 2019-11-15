@@ -20,9 +20,7 @@ export function createTestAuth(): { auth: MatrixAuth, http: MockHttpBackend, hsU
 }
 
 describe('MatrixAuth', () => {
-
     describe('passwordRegister', () => {
-
         it('should call the right endpoint', async () => {
             const {auth, http, hsUrl} = createTestAuth();
 
@@ -84,7 +82,6 @@ describe('MatrixAuth', () => {
     });
 
     describe('passwordLogin', () => {
-
         it('should call the right endpoint', async () => {
             const {auth, http, hsUrl} = createTestAuth();
 

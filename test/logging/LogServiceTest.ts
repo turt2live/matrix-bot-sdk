@@ -3,7 +3,6 @@ import * as expect from "expect";
 import * as simple from "simple-mock";
 
 describe('LogService', () => {
-
     afterEach(() => LogService.setLogger(new ConsoleLogger()));
 
     it('should log to the INFO channel', () => {

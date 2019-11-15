@@ -4,9 +4,7 @@ import { createTestClient } from "../MatrixClientTest";
 import * as simple from "simple-mock";
 
 describe('MentionPill', () => {
-
     describe('forUser', () => {
-
         it('should generate a pill for a user', async () => {
             const userId = "@test:example.org";
             const displayName = userId; //"John Doe";

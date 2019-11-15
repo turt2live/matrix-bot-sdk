@@ -26,7 +26,7 @@ async function beginAppserviceWithProtocols(protocols: string[]) {
         },
     });
     appservice.botIntent.ensureRegistered = () => {
-        return null;
+        return Promise.resolve();
     };
 
     async function doCall(route: string, opts: any = {}, qs: any = {}) {
@@ -392,7 +392,6 @@ describe('Appservice', () => {
     });
 
     describe('getSuffixForUserId', () => {
-
         it('should return a suffix for any namespaced user ID', async () => {
             const appservice = new Appservice({
                 port: 0,
@@ -446,7 +445,6 @@ describe('Appservice', () => {
     });
 
     describe('isNamespacedAlias', () => {
-
         it('should throw on no alias prefix set', async () => {
             try {
                 const appservice = new Appservice({
@@ -503,7 +501,7 @@ describe('Appservice', () => {
         });
     });
 
-    it('should return a alia for any namespaced localpart', async () => {
+    it('should return a alias for any namespaced localpart', async () => {
         const appservice = new Appservice({
             port: 0,
             bindAddress: '127.0.0.1',
@@ -525,7 +523,6 @@ describe('Appservice', () => {
     });
 
     describe('getAliasForSuffix', () => {
-
         it('should throw on no alias prefix set', async () => {
             try {
                 const appservice = new Appservice({
@@ -575,7 +572,6 @@ describe('Appservice', () => {
     });
 
     describe('getAliasLocalpartForSuffix', () => {
-
         it('should throw on no alias prefix set', async () => {
             try {
                 const appservice = new Appservice({
@@ -625,7 +621,6 @@ describe('Appservice', () => {
     });
 
     describe('getSuffixForAlias', () => {
-
         it('should throw on no alias prefix set', async () => {
             try {
                 const appservice = new Appservice({
@@ -766,6 +761,11 @@ describe('Appservice', () => {
             await verifyAuth("GET", "/_matrix/app/v1/users/@_prefix_sample:example.org");
             await verifyAuth("GET", "/_matrix/app/v1/rooms/" + encodeURIComponent("#_prefix_sample:example.org"));
             await verifyAuth("PUT", "/_matrix/app/v1/transactions/txnId");
+            await verifyAuth("GET", "/_matrix/app/v1/thirdparty/protocol/protocolId");
+            await verifyAuth("GET", "/_matrix/app/v1/thirdparty/user/protocolId");
+            await verifyAuth("GET", "/_matrix/app/v1/thirdparty/user");
+            await verifyAuth("GET", "/_matrix/app/v1/thirdparty/location/protocolId");
+            await verifyAuth("GET", "/_matrix/app/v1/thirdparty/location");
         } finally {
             appservice.stop();
         }
