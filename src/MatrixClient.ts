@@ -13,6 +13,7 @@ import { Metrics } from "./metrics/Metrics";
 import { timedMatrixClientFunctionCall } from "./metrics/decorators";
 import { AdminApis } from "./AdminApis";
 import { Presence } from "./models/Presence";
+import { Membership, MembershipEvent } from "./models/events/MembershipEvent";
 
 /**
  * A client that is capable of interacting with a matrix homeserver.
@@ -710,14 +711,14 @@ export class MatrixClient extends EventEmitter {
      * @param {string[]} notMembership The membership kinds to not search for.
      * @returns {Promise<*[]>} Resolves to the membership events of the users in the room.
      */
-    public getMembers(roomId: string, batchToken: string = null, membership: string[] = null, notMembership: string[] = null): Promise<any[]> {
+    public getRoomMembers(roomId: string, batchToken: string = null, membership: Membership[] = null, notMembership: Membership[] = null): Promise<MembershipEvent[]> {
         const qs = {};
         if (batchToken) qs["at"] = batchToken;
         if (membership) qs["membership"] = membership;
         if (notMembership) qs["not_membership"] = notMembership;
 
         return this.doRequest("GET", "/_matrix/client/r0/rooms/" + encodeURIComponent(roomId) + "/members", qs).then(r => {
-            return r['chunk'];
+            return r['chunk'].map(e => new MembershipEvent(e));
         });
     }
 

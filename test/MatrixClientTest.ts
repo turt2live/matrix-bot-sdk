@@ -10,6 +10,7 @@ import {
 import * as simple from "simple-mock";
 import * as MockHttpBackend from 'matrix-mock-request';
 import { expectArrayEquals } from "./TestUtils";
+import { Membership } from "../src/models/events/MembershipEvent";
 
 export function createTestClient(storage: IStorageProvider = null): { client: MatrixClient, http: MockHttpBackend, hsUrl: string, accessToken: string } {
     const http = new MockHttpBackend();
@@ -2162,7 +2163,7 @@ describe('MatrixClient', () => {
         });
     });
 
-    describe('getMembers', () => {
+    describe('getRoomMembers', () => {
         it('should call the right endpoint', async () => {
             const {client, http, hsUrl} = createTestClient();
 
@@ -2191,8 +2192,13 @@ describe('MatrixClient', () => {
             });
 
             http.flushAllExpected();
-            const result = await client.getMembers(roomId);
-            expectArrayEquals(memberEvents, result);
+            const result = await client.getRoomMembers(roomId);
+            expect(result).toBeDefined();
+            expect(result.length).toBe(2);
+            expect(result[0].membership).toBe(memberEvents[0]['content']['membership']);
+            expect(result[0].membershipFor).toBe(memberEvents[0]['state_key']);
+            expect(result[1].membership).toBe(memberEvents[1]['content']['membership']);
+            expect(result[1].membershipFor).toBe(memberEvents[1]['state_key']);
         });
 
         it('should call the right endpoint with a batch token', async () => {
@@ -2225,8 +2231,13 @@ describe('MatrixClient', () => {
             });
 
             http.flushAllExpected();
-            const result = await client.getMembers(roomId, atToken);
-            expectArrayEquals(memberEvents, result);
+            const result = await client.getRoomMembers(roomId, atToken);
+            expect(result).toBeDefined();
+            expect(result.length).toBe(2);
+            expect(result[0].membership).toBe(memberEvents[0]['content']['membership']);
+            expect(result[0].membershipFor).toBe(memberEvents[0]['state_key']);
+            expect(result[1].membership).toBe(memberEvents[1]['content']['membership']);
+            expect(result[1].membershipFor).toBe(memberEvents[1]['state_key']);
         });
 
         it('should call the right endpoint with membership filtering', async () => {
@@ -2250,8 +2261,8 @@ describe('MatrixClient', () => {
                     },
                 },
             ];
-            const forMemberships = ['join', 'leave'];
-            const forNotMemberships = ['ban'];
+            const forMemberships: Membership[] = ['join', 'leave'];
+            const forNotMemberships: Membership[] = ['ban'];
 
             http.when("GET", "/_matrix/client/r0/rooms").respond(200, (path, content, req) => {
                 expect(path).toEqual(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/members`);
@@ -2261,8 +2272,13 @@ describe('MatrixClient', () => {
             });
 
             http.flushAllExpected();
-            const result = await client.getMembers(roomId, null, forMemberships, forNotMemberships);
-            expectArrayEquals(memberEvents, result);
+            const result = await client.getRoomMembers(roomId, null, forMemberships, forNotMemberships);
+            expect(result).toBeDefined();
+            expect(result.length).toBe(2);
+            expect(result[0].membership).toBe(memberEvents[0]['content']['membership']);
+            expect(result[0].membershipFor).toBe(memberEvents[0]['state_key']);
+            expect(result[1].membership).toBe(memberEvents[1]['content']['membership']);
+            expect(result[1].membershipFor).toBe(memberEvents[1]['state_key']);
         });
     });
 
