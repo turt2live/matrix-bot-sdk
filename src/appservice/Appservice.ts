@@ -217,6 +217,10 @@ export class Appservice extends EventEmitter {
         this.app.use(express.json());
         this.app.use(morgan("combined"));
 
+        // ETag headers break the tests sometimes, and we don't actually need them anyways for
+        // appservices - none of this should be cached.
+        this.app.set('etag', false);
+
         this.app.get("/users/:userId", this.onUser.bind(this));
         this.app.get("/rooms/:roomAlias", this.onRoomAlias.bind(this));
         this.app.put("/transactions/:txnId", this.onTransaction.bind(this));
