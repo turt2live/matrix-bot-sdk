@@ -1,5 +1,5 @@
 import { ILogger } from "./ILogger";
-import chalk from "chalk";
+import * as chalk from "chalk";
 
 /**
  * Prints to the console with colors and a format.
