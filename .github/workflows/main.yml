@@ -1,28 +1,31 @@
 name: Docs
-
 on: 
   push:
     branches:
       - develop
     tags:
       - v*
-
 jobs:
-  build:
-
+  build-and-deploy:
     runs-on: ubuntu-latest
-
     steps:
     - uses: actions/checkout@v1
-    - uses: actions/setup-node@v1
-      with:
-        node-version: '10.x'
-    - name: Install dependencies
-      run: yarn install
-    - name: Build the docs
-      run: yarn docs
-      continue-on-error: true
-    - name: GitHub Pages Deploy
-      uses: maxheld83/ghpages@v0.1.2
+    - name: Build and deploy docs
+      uses: JamesIves/github-pages-deploy-action@releases/v2
       env:
-        BUILD_DIR: ".jsdoc"
+        ACCESS_TOKEN: ${{ secrets.GH_PAT }}
+        BRANCH: gh-pages
+        BUILD_SCRIPT: "yarn install && yarn docs"
+        FOLDER: ".jsdoc"
+    #- uses: actions/setup-node@v1
+    #  with:
+    #    node-version: '10.x'
+    #- name: Install dependencies
+    #  run: yarn install
+    #- name: Build the docs
+    #  run: yarn docs
+    #  continue-on-error: true
+    #- name: GitHub Pages Deploy
+    #  uses: maxheld83/ghpages@v0.1.2
+    #  env:
+    #    BUILD_DIR: ".jsdoc"
