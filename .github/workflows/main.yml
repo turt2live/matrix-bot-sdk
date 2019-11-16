@@ -1,0 +1,20 @@
+name: Docs
+
+on: [push]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v1
+    - uses: actions/setup-node@v1
+      with:
+        node-version: '10.x'
+    - name: Install dependencies
+      run: yarn install
+    - name: Build the docs
+      run: yarn docs
+    - name: GitHub Pages Deploy
+      uses: maxheld83/ghpages@v0.1.2
