@@ -3,8 +3,8 @@ on:
   push:
     branches:
       - develop
-    tags:
-      - v*
+    # TODO: Keep all historical builds (like the js-sdk)
+    #tags: ['v*']
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
@@ -21,16 +21,4 @@ jobs:
         BASE_BRANCH: ${{ steps.extract_branch.outputs.branch }}
         BRANCH: gh-pages
         BUILD_SCRIPT: "yarn install && yarn docs"
-        FOLDER: ".jsdoc"
-    #- uses: actions/setup-node@v1
-    #  with:
-    #    node-version: '10.x'
-    #- name: Install dependencies
-    #  run: yarn install
-    #- name: Build the docs
-    #  run: yarn docs
-    #  continue-on-error: true
-    #- name: GitHub Pages Deploy
-    #  uses: maxheld83/ghpages@v0.1.2
-    #  env:
-    #    BUILD_DIR: ".jsdoc"
+        FOLDER: ".jsdoc/matrix-bot-sdk/${{ steps.extract_branch.outputs.branch }}"
