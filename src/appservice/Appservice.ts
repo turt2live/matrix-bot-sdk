@@ -185,7 +185,6 @@ export class Appservice extends EventEmitter {
     private app = express();
     private appServer: any;
     private intentsCache: LRU;
-    private intents: { [userId: string]: Intent } = {};
     private eventProcessors: { [eventType: string]: IPreprocessor[] } = {};
     private pendingTransactions: { [txnId: string]: Promise<any> } = {};
 
