@@ -39,6 +39,10 @@ export * from "./models/events/CreateEvent";
 export * from "./models/events/JoinRulesEvent";
 export * from "./models/events/PowerLevelsEvent";
 export * from "./models/events/RedactionEvent";
+export * from "./models/events/PinnedEventsEvent";
+export * from "./models/events/RoomAvatarEvent";
+export * from "./models/events/RoomNameEvent";
+export * from "./models/events/RoomTopicEvent";
 
 // Preprocessors
 export * from "./preprocessors/IPreprocessor";
