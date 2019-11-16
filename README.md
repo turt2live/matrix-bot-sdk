@@ -5,6 +5,8 @@
 
 A lightweight version of the matrix-js-sdk intended for bots. For help and support, visit [#matrix-bot-sdk:t2bot.io](https://matrix.to/#/#matrix-bot-sdk:t2bot.io)
 
+Documentation for the develop branch is available [here](https://turt2live.github.io/matrix-js-bot-sdk/index.html).
+
 # Installing
 
 This package can be found on [npm](https://www.npmjs.com):
