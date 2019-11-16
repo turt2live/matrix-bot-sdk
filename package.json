@@ -65,7 +65,7 @@
     "@types/expect": "^24.3.0",
     "@types/mocha": "^5.2.7",
     "@types/node": "10",
-    "better-docs": "^1.4.3",
+    "better-docs": "^1.4.4",
     "expect": "^24.9.0",
     "get-port": "^5.0.0",
     "jsdoc": "^3.6.3",

@@ -517,10 +517,10 @@ bcrypt-pbkdf@^1.0.0:
   dependencies:
     tweetnacl "^0.14.3"
 
-better-docs@^1.4.3:
-  version "1.4.3"
-  resolved "https://registry.yarnpkg.com/better-docs/-/better-docs-1.4.3.tgz#c42c7bc293ace57e36e572f83c1cd30114a15e7b"
-  integrity sha512-qT43hvgGc5cTNNHWzk6fehJfPXOKYT8STMCkSUhXC6hQcsCQpH6WT9k/Rg/0jrgXjs99ZP/Lgl2xZZC/ZUV/iA==
+better-docs@^1.4.4:
+  version "1.4.4"
+  resolved "https://registry.yarnpkg.com/better-docs/-/better-docs-1.4.4.tgz#2678c660edaea5940b2f665617eefd8ab0340ec1"
+  integrity sha512-x80fN+0EbiIIaUJm9+6alk0m9xC1qfm9kj6ZSSTOKmw280TDoakZMv6I8nt68lylupY1j4LvAO47hmWWZuPeJA==
   dependencies:
     brace "^0.11.1"
     react-ace "^6.5.0"
