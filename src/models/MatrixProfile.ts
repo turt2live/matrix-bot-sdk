@@ -2,6 +2,7 @@ import { MentionPill, UserID } from "..";
 
 /**
  * Profile information commonly associated with Matrix profiles
+ * @category Models
  */
 export interface MatrixProfileInfo {
     /**
@@ -17,6 +18,7 @@ export interface MatrixProfileInfo {
 
 /**
  * Represents a user's profile, possibly in a room.
+ * @category Models
  */
 export class MatrixProfile {
     /**
