@@ -9,6 +9,8 @@ export * from "./helpers/RichReply";
 export * from "./helpers/MentionPill";
 export * from "./helpers/Permalinks";
 export * from "./helpers/MatrixGlob";
+export * from "./helpers/ProfileCache";
+export * from "./helpers/MatrixEntity";
 
 // Logging
 export * from "./logging/ConsoleLogger";
@@ -29,6 +31,9 @@ export * from "./mixins/AutojoinUpgradedRoomsMixin";
 
 // Models
 export * from "./models/Presence";
+export * from "./models/MatrixProfile";
+
+// Event models
 export * from "./models/events/converter";
 export * from "./models/events/InvalidEventError";
 export * from "./models/events/Event";

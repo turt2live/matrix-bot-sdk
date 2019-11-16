@@ -57,4 +57,14 @@ export class MentionPill {
 
         return new MentionPill(permalink, displayName);
     }
+
+    /**
+     * Creates a mention from static information.
+     * @param {string} userId The user ID the mention is for.
+     * @param {string} displayName The user's display name.
+     * @returns {MentionPill} The mention for the user.
+     */
+    public static withDisplayName(userId: string, displayName: string): MentionPill {
+        return new MentionPill(Permalinks.forUser(userId), displayName || userId);
+    }
 }

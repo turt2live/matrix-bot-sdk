@@ -5,6 +5,18 @@ import * as simple from "simple-mock";
 
 describe('MentionPill', () => {
     describe('forUser', () => {
+        it('should accept static inputs', async () => {
+            const userId = "@test:example.org";
+            const displayName = "John Doe";
+            const expectedHtml = `<a href="https://matrix.to/#/${userId}">${displayName}</a>`;
+            const expectedText = displayName;
+
+            const mention = await MentionPill.withDisplayName(userId, displayName);
+            expect(mention).toBeDefined();
+            expect(mention.html).toBe(expectedHtml);
+            expect(mention.text).toBe(expectedText);
+        });
+
         it('should generate a pill for a user', async () => {
             const userId = "@test:example.org";
             const displayName = userId; //"John Doe";

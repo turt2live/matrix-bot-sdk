@@ -44,7 +44,6 @@ async function beginAppserviceWithProtocols(protocols: string[]) {
 }
 
 describe('Appservice', () => {
-
     it('should throw when there are no registered namespaces', async () => {
         try {
             new Appservice({
