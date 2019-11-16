@@ -33,7 +33,12 @@ export * from "./models/events/Event";
 export * from "./models/events/RoomEvent";
 export * from "./models/events/PresenceEvent";
 export * from "./models/events/MessageEvent";
-export * from "./models/events/MessageEvent";
+export * from "./models/events/AliasesEvent";
+export * from "./models/events/CanonicalAliasEvent";
+export * from "./models/events/CreateEvent";
+export * from "./models/events/JoinRulesEvent";
+export * from "./models/events/PowerLevelsEvent";
+export * from "./models/events/RedactionEvent";
 
 // Preprocessors
 export * from "./preprocessors/IPreprocessor";
