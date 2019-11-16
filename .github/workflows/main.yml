@@ -21,6 +21,7 @@ jobs:
       run: yarn install
     - name: Build the docs
       run: yarn docs
+      continue-on-error: true
     - name: GitHub Pages Deploy
       uses: maxheld83/ghpages@v0.1.2
       env:
