@@ -95,7 +95,7 @@ export class Intent {
     /**
      * Sends an event to a room.
      * @param {string} roomId The room ID to send the event to.
-     * @param {*} content The content of the event.
+     * @param {any} content The content of the event.
      * @returns {Promise<string>} Resolves to the event ID of the sent event.
      */
     public async sendEvent(roomId: string, content: any): Promise<string> {

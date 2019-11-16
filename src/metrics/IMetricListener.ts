@@ -23,7 +23,7 @@ export interface IMetricListener {
      * Called when the given metric should stop being tracked. Will have
      * started with a matching onStartMetric() call.
      * @param {string} metricName The metric being called.
-     * @param {*} context Context for the metric. Never null.
+     * @param {any} context Context for the metric. Never null.
      * @param {number} timeMs The measured time in milliseconds between
      * the start and end.
      */

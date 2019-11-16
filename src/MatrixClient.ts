@@ -134,7 +134,7 @@ export class MatrixClient extends EventEmitter {
     /**
      * Retrieves content from account data.
      * @param {string} eventType The type of account data to retrieve.
-     * @returns {Promise<*>} Resolves to the content of that account data.
+     * @returns {Promise<any>} Resolves to the content of that account data.
      */
     @timedMatrixClientFunctionCall()
     public async getAccountData(eventType: string): Promise<any> {
@@ -147,7 +147,7 @@ export class MatrixClient extends EventEmitter {
      * Retrieves content from room account data.
      * @param {string} eventType The type of room account data to retrieve.
      * @param {string} roomId The room to read the account data from
-     * @returns {Promise<*>} Resolves to the content of that account data.
+     * @returns {Promise<any>} Resolves to the content of that account data.
      */
     @timedMatrixClientFunctionCall()
     public async getRoomAccountData(eventType: string, roomId: string): Promise<any> {
@@ -160,8 +160,8 @@ export class MatrixClient extends EventEmitter {
     /**
      * Sets account data.
      * @param {string} eventType The type of account data to set
-     * @param {*} content The content to set
-     * @returns {Promise<*>} Resolves when updated
+     * @param {any} content The content to set
+     * @returns {Promise<any>} Resolves when updated
      */
     @timedMatrixClientFunctionCall()
     public async setAccountData(eventType: string, content: any): Promise<any> {
@@ -174,8 +174,8 @@ export class MatrixClient extends EventEmitter {
      * Sets room account data.
      * @param {string} eventType The type of room account data to set
      * @param {string} roomId The room to set account data in
-     * @param {*} content The content to set
-     * @returns {Promise<*>} Resolves when updated
+     * @param {any} content The content to set
+     * @returns {Promise<any>} Resolves when updated
      */
     @timedMatrixClientFunctionCall()
     public async setRoomAccountData(eventType: string, roomId: string, content: any): Promise<any> {
@@ -208,7 +208,7 @@ export class MatrixClient extends EventEmitter {
      * Sets the presence status for the current user.
      * @param {"online"|"offline"|"unavailable"} presence The new presence state for the user.
      * @param {string} statusMessage Optional status message to include with the presence.
-     * @returns {Promise<*>} Resolves when complete.
+     * @returns {Promise<any>} Resolves when complete.
      */
     @timedMatrixClientFunctionCall()
     public async setPresenceStatus(presence: "online" | "offline" | "unavailable", statusMessage: string = null): Promise<any> {
@@ -304,7 +304,7 @@ export class MatrixClient extends EventEmitter {
      * Invites a user to a room.
      * @param {string} userId the user ID to invite
      * @param {string} roomId the room ID to invite the user to
-     * @returns {Promise<*>} resolves when completed
+     * @returns {Promise<any>} resolves when completed
      */
     @timedMatrixClientFunctionCall()
     public inviteUser(userId, roomId) {
@@ -318,7 +318,7 @@ export class MatrixClient extends EventEmitter {
      * @param {string} userId the user ID to kick
      * @param {string} roomId the room ID to kick the user in
      * @param {string?} reason optional reason for the kick
-     * @returns {Promise<*>} resolves when completed
+     * @returns {Promise<any>} resolves when completed
      */
     @timedMatrixClientFunctionCall()
     public kickUser(userId, roomId, reason = null) {
@@ -333,7 +333,7 @@ export class MatrixClient extends EventEmitter {
      * @param {string} userId the user ID to ban
      * @param {string} roomId the room ID to set the ban in
      * @param {string?} reason optional reason for the ban
-     * @returns {Promise<*>} resolves when completed
+     * @returns {Promise<any>} resolves when completed
      */
     @timedMatrixClientFunctionCall()
     public banUser(userId, roomId, reason = null) {
@@ -347,7 +347,7 @@ export class MatrixClient extends EventEmitter {
      * Unbans a user in a room.
      * @param {string} userId the user ID to unban
      * @param {string} roomId the room ID to lift the ban in
-     * @returns {Promise<*>} resolves when completed
+     * @returns {Promise<any>} resolves when completed
      */
     @timedMatrixClientFunctionCall()
     public unbanUser(userId, roomId) {
@@ -379,8 +379,8 @@ export class MatrixClient extends EventEmitter {
 
     /**
      * Starts syncing the client with an optional filter
-     * @param {*} filter The filter to use, or null for none
-     * @returns {Promise<*>} Resolves when the client has started syncing
+     * @param {any} filter The filter to use, or null for none
+     * @returns {Promise<any>} Resolves when the client has started syncing
      */
     public start(filter: any = null): Promise<any> {
         this.stopSyncing = false;
@@ -577,7 +577,7 @@ export class MatrixClient extends EventEmitter {
      * Gets an event for a room. Returned as a raw event.
      * @param {string} roomId the room ID to get the event in
      * @param {string} eventId the event ID to look up
-     * @returns {Promise<*>} resolves to the found event
+     * @returns {Promise<any>} resolves to the found event
      */
     @timedMatrixClientFunctionCall()
     public getEvent(roomId: string, eventId: string): Promise<any> {
@@ -588,7 +588,7 @@ export class MatrixClient extends EventEmitter {
     /**
      * Gets the room state for the given room. Returned as raw events.
      * @param {string} roomId the room ID to get state for
-     * @returns {Promise<*[]>} resolves to the room's state
+     * @returns {Promise<any[]>} resolves to the room's state
      */
     @timedMatrixClientFunctionCall()
     public getRoomState(roomId: string): Promise<any[]> {
@@ -601,7 +601,7 @@ export class MatrixClient extends EventEmitter {
      * @param {string} roomId the room ID
      * @param {string} type the event type
      * @param {String} stateKey the state key, falsey if not needed
-     * @returns {Promise<*|*[]>} resolves to the state event(s)
+     * @returns {Promise<any|*[]>} resolves to the state event(s)
      * @deprecated It is not possible to get an array of events - use getRoomStateEvent instead
      */
     @timedMatrixClientFunctionCall()
@@ -614,7 +614,7 @@ export class MatrixClient extends EventEmitter {
      * @param {string} roomId the room ID
      * @param {string} type the event type
      * @param {String} stateKey the state key
-     * @returns {Promise<*>} resolves to the state event
+     * @returns {Promise<any>} resolves to the state event
      */
     @timedMatrixClientFunctionCall()
     public getRoomStateEvent(roomId, type, stateKey): Promise<any> {
@@ -625,7 +625,7 @@ export class MatrixClient extends EventEmitter {
     /**
      * Gets the profile for a given user
      * @param {string} userId the user ID to lookup
-     * @returns {Promise<*>} the profile of the user
+     * @returns {Promise<any>} the profile of the user
      */
     @timedMatrixClientFunctionCall()
     public getUserProfile(userId: string): Promise<any> {
@@ -635,7 +635,7 @@ export class MatrixClient extends EventEmitter {
     /**
      * Sets a new display name for the user.
      * @param {string} displayName the new display name for the user, or null to clear
-     * @returns {Promise<*>} resolves when complete
+     * @returns {Promise<any>} resolves when complete
      */
     @timedMatrixClientFunctionCall()
     public async setDisplayName(displayName: string): Promise<any> {
@@ -648,7 +648,7 @@ export class MatrixClient extends EventEmitter {
     /**
      * Sets a new avatar url for the user.
      * @param {string} avatarUrl the new avatar URL for the user, in the form of a Matrix Content URI
-     * @returns {Promise<*>} resolves when complete
+     * @returns {Promise<any>} resolves when complete
      */
     @timedMatrixClientFunctionCall()
     public async setAvatarUrl(avatarUrl: string): Promise<any> {
@@ -709,7 +709,7 @@ export class MatrixClient extends EventEmitter {
      * @param {string} batchToken The point in time to get members at (or null for 'now')
      * @param {string[]} membership The membership kinds to search for.
      * @param {string[]} notMembership The membership kinds to not search for.
-     * @returns {Promise<*[]>} Resolves to the membership events of the users in the room.
+     * @returns {Promise<any[]>} Resolves to the membership events of the users in the room.
      */
     public getRoomMembers(roomId: string, batchToken: string = null, membership: Membership[] = null, notMembership: Membership[] = null): Promise<MembershipEvent[]> {
         const qs = {};
@@ -725,7 +725,7 @@ export class MatrixClient extends EventEmitter {
     /**
      * Leaves the given room
      * @param {string} roomId the room ID to leave
-     * @returns {Promise<*>} resolves when left
+     * @returns {Promise<any>} resolves when left
      */
     @timedMatrixClientFunctionCall()
     public leaveRoom(roomId: string): Promise<any> {
@@ -736,7 +736,7 @@ export class MatrixClient extends EventEmitter {
      * Sends a read receipt for an event in a room
      * @param {string} roomId the room ID to send the receipt to
      * @param {string} eventId the event ID to set the receipt at
-     * @returns {Promise<*>} resolves when the receipt has been sent
+     * @returns {Promise<any>} resolves when the receipt has been sent
      */
     @timedMatrixClientFunctionCall()
     public sendReadReceipt(roomId: string, eventId: string): Promise<any> {
@@ -748,7 +748,7 @@ export class MatrixClient extends EventEmitter {
      * @param {string} roomId the room ID the user is typing in
      * @param {boolean} typing is the user currently typing
      * @param {number} timeout how long should the server preserve the typing state, in milliseconds
-     * @returns {Promise<*>} resolves when the typing state has been set
+     * @returns {Promise<any>} resolves when the typing state has been set
      */
     @timedMatrixClientFunctionCall()
     public async setTyping(roomId: string, typing: boolean, timeout = 30000): Promise<any> {
@@ -762,7 +762,7 @@ export class MatrixClient extends EventEmitter {
     /**
      * Replies to a given event with the given text. The event is sent with a msgtype of m.text.
      * @param {string} roomId the room ID to reply in
-     * @param {*} event the event to reply to
+     * @param {any} event the event to reply to
      * @param {string} text the text to reply with
      * @param {string} html the HTML to reply with, or falsey to use the `text`
      * @returns {Promise<string>} resolves to the event ID which was sent
@@ -778,7 +778,7 @@ export class MatrixClient extends EventEmitter {
     /**
      * Replies to a given event with the given text. The event is sent with a msgtype of m.notice.
      * @param {string} roomId the room ID to reply in
-     * @param {*} event the event to reply to
+     * @param {any} event the event to reply to
      * @param {string} text the text to reply with
      * @param {string} html the HTML to reply with, or falsey to use the `text`
      * @returns {Promise<string>} resolves to the event ID which was sent
@@ -881,7 +881,7 @@ export class MatrixClient extends EventEmitter {
      * Creates a room. This does not break out the various options for creating a room
      * due to the large number of possibilities. See the /createRoom endpoint in the
      * spec for more information on what to provide for `properties`.
-     * @param {*} properties the properties of the room. See the spec for more information
+     * @param {any} properties the properties of the room. See the spec for more information
      * @returns {Promise<string>} resolves to the room ID that represents the room
      */
     @timedMatrixClientFunctionCall()
@@ -1134,13 +1134,13 @@ export class MatrixClient extends EventEmitter {
      * this client.
      * @param {"GET"|"POST"|"PUT"|"DELETE"} method The HTTP method to use in the request
      * @param {string} endpoint The endpoint to call. For example: "/_matrix/client/r0/account/whoami"
-     * @param {*} qs The query string to send. Optional.
-     * @param {*} body The request body to send. Optional. Will be converted to JSON unless the type is a Buffer.
+     * @param {any} qs The query string to send. Optional.
+     * @param {any} body The request body to send. Optional. Will be converted to JSON unless the type is a Buffer.
      * @param {number} timeout The number of milliseconds to wait before timing out.
      * @param {boolean} raw If true, the raw response will be returned instead of the response body.
      * @param {string} contentType The content type to send. Only used if the `body` is a Buffer.
      * @param {string} noEncoding Set to true to disable encoding, and return a Buffer. Defaults to false
-     * @returns {Promise<*>} Resolves to the response (body), rejected if a non-2xx status code was returned.
+     * @returns {Promise<any>} Resolves to the response (body), rejected if a non-2xx status code was returned.
      */
     @timedMatrixClientFunctionCall()
     public doRequest(method, endpoint, qs = null, body = null, timeout = 60000, raw = false, contentType = "application/json", noEncoding = false): Promise<any> {
