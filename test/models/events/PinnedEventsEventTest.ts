@@ -1,6 +1,6 @@
 import { createMinimalEvent } from "./EventTest";
 import { expectArrayEquals } from "../../TestUtils";
-import { PinnedEventsEvent } from "../../../src/models/events/PinnedEventsEvent";
+import { PinnedEventsEvent } from "../../../src";
 
 describe("PinnedEventsEvent", () => {
     it("should return the right fields", () => {

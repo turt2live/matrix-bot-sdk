@@ -1,6 +1,6 @@
 import * as expect from "expect";
 import { createMinimalEvent } from "./EventTest";
-import { JoinRulesEvent } from "../../../src/models/events/JoinRulesEvent";
+import { JoinRulesEvent } from "../../../src";
 
 describe("JoinRulesEvent", () => {
     it("should return the right fields", () => {

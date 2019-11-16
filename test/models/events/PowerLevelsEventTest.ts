@@ -1,6 +1,6 @@
 import * as expect from "expect";
 import { createMinimalEvent } from "./EventTest";
-import { PowerLevelsEvent } from "../../../src/models/events/PowerLevelsEvent";
+import { PowerLevelsEvent } from "../../../src";
 
 describe("PowerLevelsEvent", () => {
     it("should return the right fields", () => {

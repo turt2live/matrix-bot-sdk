@@ -1,6 +1,6 @@
 import * as expect from "expect";
 import { createMinimalEvent } from "./EventTest";
-import { RoomTopicEvent } from "../../../src/models/events/RoomTopicEvent";
+import { RoomTopicEvent } from "../../../src";
 
 describe("RoomTopicEvent", () => {
     it("should return the right fields", () => {

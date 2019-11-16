@@ -1,6 +1,6 @@
 import * as expect from "expect";
 import { createMinimalEvent } from "./EventTest";
-import { CanonicalAliasEvent } from "../../../src/models/events/CanonicalAliasEvent";
+import { CanonicalAliasEvent } from "../../../src";
 
 describe("CanonicalAliasEvent", () => {
     it("should return the right fields", () => {

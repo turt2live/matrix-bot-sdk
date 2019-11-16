@@ -7,6 +7,8 @@ export * from "./appservice/http_responses";
 // Helpers
 export * from "./helpers/RichReply";
 export * from "./helpers/MentionPill";
+export * from "./helpers/Permalinks";
+export * from "./helpers/MatrixGlob";
 
 // Logging
 export * from "./logging/ConsoleLogger";
@@ -65,5 +67,4 @@ export * from "./MatrixAuth";
 export * from "./UnstableApis";
 export * from "./AdminApis";
 export * from "./request";
-export * from "./helpers/Permalinks";
 export * from "./PantalaimonClient";
