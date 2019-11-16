@@ -1,6 +1,11 @@
 name: Docs
 
-on: [push]
+on: 
+  push:
+    branches:
+      - develop
+    tags:
+      - v*
 
 jobs:
   build:
@@ -18,3 +23,5 @@ jobs:
       run: yarn docs
     - name: GitHub Pages Deploy
       uses: maxheld83/ghpages@v0.1.2
+      env:
+        BUILD_DIR: ".jsdoc"
