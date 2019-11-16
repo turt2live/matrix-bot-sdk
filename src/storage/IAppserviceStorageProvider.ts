@@ -1,3 +1,7 @@
+/**
+ * A storage provider definition for appservices to use.
+ * @category Storage providers
+ */
 export interface IAppserviceStorageProvider {
     /**
      * Tracks a user ID as "registered".

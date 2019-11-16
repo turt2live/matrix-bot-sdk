@@ -2,6 +2,8 @@ import { StateEvent } from "./RoomEvent";
 
 /**
  * The content definition for m.room.canonical_alias events
+ * @category Matrix event contents
+ * @see CanonicalAliasEvent
  */
 export interface CanonicalAliasEventContent {
     /**
@@ -12,6 +14,7 @@ export interface CanonicalAliasEventContent {
 
 /**
  * Represents an m.room.canonical_alias state event
+ * @category Matrix events
  */
 export class CanonicalAliasEvent extends StateEvent<CanonicalAliasEventContent> {
     constructor(event: any) {

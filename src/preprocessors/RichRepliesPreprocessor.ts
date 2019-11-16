@@ -5,6 +5,8 @@ import { LogService } from "..";
 /**
  * Metadata for a rich reply. Usually stored under the "mx_richreply"
  * field of an event (at the top level).
+ * @category Preprocessors
+ * @see RichRepliesPreprocessor
  */
 export interface IRichReplyMetadata {
     /**
@@ -56,6 +58,7 @@ export interface IRichReplyMetadata {
  * the fallback representation from events, providing the information
  * as a top level "mx_richreply" key. The "mx_richreply" property may
  * be casted to the type IRichReplyMetadata.
+ * @category Preprocessors
  */
 export class RichRepliesPreprocessor implements IPreprocessor {
 

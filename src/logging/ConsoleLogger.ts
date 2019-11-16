@@ -1,5 +1,9 @@
 import { ILogger } from "./ILogger";
 
+/**
+ * Logs to the console in a plain format. This is the default logger.
+ * @category Logging
+ */
 export class ConsoleLogger implements ILogger {
     public debug(module: string, ...messageOrObject: any[]) {
         console.debug(module, ...messageOrObject);

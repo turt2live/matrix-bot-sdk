@@ -13,11 +13,12 @@ import { EventEmitter } from "events";
 import * as morgan from "morgan";
 import { MatrixBridge } from "./MatrixBridge";
 import * as LRU from "lru-cache";
-import { IApplicationServiceProtocol } from "./Protocols";
+import { IApplicationServiceProtocol } from "./http_responses";
 
 /**
  * Represents an application service's registration file. This is expected to be
  * loaded from another source, such as a YAML file.
+ * @category Application services
  */
 export interface IAppserviceRegistration {
     /**
@@ -113,6 +114,7 @@ export interface IAppserviceRegistration {
 
 /**
  * General options for the application service
+ * @category Application services
  */
 export interface IAppserviceOptions {
     /**
@@ -170,6 +172,7 @@ export interface IAppserviceOptions {
 /**
  * Represents an application service. This provides helper utilities such as tracking
  * of user intents (clients that are aware of their membership in rooms).
+ * @category Application services
  */
 export class Appservice extends EventEmitter {
 

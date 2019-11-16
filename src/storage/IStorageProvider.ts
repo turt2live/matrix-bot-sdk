@@ -1,8 +1,9 @@
-/**
- * Represents a storage provider for the matrix client
- */
 import { IFilterInfo } from "../IFilter";
 
+/**
+ * Represents a storage provider for the matrix client
+ * @category Storage providers
+ */
 export interface IStorageProvider {
     /**
      * Sets the sync token, saving it for later retrieval

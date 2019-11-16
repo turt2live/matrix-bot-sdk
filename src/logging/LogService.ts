@@ -1,11 +1,30 @@
 import { ConsoleLogger } from "./ConsoleLogger";
 import { ILogger } from "./ILogger";
 
+/**
+ * The log levels to log at.
+ * @category Logging
+ */
 export class LogLevel {
 
+    /**
+     * The DEBUG channel
+     */
     public static readonly DEBUG = new LogLevel("DEBUG", 0);
+
+    /**
+     * The INFO channel
+     */
     public static readonly INFO = new LogLevel("INFO", 1);
+
+    /**
+     * The WARN channel
+     */
     public static readonly WARN = new LogLevel("WARN", 2);
+
+    /**
+     * The ERROR channel
+     */
     public static readonly ERROR = new LogLevel("ERROR", 3);
 
     private constructor(private level: string, private sequence: number) {
@@ -29,6 +48,10 @@ export class LogLevel {
     }
 }
 
+/**
+ * Service class for logging in the bot-sdk
+ * @category Logging
+ */
 export class LogService {
 
     private static logger: ILogger = new ConsoleLogger();

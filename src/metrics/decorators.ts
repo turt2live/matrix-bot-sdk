@@ -5,6 +5,10 @@ import {
 } from "./names";
 import { FunctionCallContext } from "./contexts";
 
+/**
+ * Times a MatrixClient function call for metrics.
+ * @category Metrics
+ */
 export function timedMatrixClientFunctionCall() {
     return function (target: any, propertyKey: string, descriptor: PropertyDescriptor) {
         const originalMethod = descriptor.value;

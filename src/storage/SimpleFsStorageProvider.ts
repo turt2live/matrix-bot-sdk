@@ -7,11 +7,21 @@ import * as sha512 from "hash.js/lib/hash/sha/512";
 import * as mkdirp from "mkdirp";
 import * as path from "path";
 
+/**
+ * A storage provider that uses the disk to store information.
+ * @category Storage providers
+ */
 export class SimpleFsStorageProvider implements IStorageProvider, IAppserviceStorageProvider {
 
     private db: any;
     private completedTransactions = [];
 
+    /**
+     * Creates a new simple file system storage provider.
+     * @param {string} filename The file name (typically 'storage.json') to store data within.
+     * @param {boolean} trackTransactionsInMemory True (default) to track all received appservice transactions rather than on disk.
+     * @param {int} maxInMemoryTransactions The maximum number of transactions to hold in memory before rotating the oldest out. Defaults to 20.
+     */
     constructor(filename: string, private trackTransactionsInMemory = true, private maxInMemoryTransactions = 20) {
         mkdirp.sync(path.dirname(filename));
 

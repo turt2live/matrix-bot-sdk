@@ -1,5 +1,5 @@
 import * as expect from "expect";
-import { PermalinkParts, Permalinks } from "../src";
+import { PermalinkParts, Permalinks } from "../../src";
 
 describe('Permalinks', () => {
     describe('forRoom', () => {

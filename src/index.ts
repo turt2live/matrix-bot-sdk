@@ -2,7 +2,7 @@
 export * from "./appservice/Appservice";
 export * from "./appservice/Intent";
 export * from "./appservice/MatrixBridge";
-export * from "./appservice/Protocols";
+export * from "./appservice/http_responses";
 
 // Helpers
 export * from "./helpers/RichReply";
@@ -65,5 +65,5 @@ export * from "./MatrixAuth";
 export * from "./UnstableApis";
 export * from "./AdminApis";
 export * from "./request";
-export * from "./Permalinks";
+export * from "./helpers/Permalinks";
 export * from "./PantalaimonClient";

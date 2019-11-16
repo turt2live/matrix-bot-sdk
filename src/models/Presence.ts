@@ -2,6 +2,7 @@ import { PresenceEventContent, PresenceState } from "./events/PresenceEvent";
 
 /**
  * Presence information for a user.
+ * @category Models
  */
 export class Presence {
     constructor(protected presence: PresenceEventContent) {

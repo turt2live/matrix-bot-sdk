@@ -1,6 +1,10 @@
 import { ILogger } from "./ILogger";
 import chalk from "chalk";
 
+/**
+ * Prints to the console with colors and a format.
+ * @category Logging
+ */
 export class RichConsoleLogger implements ILogger {
 
     protected chalkDebug = chalk.cyan;

@@ -6,6 +6,10 @@ export const REMOTE_ROOM_INFO_ACCOUNT_DATA_EVENT_TYPE = "io.t2bot.sdk.bot.remote
 export const REMOTE_USER_MAP_ACCOUNT_DATA_EVENT_TYPE_PREFIX = "io.t2bot.sdk.bot.remote_user_map";
 export const REMOTE_ROOM_MAP_ACCOUNT_DATA_EVENT_TYPE_PREFIX = "io.t2bot.sdk.bot.remote_room_map";
 
+/**
+ * @see MatrixBridge
+ * @category Application services
+ */
 export interface IRemoteRoomInfo {
     /**
      * A unique identifier for the remote user.
@@ -13,6 +17,10 @@ export interface IRemoteRoomInfo {
     id: string;
 }
 
+/**
+ * @see MatrixBridge
+ * @category Application services
+ */
 export interface IRemoteUserInfo {
     /**
      * A unique identifier for the remote room (or room equivalent).
@@ -31,6 +39,7 @@ export interface IRemoteUserInfo {
  * the IRemoteRoomInfo and IRemoteUserInfo interfaces and serialize to JSON
  * cleanly. The serialized version of these classes is persisted in various
  * account data locations for future lookups.
+ * @category Application services
  */
 export class MatrixBridge {
     constructor(private appservice: Appservice) {

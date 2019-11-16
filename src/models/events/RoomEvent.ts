@@ -2,6 +2,8 @@ import { MatrixEvent } from "./Event";
 
 /**
  * The typical unsigned data found on an event.
+ * @category Matrix event info
+ * @see RoomEvent
  */
 export interface TypicalUnsigned {
     /**
@@ -17,6 +19,7 @@ export interface TypicalUnsigned {
 
 /**
  * A Matrix room event.
+ * @category Matrix events
  */
 export class RoomEvent<T extends Object> extends MatrixEvent<T> {
     constructor(protected event: any) {
@@ -47,6 +50,7 @@ export class RoomEvent<T extends Object> extends MatrixEvent<T> {
 
 /**
  * A room state event.
+ * @category Matrix events
  */
 export class StateEvent<T extends Object> extends RoomEvent<T> {
     constructor(event: any) {

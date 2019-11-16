@@ -2,6 +2,8 @@ import { RoomEvent } from "./RoomEvent";
 
 /**
  * The content definition for m.room.redaction events
+ * @category Matrix event contents
+ * @see RedactionEvent
  */
 export interface RedactionEventContent {
     /**
@@ -12,6 +14,7 @@ export interface RedactionEventContent {
 
 /**
  * Represents an m.room.redaction room event
+ * @category Matrix events
  */
 export class RedactionEvent extends RoomEvent<RedactionEventContent> {
     constructor(event: any) {

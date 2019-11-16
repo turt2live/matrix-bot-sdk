@@ -8,6 +8,7 @@ import { IMetricContext } from "./contexts";
  * for what the context object contains. All metrics have a context object,
  * with applicable interface. See the IMetricContext interface for more
  * information.
+ * @category Metrics
  */
 export interface IMetricListener {
     /**

@@ -3,6 +3,7 @@ import { Appservice } from "..";
 
 /**
  * Automatically tries to join upgraded rooms
+ * @category Mixins
  */
 export class AutojoinUpgradedRoomsMixin {
     public static setupOnClient(client: MatrixClient): void {

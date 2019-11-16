@@ -1,8 +1,9 @@
-/**
- * Represents a preprocessor
- */
 import { MatrixClient } from "../MatrixClient";
 
+/**
+ * Represents a preprocessor.
+ * @category Preprocessors
+ */
 export interface IPreprocessor {
     /**
      * Gets the types of events this preprocessor supports.

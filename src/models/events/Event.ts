@@ -1,5 +1,6 @@
 /**
  * A Matrix event.
+ * @category Matrix events
  */
 export class MatrixEvent<T extends Object> {
     constructor(protected event: any) {

@@ -14,7 +14,7 @@
   "homepage": "https://github.com/turt2live/matrix-js-bot-sdk#readme",
   "scripts": {
     "prepublishOnly": "yarn build",
-    "docs": "yarn build && node_modules/jsdoc/jsdoc.js -R README.md -P package.json -r lib/**/*.js -d .jsdoc",
+    "docs": "yarn build && jsdoc -c jsdoc.json -P package.json",
     "build": "tsc",
     "lint": "tslint --project ./tsconfig.json -t stylish",
     "test": "ts-mocha --project ./tsconfig.json test/**/*.ts",
@@ -65,6 +65,7 @@
     "@types/expect": "^24.3.0",
     "@types/mocha": "^5.2.7",
     "@types/node": "10",
+    "better-docs": "^1.4.3",
     "expect": "^24.9.0",
     "get-port": "^5.0.0",
     "jsdoc": "^3.6.3",

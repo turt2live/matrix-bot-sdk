@@ -2,9 +2,16 @@ import { MatrixEvent } from "./Event";
 
 /**
  * The allowed states of presence in Matrix
+ * @category Matrix event info
+ * @see PresenceEventContent
  */
 export type PresenceState = "online" | "offline" | "unavailable";
 
+/**
+ * Event content for m.presence events
+ * @category Matrix event contents
+ * @see PresenceEvent
+ */
 export interface PresenceEventContent {
     /**
      * The avatar URL for the user, if any.
@@ -37,6 +44,10 @@ export interface PresenceEventContent {
     status_msg?: string;
 }
 
+/**
+ * Wraps a m.presence ephemeral event in Matrix
+ * @category Matrix events
+ */
 export class PresenceEvent extends MatrixEvent<PresenceEventContent> {
     constructor(event: any) {
         super(event);

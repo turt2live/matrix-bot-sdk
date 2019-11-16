@@ -1,9 +1,10 @@
 import { MatrixClient } from "../MatrixClient";
-import { Permalinks } from "../Permalinks";
+import { Permalinks } from "./Permalinks";
 import { LogService } from "..";
 
 /**
  * Represents a system for generating a mention pill for an entity.
+ * @category Utilities
  */
 export class MentionPill {
 

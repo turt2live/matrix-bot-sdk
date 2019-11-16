@@ -3,6 +3,8 @@ import { DimensionalFileInfo } from "./MessageEvent";
 
 /**
  * The content definition for m.room.avatar events
+ * @category Matrix event contents
+ * @see RoomAvatarEvent
  */
 export interface RoomAvatarEventContent {
     /**
@@ -18,6 +20,7 @@ export interface RoomAvatarEventContent {
 
 /**
  * Represents an m.room.avatar state event
+ * @category Matrix events
  */
 export class RoomAvatarEvent extends StateEvent<RoomAvatarEventContent> {
     constructor(event: any) {

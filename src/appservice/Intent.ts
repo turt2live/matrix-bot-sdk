@@ -6,6 +6,7 @@ import { IAppserviceOptions } from "./Appservice";
  * in rooms to ensure the action being performed is possible. This is very similar
  * to how Intents work in the matrix-js-sdk in that the Intent will ensure that the
  * user is joined to the room before posting a message, for example.
+ * @category Application services
  */
 export class Intent {
 

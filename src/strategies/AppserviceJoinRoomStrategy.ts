@@ -1,6 +1,12 @@
 import { IJoinRoomStrategy } from "./JoinRoomStrategy";
 import { Appservice, LogService } from "..";
 
+/**
+ * A join strategy for application services that proxies joins to an underlying join
+ * strategy while also trying to use the appservice's bot user to invite the underlying
+ * user if needed.
+ * @category Join strategies
+ */
 export class AppserviceJoinRoomStrategy implements IJoinRoomStrategy {
 
     constructor(private underlyingStrategy: IJoinRoomStrategy, private appservice: Appservice) {

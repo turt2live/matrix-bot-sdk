@@ -1,5 +1,6 @@
 /**
  * Represents a logger
+ * @category Logging
  */
 export interface ILogger {
     /**

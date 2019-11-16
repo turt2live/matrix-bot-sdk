@@ -3,6 +3,7 @@ import * as globToRegexp from "glob-to-regexp";
 /**
  * Represents a common Matrix glob. This is commonly used
  * for server ACLs and similar functions.
+ * @category Utilities
  */
 export class MatrixGlob {
 

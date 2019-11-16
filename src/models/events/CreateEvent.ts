@@ -2,6 +2,8 @@ import { StateEvent } from "./RoomEvent";
 
 /**
  * Information about the previous room.
+ * @category Matrix event info
+ * @see CreateEventContent
  */
 export interface PreviousRoomInfo {
     /**
@@ -17,6 +19,8 @@ export interface PreviousRoomInfo {
 
 /**
  * The content definition for m.room.create events
+ * @category Matrix event contents
+ * @see CreateEvent
  */
 export interface CreateEventContent {
     /**
@@ -42,6 +46,7 @@ export interface CreateEventContent {
 
 /**
  * Represents an m.room.create state event
+ * @category Matrix events
  */
 export class CreateEvent extends StateEvent<CreateEventContent> {
     constructor(event: any) {

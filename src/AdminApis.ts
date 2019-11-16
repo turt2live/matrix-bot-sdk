@@ -3,6 +3,7 @@ import { MatrixClient } from "./MatrixClient";
 /**
  * Whois information about a user.
  * See https://matrix.org/docs/spec/client_server/r0.5.0#get-matrix-client-r0-admin-whois-userid for more information.
+ * @category Unstable APIs
  */
 export interface WhoisInfo {
     user_id: string;
@@ -34,6 +35,7 @@ interface WhoisConnectionInfo {
 
 /**
  * Access to various administrative APIs.
+ * @category Unstable APIs
  */
 export class AdminApis {
     constructor(private client: MatrixClient) {

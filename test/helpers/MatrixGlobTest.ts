@@ -1,5 +1,5 @@
 import * as expect from "expect";
-import { MatrixGlob } from "../src/MatrixGlob";
+import { MatrixGlob } from "../../src/helpers/MatrixGlob";
 
 describe('MatrixGlob', () => {
     it('should work with no glob characters', () => {

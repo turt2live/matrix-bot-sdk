@@ -3,6 +3,8 @@ import { EventRedactedError } from "./InvalidEventError";
 
 /**
  * The types of messages that are valid in Matrix.
+ * @category Matrix event info
+ * @see MessageEventContent
  */
 export type MessageType =
     "m.text"
@@ -17,6 +19,8 @@ export type MessageType =
 
 /**
  * Information about a file in Matrix
+ * @category Matrix event info
+ * @see MessageEventContent
  */
 export interface FileInfo {
     /**
@@ -30,6 +34,11 @@ export interface FileInfo {
     mimetype?: string;
 }
 
+/**
+ * Information about a thumbnail in Matrix
+ * @category Matrix event info
+ * @see MessageEventContent
+ */
 export interface ThumbnailInfo {
     /**
      * The size of the thumbnail in bytes.
@@ -54,6 +63,8 @@ export interface ThumbnailInfo {
 
 /**
  * Information about a file's thumbnail.
+ * @category Matrix event info
+ * @see MessageEventContent
  */
 export interface ThumbnailedFileInfo {
     /**
@@ -69,12 +80,16 @@ export interface ThumbnailedFileInfo {
 
 /**
  * Information about a file that has a thumbnail
+ * @category Matrix event info
+ * @see MessageEventContent
  */
 export interface FileWithThumbnailInfo extends FileInfo, ThumbnailedFileInfo {
 }
 
 /**
  * Information about a file that has a width and height.
+ * @category Matrix event info
+ * @see MessageEventContent
  */
 export interface DimensionalFileInfo extends FileWithThumbnailInfo {
     /**
@@ -90,6 +105,8 @@ export interface DimensionalFileInfo extends FileWithThumbnailInfo {
 
 /**
  * Information about a file that has a time dimension.
+ * @category Matrix event info
+ * @see MessageEventContent
  */
 export interface TimedFileInfo extends FileInfo {
     /**
@@ -100,6 +117,8 @@ export interface TimedFileInfo extends FileInfo {
 
 /**
  * Information about a video file.
+ * @category Matrix event info
+ * @see MessageEventContent
  */
 export interface VideoFileInfo extends DimensionalFileInfo, TimedFileInfo {
     // No new properties.
@@ -107,6 +126,8 @@ export interface VideoFileInfo extends DimensionalFileInfo, TimedFileInfo {
 
 /**
  * The content definition for m.room.message events with a type of m.audio
+ * @category Matrix event contents
+ * @see MessageEvent
  */
 export interface AudioMessageEventContent extends FileMessageEventContent {
     /**
@@ -117,6 +138,8 @@ export interface AudioMessageEventContent extends FileMessageEventContent {
 
 /**
  * The content definition for m.room.message events with a type of m.video
+ * @category Matrix event contents
+ * @see MessageEvent
  */
 export interface VideoMessageEventContent extends FileMessageEventContent {
     /**
@@ -127,6 +150,8 @@ export interface VideoMessageEventContent extends FileMessageEventContent {
 
 /**
  * The content definition for m.room.message events with a type of m.image
+ * @category Matrix event contents
+ * @see MessageEvent
  */
 export interface ImageMessageEventContent extends FileMessageEventContent {
     /**
@@ -137,6 +162,8 @@ export interface ImageMessageEventContent extends FileMessageEventContent {
 
 /**
  * The content definition for m.room.message events with a type of m.file
+ * @category Matrix event contents
+ * @see MessageEvent
  */
 export interface FileMessageEventContent extends MessageEventContent {
     /**
@@ -152,6 +179,8 @@ export interface FileMessageEventContent extends MessageEventContent {
 
 /**
  * The content definition for m.room.message events with a type of m.location
+ * @category Matrix event contents
+ * @see MessageEvent
  */
 export interface LocationMessageEventContent extends MessageEventContent {
     /**
@@ -167,6 +196,8 @@ export interface LocationMessageEventContent extends MessageEventContent {
 
 /**
  * The content definition for m.room.message events with types of m.text, m.emote, and m.notice
+ * @category Matrix event contents
+ * @see MessageEvent
  */
 export interface TextualMessageEventContent extends MessageEventContent {
     format?: string;
@@ -175,6 +206,8 @@ export interface TextualMessageEventContent extends MessageEventContent {
 
 /**
  * The content definition for m.room.message events
+ * @category Matrix event contents
+ * @see MessageEvent
  */
 export interface MessageEventContent {
     body: string;
@@ -183,6 +216,7 @@ export interface MessageEventContent {
 
 /**
  * Represents an m.room.message room event
+ * @category Matrix events
  */
 export class MessageEvent<T extends MessageEventContent> extends RoomEvent<T> {
     constructor(event: any) {

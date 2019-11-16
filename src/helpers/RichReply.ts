@@ -2,6 +2,7 @@ import * as sanitizeHtml from "sanitize-html";
 
 /**
  * Helper for creating rich replies.
+ * @category Utilities
  */
 export class RichReply {
     private constructor() {

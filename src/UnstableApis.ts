@@ -2,6 +2,7 @@ import { MatrixClient } from "./MatrixClient";
 
 /**
  * Represents a profile for a group
+ * @category Unstable APIs
  */
 export interface GroupProfile {
     /**
@@ -28,6 +29,7 @@ export interface GroupProfile {
 
 /**
  * Unstable APIs that shouldn't be used in most circumstances.
+ * @category Unstable APIs
  */
 export class UnstableApis {
     constructor(private client: MatrixClient) {

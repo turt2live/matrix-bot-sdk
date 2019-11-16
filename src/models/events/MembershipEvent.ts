@@ -3,11 +3,15 @@ import { InvalidEventError } from "./InvalidEventError";
 
 /**
  * The types of membership that are valid in Matrix.
+ * @category Matrix event info
+ * @see MembershipEventContent
  */
 export type Membership = "join" | "leave" | "ban" | "invite";
 
 /**
  * The content definition for m.room.member events
+ * @category Matrix event contents
+ * @see MembershipEvent
  */
 export interface MembershipEventContent {
     avatar_url?: string;
@@ -23,6 +27,7 @@ export interface MembershipEventContent {
 
 /**
  * Represents an m.room.member state event
+ * @category Matrix events
  */
 export class MembershipEvent extends StateEvent<MembershipEventContent> {
     constructor(event: any) {

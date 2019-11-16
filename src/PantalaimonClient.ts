@@ -23,6 +23,10 @@ const ACCESS_TOKEN_STORAGE_KEY = "pantalaimon_access_token";
 
 // TODO: Write a test for this (it's hard because of the many interactions with different parts)
 
+/**
+ * Supporting functions for interacting with a Pantalaimon instance.
+ * @category Encryption
+ */
 export class PantalaimonClient {
     /**
      * Creates a new PantalaimonClient class for interacting with Pantalaimon. The storage

@@ -2,6 +2,10 @@ import { IStorageProvider } from "./IStorageProvider";
 import { IFilterInfo } from "../IFilter";
 import { IAppserviceStorageProvider } from "./IAppserviceStorageProvider";
 
+/**
+ * A storage provider that persists no information by keeping it all in memory.
+ * @category Storage providers
+ */
 export class MemoryStorageProvider implements IStorageProvider, IAppserviceStorageProvider {
 
     private syncToken: string;

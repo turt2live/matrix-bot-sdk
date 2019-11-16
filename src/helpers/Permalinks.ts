@@ -1,10 +1,34 @@
+/**
+ * The parts of a permalink.
+ * @see Permalinks
+ * @category Utilities
+ */
 export interface PermalinkParts {
+    /**
+     * The room ID or alias the permalink references. May be null.
+     */
     roomIdOrAlias: string;
+
+    /**
+     * The user ID the permalink references. May be null.
+     */
     userId: string;
+
+    /**
+     * The event ID the permalink references. May be null.
+     */
     eventId: string;
+
+    /**
+     * The servers the permalink is routed through. May be null or empty.
+     */
     viaServers: string[];
 }
 
+/**
+ * Functions for handling permalinks
+ * @category Utilities
+ */
 export class Permalinks {
     private constructor() {
     }
@@ -17,18 +41,41 @@ export class Permalinks {
         return `?via=${servers.join("via=")}`;
     }
 
+    /**
+     * Creates a room permalink.
+     * @param {string} roomIdOrAlias The room ID or alias to create a permalink for.
+     * @param {string[]} viaServers The servers to route the permalink through.
+     * @returns {string} A room permalink.
+     */
     public static forRoom(roomIdOrAlias: string, viaServers: string[] = []): string {
         return `https://matrix.to/#/${roomIdOrAlias}${Permalinks.encodeViaArgs(viaServers)}`;
     }
 
+    /**
+     * Creates a user permalink.
+     * @param {string} userId The user ID to create a permalink for.
+     * @returns {string} A user permalink.
+     */
     public static forUser(userId: string): string {
         return `https://matrix.to/#/${userId}`;
     }
 
+    /**
+     * Creates an event permalink.
+     * @param {string} roomIdOrAlias The room ID or alias to create a permalink in.
+     * @param {string} eventId The event ID to reference in the permalink.
+     * @param {string[]} viaServers The servers to route the permalink through.
+     * @returns {string} An event permalink.
+     */
     public static forEvent(roomIdOrAlias: string, eventId: string, viaServers: string[] = []): string {
         return `https://matrix.to/#/${roomIdOrAlias}/${eventId}${Permalinks.encodeViaArgs(viaServers)}`;
     }
 
+    /**
+     * Parses a permalink URL into usable parts.
+     * @param {string} matrixTo The matrix.to URL to parse.
+     * @returns {PermalinkParts} The parts of the permalink.
+     */
     public static parseUrl(matrixTo: string): PermalinkParts {
         if (!matrixTo || !matrixTo.startsWith("https://matrix.to/#/")) {
             throw new Error("Not a valid matrix.to URL");

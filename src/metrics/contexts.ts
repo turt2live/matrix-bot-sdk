@@ -1,5 +1,6 @@
 /**
  * Default context for all metrics.
+ * @category Metrics
  */
 export interface IMetricContext {
     /**
@@ -11,6 +12,7 @@ export interface IMetricContext {
 
 /**
  * Metric context for function call metrics.
+ * @category Metrics
  */
 export interface FunctionCallContext extends IMetricContext {
     functionName: string;

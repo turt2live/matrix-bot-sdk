@@ -2,6 +2,8 @@ import { StateEvent } from "./RoomEvent";
 
 /**
  * The content definition for m.room.pinned_events events
+ * @category Matrix event contents
+ * @see PinnedEventsEvent
  */
 export interface PinnedEventsEventContent {
     /**
@@ -12,6 +14,7 @@ export interface PinnedEventsEventContent {
 
 /**
  * Represents an m.room.pinned_events state event
+ * @category Matrix events
  */
 export class PinnedEventsEvent extends StateEvent<PinnedEventsEventContent> {
     constructor(event: any) {

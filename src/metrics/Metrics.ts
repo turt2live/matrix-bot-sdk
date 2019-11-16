@@ -4,6 +4,7 @@ import { LogService } from "..";
 
 /**
  * Tracks metrics.
+ * @category Metrics
  */
 export class Metrics {
 

@@ -2,6 +2,8 @@ import { StateEvent } from "./RoomEvent";
 
 /**
  * The content definition for m.room.power_levels events
+ * @category Matrix event contents
+ * @see PowerLevelsEvent
  */
 export interface PowerLevelsEventContent {
     /**
@@ -67,6 +69,7 @@ function defaultNum(val: number | undefined, def: number): number {
 
 /**
  * Represents an m.room.power_levels state event
+ * @category Matrix events
  */
 export class PowerLevelsEvent extends StateEvent<PowerLevelsEventContent> {
     constructor(event: any) {
