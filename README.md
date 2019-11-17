@@ -7,6 +7,11 @@ A lightweight version of the matrix-js-sdk intended for bots. For help and suppo
 
 Documentation for the develop branch is available [here](https://turt2live.github.io/matrix-js-bot-sdk/index.html).
 
+# Templates and guides
+
+* [matrix.org's guide on the basic functions of the bot](https://matrix.org/docs/guides/usage-of-matrix-js-bot-sdk)
+* [GitHub bot template repository](https://github.com/turt2live/matrix-bot-sdk-bot-template)
+
 # Installing
 
 This package can be found on [npm](https://www.npmjs.com):
