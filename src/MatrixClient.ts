@@ -21,11 +21,6 @@ import { Membership, MembershipEvent } from "./models/events/MembershipEvent";
 export class MatrixClient extends EventEmitter {
 
     /**
-     * The metrics instance for this client.
-     */
-    public readonly metrics = new Metrics();
-
-    /**
      * The presence status to use while syncing. The valid values are "online" to set the account as online,
      * "offline" to set the user as offline, "unavailable" for marking the user away, and null for not setting
      * an explicit presence (the default).
@@ -47,6 +42,7 @@ export class MatrixClient extends EventEmitter {
     private stopSyncing = false;
     private lastJoinedRoomIds = [];
     private impersonatedUserId: string;
+    private metricsInstance: Metrics = new Metrics();
 
     private joinStrategy: IJoinRoomStrategy = null;
     private eventProcessors: { [eventType: string]: IPreprocessor[] } = {};
@@ -64,6 +60,22 @@ export class MatrixClient extends EventEmitter {
             this.homeserverUrl = this.homeserverUrl.substring(0, this.homeserverUrl.length - 1);
 
         if (!this.storage) this.storage = new MemoryStorageProvider();
+    }
+
+    /**
+     * The metrics instance for this client
+     */
+    public get metrics(): Metrics {
+        return this.metricsInstance;
+    }
+
+    /**
+     * Assigns a new metrics instance, overwriting the old one.
+     * @param {Metrics} metrics The new metrics instance.
+     */
+    public set metrics(metrics: Metrics) {
+        if (!metrics) throw new Error("Metrics cannot be null/undefined");
+        this.metricsInstance = metrics;
     }
 
     /**

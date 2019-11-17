@@ -1,4 +1,4 @@
-import { Appservice, IAppserviceStorageProvider, LogService, MatrixClient } from "..";
+import { Appservice, IAppserviceStorageProvider, LogService, MatrixClient, Metrics, timedIntentFunctionCall } from "..";
 import { IAppserviceOptions } from "./Appservice";
 
 /**
@@ -9,6 +9,13 @@ import { IAppserviceOptions } from "./Appservice";
  * @category Application services
  */
 export class Intent {
+
+    /**
+     * The metrics instance for this intent. Note that this will not raise metrics
+     * for the underlying client - those will be available through this instance's
+     * parent (the appservice).
+     */
+    public readonly metrics: Metrics;
 
     private readonly client: MatrixClient;
     private readonly storage: IAppserviceStorageProvider;
@@ -22,8 +29,11 @@ export class Intent {
      * @param {Appservice} appservice The application service itself.
      */
     constructor(options: IAppserviceOptions, private impersonateUserId: string, private appservice: Appservice) {
-        this.storage = options.storage;
+        this.metrics = new Metrics(appservice.metrics);
         this.client = new MatrixClient(options.homeserverUrl, options.registration.as_token);
+        this.client.metrics = new Metrics(appservice.metrics); // Metrics only go up by one parent
+
+        this.storage = options.storage;
         if (impersonateUserId !== appservice.botUserId) this.client.impersonateUserId(impersonateUserId);
         if (options.joinStrategy) this.client.setJoinStrategy(options.joinStrategy);
     }
@@ -48,6 +58,7 @@ export class Intent {
      * @returns {Promise<string[]>} Resolves to an array of room IDs where
      * the intent is joined.
      */
+    @timedIntentFunctionCall()
     public async getJoinedRooms(): Promise<string[]> {
         await this.ensureRegistered();
         if (this.knownJoinedRooms.length === 0) await this.refreshJoinedRooms();
@@ -59,6 +70,7 @@ export class Intent {
      * @param {string} roomId The room ID to leave
      * @returns {Promise<*>} Resolves when the room has been left.
      */
+    @timedIntentFunctionCall()
     public async leaveRoom(roomId: string): Promise<any> {
         await this.ensureRegistered();
         return this.client.leaveRoom(roomId).then(async () => {
@@ -72,6 +84,7 @@ export class Intent {
      * @param {string} roomIdOrAlias the room ID or alias to join
      * @returns {Promise<string>} resolves to the joined room ID
      */
+    @timedIntentFunctionCall()
     public async joinRoom(roomIdOrAlias: string): Promise<string> {
         await this.ensureRegistered();
         return this.client.joinRoom(roomIdOrAlias).then(async roomId => {
@@ -88,6 +101,7 @@ export class Intent {
      * @param {"m.text" | "m.emote" | "m.notice"} msgtype The message type to send.
      * @returns {Promise<string>} Resolves to the event ID of the sent message.
      */
+    @timedIntentFunctionCall()
     public async sendText(roomId: string, body: string, msgtype: "m.text" | "m.emote" | "m.notice" = "m.text"): Promise<string> {
         return this.sendEvent(roomId, {body: body, msgtype: msgtype});
     }
@@ -98,6 +112,7 @@ export class Intent {
      * @param {any} content The content of the event.
      * @returns {Promise<string>} Resolves to the event ID of the sent event.
      */
+    @timedIntentFunctionCall()
     public async sendEvent(roomId: string, content: any): Promise<string> {
         await this.ensureRegisteredAndJoined(roomId);
         return this.client.sendMessage(roomId, content);
@@ -108,6 +123,7 @@ export class Intent {
      * @param {string} roomId The room ID to join
      * @returns {Promise<*>} Resolves when complete
      */
+    @timedIntentFunctionCall()
     public async ensureRegisteredAndJoined(roomId: string) {
         await this.ensureRegistered();
         await this.ensureJoined(roomId);
@@ -118,6 +134,7 @@ export class Intent {
      * @param {string} roomId The room ID to join
      * @returns {Promise<*>} Resolves when complete
      */
+    @timedIntentFunctionCall()
     public async ensureJoined(roomId: string) {
         if (this.knownJoinedRooms.indexOf(roomId) !== -1) {
             return;
@@ -141,6 +158,7 @@ export class Intent {
      * calls like ensureJoined()
      * @returns {Promise<string[]>} Resolves to the joined room IDs for the user.
      */
+    @timedIntentFunctionCall()
     public async refreshJoinedRooms(): Promise<string[]> {
         this.knownJoinedRooms = await this.client.getJoinedRooms();
         return this.knownJoinedRooms.map(r => r); // clone
@@ -148,8 +166,9 @@ export class Intent {
 
     /**
      * Ensures the user is registered
-     * @returns {Promise<*>} Resolves when complete
+     * @returns {Promise<any>} Resolves when complete
      */
+    @timedIntentFunctionCall()
     public async ensureRegistered() {
         if (!this.storage.isUserRegistered(this.userId)) {
             try {

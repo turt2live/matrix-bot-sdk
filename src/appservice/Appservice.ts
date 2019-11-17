@@ -7,7 +7,8 @@ import {
     IPreprocessor,
     LogService,
     MatrixClient,
-    MemoryStorageProvider
+    MemoryStorageProvider,
+    Metrics
 } from "..";
 import { EventEmitter } from "events";
 import * as morgan from "morgan";
@@ -175,6 +176,13 @@ export interface IAppserviceOptions {
  * @category Application services
  */
 export class Appservice extends EventEmitter {
+
+    /**
+     * The metrics instance for this appservice. This will raise all metrics
+     * from this appservice instance as well as any intents/MatrixClients created
+     * by the appservice.
+     */
+    public readonly metrics: Metrics = new Metrics();
 
     private readonly userPrefix: string;
     private readonly aliasPrefix: string | null;
