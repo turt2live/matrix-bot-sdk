@@ -3671,6 +3671,280 @@ describe('MatrixClient', () => {
             const result = await client.getRoomUpgradeHistory("!current:localhost");
             expect(result).toMatchObject(expected);
         });
+
+        it('should handle self-referencing creation events', async () => {
+            const {client} = createTestClient();
+
+            const roomState = {
+                "!current:localhost": [
+                    {
+                        "type": "m.room.create",
+                        "event_id": "$current-c:localhost",
+                        "state_key": "",
+                        "content": {
+                            "room_version": "3",
+                            "predecessor": {
+                                "room_id": "!current:localhost",
+                            },
+                        },
+                    },
+                ],
+            };
+
+            const expected = {
+                previous: [],
+                current: {roomId: "!current:localhost", version: "3", refEventId: null},
+                newer: [],
+            };
+
+            client.getRoomState = (rid) => {
+                const state = roomState[rid];
+                if (state.length === 0) throw new Error("No state events");
+                return Promise.resolve(state);
+            };
+
+            client.getRoomStateEvent = async (rid, eventType, stateKey) => {
+                const state = await client.getRoomState(rid);
+                const event = state.find(e => e['type'] === eventType && e['state_key'] === stateKey);
+                if (!event) throw new Error("Event not found");
+                return event['content'];
+            };
+
+            const result = await client.getRoomUpgradeHistory("!current:localhost");
+            expect(result).toMatchObject(expected);
+        });
+
+        it('should handle self-referencing tombstones', async () => {
+            const {client} = createTestClient();
+
+            const roomState = {
+                "!prev-v1:localhost": [
+                    {
+                        "type": "m.room.create",
+                        "event_id": "$v1-prev-c:localhost",
+                        "state_key": "",
+                        "content": {
+                            "room_version": "1",
+                        },
+                    },
+                    {
+                        "type": "m.room.tombstone",
+                        "event_id": "$v1-prev-t:localhost",
+                        "state_key": "",
+                        "content": {
+                            "replacement_room": "!prev-v1:localhost",
+                        },
+                    },
+                ],
+                "!current:localhost": [
+                    {
+                        "type": "m.room.create",
+                        "event_id": "$current-c:localhost",
+                        "state_key": "",
+                        "content": {
+                            "room_version": "3",
+                            "predecessor": {
+                                "room_id": "!prev-v1:localhost",
+                            },
+                        },
+                    },
+                ],
+            };
+
+            const expected = {
+                previous: [{roomId: "!prev-v1:localhost", version: "1", refEventId: null}],
+                current: {roomId: "!current:localhost", version: "3", refEventId: null},
+                newer: [],
+            };
+
+            client.getRoomState = (rid) => {
+                const state = roomState[rid];
+                if (state.length === 0) throw new Error("No state events");
+                return Promise.resolve(state);
+            };
+
+            client.getRoomStateEvent = async (rid, eventType, stateKey) => {
+                const state = await client.getRoomState(rid);
+                const event = state.find(e => e['type'] === eventType && e['state_key'] === stateKey);
+                if (!event) throw new Error("Event not found");
+                return event['content'];
+            };
+
+            const result = await client.getRoomUpgradeHistory("!current:localhost");
+            expect(result).toMatchObject(expected);
+        });
+
+        it('should handle cyclical upgrades through predecessors', async () => {
+            const {client} = createTestClient();
+
+            const roomState = {
+                "!prev-v2:localhost": [
+                    {
+                        "type": "m.room.create",
+                        "event_id": "$v2-prev-c:localhost",
+                        "state_key": "",
+                        "content": {
+                            "room_version": "2",
+                            "predecessor": {
+                                "room_id": "!current:localhost",
+                            },
+                        },
+                    },
+                    {
+                        "type": "m.room.tombstone",
+                        "event_id": "$v2-prev-t:localhost",
+                        "state_key": "",
+                        "content": {
+                            "replacement_room": "!prev-v1:localhost",
+                        },
+                    },
+                ],
+                "!prev-v1:localhost": [
+                    {
+                        "type": "m.room.create",
+                        "event_id": "$v1-prev-c:localhost",
+                        "state_key": "",
+                        "content": {
+                            "room_version": "1",
+                            "predecessor": {
+                                "room_id": "!prev-v2:localhost",
+                            },
+                        },
+                    },
+                    {
+                        "type": "m.room.tombstone",
+                        "event_id": "$v1-prev-t:localhost",
+                        "state_key": "",
+                        "content": {
+                            "replacement_room": "!current:localhost",
+                        },
+                    },
+                ],
+                "!current:localhost": [
+                    {
+                        "type": "m.room.create",
+                        "event_id": "$current-c:localhost",
+                        "state_key": "",
+                        "content": {
+                            "room_version": "3",
+                            "predecessor": {
+                                "room_id": "!prev-v1:localhost",
+                            },
+                        },
+                    },
+                ],
+            };
+
+            const expected = {
+                previous: [
+                    {roomId: "!prev-v1:localhost", version: "1", refEventId: "$v1-prev-t:localhost"},
+                    {roomId: "!prev-v2:localhost", version: "2", refEventId: "$v2-prev-t:localhost"},
+                    {roomId: "!current:localhost", version: "3", refEventId: null}, // indicates loop
+                ],
+                current: {roomId: "!current:localhost", version: "3", refEventId: null},
+                newer: [],
+            };
+
+            client.getRoomState = (rid) => {
+                const state = roomState[rid];
+                if (state.length === 0) throw new Error("No state events");
+                return Promise.resolve(state);
+            };
+
+            client.getRoomStateEvent = async (rid, eventType, stateKey) => {
+                const state = await client.getRoomState(rid);
+                const event = state.find(e => e['type'] === eventType && e['state_key'] === stateKey);
+                if (!event) throw new Error("Event not found");
+                return event['content'];
+            };
+
+            const result = await client.getRoomUpgradeHistory("!current:localhost");
+            expect(result).toMatchObject(expected);
+        });
+
+        it('should handle cyclical upgrades through tombstones', async () => {
+            const {client} = createTestClient();
+
+            const roomState = {
+                "!prev-v2:localhost": [
+                    {
+                        "type": "m.room.create",
+                        "event_id": "$v2-prev-c:localhost",
+                        "state_key": "",
+                        "content": {
+                            "room_version": "2",
+                        },
+                    },
+                    {
+                        "type": "m.room.tombstone",
+                        "event_id": "$v2-prev-t:localhost",
+                        "state_key": "",
+                        "content": {
+                            "replacement_room": "!current:localhost",
+                        },
+                    },
+                ],
+                "!prev-v1:localhost": [
+                    {
+                        "type": "m.room.create",
+                        "event_id": "$v1-prev-c:localhost",
+                        "state_key": "",
+                        "content": {
+                            "room_version": "1",
+                            "predecessor": {
+                                "room_id": "!prev-v2:localhost",
+                            },
+                        },
+                    },
+                    {
+                        "type": "m.room.tombstone",
+                        "event_id": "$v1-prev-t:localhost",
+                        "state_key": "",
+                        "content": {
+                            "replacement_room": "!current:localhost",
+                        },
+                    },
+                ],
+                "!current:localhost": [
+                    {
+                        "type": "m.room.create",
+                        "event_id": "$current-c:localhost",
+                        "state_key": "",
+                        "content": {
+                            "room_version": "3",
+                            "predecessor": {
+                                "room_id": "!prev-v1:localhost",
+                            },
+                        },
+                    },
+                ],
+            };
+
+            const expected = {
+                previous: [
+                    {roomId: "!prev-v1:localhost", version: "1", refEventId: "$v1-prev-t:localhost"},
+                    {roomId: "!prev-v2:localhost", version: "2", refEventId: null},
+                ],
+                current: {roomId: "!current:localhost", version: "3", refEventId: null},
+                newer: [],
+            };
+
+            client.getRoomState = (rid) => {
+                const state = roomState[rid];
+                if (state.length === 0) throw new Error("No state events");
+                return Promise.resolve(state);
+            };
+
+            client.getRoomStateEvent = async (rid, eventType, stateKey) => {
+                const state = await client.getRoomState(rid);
+                const event = state.find(e => e['type'] === eventType && e['state_key'] === stateKey);
+                if (!event) throw new Error("Event not found");
+                return event['content'];
+            };
+
+            const result = await client.getRoomUpgradeHistory("!current:localhost");
+            expect(result).toMatchObject(expected);
+        });
     });
 
     describe('redactObjectForLogging', () => {

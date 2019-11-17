@@ -1048,6 +1048,8 @@ export class MatrixClient extends EventEmitter {
 
                 if (createEvent['predecessor'] && createEvent['predecessor']['room_id']) {
                     const prevRoomId = createEvent['predecessor']['room_id'];
+                    if (prevRoomId === findRoomId) return; // Recursion is bad
+                    if (result.previous.find(r => r.roomId === prevRoomId)) return; // Already found
 
                     let tombstoneEventId = null;
                     let prevVersion = "1";
@@ -1090,6 +1092,8 @@ export class MatrixClient extends EventEmitter {
                 if (!tombstoneEvent['replacement_room']) return;
 
                 const newRoomId = tombstoneEvent['replacement_room'];
+                if (newRoomId === findRoomId) return; // Recursion is bad
+                if (result.newer.find(r => r.roomId === newRoomId)) return; // Already found
 
                 let newRoomVersion = "1";
                 let createEventId = null;
