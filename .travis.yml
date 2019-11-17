@@ -7,9 +7,6 @@ install:
 - yarn install
 jobs:
   include:
-  - name: Build Node 8
-    script: yarn build
-    node_js: 8
   - name: Build Node 10
     script: yarn build
     node_js: 10
