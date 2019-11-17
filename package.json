@@ -47,8 +47,10 @@
     "tsconfig.json"
   ],
   "dependencies": {
+    "@types/express": "^4.17.2",
     "bluebird": "^3.7.1",
     "chalk": "^3.0.0",
+    "express": "^4.17.1",
     "glob-to-regexp": "^0.4.1",
     "hash.js": "^1.1.7",
     "htmlencode": "^0.0.4",
@@ -62,12 +64,10 @@
   },
   "devDependencies": {
     "@types/expect": "^24.3.0",
-    "@types/express": "^4.17.2",
     "@types/mocha": "^5.2.7",
     "@types/node": "10",
     "better-docs": "^1.4.4",
     "expect": "^24.9.0",
-    "express": "^4.17.1",
     "get-port": "^5.0.0",
     "jsdoc": "^3.6.3",
     "matrix-mock-request": "^1.2.3",
@@ -77,8 +77,5 @@
     "ts-mocha": "^6.0.0",
     "tslint": "^5.20.1",
     "typescript": "^3.7.2"
-  },
-  "peerDependencies": {
-    "express": "^4.17.1"
   }
 }
