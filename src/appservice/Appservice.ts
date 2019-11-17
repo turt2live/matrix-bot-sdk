@@ -314,7 +314,7 @@ export class Appservice extends EventEmitter {
 
     /**
      * Starts the application service, opening the bind address to begin processing requests.
-     * @returns {Promise<*>} resolves when started
+     * @returns {Promise<any>} resolves when started
      */
     public begin(): Promise<any> {
         return new Promise((resolve, reject) => {
@@ -508,7 +508,7 @@ export class Appservice extends EventEmitter {
      * @param {string} networkId The network ID to group the room under.
      * @param {string} roomId The room ID to manipulate the visibility of.
      * @param {"public" | "private"} visibility The visibility to set for the room.
-     * @return {Promise<*>} resolves when the visibility has been updated.
+     * @return {Promise<any>} resolves when the visibility has been updated.
      */
     public setRoomDirectoryVisibility(networkId: string, roomId: string, visibility: "public" | "private") {
         roomId = encodeURIComponent(roomId);

@@ -613,7 +613,7 @@ export class MatrixClient extends EventEmitter {
      * @param {string} roomId the room ID
      * @param {string} type the event type
      * @param {String} stateKey the state key, falsey if not needed
-     * @returns {Promise<any|*[]>} resolves to the state event(s)
+     * @returns {Promise<any|any[]>} resolves to the state event(s)
      * @deprecated It is not possible to get an array of events - use getRoomStateEvent instead
      */
     @timedMatrixClientFunctionCall()

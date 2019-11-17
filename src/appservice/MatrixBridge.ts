@@ -60,7 +60,7 @@ export class MatrixBridge {
      * provided remote user ID to the intent's owner.
      * @param {Intent} userIntent The Matrix user intent to store information on.
      * @param {IRemoteUserInfo} remoteInfo The remote user information to store
-     * @returns {Promise<*>} Resolves when the information has been updated.
+     * @returns {Promise<any>} Resolves when the information has been updated.
      */
     public async setRemoteUserInfo<T extends IRemoteUserInfo>(userIntent: Intent, remoteInfo: T): Promise<any> {
         await userIntent.ensureRegistered();
@@ -86,7 +86,7 @@ export class MatrixBridge {
      * provided remote room ID to the matrix room ID.
      * @param {string} matrixRoomId The Matrix room ID to store information on.
      * @param {IRemoteRoomInfo} remoteInfo The remote room information to store
-     * @returns {Promise<*>} Resolves when the information has been updated.
+     * @returns {Promise<any>} Resolves when the information has been updated.
      */
     public async setRemoteRoomInfo<T extends IRemoteRoomInfo>(matrixRoomId: string, remoteInfo: T): Promise<any> {
         const bridgeBot = this.appservice.botIntent;

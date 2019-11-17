@@ -3,13 +3,14 @@
     "allowUnknownTags": true
   },
   "plugins": [
-    "node_modules/better-docs/category"
+    "node_modules/better-docs/category",
+    "node_modules/better-docs/typescript"
   ],
   "source": {
     "include": [
-      "lib"
+      "src"
     ],
-    "includePattern": ".js$"
+    "includePattern": ".ts$"
   },
   "opts": {
     "encoding": "utf8",

@@ -71,7 +71,7 @@ export class Intent {
     /**
      * Leaves the given room.
      * @param {string} roomId The room ID to leave
-     * @returns {Promise<*>} Resolves when the room has been left.
+     * @returns {Promise<any>} Resolves when the room has been left.
      */
     @timedIntentFunctionCall()
     public async leaveRoom(roomId: string): Promise<any> {
@@ -124,7 +124,7 @@ export class Intent {
     /**
      * Ensures the user is registered and joined to the given room.
      * @param {string} roomId The room ID to join
-     * @returns {Promise<*>} Resolves when complete
+     * @returns {Promise<any>} Resolves when complete
      */
     @timedIntentFunctionCall()
     public async ensureRegisteredAndJoined(roomId: string) {
@@ -135,7 +135,7 @@ export class Intent {
     /**
      * Ensures the user is joined to the given room
      * @param {string} roomId The room ID to join
-     * @returns {Promise<*>} Resolves when complete
+     * @returns {Promise<any>} Resolves when complete
      */
     @timedIntentFunctionCall()
     public async ensureJoined(roomId: string) {
