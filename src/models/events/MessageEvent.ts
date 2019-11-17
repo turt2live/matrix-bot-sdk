@@ -223,6 +223,9 @@ export class MessageEvent<T extends MessageEventContent> extends RoomEvent<T> {
         super(event);
     }
 
+    /**
+     * Whether or not the event is redacted (or looked redacted).
+     */
     public get isRedacted(): boolean {
         // Presume the event redacted if we're missing a body or message type
         const noContent = !this.content.body && this.content.body !== "";
@@ -230,12 +233,18 @@ export class MessageEvent<T extends MessageEventContent> extends RoomEvent<T> {
         return noContent || noMsgtype;
     }
 
+    /**
+     * The message's type.
+     */
     public get messageType(): MessageType {
         const type = this.content.msgtype;
         if (!type && type !== "") throw new EventRedactedError("missing msgtype");
         return type;
     }
 
+    /**
+     * The `body` of the message.
+     */
     public get textBody(): string {
         const body = this.content.body;
         if (!body && body !== "") throw new EventRedactedError("missing body");
