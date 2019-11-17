@@ -1,5 +1,5 @@
 import { MatrixClient } from "../MatrixClient";
-import { Appservice } from "..";
+import { Appservice } from "../appservice/Appservice";
 
 /**
  * Automatically tries to join upgraded rooms

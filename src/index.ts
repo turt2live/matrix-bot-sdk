@@ -1,8 +1,9 @@
 // Appservices
-export * from "./appservice/Appservice";
-export * from "./appservice/Intent";
-export * from "./appservice/MatrixBridge";
-export * from "./appservice/http_responses";
+// We don't export these here because they're optional.
+// export * from "./appservice/Appservice";
+// export * from "./appservice/Intent";
+// export * from "./appservice/MatrixBridge";
+// export * from "./appservice/http_responses";
 
 // Helpers
 export * from "./helpers/RichReply";

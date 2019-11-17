@@ -1,5 +1,5 @@
 import { MatrixClient } from "../MatrixClient";
-import { Appservice } from "..";
+import { Appservice } from "../appservice/Appservice";
 
 /**
  * Automatically accepts invites for rooms

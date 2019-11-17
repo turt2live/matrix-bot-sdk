@@ -1,5 +1,6 @@
 import { IJoinRoomStrategy } from "./JoinRoomStrategy";
-import { Appservice, LogService } from "..";
+import { LogService } from "..";
+import { Appservice } from "../appservice/Appservice";
 
 /**
  * A join strategy for application services that proxies joins to an underlying join

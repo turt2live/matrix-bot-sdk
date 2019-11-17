@@ -3,7 +3,7 @@
  * @category Metrics
  */
 import { MatrixClient } from "../MatrixClient";
-import { Intent } from "..";
+import { Intent } from "../appservice/Intent";
 
 export interface IMetricContext {
     /**

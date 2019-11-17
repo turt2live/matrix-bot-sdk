@@ -1,5 +1,5 @@
-import { Appservice, IAppserviceStorageProvider, LogService, MatrixClient, Metrics, timedIntentFunctionCall } from "..";
-import { IAppserviceOptions } from "./Appservice";
+import { IAppserviceStorageProvider, LogService, MatrixClient, Metrics, timedIntentFunctionCall } from "..";
+import { Appservice, IAppserviceOptions } from "./Appservice";
 
 /**
  * An Intent is an intelligent client that tracks things like the user's membership

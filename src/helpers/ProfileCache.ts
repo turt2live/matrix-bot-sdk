@@ -1,6 +1,7 @@
 import * as LRU from "lru-cache";
-import { Appservice, LogService, MatrixClient, MatrixProfile } from "..";
+import { LogService, MatrixClient, MatrixProfile } from "..";
 import { MembershipEvent } from "../models/events/MembershipEvent";
+import { Appservice } from "../appservice/Appservice";
 
 /**
  * Functions for avoiding calls to profile endpoints. Useful for bots when
