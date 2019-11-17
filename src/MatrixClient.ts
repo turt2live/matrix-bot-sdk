@@ -880,7 +880,8 @@ export class MatrixClient extends EventEmitter {
     /**
      * Creates a room. This does not break out the various options for creating a room
      * due to the large number of possibilities. See the /createRoom endpoint in the
-     * spec for more information on what to provide for `properties`.
+     * spec for more information on what to provide for `properties`. Note that creating
+     * a room may cause the bot/appservice to raise a join event.
      * @param {any} properties the properties of the room. See the spec for more information
      * @returns {Promise<string>} resolves to the room ID that represents the room
      */
