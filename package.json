@@ -1,6 +1,6 @@
 {
   "name": "matrix-bot-sdk",
-  "version": "0.3.9",
+  "version": "0.4.0",
   "description": "A lightweight version of the matrix-js-sdk intended for bots",
   "repository": {
     "type": "git",
@@ -13,34 +13,21 @@
   },
   "homepage": "https://github.com/turt2live/matrix-js-bot-sdk#readme",
   "scripts": {
-    "prepare": "node scripts/try_build.js",
-    "prepublishOnly": "npm run build",
+    "prepublishOnly": "yarn build",
+    "docs": "jsdoc -c jsdoc.json -P package.json",
     "build": "tsc",
     "lint": "tslint --project ./tsconfig.json -t stylish",
     "test": "ts-mocha --project ./tsconfig.json test/**/*.ts",
     "build:examples": "tsc -p tsconfig-examples.json",
-    "example:appservice": "npm run build:examples && node lib/examples/appservice.js",
-    "example:login_register": "npm run build:examples && node lib/examples/login_register.js"
+    "example:appservice": "yarn build:examples && node lib/examples/appservice.js",
+    "example:login_register": "yarn build:examples && node lib/examples/login_register.js"
   },
   "main": "./lib/index.js",
   "typings": "./lib/index.d.ts",
   "engines": {
-    "node": ">= 8.0.0",
-    "npm": ">= 5.0.0"
-  },
-  "dependencies": {
-    "@types/node": "^8.10.34",
-    "bluebird": "^3.5.2",
-    "express": "^4.16.4",
-    "hash.js": "^1.1.7",
-    "htmlencode": "0.0.4",
-    "lowdb": "^1.0.0",
-    "morgan": "^1.9.1",
-    "request": "^2.88.0",
-    "request-promise": "^4.2.2",
-    "sanitize-html": "^1.20.0",
-    "tslint": "^5.11.0",
-    "typescript": "^3.1.1"
+    "node": ">=10.0.0",
+    "npm": "^6.0.0",
+    "yarn": "^1.19.0"
   },
   "keywords": [
     "matrix",
@@ -56,17 +43,39 @@
   "files": [
     "src/*",
     "lib/*",
-    "scripts/*"
+    "scripts/*",
+    "tsconfig.json"
   ],
+  "dependencies": {
+    "@types/express": "^4.17.2",
+    "bluebird": "^3.7.1",
+    "chalk": "^3.0.0",
+    "express": "^4.17.1",
+    "glob-to-regexp": "^0.4.1",
+    "hash.js": "^1.1.7",
+    "htmlencode": "^0.0.4",
+    "lowdb": "^1.0.0",
+    "lru-cache": "^5.1.1",
+    "mkdirp": "^0.5.1",
+    "morgan": "^1.9.1",
+    "request": "^2.88.0",
+    "request-promise": "^4.2.5",
+    "sanitize-html": "^1.20.1"
+  },
   "devDependencies": {
-    "@types/expect": "^1.20.3",
-    "@types/mocha": "^5.2.5",
-    "expect": "^23.6.0",
-    "get-port": "^4.1.0",
+    "@types/expect": "^24.3.0",
+    "@types/mocha": "^5.2.7",
+    "@types/node": "10",
+    "better-docs": "^1.4.6",
+    "expect": "^24.9.0",
+    "get-port": "^5.0.0",
+    "jsdoc": "^3.6.3",
     "matrix-mock-request": "^1.2.3",
-    "mocha": "^5.2.0",
+    "mocha": "^6.2.2",
     "simple-mock": "^0.8.0",
-    "tmp": "0.0.33",
-    "ts-mocha": "^2.0.0"
+    "tmp": "^0.1.0",
+    "ts-mocha": "^6.0.0",
+    "tslint": "^5.20.1",
+    "typescript": "^3.7.2"
   }
 }

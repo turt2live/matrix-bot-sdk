@@ -1,8 +1,9 @@
 import { MatrixClient } from "../MatrixClient";
-import { Appservice } from "..";
+import { Appservice } from "../appservice/Appservice";
 
 /**
  * Automatically tries to join upgraded rooms
+ * @category Mixins
  */
 export class AutojoinUpgradedRoomsMixin {
     public static setupOnClient(client: MatrixClient): void {

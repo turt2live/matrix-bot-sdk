@@ -3,9 +3,7 @@ import * as expect from "expect";
 import * as simple from "simple-mock";
 import { createTestClient } from "../MatrixClientTest";
 
-// @ts-ignore
 describe('AutojoinUpgradedRoomsMixin', () => {
-    // @ts-ignore
     it('should join rooms for regular upgrades', () => {
         const {client} = createTestClient();
 
@@ -30,7 +28,6 @@ describe('AutojoinUpgradedRoomsMixin', () => {
         expect(joinSpy.callCount).toBe(1);
     });
 
-    // @ts-ignore
     it('should join rooms for appservice upgrades', async () => {
         const appservice = new Appservice({
             port: 0,

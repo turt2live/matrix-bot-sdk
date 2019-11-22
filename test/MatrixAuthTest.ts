@@ -1,5 +1,5 @@
 import * as expect from "expect";
-import { GroupProfile, IStorageProvider, MatrixAuth, MatrixClient, UnstableApis } from "../src";
+import { MatrixAuth } from "../src";
 import * as MockHttpBackend from 'matrix-mock-request';
 import { createTestClient } from "./MatrixClientTest";
 
@@ -14,16 +14,13 @@ export function createTestAuth(): { auth: MatrixAuth, http: MockHttpBackend, hsU
 
     // Overwrite the function for which client to return. We want to use the
     // one which uses our http thing.
-    auth['createTemplateclient'] = () => mxClient;
+    auth['createTemplateClient'] = () => mxClient;
 
     return {hsUrl, http, auth};
 }
 
-// @ts-ignore
 describe('MatrixAuth', () => {
-    // @ts-ignore
     describe('passwordRegister', () => {
-        // @ts-ignore
         it('should call the right endpoint', async () => {
             const {auth, http, hsUrl} = createTestAuth();
 
@@ -45,7 +42,7 @@ describe('MatrixAuth', () => {
         // TODO: Enable test.
         // We can't test this currently because matrix-mock-request doesn't support sending the response
         // object for errors.
-        // @ts-ignore
+
         xit('should support UIA', async () => {
             const {auth, http, hsUrl} = createTestAuth();
 
@@ -84,9 +81,7 @@ describe('MatrixAuth', () => {
         });
     });
 
-    // @ts-ignore
     describe('passwordLogin', () => {
-        // @ts-ignore
         it('should call the right endpoint', async () => {
             const {auth, http, hsUrl} = createTestAuth();
 

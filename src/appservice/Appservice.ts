@@ -6,14 +6,20 @@ import {
     IJoinRoomStrategy,
     IPreprocessor,
     LogService,
-    MemoryStorageProvider
+    MatrixClient,
+    MemoryStorageProvider,
+    Metrics
 } from "..";
 import { EventEmitter } from "events";
 import * as morgan from "morgan";
+import { MatrixBridge } from "./MatrixBridge";
+import * as LRU from "lru-cache";
+import { IApplicationServiceProtocol } from "./http_responses";
 
 /**
  * Represents an application service's registration file. This is expected to be
  * loaded from another source, such as a YAML file.
+ * @category Application services
  */
 export interface IAppserviceRegistration {
     /**
@@ -99,11 +105,17 @@ export interface IAppserviceRegistration {
         }[];
     };
 
+    /**
+     * The protocols the application service supports. Optional.
+     */
+    protocols?: string[];
+
     // not interested in other options
 }
 
 /**
  * General options for the application service
+ * @category Application services
  */
 export interface IAppserviceOptions {
     /**
@@ -129,32 +141,58 @@ export interface IAppserviceOptions {
     /**
      * The storage provider to use for this application service.
      */
-    storage?: IAppserviceStorageProvider,
+    storage?: IAppserviceStorageProvider;
 
     /**
      * The registration for this application service.
      */
-    registration: IAppserviceRegistration,
+    registration: IAppserviceRegistration;
 
     /**
      * The join strategy to use for all intents, if any.
      */
-    joinStrategy?: IJoinRoomStrategy,
+    joinStrategy?: IJoinRoomStrategy;
+
+    /**
+     * Options for how Intents are handled.
+     */
+    intentOptions?: {
+        /**
+         * The maximum number of intents to keep cached. Defaults to 10 thousand.
+         */
+        maxCached?: number;
+
+        /**
+         * The maximum age in milliseconds to keep an Intent around for, provided
+         * the maximum number of intents has been reached. Defaults to 60 minutes.
+         */
+        maxAgeMs?: number;
+    };
 }
 
 /**
  * Represents an application service. This provides helper utilities such as tracking
  * of user intents (clients that are aware of their membership in rooms).
+ * @category Application services
  */
 export class Appservice extends EventEmitter {
 
+    /**
+     * The metrics instance for this appservice. This will raise all metrics
+     * from this appservice instance as well as any intents/MatrixClients created
+     * by the appservice.
+     */
+    public readonly metrics: Metrics = new Metrics();
+
     private readonly userPrefix: string;
+    private readonly aliasPrefix: string | null;
     private readonly registration: IAppserviceRegistration;
     private readonly storage: IAppserviceStorageProvider;
+    private readonly bridgeInstance = new MatrixBridge(this);
 
     private app = express();
     private appServer: any;
-    private intents: { [userId: string]: Intent } = {};
+    private intentsCache: LRU;
     private eventProcessors: { [eventType: string]: IPreprocessor[] } = {};
     private pendingTransactions: { [txnId: string]: Promise<any> } = {};
 
@@ -167,12 +205,31 @@ export class Appservice extends EventEmitter {
 
         options.joinStrategy = new AppserviceJoinRoomStrategy(options.joinStrategy, this);
 
+        if (!options.intentOptions) options.intentOptions = {};
+        if (!options.intentOptions.maxAgeMs) options.intentOptions.maxAgeMs = 60 * 60 * 1000;
+        if (!options.intentOptions.maxCached) options.intentOptions.maxCached = 10000;
+
+        this.intentsCache = new LRU({
+            max: options.intentOptions.maxCached,
+            maxAge: options.intentOptions.maxAgeMs,
+        });
+
         this.registration = options.registration;
+
+        // If protocol is not defined, define an empty array.
+        if (!this.registration.protocols) {
+            this.registration.protocols = [];
+        }
+
         this.storage = options.storage || new MemoryStorageProvider();
         options.storage = this.storage;
 
         this.app.use(express.json());
         this.app.use(morgan("combined"));
+
+        // ETag headers break the tests sometimes, and we don't actually need them anyways for
+        // appservices - none of this should be cached.
+        this.app.set('etag', false);
 
         this.app.get("/users/:userId", this.onUser.bind(this));
         this.app.get("/rooms/:roomAlias", this.onRoomAlias.bind(this));
@@ -180,6 +237,12 @@ export class Appservice extends EventEmitter {
         this.app.get("/_matrix/app/v1/users/:userId", this.onUser.bind(this));
         this.app.get("/_matrix/app/v1/rooms/:roomAlias", this.onRoomAlias.bind(this));
         this.app.put("/_matrix/app/v1/transactions/:txnId", this.onTransaction.bind(this));
+        this.app.get("/_matrix/app/v1/thirdparty/protocol/:protocol", this.onThirdpartyProtocol.bind(this));
+        this.app.get("/_matrix/app/v1/thirdparty/user/:protocol", this.onThirdpartyUser.bind(this));
+        this.app.get("/_matrix/app/v1/thirdparty/user", this.onThirdpartyUser.bind(this));
+        this.app.get("/_matrix/app/v1/thirdparty/location/:protocol", this.onThirdpartyLocation.bind(this));
+        this.app.get("/_matrix/app/v1/thirdparty/location", this.onThirdpartyLocation.bind(this));
+
         // Everything else can 404
 
         // TODO: Should we permit other user namespaces and instead error when trying to use doSomethingBySuffix()?
@@ -196,6 +259,32 @@ export class Appservice extends EventEmitter {
             throw new Error("Expected user namespace to be a prefix");
         }
         this.userPrefix = this.userPrefix.substring(0, this.userPrefix.length - 2); // trim off the .* part
+
+        if (!this.registration.namespaces || !this.registration.namespaces.aliases || this.registration.namespaces.aliases.length === 0 || this.registration.namespaces.aliases.length !== 1) {
+            this.aliasPrefix = null;
+        } else {
+            this.aliasPrefix = (this.registration.namespaces.aliases[0].regex || "").split(":")[0];
+            if (!this.aliasPrefix.endsWith(".*")) {
+                this.aliasPrefix = null;
+            } else {
+                this.aliasPrefix = this.aliasPrefix.substring(0, this.aliasPrefix.length - 2); // trim off the .* part
+            }
+        }
+    }
+
+    /**
+     * Gets the express app instance which is serving requests. Not recommended for
+     * general usage, but may be used to append routes to the web server.
+     */
+    public get expressAppInstance() {
+        return this.app;
+    }
+
+    /**
+     * Gets the bridge-specific APIs for this application service.
+     */
+    public get bridge(): MatrixBridge {
+        return this.bridgeInstance;
     }
 
     /**
@@ -214,8 +303,18 @@ export class Appservice extends EventEmitter {
     }
 
     /**
+     * Get the application service's "bot" MatrixClient (the sender_localpart).
+     * Normally the botIntent should be used to ensure that the bot user is safely
+     * handled.
+     * @returns {MatrixClient} The client for the application service itself.
+     */
+    public get botClient(): MatrixClient {
+        return this.botIntent.underlyingClient;
+    }
+
+    /**
      * Starts the application service, opening the bind address to begin processing requests.
-     * @returns {Promise<*>} resolves when started
+     * @returns {Promise<any>} resolves when started
      */
     public begin(): Promise<any> {
         return new Promise((resolve, reject) => {
@@ -277,10 +376,33 @@ export class Appservice extends EventEmitter {
      * @returns {Intent} An Intent for the user.
      */
     public getIntentForUserId(userId: string): Intent {
-        if (!this.intents[userId]) {
-            this.intents[userId] = new Intent(this.options, userId, this);
+        let intent = this.intentsCache.get(userId);
+        if (!intent) {
+            intent = new Intent(this.options, userId, this);
+            this.intentsCache.set(userId, intent);
         }
-        return this.intents[userId];
+        return intent;
+    }
+
+    /**
+     * Gets the suffix for the provided user ID. If the user ID is not a namespaced
+     * user, this will return a falsey value.
+     * @param {string} userId The user ID to parse
+     * @returns {string} The suffix from the user ID.
+     */
+    public getSuffixForUserId(userId: string): string {
+        if (!userId || !userId.startsWith(this.userPrefix) || !userId.endsWith(`:${this.options.homeserverName}`)) {
+            // Invalid ID
+            return null;
+        }
+
+        return userId
+            .split('')
+            .slice(this.userPrefix.length)
+            .reverse()
+            .slice(this.options.homeserverName.length + 1)
+            .reverse()
+            .join('');
     }
 
     /**
@@ -290,6 +412,78 @@ export class Appservice extends EventEmitter {
      */
     public isNamespacedUser(userId: string): boolean {
         return userId === this.botUserId || (userId.startsWith(this.userPrefix) && userId.endsWith(":" + this.options.homeserverName));
+    }
+
+    /**
+     * Gets a full alias for a given localpart. The alias will be formed with the domain name given
+     * in the constructor.
+     * @param localpart The localpart to get an alias for.
+     * @returns {string} The alias.
+     */
+    public getAlias(localpart: string): string {
+        return `#${localpart}:${this.options.homeserverName}`;
+    }
+
+    /**
+     * Gets a full alias for a given suffix. The prefix is automatically detected from the registration
+     * options.
+     * @param suffix The alias's suffix
+     * @returns {string} The alias.
+     */
+    public getAliasForSuffix(suffix: string): string {
+        if (!this.aliasPrefix) {
+            throw new Error("Invalid configured alias prefix");
+        }
+        return `${this.aliasPrefix}${suffix}:${this.options.homeserverName}`;
+    }
+
+    /**
+     * Gets the localpart of an alias for a given suffix. The prefix is automatically detected from the registration
+     * options. Useful for the createRoom endpoint.
+     * @param suffix The alias's suffix
+     * @returns {string} The alias localpart.
+     */
+    public getAliasLocalpartForSuffix(suffix: string): string {
+        if (!this.aliasPrefix) {
+            throw new Error("Invalid configured alias prefix");
+        }
+        return `${this.aliasPrefix.substr(1)}${suffix}`;
+    }
+
+    /**
+     * Gets the suffix for the provided alias. If the alias is not a namespaced
+     * alias, this will return a falsey value.
+     * @param {string} alias The alias to parse
+     * @returns {string} The suffix from the alias.
+     */
+    public getSuffixForAlias(alias: string): string {
+        if (!this.aliasPrefix) {
+            throw new Error("Invalid configured alias prefix");
+        }
+        if (!alias || !this.isNamespacedAlias(alias)) {
+            // Invalid ID
+            return null;
+        }
+
+        return alias
+            .split('')
+            .slice(this.aliasPrefix.length)
+            .reverse()
+            .slice(this.options.homeserverName.length + 1)
+            .reverse()
+            .join('');
+    }
+
+    /**
+     * Determines if a given alias is namespaced by this application service.
+     * @param {string} alias The alias to check
+     * @returns {boolean} true if the alias is namespaced, false otherwise
+     */
+    public isNamespacedAlias(alias: string): boolean {
+        if (!this.aliasPrefix) {
+            throw new Error("Invalid configured alias prefix");
+        }
+        return alias.startsWith(this.aliasPrefix) && alias.endsWith(":" + this.options.homeserverName);
     }
 
     /**
@@ -307,6 +501,21 @@ export class Appservice extends EventEmitter {
             if (!this.eventProcessors[eventType]) this.eventProcessors[eventType] = [];
             this.eventProcessors[eventType].push(preprocessor);
         }
+    }
+
+    /**
+     * Sets the visibility of a room in the appservice's room directory.
+     * @param {string} networkId The network ID to group the room under.
+     * @param {string} roomId The room ID to manipulate the visibility of.
+     * @param {"public" | "private"} visibility The visibility to set for the room.
+     * @return {Promise<any>} resolves when the visibility has been updated.
+     */
+    public setRoomDirectoryVisibility(networkId: string, roomId: string, visibility: "public" | "private") {
+        roomId = encodeURIComponent(roomId);
+        networkId = encodeURIComponent(networkId);
+        return this.botClient.doRequest("PUT", `/_matrix/client/r0/directory/list/appservice/${networkId}/${roomId}`, null, {
+            visibility,
+        });
     }
 
     private async processEvent(event: any): Promise<any> {
@@ -344,35 +553,38 @@ export class Appservice extends EventEmitter {
         return providedToken === this.registration.hs_token;
     }
 
-    private async onTransaction(req, res): Promise<any> {
+    private async onTransaction(req: express.Request, res: express.Response): Promise<any> {
         if (!this.isAuthed(req)) {
-            res.status(401).send({errcode: "AUTH_FAILED", error: "Authentication failed"});
+            res.status(401).json({errcode: "AUTH_FAILED", error: "Authentication failed"});
+            return;
         }
 
         if (typeof (req.body) !== "object") {
-            res.status(400).send({errcode: "BAD_REQUEST", error: "Expected JSON"});
+            res.status(400).json({errcode: "BAD_REQUEST", error: "Expected JSON"});
             return;
         }
 
         if (!req.body["events"] || !Array.isArray(req.body["events"])) {
-            res.status(400).send({errcode: "BAD_REQUEST", error: "Invalid JSON: expected events"});
+            res.status(400).json({errcode: "BAD_REQUEST", error: "Invalid JSON: expected events"});
             return;
         }
 
         const txnId = req.params["txnId"];
 
         if (this.storage.isTransactionCompleted(txnId)) {
-            res.status(200).send({});
+            res.status(200).json({});
+            return;
         }
 
         if (this.pendingTransactions[txnId]) {
             try {
                 await this.pendingTransactions[txnId];
-                res.status(200).send({});
+                res.status(200).json({});
             } catch (e) {
                 LogService.error("Appservice", e);
-                res.status(500).send({});
+                res.status(500).json({});
             }
+            return;
         }
 
         LogService.info("Appservice", "Processing transaction " + txnId);
@@ -401,43 +613,45 @@ export class Appservice extends EventEmitter {
         try {
             await this.pendingTransactions[txnId];
             this.storage.setTransactionCompleted(txnId);
-            res.status(200).send({});
+            res.status(200).json({});
         } catch (e) {
             LogService.error("Appservice", e);
-            res.status(500).send({});
+            res.status(500).json({});
         }
     }
 
-    private async onUser(req, res): Promise<any> {
+    private async onUser(req: express.Request, res: express.Response): Promise<any> {
         if (!this.isAuthed(req)) {
-            res.status(401).send({errcode: "AUTH_FAILED", error: "Authentication failed"});
+            res.status(401).json({errcode: "AUTH_FAILED", error: "Authentication failed"});
+            return;
         }
 
         const userId = req.params["userId"];
         this.emit("query.user", userId, async (result) => {
             if (result.then) result = await result;
             if (result === false) {
-                res.status(404).send({errcode: "USER_DOES_NOT_EXIST", error: "User not created"});
+                res.status(404).json({errcode: "USER_DOES_NOT_EXIST", error: "User not created"});
             } else {
                 const intent = this.getIntentForUserId(userId);
                 await intent.ensureRegistered();
                 if (result.display_name) await intent.underlyingClient.setDisplayName(result.display_name);
                 if (result.avatar_mxc) await intent.underlyingClient.setAvatarUrl(result.avatar_mxc);
-                res.status(200).send(result); // return result for debugging + testing
+                res.status(200).json(result); // return result for debugging + testing
             }
         });
     }
 
-    private async onRoomAlias(req, res): Promise<any> {
+    private async onRoomAlias(req: express.Request, res: express.Response): Promise<any> {
         if (!this.isAuthed(req)) {
-            res.status(401).send({errcode: "AUTH_FAILED", error: "Authentication failed"});
+            res.status(401).json({errcode: "AUTH_FAILED", error: "Authentication failed"});
+            return;
         }
 
         const roomAlias = req.params["roomAlias"];
         this.emit("query.room", roomAlias, async (result) => {
             if (result.then) result = await result;
             if (result === false) {
-                res.status(404).send({errcode: "ROOM_DOES_NOT_EXIST", error: "Room not created"});
+                res.status(404).json({errcode: "ROOM_DOES_NOT_EXIST", error: "Room not created"});
             } else {
                 const intent = this.botIntent;
                 await intent.ensureRegistered();
@@ -445,8 +659,77 @@ export class Appservice extends EventEmitter {
                 result["room_alias_name"] = roomAlias.substring(1).split(':')[0];
                 result["__roomId"] = await intent.underlyingClient.createRoom(result);
 
-                res.status(200).send(result); // return result for debugging + testing
+                res.status(200).json(result); // return result for debugging + testing
             }
         });
+    }
+
+    private onThirdpartyProtocol(req: express.Request, res: express.Response) {
+        if (!this.isAuthed(req)) {
+            res.status(401).json({errcode: "AUTH_FAILED", error: "Authentication failed"});
+            return;
+        }
+
+        const protocol = req.params["protocol"];
+        if (!this.registration.protocols.includes(protocol)) {
+            res.status(404).json({
+                errcode: "PROTOCOL_NOT_HANDLED",
+                error: "Protocol is not handled by this appservice"
+            });
+            return;
+        }
+        this.emit("thirdparty.protocol", protocol, (protocolResponse: IApplicationServiceProtocol) => {
+            res.status(200).json(protocolResponse);
+        });
+    }
+
+    private handleThirdpartyObject(req: express.Request, res: express.Response, objType: string, matrixId?: string) {
+        if (!this.isAuthed(req)) {
+            res.status(401).json({errcode: "AUTH_FAILED", error: "Authentication failed"});
+            return;
+        }
+
+        const protocol = req.params["protocol"];
+        const responseFunc = (items: any[]) => {
+            if (items && items.length > 0) {
+                res.status(200).json(items);
+                return;
+            }
+            res.status(404).json({
+                errcode: "NO_MAPPING_FOUND",
+                error: "No mappings found"
+            });
+        };
+
+        // Lookup remote objects(s)
+        if (protocol) { // If protocol is given, we are looking up a objects based on fields
+            if (!this.registration.protocols.includes(protocol)) {
+                res.status(404).json({
+                    errcode: "PROTOCOL_NOT_HANDLED",
+                    error: "Protocol is not handled by this appservice"
+                });
+                return;
+            }
+            // Remove the access_token
+            delete req.query.access_token;
+            this.emit(`thirdparty.${objType}.remote`, protocol, req.query, responseFunc);
+            return;
+        } else if (matrixId) { // If a user ID is given, we are looking up a remote objects based on a id
+            this.emit(`thirdparty.${objType}.matrix`, matrixId, responseFunc);
+            return;
+        }
+
+        res.status(400).json({
+            errcode: "INVALID_PARAMETERS",
+            error: "Invalid parameters given"
+        });
+    }
+
+    private onThirdpartyUser(req: express.Request, res: express.Response) {
+        return this.handleThirdpartyObject(req, res, "user", req.query["userid"]);
+    }
+
+    private onThirdpartyLocation(req: express.Request, res: express.Response) {
+        return this.handleThirdpartyObject(req, res, "location", req.query["alias"]);
     }
 }

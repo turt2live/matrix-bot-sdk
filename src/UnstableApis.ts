@@ -2,6 +2,7 @@ import { MatrixClient } from "./MatrixClient";
 
 /**
  * Represents a profile for a group
+ * @category Unstable APIs
  */
 export interface GroupProfile {
     /**
@@ -28,6 +29,7 @@ export interface GroupProfile {
 
 /**
  * Unstable APIs that shouldn't be used in most circumstances.
+ * @category Unstable APIs
  */
 export class UnstableApis {
     constructor(private client: MatrixClient) {
@@ -60,7 +62,7 @@ export class UnstableApis {
      * Updates a group's profile
      * @param {string} groupId The group ID to update.
      * @param {GroupProfile} profile The profile to update the group with.
-     * @return {Promise<*>} Resolves when completed.
+     * @return {Promise<any>} Resolves when completed.
      */
     public async setGroupProfile(groupId: string, profile: GroupProfile): Promise<any> {
         return this.client.doRequest("POST", `/_matrix/client/r0/groups/${encodeURIComponent(groupId)}/profile`, null, profile);
@@ -71,7 +73,7 @@ export class UnstableApis {
      * require an invite (invite).
      * @param {string} groupId The group ID to set the policy for.
      * @param {"open" | "invite"} policy The policy to set.
-     * @return {Promise<*>} Resolves when completed.
+     * @return {Promise<any>} Resolves when completed.
      */
     public async setGroupJoinPolicy(groupId: string, policy: "open" | "invite"): Promise<any> {
         return this.client.doRequest("PUT", `/_matrix/client/r0/groups/${encodeURIComponent(groupId)}/settings/m.join_policy`, null, {

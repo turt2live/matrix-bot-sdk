@@ -1,9 +1,7 @@
 import { IFilterInfo, MemoryStorageProvider } from "../../src";
 import * as expect from "expect";
 
-// @ts-ignore
 describe('MemoryStorageProvider', () => {
-    // @ts-ignore
     it('should return the right sync token', async () => {
         const provider = new MemoryStorageProvider();
 
@@ -13,17 +11,15 @@ describe('MemoryStorageProvider', () => {
         expect(provider.getSyncToken()).toEqual(value);
     });
 
-    // @ts-ignore
     it('should return the right filter object', async () => {
         const provider = new MemoryStorageProvider();
 
         const value: IFilterInfo = {id: 12, filter: {hello: "world"}};
         expect(provider.getFilter()).toBeFalsy();
         provider.setFilter(value);
-        expect(provider.getFilter()).toMatchObject(value);
+        expect(provider.getFilter()).toMatchObject(<any>value);
     });
 
-    // @ts-ignore
     it('should track registered users', async () => {
         const provider = new MemoryStorageProvider();
 
@@ -43,7 +39,6 @@ describe('MemoryStorageProvider', () => {
         expect(provider.isUserRegistered(userIdB)).toBeTruthy();
     });
 
-    // @ts-ignore
     it('should track completed transactions', async () => {
         const provider = new MemoryStorageProvider();
 
@@ -61,5 +56,16 @@ describe('MemoryStorageProvider', () => {
         provider.setTransactionCompleted(txnB);
         expect(provider.isTransactionCompleted(txnA)).toBeTruthy();
         expect(provider.isTransactionCompleted(txnB)).toBeTruthy();
+    });
+
+    it('should track arbitrary key value pairs', async () => {
+        const provider = new MemoryStorageProvider();
+
+        const key = "test";
+        const value = "example";
+
+        expect(provider.readValue(key)).toBeFalsy();
+        provider.storeValue(key, value);
+        expect(provider.readValue(key)).toEqual(value);
     });
 });

@@ -5,6 +5,13 @@
 
 A lightweight version of the matrix-js-sdk intended for bots. For help and support, visit [#matrix-bot-sdk:t2bot.io](https://matrix.to/#/#matrix-bot-sdk:t2bot.io)
 
+Documentation for the develop branch is available [here](https://turt2live.github.io/matrix-js-bot-sdk/index.html).
+
+# Templates and guides
+
+* [matrix.org's guide on the basic functions of the bot](https://matrix.org/docs/guides/usage-of-matrix-js-bot-sdk)
+* [GitHub bot template repository](https://github.com/turt2live/matrix-bot-sdk-bot-template)
+
 # Installing
 
 This package can be found on [npm](https://www.npmjs.com):
@@ -147,6 +154,8 @@ client.start().then(() => console.log("Client started!"));
 
 
 ## Application Services
+
+**Note**: If you plan on using application services, you'll need to install the `peerDependencies` of this project.
 
 Application service support is an experimental feature of the SDK. This does things like Intent management, impersonation, and transaction handling on behalf of the application.
 

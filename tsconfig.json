@@ -10,7 +10,9 @@
     "outDir": "./lib",
     "declaration": true,
     "types": [
-      "node"
+      "node",
+      "express",
+      "mocha"
     ]
   },
   "include": [

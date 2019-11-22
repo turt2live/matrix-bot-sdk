@@ -2,23 +2,17 @@ language: node_js
 env:
 - NODE_ENV=development
 before_install:
-- npm i -g npm
+- npm i -g yarn
 install:
-- npm install
+- yarn install
 jobs:
   include:
-  - name: Build Node 8
-    script: npm run build
-    node_js: 8
-  - name: Build Node 9
-    script: npm run build
-    node_js: 9
   - name: Build Node 10
-    script: npm run build
+    script: yarn build
     node_js: 10
   - name: Linter
-    script: npm run lint
+    script: yarn lint
     node_js: 10
   - name: Tests
-    script: npm run test
+    script: yarn test
     node_js: 10
