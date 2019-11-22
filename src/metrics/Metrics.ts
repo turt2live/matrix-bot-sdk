@@ -1,6 +1,6 @@
 import { IMetricListener } from "./IMetricListener";
 import { IMetricContext } from "./contexts";
-import { LogService } from "..";
+import { Intent, LogService, MatrixClient } from "..";
 
 /**
  * Tracks metrics.
@@ -76,7 +76,22 @@ export class Metrics {
         const timeMs = (new Date().getTime()) - this.requestStartTimes[context.uniqueId];
         delete this.requestStartTimes[context.uniqueId];
         this.listeners.forEach(h => h.onEndMetric(metricName, context, timeMs));
-        LogService.debug("Metrics", metricName, context, timeMs);
+
+        // Trim the context for logging
+        const trimmedContext = {};
+        for (const key of Object.keys(context)) {
+            if (key === 'client') {
+                const client = context[key];
+                trimmedContext[key] = `<MatrixClient ${client['userId'] || 'NoCachedUserID'}>`;
+            } else if (key === 'intent') {
+                const intent = context[key];
+                trimmedContext[key] = `<Intent ${intent['userId'] || 'NoImpersonatedUserID'}>`;
+            } else {
+                trimmedContext[key] = context[key];
+            }
+        }
+
+        LogService.debug("Metrics", metricName, trimmedContext, timeMs);
     }
 
     /**
