@@ -442,11 +442,11 @@ export class MatrixClient extends EventEmitter {
                 return;
             }
 
-            const response = await this.doSync(token);
-            token = response["next_batch"];
-            this.storage.setSyncToken(token);
-            LogService.info("MatrixClientLite", "Received sync. Next token: " + token);
             try {
+                const response = await this.doSync(token);
+                token = response["next_batch"];
+                this.storage.setSyncToken(token);
+                LogService.info("MatrixClientLite", "Received sync. Next token: " + token);
                 await this.processSync(response);
             } catch (e) {
                 LogService.error("MatrixClientLite", e);
