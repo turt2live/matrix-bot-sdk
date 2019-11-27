@@ -1,7 +1,6 @@
 import { EventEmitter } from "events";
 import { IStorageProvider } from "./storage/IStorageProvider";
 import { MemoryStorageProvider } from "./storage/MemoryStorageProvider";
-import * as Bluebird from "bluebird";
 import { IJoinRoomStrategy } from "./strategies/JoinRoomStrategy";
 import { UnstableApis } from "./UnstableApis";
 import { IPreprocessor } from "./preprocessors/IPreprocessor";
@@ -437,23 +436,23 @@ export class MatrixClient extends EventEmitter {
     private startSync() {
         let token = this.storage.getSyncToken();
 
-        const promiseWhile = Bluebird.method(() => {
+        const promiseWhile = async () => {
             if (this.stopSyncing) {
                 LogService.info("MatrixClientLite", "Client stop requested - stopping sync");
                 return;
             }
 
-            return this.doSync(token).then(response => {
-                token = response["next_batch"];
-                this.storage.setSyncToken(token);
-                LogService.info("MatrixClientLite", "Received sync. Next token: " + token);
-
-                this.processSync(response);
-            }, (e) => {
+            const response = await this.doSync(token);
+            token = response["next_batch"];
+            this.storage.setSyncToken(token);
+            LogService.info("MatrixClientLite", "Received sync. Next token: " + token);
+            try {
+                await this.processSync(response);
+            } catch (e) {
                 LogService.error("MatrixClientLite", e);
-                return null;
-            }).then(promiseWhile.bind(this));
-        });
+            }
+            return promiseWhile();
+        }
 
         promiseWhile(); // start the loop
     }

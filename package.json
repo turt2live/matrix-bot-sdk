@@ -48,7 +48,6 @@
   ],
   "dependencies": {
     "@types/express": "^4.17.2",
-    "bluebird": "^3.7.1",
     "chalk": "^3.0.0",
     "express": "^4.17.1",
     "glob-to-regexp": "^0.4.1",
