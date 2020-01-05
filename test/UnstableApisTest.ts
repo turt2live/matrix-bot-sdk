@@ -121,12 +121,31 @@ describe('UnstableApis', () => {
 
             http.when("PUT", "/_matrix/client/r0/groups").respond(200, (path, content) => {
                 expect(path).toEqual(`${hsUrl}/_matrix/client/r0/groups/${encodeURIComponent(groupId)}/admin/rooms/${encodeURIComponent(roomId)}`);
-                expect(content).toMatchObject({});
+                expect(content["m.visibility"]["type"]).toEqual("public");
                 return {};
             });
 
             http.flushAllExpected();
             const result = await client.addRoomToGroup(groupId, roomId);
+            expect(result).toMatchObject({});
+        });
+    });
+
+    describe('updateGroupRoomVisibility', () => {
+        it('should call the right endpoint', async () => {
+            const {client, http, hsUrl} = createTestUnstableClient();
+
+            const groupId = "+testing:example.org";
+            const roomId = "!someroom:example.org";
+
+            http.when("PUT", "/_matrix/client/r0/groups").respond(200, (path, content) => {
+                expect(path).toEqual(`${hsUrl}/_matrix/client/r0/groups/${encodeURIComponent(groupId)}/admin/rooms/${encodeURIComponent(roomId)}/config/m.visibility`);
+                expect(content["m.visibility"]["type"]).toEqual("private");
+                return {};
+            });
+
+            http.flushAllExpected();
+            const result = await client.updateGroupRoomVisibility(groupId, roomId, false);
             expect(result).toMatchObject({});
         });
     });
@@ -266,6 +285,23 @@ describe('UnstableApis', () => {
         });
     });
 
+    describe('joinGroup', () => {
+        it('should call the right endpoint', async () => {
+            const {client, http, hsUrl} = createTestUnstableClient();
+
+            const groupId = "+testing:example.org";
+
+            http.when("PUT", "/_matrix/client/r0/groups").respond(200, (path, content) => {
+                expect(path).toEqual(`${hsUrl}/_matrix/client/r0/groups/${encodeURIComponent(groupId)}/self/join`);
+                return {};
+            });
+
+            http.flushAllExpected();
+            const result = await client.joinGroup(groupId);
+            expect(result).toMatchObject({});
+        });
+    });
+
     describe('leaveGroup', () => {
         it('should call the right endpoint', async () => {
             const {client, http, hsUrl} = createTestUnstableClient();
@@ -301,7 +337,7 @@ describe('UnstableApis', () => {
         });
     });
 
-    describe('getJoindGroups', () => {
+    describe('getJoinedGroups', () => {
         it('should call the right endpoint', async () => {
             const {client, http, hsUrl} = createTestUnstableClient();
 
@@ -315,7 +351,7 @@ describe('UnstableApis', () => {
             });
 
             http.flushAllExpected();
-            const result = await client.getJoindGroups();
+            const result = await client.getJoinedGroups();
             expect(result.length).toEqual(1);
             expect(result[0]).toEqual(groupId);
         });
