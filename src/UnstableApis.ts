@@ -217,7 +217,7 @@ export class UnstableApis {
     }
 
     /**
-     * Gets the group IDs that the spdecified user has publicised.
+     * Gets the group IDs that the specified user has publicised.
      * @param {string} userId The user ID to fetch the publicised groups of.
      * @return {Promise<string[]>} Resolves to the publicised group IDs of that user.
      */
