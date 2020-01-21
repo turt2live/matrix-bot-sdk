@@ -34,13 +34,15 @@ export class MatrixAuth {
      * if the homeserver supports registration prior to invocation.
      * @param {string} localpart The localpart (username) to register
      * @param {string} password The password to register with
+     * @param {string} deviceName The name of the newly created device. Optional.
      * @returns {Promise<MatrixClient>} Resolves to a logged-in MatrixClient
      */
-    public async passwordRegister(localpart: string, password: string): Promise<MatrixClient> {
+    public async passwordRegister(localpart: string, password: string, deviceName?: string): Promise<MatrixClient> {
         // First try and complete the stage without UIA in hopes the server is kind to us:
         const body = {
             username: localpart,
             password: password,
+            initial_device_display_name: deviceName,
         };
 
         let response;
@@ -99,9 +101,10 @@ export class MatrixAuth {
      * to invocation.
      * @param {string} username The username (localpart or user ID) to log in with
      * @param {string} password The password for the account
+     * @param {string} deviceName The name of the newly created device. Optional.
      * @returns {Promise<MatrixClient>} Resolves to a logged-in MatrixClient
      */
-    public async passwordLogin(username: string, password: string): Promise<MatrixClient> {
+    public async passwordLogin(username: string, password: string, deviceName?: string): Promise<MatrixClient> {
         const body = {
             type: "m.login.password",
             identifier: {
@@ -109,6 +112,7 @@ export class MatrixAuth {
                 user: username,
             },
             password: password,
+            initial_device_display_name: deviceName,
         };
 
         const response = await this.createTemplateClient().doRequest("POST", "/_matrix/client/r0/login", null, body);

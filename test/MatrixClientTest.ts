@@ -658,6 +658,9 @@ describe('MatrixClient', () => {
             const max = 5;
             let count = 0;
 
+            // The sync handler checks which rooms it should ignore
+            http.when("GET", "/_matrix/client/r0/joined_rooms").respond(200, {joined_rooms: []});
+
             const waitPromise = new Promise((resolve, reject) => {
                 for (let i = 0; i <= max * 2; i++) {
                     http.when("GET", "/_matrix/client/r0/sync").respond(200, (path, content) => {
@@ -693,6 +696,9 @@ describe('MatrixClient', () => {
 
             simple.mock(storage, "getFilter").returnWith({id: 12, filter: filter});
 
+            // The sync handler checks which rooms it should ignore
+            http.when("GET", "/_matrix/client/r0/joined_rooms").respond(200, {joined_rooms: []});
+
             http.when("GET", "/_matrix/client/r0/sync").respond(200, (path, content) => {
                 client.stop();
                 return {next_batch: "123"};
@@ -718,6 +724,9 @@ describe('MatrixClient', () => {
                 expect(filterObj.id).toEqual(filterId);
                 expect(filterObj.filter).toMatchObject(filter);
             });
+
+            // The sync handler checks which rooms it should ignore
+            http.when("GET", "/_matrix/client/r0/joined_rooms").respond(200, {joined_rooms: []});
 
             http.when("POST", "/_matrix/client/r0/user").respond(200, (path, content) => {
                 expect(path).toEqual(`${hsUrl}/_matrix/client/r0/user/${encodeURIComponent(userId)}/filter`);
@@ -748,6 +757,9 @@ describe('MatrixClient', () => {
                 expect(filterObj.filter).toMatchObject(filter);
             });
 
+            // The sync handler checks which rooms it should ignore
+            http.when("GET", "/_matrix/client/r0/joined_rooms").respond(200, {joined_rooms: []});
+
             http.when("POST", "/_matrix/client/r0/user").respond(200, (path, content) => {
                 expect(path).toEqual(`${hsUrl}/_matrix/client/r0/user/${encodeURIComponent(userId)}/filter`);
                 expect(content).toMatchObject(filter);
@@ -771,6 +783,9 @@ describe('MatrixClient', () => {
             const filterId = "abc12345";
 
             simple.mock(storage, "getFilter").returnWith({id: filterId, filter: filter});
+
+            // The sync handler checks which rooms it should ignore
+            http.when("GET", "/_matrix/client/r0/joined_rooms").respond(200, {joined_rooms: []});
 
             http.when("GET", "/_matrix/client/r0/sync").respond(200, (path, content, req) => {
                 expect(req).toBeDefined();
@@ -800,6 +815,9 @@ describe('MatrixClient', () => {
                     if (setSyncTokenFn.callCount === 2) resolve();
                 });
             }));
+
+            // The sync handler checks which rooms it should ignore
+            http.when("GET", "/_matrix/client/r0/joined_rooms").respond(200, {joined_rooms: []});
 
             http.when("GET", "/_matrix/client/r0/sync").respond(200, (path, content, req) => {
                 expect(req).toBeDefined();
@@ -837,6 +855,9 @@ describe('MatrixClient', () => {
                 });
             }));
 
+            // The sync handler checks which rooms it should ignore
+            http.when("GET", "/_matrix/client/r0/joined_rooms").respond(200, {joined_rooms: []});
+
             http.when("GET", "/_matrix/client/r0/sync").respond(200, (path, content, req) => {
                 expect(req).toBeDefined();
 
@@ -863,6 +884,9 @@ describe('MatrixClient', () => {
             const presence = "online";
 
             simple.mock(storage, "getFilter").returnWith({id: filterId, filter: filter});
+
+            // The sync handler checks which rooms it should ignore
+            http.when("GET", "/_matrix/client/r0/joined_rooms").respond(200, {joined_rooms: []});
 
             http.when("GET", "/_matrix/client/r0/sync").respond(200, (path, content, req) => {
                 expect(req).toBeDefined();

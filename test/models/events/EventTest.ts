@@ -19,5 +19,6 @@ describe("MatrixEvent", () => {
         expect(obj.sender).toEqual(ev.sender);
         expect(obj.type).toEqual(ev.type);
         expect(obj.content).toMatchObject(ev.content);
+        expect(obj.raw).toBe(ev);
     });
 });

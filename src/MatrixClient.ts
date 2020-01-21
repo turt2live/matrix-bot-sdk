@@ -40,7 +40,7 @@ export class MatrixClient extends EventEmitter {
     private requestId = 0;
     private filterId = 0;
     private stopSyncing = false;
-    private lastJoinedRoomIds = [];
+    private lastJoinedRoomIds: string[] = [];
     private impersonatedUserId: string;
     private metricsInstance: Metrics = new Metrics();
 
@@ -428,7 +428,10 @@ export class MatrixClient extends EventEmitter {
                     });
                 });
             }
-        }).then(() => {
+        }).then(async () => {
+            LogService.debug("MatrixClientLite", "Populating joined rooms to avoid excessive join emits");
+            this.lastJoinedRoomIds = await this.getJoinedRooms();
+
             LogService.debug("MatrixClientLite", "Starting sync with filter ID " + this.filterId);
             this.startSync();
         });
@@ -521,6 +524,7 @@ export class MatrixClient extends EventEmitter {
 
             leaveEvent = await this.processEvent(leaveEvent);
             this.emit("room.leave", roomId, leaveEvent);
+            this.lastJoinedRoomIds = this.lastJoinedRoomIds.filter(r => r !== roomId);
         }
 
         // Process rooms we've been invited to

@@ -26,4 +26,13 @@ export class MatrixEvent<T extends Object> {
     public get content(): T {
         return this.event['content'] || {};
     }
+
+    /**
+     * Gets the raw event that this MatrixEvent is using.
+     * Note that there's no guarantees on formats here - it is the exact
+     * same input to the constructor.
+     */
+    public get raw(): any {
+        return this.event;
+    }
 }

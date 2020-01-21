@@ -18,6 +18,14 @@ export interface TypicalUnsigned {
 }
 
 /**
+ * Empty room event content.
+ * @category Matrix event contents
+ */
+export interface RoomEventContent {
+    // This is empty so people can avoid using RoomEvent<any>
+}
+
+/**
  * A Matrix room event.
  * @category Matrix events
  */
