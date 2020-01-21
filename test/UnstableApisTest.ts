@@ -132,7 +132,7 @@ describe('UnstableApis', () => {
     });
 
     describe('updateGroupRoomVisibility', () => {
-        it('should call the right endpoint', async () => {
+        it('should call the right endpoint for private rooms', async () => {
             const {client, http, hsUrl} = createTestUnstableClient();
 
             const groupId = "+testing:example.org";
@@ -140,12 +140,29 @@ describe('UnstableApis', () => {
 
             http.when("PUT", "/_matrix/client/unstable/groups").respond(200, (path, content) => {
                 expect(path).toEqual(`${hsUrl}/_matrix/client/unstable/groups/${encodeURIComponent(groupId)}/admin/rooms/${encodeURIComponent(roomId)}/config/m.visibility`);
-                expect(content["m.visibility"]["type"]).toEqual("private");
+                expect(content["type"]).toEqual("private");
                 return {};
             });
 
             http.flushAllExpected();
             const result = await client.updateGroupRoomVisibility(groupId, roomId, false);
+            expect(result).toMatchObject({});
+        });
+
+        it('should call the right endpoint for public rooms', async () => {
+            const {client, http, hsUrl} = createTestUnstableClient();
+
+            const groupId = "+testing:example.org";
+            const roomId = "!someroom:example.org";
+
+            http.when("PUT", "/_matrix/client/unstable/groups").respond(200, (path, content) => {
+                expect(path).toEqual(`${hsUrl}/_matrix/client/unstable/groups/${encodeURIComponent(groupId)}/admin/rooms/${encodeURIComponent(roomId)}/config/m.visibility`);
+                expect(content["type"]).toEqual("public");
+                return {};
+            });
+
+            http.flushAllExpected();
+            const result = await client.updateGroupRoomVisibility(groupId, roomId, true);
             expect(result).toMatchObject({});
         });
     });
@@ -251,7 +268,7 @@ describe('UnstableApis', () => {
             const roomId = "!someroom:example.org";
 
             http.when("GET", "/_matrix/client/unstable/groups").respond(200, (path, content) => {
-                expect(path).toEqual(`${hsUrl}/_matrix/client/unstable/groups/${encodeURIComponent(groupId)}/invited_users`);
+                expect(path).toEqual(`${hsUrl}/_matrix/client/unstable/groups/${encodeURIComponent(groupId)}/rooms`);
                 return {
                     chunk: [
                         {
@@ -345,7 +362,7 @@ describe('UnstableApis', () => {
 
             http.when("GET", "/_matrix/client/unstable/joined_groups").respond(200, (path, content) => {
                 return {
-                    group_ids: [groupId],
+                    groups: [groupId],
                 };
             });
 
