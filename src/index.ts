@@ -39,6 +39,7 @@ export * from "./models/events/InvalidEventError";
 export * from "./models/events/Event";
 export * from "./models/events/RoomEvent";
 export * from "./models/events/PresenceEvent";
+export * from "./models/events/MembershipEvent";
 export * from "./models/events/MessageEvent";
 export * from "./models/events/AliasesEvent";
 export * from "./models/events/CanonicalAliasEvent";
