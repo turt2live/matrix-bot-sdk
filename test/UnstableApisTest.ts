@@ -393,4 +393,33 @@ describe('UnstableApis', () => {
             expect(result[0]).toEqual(groupId);
         });
     });
+
+    describe('addReactionToEvent', () => {
+        it('should send an m.reaction event', async () => {
+            const {client, http, hsUrl} = createTestUnstableClient();
+
+            const roomId = "!test:example.org";
+            const originalEventId = "$orig:example.org";
+            const newEventId = "$new:example.org";
+            const emoji = "😀";
+            const expectedReaction = {
+                "m.relates_to": {
+                    event_id: originalEventId,
+                    key: emoji,
+                    rel_type: "m.annotation",
+                },
+            };
+
+            http.when("PUT", "/_matrix/client/r0/rooms").respond(200, (path, content) => {
+                const idx = path.indexOf(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/send/m.reaction/`);
+                expect(idx).toBe(0);
+                expect(content).toMatchObject(expectedReaction);
+                return {event_id: newEventId};
+            });
+
+            http.flushAllExpected();
+            const result = await client.addReactionToEvent(roomId, originalEventId, emoji);
+            expect(result).toEqual(newEventId);
+        });
+    });
 });
