@@ -212,6 +212,7 @@ export interface TextualMessageEventContent extends MessageEventContent {
 export interface MessageEventContent {
     body: string;
     msgtype: MessageType;
+    external_url?: string;
 }
 
 /**
