@@ -443,7 +443,7 @@ export class MatrixClient extends EventEmitter {
         });
     }
 
-    protected startSyncInternal() {
+    protected startSyncInternal(): Promise<any> {
         return this.startSync();
     }
 
