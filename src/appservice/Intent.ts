@@ -173,7 +173,7 @@ export class Intent {
      */
     @timedIntentFunctionCall()
     public async ensureRegistered() {
-        if (!this.storage.isUserRegistered(this.userId)) {
+        if (!(await Promise.resolve(this.storage.isUserRegistered(this.userId)))) {
             try {
                 const result = await this.client.doRequest("POST", "/_matrix/client/r0/register", null, {
                     type: "m.login.application_service",
@@ -188,7 +188,7 @@ export class Intent {
             } catch (err) {
                 if (typeof (err.body) === "string") err.body = JSON.parse(err.body);
                 if (err.body && err.body["errcode"] === "M_USER_IN_USE") {
-                    this.storage.addRegisteredUser(this.userId);
+                    await Promise.resolve(this.storage.addRegisteredUser(this.userId));
                     if (this.userId === this.appservice.botUserId) {
                         return null;
                     } else {
@@ -202,7 +202,7 @@ export class Intent {
                 throw err;
             }
 
-            this.storage.addRegisteredUser(this.userId);
+            await Promise.resolve(this.storage.addRegisteredUser(this.userId));
         }
     }
 }

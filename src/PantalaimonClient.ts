@@ -46,7 +46,7 @@ export class PantalaimonClient {
      * @returns {Promise<MatrixClient>} Resolves to a MatrixClient ready for interacting with Pantalaimon.
      */
     public async createClientWithCredentials(username: string, password: string): Promise<MatrixClient> {
-        const accessToken = this.storageProvider.readValue(ACCESS_TOKEN_STORAGE_KEY);
+        const accessToken = await Promise.resolve(this.storageProvider.readValue(ACCESS_TOKEN_STORAGE_KEY));
         if (accessToken) {
             return new MatrixClient(this.homeserverUrl, accessToken, this.storageProvider);
         }
@@ -54,7 +54,7 @@ export class PantalaimonClient {
         const auth = new MatrixAuth(this.homeserverUrl);
         const authedClient = await auth.passwordLogin(username, password);
 
-        this.storageProvider.storeValue(ACCESS_TOKEN_STORAGE_KEY, authedClient.accessToken);
+        await Promise.resolve(this.storageProvider.storeValue(ACCESS_TOKEN_STORAGE_KEY, authedClient.accessToken));
 
         // We recreate the client to ensure we set it up with the right storage provider.
         return new MatrixClient(this.homeserverUrl, authedClient.accessToken, this.storageProvider);
