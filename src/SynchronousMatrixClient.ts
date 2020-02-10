@@ -23,15 +23,15 @@ export abstract class SynchronousMatrixClient extends MatrixClient {
     }
 
     private async handleEvent(emitType: string, arg1: any, arg2: any): Promise<any> {
-        if (emitType === 'account_data') return await this.onAccountData(arg1);
-        if (emitType === 'room.account_data') return await this.onRoomAccountData(arg1, arg2);
-        if (emitType === 'room.leave') return await this.onRoomLeave(arg1, arg2);
-        if (emitType === 'room.invite') return await this.onRoomInvite(arg1, arg2);
-        if (emitType === 'room.join') return await this.onRoomJoin(arg1, arg2);
-        if (emitType === 'room.archived') return await this.onRoomArchived(arg1, arg2);
-        if (emitType === 'room.upgraded') return await this.onRoomUpgraded(arg1, arg2);
-        if (emitType === 'room.message') return await this.onRoomMessage(arg1, arg2);
-        if (emitType === 'room.event') return await this.onRoomEvent(arg1, arg2);
+        if (emitType === 'account_data') await this.onAccountData(arg1);
+        if (emitType === 'room.account_data') await this.onRoomAccountData(arg1, arg2);
+        if (emitType === 'room.leave') await this.onRoomLeave(arg1, arg2);
+        if (emitType === 'room.invite') await this.onRoomInvite(arg1, arg2);
+        if (emitType === 'room.join') await this.onRoomJoin(arg1, arg2);
+        if (emitType === 'room.archived') await this.onRoomArchived(arg1, arg2);
+        if (emitType === 'room.upgraded') await this.onRoomUpgraded(arg1, arg2);
+        if (emitType === 'room.message') await this.onRoomMessage(arg1, arg2);
+        if (emitType === 'room.event') await this.onRoomEvent(arg1, arg2);
 
         // Still emit though for easier support of plugins.
         this.emit(emitType, arg1, arg2);
