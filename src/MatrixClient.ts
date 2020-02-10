@@ -436,7 +436,7 @@ export class MatrixClient extends EventEmitter {
         });
     }
 
-    private startSync() {
+    protected startSync() {
         let token = this.storage.getSyncToken();
 
         const promiseWhile = async () => {
@@ -455,13 +455,13 @@ export class MatrixClient extends EventEmitter {
                 LogService.error("MatrixClientLite", e);
             }
             return promiseWhile();
-        }
+        };
 
         promiseWhile(); // start the loop
     }
 
     @timedMatrixClientFunctionCall()
-    private doSync(token: string): Promise<any> {
+    protected doSync(token: string): Promise<any> {
         LogService.info("MatrixClientLite", "Performing sync with token " + token);
         const conf = {
             full_state: false,
@@ -477,7 +477,7 @@ export class MatrixClient extends EventEmitter {
     }
 
     @timedMatrixClientFunctionCall()
-    private async processSync(raw: any): Promise<any> {
+    protected async processSync(raw: any): Promise<any> {
         if (!raw) return; // nothing to process
 
         if (raw['account_data'] && raw['account_data']['events']) {
