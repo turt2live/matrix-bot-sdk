@@ -46,6 +46,13 @@ export class MatrixClient extends EventEmitter {
     private metricsInstance: Metrics = new Metrics();
 
     /**
+     * Set this to true to have the client only persist the sync token after the sync
+     * has been processed successfully. Note that if this is true then when the sync
+     * loop throws an error the client will not persist a token.
+     */
+    protected persistTokenAfterSync = false;
+
+    /**
      * Creates a new matrix client
      * @param {string} homeserverUrl The homeserver's client-server API URL
      * @param {string} accessToken The access token for the homeserver
@@ -459,12 +466,21 @@ export class MatrixClient extends EventEmitter {
             try {
                 const response = await this.doSync(token);
                 token = response["next_batch"];
-                await Promise.resolve(this.storage.setSyncToken(token));
+
+                if (!this.persistTokenAfterSync) {
+                    await Promise.resolve(this.storage.setSyncToken(token));
+                }
+
                 LogService.info("MatrixClientLite", "Received sync. Next token: " + token);
                 await this.processSync(response, emitFn);
+
+                if (this.persistTokenAfterSync) {
+                    await Promise.resolve(this.storage.setSyncToken(token));
+                }
             } catch (e) {
                 LogService.error("MatrixClientLite", e);
             }
+
             return promiseWhile();
         };
 
