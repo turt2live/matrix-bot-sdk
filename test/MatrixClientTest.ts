@@ -2696,6 +2696,71 @@ describe('MatrixClient', () => {
         });
     });
 
+    describe('setUserPowerLevel', () => {
+        it('should use the current power levels as a base', async () => {
+            const {client} = createTestClient();
+
+            const roomId = "!testing:example.org";
+            const userId = "@testing:example.org";
+            const targetLevel = 65;
+            const basePowerLevels = {
+                ban: 100,
+                users: {
+                    "@alice:example.org": 100,
+                },
+            };
+
+            const getStateEventSpy = simple.mock(client, "getRoomStateEvent").callFn((rid, evType, stateKey) => {
+                expect(rid).toEqual(roomId);
+                expect(evType).toEqual("m.room.power_levels");
+                expect(stateKey).toEqual("");
+                return basePowerLevels;
+            });
+
+            const sendStateEventSpy = simple.mock(client, "sendStateEvent").callFn((rid, evType, stateKey, content) => {
+                expect(rid).toEqual(roomId);
+                expect(evType).toEqual("m.room.power_levels");
+                expect(stateKey).toEqual("");
+                expect(content).toMatchObject(Object.assign({}, {users: {[userId]: targetLevel}}, basePowerLevels));
+                return null;
+            });
+
+            await client.setUserPowerLevel(userId, roomId, targetLevel);
+            expect(getStateEventSpy.callCount).toBe(1);
+            expect(sendStateEventSpy.callCount).toBe(1);
+        });
+
+        it('should fill in the users object if not present on the original state event', async () => {
+            const {client} = createTestClient();
+
+            const roomId = "!testing:example.org";
+            const userId = "@testing:example.org";
+            const targetLevel = 65;
+            const basePowerLevels = {
+                ban: 100,
+            };
+
+            const getStateEventSpy = simple.mock(client, "getRoomStateEvent").callFn((rid, evType, stateKey) => {
+                expect(rid).toEqual(roomId);
+                expect(evType).toEqual("m.room.power_levels");
+                expect(stateKey).toEqual("");
+                return basePowerLevels;
+            });
+
+            const sendStateEventSpy = simple.mock(client, "sendStateEvent").callFn((rid, evType, stateKey, content) => {
+                expect(rid).toEqual(roomId);
+                expect(evType).toEqual("m.room.power_levels");
+                expect(stateKey).toEqual("");
+                expect(content).toMatchObject(Object.assign({}, {users: {[userId]: targetLevel}}, basePowerLevels));
+                return null;
+            });
+
+            await client.setUserPowerLevel(userId, roomId, targetLevel);
+            expect(getStateEventSpy.callCount).toBe(1);
+            expect(sendStateEventSpy.callCount).toBe(1);
+        });
+    });
+
     describe('userHasPowerLevelFor', () => {
         it('throws when a power level event cannot be located', async () => {
             const {client} = createTestClient();

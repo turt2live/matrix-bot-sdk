@@ -963,6 +963,24 @@ export class MatrixClient extends EventEmitter {
     }
 
     /**
+     * Sets the power level for a given user ID in the given room. Note that this is not safe to
+     * call multiple times concurrently as changes are not atomic. This will throw an error if
+     * the user lacks enough permission to change the power level, or if a power level event is
+     * missing from the room.
+     * @param {string} userId The user ID to change
+     * @param {string} roomId The room ID to change the power level in
+     * @param {number} newLevel The integer power level to set the user to.
+     * @returns {Promise<any>} Resolves when complete.
+     */
+    @timedMatrixClientFunctionCall()
+    public async setUserPowerLevel(userId: string, roomId: string, newLevel: number): Promise<any> {
+        const currentLevels = await this.getRoomStateEvent(roomId, "m.room.power_levels", "");
+        if (!currentLevels['users']) currentLevels['users'] = {};
+        currentLevels['users'][userId] = newLevel;
+        await this.sendStateEvent(roomId, "m.room.power_levels", "", currentLevels);
+    }
+
+    /**
      * Converts a MXC URI to an HTTP URL.
      * @param {string} mxc The MXC URI to convert
      * @returns {string} The HTTP URL for the content.
