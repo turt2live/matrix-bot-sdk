@@ -9,8 +9,6 @@ import { MatrixClient } from "./MatrixClient";
  */
 export abstract class SynchronousMatrixClient extends MatrixClient {
 
-    // TODO: Write tests for this.
-
     /**
      * Creates a new SynchronousMatrixClient. Note that this accepts a MatrixClient, though
      * much of the class's properties are not brought over. Always convert your MatrixClient
