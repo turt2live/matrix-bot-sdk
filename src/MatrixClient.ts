@@ -1,7 +1,6 @@
 import { EventEmitter } from "events";
 import { IStorageProvider } from "./storage/IStorageProvider";
 import { MemoryStorageProvider } from "./storage/MemoryStorageProvider";
-import * as Bluebird from "bluebird";
 import { IJoinRoomStrategy } from "./strategies/JoinRoomStrategy";
 import { UnstableApis } from "./UnstableApis";
 import { IPreprocessor } from "./preprocessors/IPreprocessor";
@@ -38,14 +37,20 @@ export class MatrixClient extends EventEmitter {
 
     private userId: string;
     private requestId = 0;
-    private filterId = 0;
-    private stopSyncing = false;
     private lastJoinedRoomIds: string[] = [];
     private impersonatedUserId: string;
-    private metricsInstance: Metrics = new Metrics();
-
     private joinStrategy: IJoinRoomStrategy = null;
     private eventProcessors: { [eventType: string]: IPreprocessor[] } = {};
+    private filterId = 0;
+    private stopSyncing = false;
+    private metricsInstance: Metrics = new Metrics();
+
+    /**
+     * Set this to true to have the client only persist the sync token after the sync
+     * has been processed successfully. Note that if this is true then when the sync
+     * loop throws an error the client will not persist a token.
+     */
+    protected persistTokenAfterSync = false;
 
     /**
      * Creates a new matrix client
@@ -56,10 +61,18 @@ export class MatrixClient extends EventEmitter {
     constructor(public readonly homeserverUrl: string, public readonly accessToken: string, private storage: IStorageProvider = null) {
         super();
 
-        if (this.homeserverUrl.endsWith("/"))
+        if (this.homeserverUrl.endsWith("/")) {
             this.homeserverUrl = this.homeserverUrl.substring(0, this.homeserverUrl.length - 1);
+        }
 
         if (!this.storage) this.storage = new MemoryStorageProvider();
+    }
+
+    /**
+     * The storage provider for this client. Direct access is usually not required.
+     */
+    public get storageProvider(): IStorageProvider {
+        return this.storage;
     }
 
     /**
@@ -401,10 +414,10 @@ export class MatrixClient extends EventEmitter {
             filter = null;
         }
 
-        return this.getUserId().then(userId => {
+        return this.getUserId().then(async userId => {
             let createFilter = false;
 
-            let existingFilter = this.storage.getFilter();
+            let existingFilter = await Promise.resolve(this.storage.getFilter());
             if (existingFilter) {
                 LogService.debug("MatrixClientLite", "Found existing filter. Checking consistency with given filter");
                 if (JSON.stringify(existingFilter.filter) === JSON.stringify(filter)) {
@@ -419,13 +432,13 @@ export class MatrixClient extends EventEmitter {
 
             if (createFilter && filter) {
                 LogService.debug("MatrixClientLite", "Creating new filter");
-                return this.doRequest("POST", "/_matrix/client/r0/user/" + encodeURIComponent(userId) + "/filter", null, filter).then(response => {
+                return this.doRequest("POST", "/_matrix/client/r0/user/" + encodeURIComponent(userId) + "/filter", null, filter).then(async response => {
                     this.filterId = response["filter_id"];
-                    this.storage.setSyncToken(null);
-                    this.storage.setFilter({
+                    await Promise.resolve(this.storage.setSyncToken(null));
+                    await Promise.resolve(this.storage.setFilter({
                         id: this.filterId,
                         filter: filter,
-                    });
+                    }));
                 });
             }
         }).then(async () => {
@@ -433,36 +446,49 @@ export class MatrixClient extends EventEmitter {
             this.lastJoinedRoomIds = await this.getJoinedRooms();
 
             LogService.debug("MatrixClientLite", "Starting sync with filter ID " + this.filterId);
-            this.startSync();
+            this.startSyncInternal();
         });
     }
 
-    private startSync() {
-        let token = this.storage.getSyncToken();
+    protected startSyncInternal(): Promise<any> {
+        return this.startSync();
+    }
 
-        const promiseWhile = Bluebird.method(() => {
+    protected async startSync(emitFn: (emitEventType: string, ...payload: any[]) => Promise<any> = null) {
+        let token = await Promise.resolve(this.storage.getSyncToken());
+
+        const promiseWhile = async () => {
             if (this.stopSyncing) {
                 LogService.info("MatrixClientLite", "Client stop requested - stopping sync");
                 return;
             }
 
-            return this.doSync(token).then(response => {
+            try {
+                const response = await this.doSync(token);
                 token = response["next_batch"];
-                this.storage.setSyncToken(token);
-                LogService.info("MatrixClientLite", "Received sync. Next token: " + token);
 
-                this.processSync(response);
-            }, (e) => {
+                if (!this.persistTokenAfterSync) {
+                    await Promise.resolve(this.storage.setSyncToken(token));
+                }
+
+                LogService.info("MatrixClientLite", "Received sync. Next token: " + token);
+                await this.processSync(response, emitFn);
+
+                if (this.persistTokenAfterSync) {
+                    await Promise.resolve(this.storage.setSyncToken(token));
+                }
+            } catch (e) {
                 LogService.error("MatrixClientLite", e);
-                return null;
-            }).then(promiseWhile.bind(this));
-        });
+            }
+
+            return promiseWhile();
+        };
 
         promiseWhile(); // start the loop
     }
 
     @timedMatrixClientFunctionCall()
-    private doSync(token: string): Promise<any> {
+    protected doSync(token: string): Promise<any> {
         LogService.info("MatrixClientLite", "Performing sync with token " + token);
         const conf = {
             full_state: false,
@@ -478,12 +504,14 @@ export class MatrixClient extends EventEmitter {
     }
 
     @timedMatrixClientFunctionCall()
-    private async processSync(raw: any): Promise<any> {
+    protected async processSync(raw: any, emitFn: (emitEventType: string, ...payload: any[]) => Promise<any> = null): Promise<any> {
+        if (!emitFn) emitFn = (e, ...p) => Promise.resolve<any>(this.emit(e, ...p));
+
         if (!raw) return; // nothing to process
 
         if (raw['account_data'] && raw['account_data']['events']) {
             for (const event of raw['account_data']['events']) {
-                this.emit("account_data", event);
+                await emitFn("account_data", event);
             }
         }
 
@@ -499,7 +527,7 @@ export class MatrixClient extends EventEmitter {
 
             if (room['account_data'] && room['account_data']['events']) {
                 for (const event of room['account_data']['events']) {
-                    this.emit("room.account_data", roomId, event);
+                    await emitFn("room.account_data", roomId, event);
                 }
             }
 
@@ -523,7 +551,7 @@ export class MatrixClient extends EventEmitter {
             }
 
             leaveEvent = await this.processEvent(leaveEvent);
-            this.emit("room.leave", roomId, leaveEvent);
+            await emitFn("room.leave", roomId, leaveEvent);
             this.lastJoinedRoomIds = this.lastJoinedRoomIds.filter(r => r !== roomId);
         }
 
@@ -552,13 +580,13 @@ export class MatrixClient extends EventEmitter {
             }
 
             inviteEvent = await this.processEvent(inviteEvent);
-            this.emit("room.invite", roomId, inviteEvent);
+            await emitFn("room.invite", roomId, inviteEvent);
         }
 
         // Process rooms we've joined and their events
         for (let roomId in joinedRooms) {
             if (this.lastJoinedRoomIds.indexOf(roomId) === -1) {
-                this.emit("room.join", roomId);
+                await emitFn("room.join", roomId);
                 this.lastJoinedRoomIds.push(roomId);
             }
 
@@ -566,7 +594,7 @@ export class MatrixClient extends EventEmitter {
 
             if (room['account_data'] && room['account_data']['events']) {
                 for (const event of room['account_data']['events']) {
-                    this.emit("room.account_data", roomId, event);
+                    await emitFn("room.account_data", roomId, event);
                 }
             }
 
@@ -575,16 +603,16 @@ export class MatrixClient extends EventEmitter {
             for (let event of room['timeline']['events']) {
                 event = await this.processEvent(event);
                 if (event['type'] === 'm.room.message') {
-                    this.emit("room.message", roomId, event);
+                    await emitFn("room.message", roomId, event);
                 }
                 if (event['type'] === 'm.room.tombstone' && event['state_key'] === '') {
-                    this.emit("room.archived", roomId, event);
+                    await emitFn("room.archived", roomId, event);
                 }
                 if (event['type'] === 'm.room.create' && event['state_key'] === '' && event['content']
                     && event['content']['predecessor'] && event['content']['predecessor']['room_id']) {
-                    this.emit("room.upgraded", roomId, event);
+                    await emitFn("room.upgraded", roomId, event);
                 }
-                this.emit("room.event", roomId, event);
+                await emitFn("room.event", roomId, event);
             }
         }
     }
@@ -932,6 +960,24 @@ export class MatrixClient extends EventEmitter {
         if (powerLevelsEvent["users"] && powerLevelsEvent["users"][userId]) userPower = powerLevelsEvent["users"][userId];
 
         return userPower >= requiredPower;
+    }
+
+    /**
+     * Sets the power level for a given user ID in the given room. Note that this is not safe to
+     * call multiple times concurrently as changes are not atomic. This will throw an error if
+     * the user lacks enough permission to change the power level, or if a power level event is
+     * missing from the room.
+     * @param {string} userId The user ID to change
+     * @param {string} roomId The room ID to change the power level in
+     * @param {number} newLevel The integer power level to set the user to.
+     * @returns {Promise<any>} Resolves when complete.
+     */
+    @timedMatrixClientFunctionCall()
+    public async setUserPowerLevel(userId: string, roomId: string, newLevel: number): Promise<any> {
+        const currentLevels = await this.getRoomStateEvent(roomId, "m.room.power_levels", "");
+        if (!currentLevels['users']) currentLevels['users'] = {};
+        currentLevels['users'][userId] = newLevel;
+        await this.sendStateEvent(roomId, "m.room.power_levels", "", currentLevels);
     }
 
     /**

@@ -74,3 +74,4 @@ export * from "./UnstableApis";
 export * from "./AdminApis";
 export * from "./request";
 export * from "./PantalaimonClient";
+export * from "./SynchronousMatrixClient";

@@ -571,7 +571,7 @@ export class Appservice extends EventEmitter {
 
         const txnId = req.params["txnId"];
 
-        if (this.storage.isTransactionCompleted(txnId)) {
+        if (await Promise.resolve(this.storage.isTransactionCompleted(txnId))) {
             res.status(200).json({});
             return;
         }
@@ -612,7 +612,7 @@ export class Appservice extends EventEmitter {
 
         try {
             await this.pendingTransactions[txnId];
-            this.storage.setTransactionCompleted(txnId);
+            await Promise.resolve(this.storage.setTransactionCompleted(txnId));
             res.status(200).json({});
         } catch (e) {
             LogService.error("Appservice", e);

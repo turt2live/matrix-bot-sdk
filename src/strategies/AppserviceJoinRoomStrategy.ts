@@ -18,8 +18,6 @@ export class AppserviceJoinRoomStrategy implements IJoinRoomStrategy {
             // First just try joining via the apiCall
             return await apiCall(roomIdOrAlias);
         } catch (err) {
-            LogService.error("AppserviceJoinRoomStrategy", err);
-
             // If the user being joined is *not* the bridge bot, try and get the bridge bot to
             // join them to the room.
             if (userId !== this.appservice.botUserId) {
