@@ -111,7 +111,7 @@ export interface IAppserviceRegistration {
     protocols?: string[];
 
     /**
-     * If the application service is rate limited. Optional.
+     * If the application service is rate limited by the homeserver. Optional.
      */
     rate_limited?: boolean;
 
