@@ -251,4 +251,11 @@ export class MessageEvent<T extends MessageEventContent> extends RoomEvent<T> {
         if (!body && body !== "") throw new EventRedactedError("missing body");
         return body;
     }
+
+    /**
+     * The `external_url` of the message, if it exists
+     */
+    public get externalUrl(): string | undefined {
+        return this.content.external_url || undefined;
+    }
 }
