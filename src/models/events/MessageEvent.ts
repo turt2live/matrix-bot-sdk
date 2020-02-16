@@ -212,6 +212,7 @@ export interface TextualMessageEventContent extends MessageEventContent {
 export interface MessageEventContent {
     body: string;
     msgtype: MessageType;
+    external_url?: string;
 }
 
 /**
@@ -249,5 +250,12 @@ export class MessageEvent<T extends MessageEventContent> extends RoomEvent<T> {
         const body = this.content.body;
         if (!body && body !== "") throw new EventRedactedError("missing body");
         return body;
+    }
+
+    /**
+     * The `external_url` of the message, if it exists
+     */
+    public get externalUrl(): string | undefined {
+        return this.content.external_url || undefined;
     }
 }
