@@ -1938,6 +1938,64 @@ describe('MatrixClient', () => {
         });
     });
 
+    describe('getEventContext', () => {
+        it('should use the right endpoint', async () => {
+            const {client, http, hsUrl} = createTestClient();
+
+            const targetEvent = {eventId: "$test:example.org", type: "m.room.message", content: {body: "test", msgtype: "m.text"}};
+            const before = [{type: "m.room.message", content: {body: "1", msgtype: "m.text"}}, {
+                type: "m.room.message",
+                content: {body: "2", msgtype: "m.text"}
+            }];
+            const after = [{type: "m.room.message", content: {body: "3", msgtype: "m.text"}}, {
+                type: "m.room.message",
+                content: {body: "4", msgtype: "m.text"}
+            }];
+            const state = [{
+                type: "m.room.member",
+                state_key: "@alice:example.org",
+                content: {body: "3", msgtype: "m.text"}
+            }, {type: "m.room.member", state_key: "@alice:example.org", content: {body: "4", msgtype: "m.text"}}]
+            const roomId = "!abc123:example.org";
+            const limit = 2;
+
+            http.when("GET", "/_matrix/client/r0/rooms").respond(200, (path, content, req) => {
+                expect(path).toEqual(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/context/${encodeURIComponent(targetEvent.eventId)}`);
+                expect(req.opts.qs['limit']).toEqual(limit);
+                return {
+                    event: targetEvent,
+                    events_before: before,
+                    events_after: after,
+                    state: state,
+                };
+            });
+
+            http.flushAllExpected();
+            const result = await client.getEventContext(roomId, targetEvent.eventId, limit);
+            expect(result).toBeDefined();
+            expect(result.event).toBeDefined();
+            expect(result.event.raw).toMatchObject(targetEvent);
+            expect(result.before).toBeDefined();
+            expect(result.before.length).toBe(2);
+            expect(result.before[0]).toBeDefined();
+            expect(result.before[0].raw).toMatchObject(before[0]);
+            expect(result.before[1]).toBeDefined();
+            expect(result.before[1].raw).toMatchObject(before[1]);
+            expect(result.after).toBeDefined();
+            expect(result.after.length).toBe(2);
+            expect(result.after[0]).toBeDefined();
+            expect(result.after[0].raw).toMatchObject(after[0]);
+            expect(result.after[1]).toBeDefined();
+            expect(result.after[1].raw).toMatchObject(after[1]);
+            expect(result.state).toBeDefined();
+            expect(result.state.length).toBe(2);
+            expect(result.state[0]).toBeDefined();
+            expect(result.state[0].raw).toMatchObject(state[0]);
+            expect(result.state[1]).toBeDefined();
+            expect(result.state[1].raw).toMatchObject(state[1]);
+        });
+    });
+
     describe('getUserProfile', () => {
         it('should call the right endpoint', async () => {
             const {client, http, hsUrl} = createTestClient();

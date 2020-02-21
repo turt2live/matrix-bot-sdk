@@ -13,6 +13,8 @@ import { timedMatrixClientFunctionCall } from "./metrics/decorators";
 import { AdminApis } from "./AdminApis";
 import { Presence } from "./models/Presence";
 import { Membership, MembershipEvent } from "./models/events/MembershipEvent";
+import { RoomEvent, RoomEventContent, StateEvent } from "./models/events/RoomEvent";
+import { EventContext } from "./models/EventContext";
 
 /**
  * A client that is capable of interacting with a matrix homeserver.
@@ -664,6 +666,24 @@ export class MatrixClient extends EventEmitter {
     public getRoomStateEvent(roomId, type, stateKey): Promise<any> {
         return this.doRequest("GET", "/_matrix/client/r0/rooms/" + encodeURIComponent(roomId) + "/state/" + encodeURIComponent(type) + "/" + encodeURIComponent(stateKey ? stateKey : ''))
             .then(ev => this.processEvent(ev));
+    }
+
+    /**
+     * Gets the context surrounding an event.
+     * @param {string} roomId The room ID to get the context in.
+     * @param {string} eventId The event ID to get the context of.
+     * @param {number} limit The maximum number of events to return on either side of the event.
+     * @returns {Promise<EventContext>} The context of the event
+     */
+    @timedMatrixClientFunctionCall()
+    public async getEventContext(roomId: string, eventId: string, limit = 10): Promise<EventContext> {
+        const res = await this.doRequest("GET", "/_matrix/client/r0/rooms/" + encodeURIComponent(roomId) + "/context/" + encodeURIComponent(eventId), {limit});
+        return {
+            event: new RoomEvent<RoomEventContent>(res['event']),
+            before: res['events_before'].map(e => new RoomEvent<RoomEventContent>(e)),
+            after: res['events_after'].map(e => new RoomEvent<RoomEventContent>(e)),
+            state: res['state'].map(e => new StateEvent<RoomEventContent>(e)),
+        };
     }
 
     /**
