@@ -40,8 +40,8 @@ export function timedMatrixClientFunctionCall() {
             }
 
             promise
-                .catch(() => metrics.increment(METRIC_MATRIX_CLIENT_FAILED_FUNCTION_CALL, context, 1))
                 .then(() => metrics.increment(METRIC_MATRIX_CLIENT_SUCCESSFUL_FUNCTION_CALL, context, 1))
+                .catch(() => metrics.increment(METRIC_MATRIX_CLIENT_FAILED_FUNCTION_CALL, context, 1))
                 .finally(() => metrics.end(METRIC_MATRIX_CLIENT_FUNCTION_CALL, context));
 
             if (exception) throw exception;
@@ -83,8 +83,8 @@ export function timedIntentFunctionCall() {
             }
 
             promise
-                .catch(() => metrics.increment(METRIC_INTENT_FAILED_FUNCTION_CALL, context, 1))
                 .then(() => metrics.increment(METRIC_INTENT_SUCCESSFUL_FUNCTION_CALL, context, 1))
+                .catch(() => metrics.increment(METRIC_INTENT_FAILED_FUNCTION_CALL, context, 1))
                 .finally(() => metrics.end(METRIC_INTENT_FUNCTION_CALL, context));
 
             if (exception) throw exception;
