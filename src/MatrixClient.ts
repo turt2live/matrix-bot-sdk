@@ -1271,12 +1271,14 @@ export class MatrixClient extends EventEmitter {
             headers: headers,
         };
 
-        if (Buffer.isBuffer(body)) {
-            params.headers["Content-Type"] = contentType;
-            params.body = body;
-        } else {
-            params.headers["Content-Type"] = "application/json";
-            params.body = JSON.stringify(body);
+        if (body) {
+            if (Buffer.isBuffer(body)) {
+                params.headers["Content-Type"] = contentType;
+                params.body = body;
+            } else {
+                params.headers["Content-Type"] = "application/json";
+                params.body = JSON.stringify(body);
+            }
         }
 
         return new Promise((resolve, reject) => {
