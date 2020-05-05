@@ -173,7 +173,7 @@ export class MatrixClient extends EventEmitter {
     /**
      * Retrieves content from room account data.
      * @param {string} eventType The type of room account data to retrieve.
-     * @param {string} roomId The room to read the account data from
+     * @param {string} roomId The room to read the account data from.
      * @returns {Promise<any>} Resolves to the content of that account data.
      */
     @timedMatrixClientFunctionCall()
@@ -182,6 +182,41 @@ export class MatrixClient extends EventEmitter {
         eventType = encodeURIComponent(eventType);
         roomId = encodeURIComponent(roomId);
         return this.doRequest("GET", "/_matrix/client/r0/user/" + userId + "/rooms/" + roomId + "/account_data/" + eventType);
+    }
+
+    /**
+     * Retrieves content from account data. If the account data request throws an error,
+     * this simply returns the default provided.
+     * @param {string} eventType The type of account data to retrieve.
+     * @param {any} defaultContent The default value. Defaults to null.
+     * @returns {Promise<any>} Resolves to the content of that account data, or the default.
+     */
+    @timedMatrixClientFunctionCall()
+    public async getSafeAccountData(eventType: string, defaultContent: any = null): Promise<any> {
+        try {
+            return await this.getAccountData(eventType);
+        } catch (e) {
+            LogService.warn("MatrixClient", `Error getting ${eventType} account data:`, e);
+            return defaultContent;
+        }
+    }
+
+    /**
+     * Retrieves content from room account data. If the account data request throws an error,
+     * this simply returns the default provided.
+     * @param {string} eventType The type of room account data to retrieve.
+     * @param {string} roomId The room to read the account data from.
+     * @param {any} defaultContent The default value. Defaults to null.
+     * @returns {Promise<any>} Resolves to the content of that room account data, or the default.
+     */
+    @timedMatrixClientFunctionCall()
+    public async getSafeRoomAccountData(eventType: string, roomId: string, defaultContent: any = null): Promise<any> {
+        try {
+            return await this.getRoomAccountData(eventType, roomId);
+        } catch (e) {
+            LogService.warn("MatrixClient", `Error getting ${eventType} room account data in ${roomId}:`, e);
+            return defaultContent;
+        }
     }
 
     /**

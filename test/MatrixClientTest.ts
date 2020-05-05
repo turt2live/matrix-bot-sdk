@@ -231,6 +231,41 @@ describe('MatrixClient', () => {
         });
     });
 
+    describe('getSafeAccountData', () => {
+        it('should call the right endpoint', async () => {
+            const {client, http, hsUrl} = createTestClient();
+
+            const eventType = "io.t2bot.test.data";
+            const userId = "@test:example.org";
+
+            client.getUserId = () => Promise.resolve(userId);
+
+            http.when("GET", "/_matrix/client/r0/user").respond(200, (path) => {
+                expect(path).toEqual(`${hsUrl}/_matrix/client/r0/user/${encodeURIComponent(userId)}/account_data/${encodeURIComponent(eventType)}`);
+                return {};
+            });
+
+            http.flushAllExpected();
+            await client.getSafeAccountData(eventType);
+        });
+
+        it('should return the default on error', async () => {
+            const {client, http, hsUrl} = createTestClient();
+
+            const eventType = "io.t2bot.test.data";
+            const userId = "@test:example.org";
+            const defaultContent = {hello: "world"};
+
+            client.getUserId = () => Promise.resolve(userId);
+
+            http.when("GET", "/_matrix/client/r0/user").respond(404, {});
+
+            http.flushAllExpected();
+            const ret = await client.getSafeAccountData(eventType, defaultContent);
+            expect(ret).toBe(defaultContent);
+        });
+    });
+
     describe('getPresenceStatus', () => {
         it('should call the right endpoint', async () => {
             const {client, http, hsUrl} = createTestClient();
@@ -320,6 +355,43 @@ describe('MatrixClient', () => {
 
             http.flushAllExpected();
             await client.getRoomAccountData(eventType, roomId);
+        });
+    });
+
+    describe('getSafeRoomAccountData', () => {
+        it('should call the right endpoint', async () => {
+            const {client, http, hsUrl} = createTestClient();
+
+            const eventType = "io.t2bot.test.data";
+            const roomId = "!test:example.org";
+            const userId = "@test:example.org";
+
+            client.getUserId = () => Promise.resolve(userId);
+
+            http.when("GET", "/_matrix/client/r0/user").respond(200, (path) => {
+                expect(path).toEqual(`${hsUrl}/_matrix/client/r0/user/${encodeURIComponent(userId)}/rooms/${encodeURIComponent(roomId)}/account_data/${encodeURIComponent(eventType)}`);
+                return {};
+            });
+
+            http.flushAllExpected();
+            await client.getSafeRoomAccountData(eventType, roomId);
+        });
+
+        it('should return the default on error', async () => {
+            const {client, http, hsUrl} = createTestClient();
+
+            const eventType = "io.t2bot.test.data";
+            const roomId = "!test:example.org";
+            const userId = "@test:example.org";
+            const defaultContent = {hello: "world"};
+
+            client.getUserId = () => Promise.resolve(userId);
+
+            http.when("GET", "/_matrix/client/r0/user").respond(404, {});
+
+            http.flushAllExpected();
+            const ret = await client.getSafeRoomAccountData(eventType, roomId, defaultContent);
+            expect(ret).toBe(defaultContent);
         });
     });
 
