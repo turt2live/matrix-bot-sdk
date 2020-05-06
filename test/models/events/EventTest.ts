@@ -1,13 +1,11 @@
 import { MatrixEvent } from "../../../src";
 import * as expect from "expect";
 
-export function createMinimalEvent() {
+export function createMinimalEvent(content: any = {hello: "world"}) {
     return {
         sender: "@alice:example.org",
         type: "org.example.test",
-        content: {
-            hello: "world",
-        },
+        content: {...content},
     };
 }
 

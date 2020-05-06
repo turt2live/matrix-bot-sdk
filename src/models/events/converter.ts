@@ -19,7 +19,7 @@ import {
 export function wrapRoomEvent(event: any): RoomEvent<any> {
     if (!event) return null;
 
-    if (event['state_key'] || event['state_key'] !== '') {
+    if (typeof(event['state_key']) === 'string') {
         if (event['type'] === 'm.room.member') {
             return new MembershipEvent(event);
         } else {
