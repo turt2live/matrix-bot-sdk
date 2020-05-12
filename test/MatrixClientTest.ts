@@ -438,6 +438,65 @@ describe('MatrixClient', () => {
         });
     });
 
+    describe('getPublishedAlias', () => {
+        it('should return falsey on 404', async () => {
+            const {client, http, hsUrl} = createTestClient();
+
+            const roomId = "!abc:example.org";
+
+            http.when("GET", "/_matrix/client/r0/rooms/").respond(404, {});
+
+            http.flushAllExpected();
+            const published = await client.getPublishedAlias(roomId);
+            expect(published).toBeFalsy();
+        });
+
+        it('should return falsey on no aliases (empty content)', async () => {
+            const {client, http, hsUrl} = createTestClient();
+
+            const roomId = "!abc:example.org";
+
+            http.when("GET", "/_matrix/client/r0/rooms/").respond(200, {});
+
+            http.flushAllExpected();
+            const published = await client.getPublishedAlias(roomId);
+            expect(published).toBeFalsy();
+        });
+
+        it('should return the canonical alias where possible', async () => {
+            const {client, http, hsUrl} = createTestClient();
+
+            const roomId = "!abc:example.org";
+            const alias1 = "#test1:example.org";
+            const alias2 = "#test2:example.org";
+
+            http.when("GET", "/_matrix/client/r0/rooms/").respond(200, {
+                alias: alias1,
+                alt_aliases: [alias2],
+            });
+
+            http.flushAllExpected();
+            const published = await client.getPublishedAlias(roomId);
+            expect(published).toEqual(alias1);
+        });
+
+        it('should return the first alt alias where possible', async () => {
+            const {client, http, hsUrl} = createTestClient();
+
+            const roomId = "!abc:example.org";
+            const alias1 = "#test1:example.org";
+            const alias2 = "#test2:example.org";
+
+            http.when("GET", "/_matrix/client/r0/rooms/").respond(200, {
+                alt_aliases: [alias2, alias1],
+            });
+
+            http.flushAllExpected();
+            const published = await client.getPublishedAlias(roomId);
+            expect(published).toEqual(alias2);
+        });
+    });
+
     describe('createRoomAlias', () => {
         it('should call the right endpoint', async () => {
             const {client, http, hsUrl} = createTestClient();

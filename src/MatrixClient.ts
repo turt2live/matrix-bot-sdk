@@ -281,6 +281,30 @@ export class MatrixClient extends EventEmitter {
     }
 
     /**
+     * Gets a published alias for the given room. These are supplied by the room admins
+     * and should point to the room, but may not. This is primarily intended to be used
+     * in the context of rendering a mention (pill) for a room.
+     * @param {string} roomIdOrAlias The room ID or alias to get an alias for.
+     * @returns {Promise<string>} Resolves to a published room alias, or falsey if none found.
+     */
+    @timedMatrixClientFunctionCall()
+    public async getPublishedAlias(roomIdOrAlias: string): Promise<string> {
+        try {
+            const roomId = await this.resolveRoom(roomIdOrAlias);
+            const event = await this.getRoomStateEvent(roomId, "m.room.canonical_alias", "");
+            if (!event) return null;
+
+            const canonical = event['alias'];
+            const alt = event['alt_aliases'] || [];
+
+            return canonical || alt[0];
+        } catch (e) {
+            // Assume none
+            return null;
+        }
+    }
+
+    /**
      * Adds a new room alias to the room directory
      * @param {string} alias The alias to add (eg: "#my-room:matrix.org")
      * @param {string} roomId The room ID to add the alias to
