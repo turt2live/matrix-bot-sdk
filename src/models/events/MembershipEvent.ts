@@ -35,6 +35,15 @@ export class MembershipEvent extends StateEvent<MembershipEventContent> {
     }
 
     /**
+     * True if the membership event targets the sender. False otherwise.
+     *
+     * This will typically by false for kicks and bans.
+     */
+    public get ownMembership(): boolean {
+        return this.membershipFor === this.sender;
+    }
+
+    /**
      * The user ID the membership affects.
      */
     public get membershipFor(): string {
