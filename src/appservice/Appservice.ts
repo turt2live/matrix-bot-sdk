@@ -731,10 +731,10 @@ export class Appservice extends EventEmitter {
     }
 
     private onThirdpartyUser(req: express.Request, res: express.Response) {
-        return this.handleThirdpartyObject(req, res, "user", req.query["userid"]);
+        return this.handleThirdpartyObject(req, res, "user", req.query["userid"] as string);
     }
 
     private onThirdpartyLocation(req: express.Request, res: express.Response) {
-        return this.handleThirdpartyObject(req, res, "location", req.query["alias"]);
+        return this.handleThirdpartyObject(req, res, "location", req.query["alias"] as string);
     }
 }
