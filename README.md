@@ -3,7 +3,7 @@
 [![npm version](https://badge.fury.io/js/matrix-bot-sdk.svg)](https://www.npmjs.com/package/matrix-bot-sdk)
 [![TravisCI badge](https://travis-ci.org/turt2live/matrix-js-bot-sdk.svg?branch=master)](https://travis-ci.org/turt2live/matrix-js-bot-sdk)
 
-A lightweight version of the matrix-js-sdk intended for bots. For help and support, visit [#matrix-bot-sdk:t2bot.io](https://matrix.to/#/#matrix-bot-sdk:t2bot.io)
+A lightweight alternative to matrix-js-sdk intended for bots. For help and support, visit [#matrix-bot-sdk:t2bot.io](https://matrix.to/#/#matrix-bot-sdk:t2bot.io)
 
 Documentation for the develop branch is available [here](https://turt2live.github.io/matrix-js-bot-sdk/index.html).
 

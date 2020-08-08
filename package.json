@@ -1,7 +1,7 @@
 {
   "name": "matrix-bot-sdk",
   "version": "develop",
-  "description": "A lightweight version of the matrix-js-sdk intended for bots",
+  "description": "A lightweight alternative to matrix-js-sdk intended for bots",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/turt2live/matrix-js-bot-sdk.git"
