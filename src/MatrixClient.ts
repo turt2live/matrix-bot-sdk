@@ -1322,7 +1322,7 @@ export class MatrixClient extends EventEmitter {
             qs: qs,
             // If this is undefined, then a string will be returned. If it's null, a Buffer will be returned.
             encoding: noEncoding === false ? undefined : null,
-            userQuerystring: true,
+            useQuerystring: true,
             qsStringifyOptions: {
                 options: {arrayFormat: 'repeat'},
             },
