@@ -9,6 +9,13 @@ import { InvalidEventError } from "./InvalidEventError";
 export type Membership = "join" | "leave" | "ban" | "invite";
 
 /**
+ * The effective membership states a user can be in.
+ * @category Matrix event info
+ * @see MembershipEventContent
+ */
+export type EffectiveMembership = "join" | "leave" | "invite";
+
+/**
  * The content definition for m.room.member events
  * @category Matrix event contents
  * @see MembershipEvent
@@ -57,5 +64,14 @@ export class MembershipEvent extends StateEvent<MembershipEventContent> {
         const membership = this.content.membership;
         if (!membership) throw new InvalidEventError("no membership field in content");
         return membership;
+    }
+
+    /**
+     * The user's effective membership.
+     */
+    public get effectiveMembership(): EffectiveMembership {
+        if (this.membership === "join") return "join";
+        if (this.membership === "invite") return "invite";
+        return "leave";
     }
 }
