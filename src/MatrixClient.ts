@@ -570,6 +570,21 @@ export class MatrixClient extends EventEmitter {
 
         if (!raw) return; // nothing to process
 
+        if (raw['groups']) {
+            const leave = raw['groups']['leave'] || {};
+            for (const groupId of Object.keys(leave)) {
+                await emitFn("unstable.group.leave", groupId, leave[groupId]);
+            }
+            const join = raw['groups']['join'] || {};
+            for (const groupId of Object.keys(join)) {
+                await emitFn("unstable.group.join", groupId, join[groupId]);
+            }
+            const invite = raw['groups']['invite'] || {};
+            for (const groupId of Object.keys(invite)) {
+                await emitFn("unstable.group.invite", groupId, invite[groupId]);
+            }
+        }
+
         if (raw['account_data'] && raw['account_data']['events']) {
             for (const event of raw['account_data']['events']) {
                 await emitFn("account_data", event);
@@ -1290,8 +1305,9 @@ export class MatrixClient extends EventEmitter {
      */
     @timedMatrixClientFunctionCall()
     public doRequest(method, endpoint, qs = null, body = null, timeout = 60000, raw = false, contentType = "application/json", noEncoding = false): Promise<any> {
-        if (!endpoint.startsWith('/'))
+        if (!endpoint.startsWith('/')) {
             endpoint = '/' + endpoint;
+        }
 
         const requestId = ++this.requestId;
         const url = this.homeserverUrl + endpoint;
@@ -1322,7 +1338,7 @@ export class MatrixClient extends EventEmitter {
             qs: qs,
             // If this is undefined, then a string will be returned. If it's null, a Buffer will be returned.
             encoding: noEncoding === false ? undefined : null,
-            userQuerystring: true,
+            useQuerystring: true,
             qsStringifyOptions: {
                 options: {arrayFormat: 'repeat'},
             },

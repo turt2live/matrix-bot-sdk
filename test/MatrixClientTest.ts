@@ -1069,6 +1069,66 @@ describe('MatrixClient', () => {
             expect(spy.callCount).toBe(1);
         });
 
+        it('should process left groups', async () => {
+            const {client: realClient} = createTestClient();
+            const client = <ProcessSyncClient>(<any>realClient);
+
+            const userId = "@syncing:example.org";
+            const testGroup = {profile: {name: "Test Group"}};
+            const testGroupId = "+test:example.org"
+
+            client.userId = userId;
+
+            const spy = simple.stub().callFn((gid, info) => {
+                expect(info).toMatchObject(testGroup);
+                expect(gid).toEqual(testGroupId);
+            });
+            realClient.on("unstable.group.leave", spy);
+
+            await client.processSync({groups: {leave: {[testGroupId]: testGroup}}});
+            expect(spy.callCount).toBe(1);
+        });
+
+        it('should process joined groups', async () => {
+            const {client: realClient} = createTestClient();
+            const client = <ProcessSyncClient>(<any>realClient);
+
+            const userId = "@syncing:example.org";
+            const testGroup = {profile: {name: "Test Group"}};
+            const testGroupId = "+test:example.org"
+
+            client.userId = userId;
+
+            const spy = simple.stub().callFn((gid, info) => {
+                expect(info).toMatchObject(testGroup);
+                expect(gid).toEqual(testGroupId);
+            });
+            realClient.on("unstable.group.join", spy);
+
+            await client.processSync({groups: {join: {[testGroupId]: testGroup}}});
+            expect(spy.callCount).toBe(1);
+        });
+
+        it('should process group invites', async () => {
+            const {client: realClient} = createTestClient();
+            const client = <ProcessSyncClient>(<any>realClient);
+
+            const userId = "@syncing:example.org";
+            const testGroup = {profile: {name: "Test Group"}};
+            const testGroupId = "+test:example.org"
+
+            client.userId = userId;
+
+            const spy = simple.stub().callFn((gid, info) => {
+                expect(info).toMatchObject(testGroup);
+                expect(gid).toEqual(testGroupId);
+            });
+            realClient.on("unstable.group.invite", spy);
+
+            await client.processSync({groups: {invite: {[testGroupId]: testGroup}}});
+            expect(spy.callCount).toBe(1);
+        });
+
         it('should process left rooms', async () => {
             const {client: realClient} = createTestClient();
             const client = <ProcessSyncClient>(<any>realClient);

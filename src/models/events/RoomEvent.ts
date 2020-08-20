@@ -77,7 +77,7 @@ export class StateEvent<T extends Object> extends RoomEvent<T> {
      * object if there is no previous content.
      */
     public get previousContent(): T {
-        return this.event['prev_content'] || {};
+        return this.unsigned['prev_content'] || this.event['prev_content'] || {}; // v2, v1, fallback
     }
 }
 
