@@ -229,7 +229,7 @@ export class Appservice extends EventEmitter {
         this.storage = options.storage || new MemoryStorageProvider();
         options.storage = this.storage;
 
-        this.app.use(express.json());
+        this.app.use(express.json({limit: Number.MAX_SAFE_INTEGER})); // disable limits, use a reverse proxy
         this.app.use(morgan("combined"));
 
         // ETag headers break the tests sometimes, and we don't actually need them anyways for
