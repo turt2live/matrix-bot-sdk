@@ -269,11 +269,11 @@ export class MatrixClient extends EventEmitter {
     /**
      * Sets the presence status for the current user.
      * @param {"online"|"offline"|"unavailable"} presence The new presence state for the user.
-     * @param {string} statusMessage Optional status message to include with the presence.
+     * @param {string?} statusMessage Optional status message to include with the presence.
      * @returns {Promise<any>} Resolves when complete.
      */
     @timedMatrixClientFunctionCall()
-    public async setPresenceStatus(presence: "online" | "offline" | "unavailable", statusMessage: string = null): Promise<any> {
+    public async setPresenceStatus(presence: "online" | "offline" | "unavailable", statusMessage: string = undefined): Promise<any> {
         return this.doRequest("PUT", "/_matrix/client/r0/presence/" + encodeURIComponent(await this.getUserId()) + "/status", null, {
             presence: presence,
             status_msg: statusMessage,
@@ -407,7 +407,7 @@ export class MatrixClient extends EventEmitter {
      * @returns {Promise<any>} resolves when completed
      */
     @timedMatrixClientFunctionCall()
-    public kickUser(userId, roomId, reason = null) {
+    public kickUser(userId, roomId, reason = undefined) {
         return this.doRequest("POST", "/_matrix/client/r0/rooms/" + encodeURIComponent(roomId) + "/kick", null, {
             user_id: userId,
             reason: reason,
@@ -422,7 +422,7 @@ export class MatrixClient extends EventEmitter {
      * @returns {Promise<any>} resolves when completed
      */
     @timedMatrixClientFunctionCall()
-    public banUser(userId, roomId, reason = null) {
+    public banUser(userId, roomId, reason = undefined) {
         return this.doRequest("POST", "/_matrix/client/r0/rooms/" + encodeURIComponent(roomId) + "/ban", null, {
             user_id: userId,
             reason: reason,
@@ -772,11 +772,11 @@ export class MatrixClient extends EventEmitter {
 
     /**
      * Sets a new display name for the user.
-     * @param {string} displayName the new display name for the user, or null to clear
+     * @param {string?} displayName the new display name for the user, or undefined to clear
      * @returns {Promise<any>} resolves when complete
      */
     @timedMatrixClientFunctionCall()
-    public async setDisplayName(displayName: string): Promise<any> {
+    public async setDisplayName(displayName: string|undefined): Promise<any> {
         const userId = encodeURIComponent(await this.getUserId());
         return this.doRequest("PUT", "/_matrix/client/r0/profile/" + userId + "/displayname", null, {
             displayname: displayName,
@@ -785,11 +785,11 @@ export class MatrixClient extends EventEmitter {
 
     /**
      * Sets a new avatar url for the user.
-     * @param {string} avatarUrl the new avatar URL for the user, in the form of a Matrix Content URI
+     * @param {string?} avatarUrl the new avatar URL for the user, in the form of a Matrix Content URI
      * @returns {Promise<any>} resolves when complete
      */
     @timedMatrixClientFunctionCall()
-    public async setAvatarUrl(avatarUrl: string): Promise<any> {
+    public async setAvatarUrl(avatarUrl: string|undefined): Promise<any> {
         const userId = encodeURIComponent(await this.getUserId());
         return this.doRequest("PUT", "/_matrix/client/r0/profile/" + userId + "/avatar_url", null, {
             avatar_url: avatarUrl,
