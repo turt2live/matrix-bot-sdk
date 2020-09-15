@@ -1,9 +1,10 @@
 import { MatrixClient } from "./MatrixClient";
+import { SynapseAdminApis } from "./SynapseAdminApis";
 
 /**
  * Whois information about a user.
  * See https://matrix.org/docs/spec/client_server/r0.5.0#get-matrix-client-r0-admin-whois-userid for more information.
- * @category Unstable APIs
+ * @category Admin APIs
  */
 export interface WhoisInfo {
     user_id: string;
@@ -35,10 +36,17 @@ interface WhoisConnectionInfo {
 
 /**
  * Access to various administrative APIs.
- * @category Unstable APIs
+ * @category Admin APIs
  */
 export class AdminApis {
     constructor(private client: MatrixClient) {
+    }
+
+    /**
+     * Gets access to the Synapse administrative APIs object.
+     */
+    public get synapse(): SynapseAdminApis {
+        return new SynapseAdminApis(this.client);
     }
 
     /**
