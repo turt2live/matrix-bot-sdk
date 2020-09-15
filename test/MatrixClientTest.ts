@@ -12,11 +12,12 @@ import * as MockHttpBackend from 'matrix-mock-request';
 import { expectArrayEquals } from "./TestUtils";
 import { Membership } from "../src/models/events/MembershipEvent";
 
-export function createTestClient(storage: IStorageProvider = null): { client: MatrixClient, http: MockHttpBackend, hsUrl: string, accessToken: string } {
+export function createTestClient(storage: IStorageProvider = null, userId: string = null): { client: MatrixClient, http: MockHttpBackend, hsUrl: string, accessToken: string } {
     const http = new MockHttpBackend();
     const hsUrl = "https://localhost";
     const accessToken = "s3cret";
     const client = new MatrixClient(hsUrl, accessToken, storage);
+    (<any>client).userId = userId; // private member access
     setRequestFn(http.requestFn);
 
     return {http, hsUrl, accessToken, client};
@@ -3349,6 +3350,219 @@ describe('MatrixClient', () => {
             result = await client.userHasPowerLevelFor(userId, roomId, eventType, isState);
             expect(result).toBe(true);
             expect(getStateEventSpy.callCount).toBe(3);
+        });
+    });
+
+    describe('calculatePowerLevelChangeBoundsOn', () => {
+        it('throws when a power level event cannot be located', async () => {
+            const {client} = createTestClient(null, '@testing:example.org');
+
+            const roomId = "!testing:example.org";
+            const userId = await client.getUserId();
+
+            const getStateEventSpy = simple.mock(client, "getRoomStateEvent").callFn((rid, evType, stateKey) => {
+                expect(rid).toEqual(roomId);
+                expect(evType).toEqual("m.room.power_levels");
+                expect(stateKey).toEqual("");
+                return null;
+            });
+
+            try {
+                await client.calculatePowerLevelChangeBoundsOn(userId, roomId);
+
+                // noinspection ExceptionCaughtLocallyJS
+                throw new Error("Expected call to fail");
+            } catch (e) {
+                expect(e.message).toEqual("No power level event found");
+            }
+            expect(getStateEventSpy.callCount).toBe(1);
+        });
+
+        it ('allows moderators to demote themselves', async () => {
+            const {client} = createTestClient(null, '@testing:example.org');
+
+            const roomId = "!testing:example.org";
+            const targetUserId = await client.getUserId();
+            const plEvent = {
+                state_default: 50,
+                users: {
+                    [targetUserId]: 50,
+                },
+            };
+
+            simple.mock(client, "getRoomStateEvent").callFn((rid, evType, stateKey) => {
+                expect(rid).toEqual(roomId);
+                expect(evType).toEqual("m.room.power_levels");
+                expect(stateKey).toEqual("");
+                return plEvent;
+            });
+
+            const bounds = await client.calculatePowerLevelChangeBoundsOn(targetUserId, roomId);
+            expect(bounds).toBeDefined();
+            expect(bounds.canModify).toBe(true);
+            expect(bounds.maximumPossibleLevel).toBe(plEvent.users[targetUserId]);
+        });
+
+        it ('allows admins to demote themselves', async () => {
+            const {client} = createTestClient(null, '@testing:example.org');
+
+            const roomId = "!testing:example.org";
+            const targetUserId = await client.getUserId();
+            const plEvent = {
+                state_default: 50,
+                users: {
+                    [targetUserId]: 100,
+                },
+            };
+
+            simple.mock(client, "getRoomStateEvent").callFn((rid, evType, stateKey) => {
+                expect(rid).toEqual(roomId);
+                expect(evType).toEqual("m.room.power_levels");
+                expect(stateKey).toEqual("");
+                return plEvent;
+            });
+
+            const bounds = await client.calculatePowerLevelChangeBoundsOn(targetUserId, roomId);
+            expect(bounds).toBeDefined();
+            expect(bounds.canModify).toBe(true);
+            expect(bounds.maximumPossibleLevel).toBe(plEvent.users[targetUserId]);
+        });
+
+        it ('denies moderators from promoting themselves', async () => {
+            const {client} = createTestClient(null, '@testing:example.org');
+
+            const roomId = "!testing:example.org";
+            const targetUserId = await client.getUserId();
+            const plEvent = {
+                state_default: 100,
+                users: {
+                    [targetUserId]: 50,
+                },
+            };
+
+            simple.mock(client, "getRoomStateEvent").callFn((rid, evType, stateKey) => {
+                expect(rid).toEqual(roomId);
+                expect(evType).toEqual("m.room.power_levels");
+                expect(stateKey).toEqual("");
+                return plEvent;
+            });
+
+            const bounds = await client.calculatePowerLevelChangeBoundsOn(targetUserId, roomId);
+            expect(bounds).toBeDefined();
+            expect(bounds.canModify).toBe(false);
+            expect(bounds.maximumPossibleLevel).toBe(0); // zero because it doesn't know
+        });
+
+        it ('prevents users from promoting above themselves', async () => {
+            const {client} = createTestClient(null, '@testing:example.org');
+
+            const roomId = "!testing:example.org";
+            const targetUserId = "@another:example.org";
+            const userLevel = 40;
+            const targetLevel = 50;
+            const plEvent = {
+                state_default: 10,
+                users: {
+                    [targetUserId]: targetLevel,
+                    [await client.getUserId()]: userLevel,
+                },
+            };
+
+            simple.mock(client, "getRoomStateEvent").callFn((rid, evType, stateKey) => {
+                expect(rid).toEqual(roomId);
+                expect(evType).toEqual("m.room.power_levels");
+                expect(stateKey).toEqual("");
+                return plEvent;
+            });
+
+            const bounds = await client.calculatePowerLevelChangeBoundsOn(targetUserId, roomId);
+            expect(bounds).toBeDefined();
+            expect(bounds.canModify).toBe(false);
+            expect(bounds.maximumPossibleLevel).toBe(userLevel);
+        });
+
+        it ('allows users to promote up to their power level', async () => {
+            const {client} = createTestClient(null, '@testing:example.org');
+
+            const roomId = "!testing:example.org";
+            const targetUserId = "@another:example.org";
+            const userLevel = 60;
+            const targetLevel = 50;
+            const plEvent = {
+                state_default: 10,
+                users: {
+                    [targetUserId]: targetLevel,
+                    [await client.getUserId()]: userLevel,
+                },
+            };
+
+            simple.mock(client, "getRoomStateEvent").callFn((rid, evType, stateKey) => {
+                expect(rid).toEqual(roomId);
+                expect(evType).toEqual("m.room.power_levels");
+                expect(stateKey).toEqual("");
+                return plEvent;
+            });
+
+            const bounds = await client.calculatePowerLevelChangeBoundsOn(targetUserId, roomId);
+            expect(bounds).toBeDefined();
+            expect(bounds.canModify).toBe(true);
+            expect(bounds.maximumPossibleLevel).toBe(userLevel);
+        });
+
+        it ('denies modification for exactly the same level', async () => {
+            const {client} = createTestClient(null, '@testing:example.org');
+
+            const roomId = "!testing:example.org";
+            const targetUserId = "@another:example.org";
+            const userLevel = 50;
+            const targetLevel = 50;
+            const plEvent = {
+                state_default: 10,
+                users: {
+                    [targetUserId]: targetLevel,
+                    [await client.getUserId()]: userLevel,
+                },
+            };
+
+            simple.mock(client, "getRoomStateEvent").callFn((rid, evType, stateKey) => {
+                expect(rid).toEqual(roomId);
+                expect(evType).toEqual("m.room.power_levels");
+                expect(stateKey).toEqual("");
+                return plEvent;
+            });
+
+            const bounds = await client.calculatePowerLevelChangeBoundsOn(targetUserId, roomId);
+            expect(bounds).toBeDefined();
+            expect(bounds.canModify).toBe(false);
+            expect(bounds.maximumPossibleLevel).toBe(userLevel);
+        });
+
+        it ('denies modification if the state event is too high of power', async () => {
+            const {client} = createTestClient(null, '@testing:example.org');
+
+            const roomId = "!testing:example.org";
+            const targetUserId = "@another:example.org";
+            const userLevel = 50;
+            const targetLevel = 50;
+            const plEvent = {
+                state_default: 1000,
+                users: {
+                    [targetUserId]: targetLevel,
+                    [await client.getUserId()]: userLevel,
+                },
+            };
+
+            simple.mock(client, "getRoomStateEvent").callFn((rid, evType, stateKey) => {
+                expect(rid).toEqual(roomId);
+                expect(evType).toEqual("m.room.power_levels");
+                expect(stateKey).toEqual("");
+                return plEvent;
+            });
+
+            const bounds = await client.calculatePowerLevelChangeBoundsOn(targetUserId, roomId);
+            expect(bounds).toBeDefined();
+            expect(bounds.canModify).toBe(false);
+            expect(bounds.maximumPossibleLevel).toBe(0); // zero because it doesn't know
         });
     });
 

@@ -15,6 +15,7 @@ import { Presence } from "./models/Presence";
 import { Membership, MembershipEvent } from "./models/events/MembershipEvent";
 import { RoomEvent, RoomEventContent, StateEvent } from "./models/events/RoomEvent";
 import { EventContext } from "./models/EventContext";
+import { PowerLevelBounds } from "./models/PowerLevelBounds";
 
 /**
  * A client that is capable of interacting with a matrix homeserver.
@@ -1054,6 +1055,44 @@ export class MatrixClient extends EventEmitter {
         if (powerLevelsEvent["users"] && powerLevelsEvent["users"][userId]) userPower = powerLevelsEvent["users"][userId];
 
         return userPower >= requiredPower;
+    }
+
+    /**
+     * Determines the boundary conditions for this client's ability to change another user's power level
+     * in a given room. This will identify the maximum possible level this client can change the user to,
+     * and if that change could even be possible. If the returned object indicates that the client can
+     * change the power level of the user, the client is able to set the power level to any value equal
+     * to or less than the maximum value.
+     * @param {string} targetUserId The user ID to compare against.
+     * @param {string} roomId The room ID to compare within.
+     * @returns {Promise<PowerLevelBounds>} The bounds of the client's ability to change the user's power level.
+     */
+    @timedMatrixClientFunctionCall()
+    public async calculatePowerLevelChangeBoundsOn(targetUserId: string, roomId: string): Promise<PowerLevelBounds> {
+        const myUserId = await this.getUserId();
+
+        const canChangePower = await this.userHasPowerLevelFor(myUserId, roomId, "m.room.power_levels", true);
+        if (!canChangePower) return {canModify: false, maximumPossibleLevel: 0};
+
+        const powerLevelsEvent = await this.getRoomStateEvent(roomId, "m.room.power_levels", "");
+        if (!powerLevelsEvent) {
+            throw new Error("No power level event found");
+        }
+
+        let targetUserPower = 0;
+        let myUserPower = 0;
+        if (powerLevelsEvent["users"] && powerLevelsEvent["users"][targetUserId]) targetUserPower = powerLevelsEvent["users"][targetUserId];
+        if (powerLevelsEvent["users"] && powerLevelsEvent["users"][myUserId]) myUserPower = powerLevelsEvent["users"][myUserId];
+
+        if (myUserId === targetUserId) {
+            return {canModify: true, maximumPossibleLevel: myUserPower};
+        }
+
+        if (targetUserPower >= myUserPower) {
+            return {canModify: false, maximumPossibleLevel: myUserPower};
+        }
+
+        return {canModify: true, maximumPossibleLevel: myUserPower};
     }
 
     /**
