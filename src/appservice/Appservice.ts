@@ -118,7 +118,7 @@ export interface IAppserviceRegistration {
     /**
      * **Experimental**
      * 
-     * Should the application service be pushed ephemeral events
+     * Should the application service recieve ephemeral events from the homeserver. Optional.
      * @see https://github.com/matrix-org/matrix-doc/pull/2409
      */
     "de.sorunome.msc2409.push_ephemeral"?: boolean;
