@@ -115,6 +115,14 @@ export interface IAppserviceRegistration {
      */
     rate_limited?: boolean;
 
+    /**
+     * **Experimental**
+     * 
+     * Should the application service be pushed ephemeral events
+     * @see https://github.com/matrix-org/matrix-doc/pull/2409
+     */
+    "de.sorunome.msc2409.push_ephemeral"?: boolean;
+
     // not interested in other options
 }
 
@@ -198,6 +206,7 @@ export class Appservice extends EventEmitter {
     private app = express();
     private appServer: any;
     private intentsCache: LRU;
+    private ephemeralEventProcessors: { [eventType: string]: IPreprocessor[] } = {};
     private eventProcessors: { [eventType: string]: IPreprocessor[] } = {};
     private pendingTransactions: { [txnId: string]: Promise<any> } = {};
 
@@ -509,6 +518,23 @@ export class Appservice extends EventEmitter {
     }
 
     /**
+     * Adds a preprocessor to the event pipeline. When this appservice encounters an ephemeral event, it
+     * will try to run it through the preprocessors it can in the order they were added.
+     * @param {IPreprocessor} preprocessor the preprocessor to add
+     */
+    public addEphemeralEventPreprocessor(preprocessor: IPreprocessor): void {
+        if (!preprocessor) throw new Error("Preprocessor cannot be null");
+
+        const eventTypes = preprocessor.getSupportedEventTypes();
+        if (!eventTypes) return; // Nothing to do
+
+        for (const eventType of eventTypes) {
+            if (!this.ephemeralEventProcessors[eventType]) this.ephemeralEventProcessors[eventType] = [];
+            this.ephemeralEventProcessors[eventType].push(preprocessor);
+        }
+    }
+
+    /**
      * Sets the visibility of a room in the appservice's room directory.
      * @param {string} networkId The network ID to group the room under.
      * @param {string} roomId The room ID to manipulate the visibility of.
@@ -521,6 +547,17 @@ export class Appservice extends EventEmitter {
         return this.botClient.doRequest("PUT", `/_matrix/client/r0/directory/list/appservice/${networkId}/${roomId}`, null, {
             visibility,
         });
+    }
+
+    private async processEphemeralEvent(event: any): Promise<any> {
+        if (!event) return event;
+        if (!this.ephemeralEventProcessors[event["type"]]) return event;
+
+        for (const processor of this.ephemeralEventProcessors[event["type"]]) {
+            await processor.processEvent(event, this.botIntent.underlyingClient);
+        }
+
+        return event;
     }
 
     private async processEvent(event: any): Promise<any> {
@@ -593,7 +630,7 @@ export class Appservice extends EventEmitter {
         }
 
         LogService.info("Appservice", "Processing transaction " + txnId);
-        this.pendingTransactions[txnId] = new Promise(async (resolve, reject) => {
+        this.pendingTransactions[txnId] = new Promise(async (resolve) => {
             for (let event of req.body["events"]) {
                 LogService.info("Appservice", `Processing event of type ${event["type"]}`);
                 event = await this.processEvent(event);
@@ -609,6 +646,15 @@ export class Appservice extends EventEmitter {
                 }
                 if (event['type'] === 'm.room.create' && event['state_key'] === '' && event['content'] && event['content']['predecessor']) {
                     this.emit("room.upgraded", event['room_id'], event);
+                }
+            }
+
+            if (this.registration["de.sorunome.msc2409.push_ephemeral"] && req.body["de.sorunome.msc2409.ephemeral"]) {
+                for (let event of req.body["de.sorunome.msc2409.ephemeral"]) {
+                    LogService.info("Appservice", `Processing ephemeral event of type ${event["type"]}`);
+                    event = await this.processEphemeralEvent(event);
+                    // These events aren't tied to rooms, so just emit them as `ephemeral_event`
+                    this.emit("ephemeral_event", event);
                 }
             }
 
