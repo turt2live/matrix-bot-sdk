@@ -36,6 +36,7 @@ export * from "./models/EventContext";
 export * from "./models/PowerLevelBounds";
 
 // Event models
+export * from "./models/events/EventKind";
 export * from "./models/events/converter";
 export * from "./models/events/InvalidEventError";
 export * from "./models/events/Event";

@@ -2,6 +2,7 @@ import * as express from "express";
 import { Intent } from "./Intent";
 import {
     AppserviceJoinRoomStrategy,
+    EventKind,
     IAppserviceStorageProvider,
     IJoinRoomStrategy,
     IPreprocessor,
@@ -114,6 +115,14 @@ export interface IAppserviceRegistration {
      * If the application service is rate limited by the homeserver. Optional.
      */
     rate_limited?: boolean;
+
+    /**
+     * **Experimental**
+     *
+     * Should the application service receive ephemeral events from the homeserver. Optional.
+     * @see https://github.com/matrix-org/matrix-doc/pull/2409
+     */
+    "de.sorunome.msc2409.push_ephemeral"?: boolean;
 
     // not interested in other options
 }
@@ -523,12 +532,23 @@ export class Appservice extends EventEmitter {
         });
     }
 
+    private async processEphemeralEvent(event: any): Promise<any> {
+        if (!event) return event;
+        if (!this.eventProcessors[event["type"]]) return event;
+
+        for (const processor of this.eventProcessors[event["type"]]) {
+            await processor.processEvent(event, this.botIntent.underlyingClient, EventKind.EphemeralEvent);
+        }
+
+        return event;
+    }
+
     private async processEvent(event: any): Promise<any> {
         if (!event) return event;
         if (!this.eventProcessors[event["type"]]) return event;
 
         for (const processor of this.eventProcessors[event["type"]]) {
-            await processor.processEvent(event, this.botIntent.underlyingClient);
+            await processor.processEvent(event, this.botIntent.underlyingClient, EventKind.RoomEvent);
         }
 
         return event;
@@ -593,7 +613,7 @@ export class Appservice extends EventEmitter {
         }
 
         LogService.info("Appservice", "Processing transaction " + txnId);
-        this.pendingTransactions[txnId] = new Promise(async (resolve, reject) => {
+        this.pendingTransactions[txnId] = new Promise(async (resolve) => {
             for (let event of req.body["events"]) {
                 LogService.info("Appservice", `Processing event of type ${event["type"]}`);
                 event = await this.processEvent(event);
@@ -609,6 +629,15 @@ export class Appservice extends EventEmitter {
                 }
                 if (event['type'] === 'm.room.create' && event['state_key'] === '' && event['content'] && event['content']['predecessor']) {
                     this.emit("room.upgraded", event['room_id'], event);
+                }
+            }
+
+            if (this.registration["de.sorunome.msc2409.push_ephemeral"] && req.body["de.sorunome.msc2409.ephemeral"]) {
+                for (let event of req.body["de.sorunome.msc2409.ephemeral"]) {
+                    LogService.info("Appservice", `Processing ephemeral event of type ${event["type"]}`);
+                    event = await this.processEphemeralEvent(event);
+                    // These events aren't tied to rooms, so just emit them generically
+                    this.emit("ephemeral.event", event);
                 }
             }
 
