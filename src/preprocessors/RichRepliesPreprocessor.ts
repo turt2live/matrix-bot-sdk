@@ -1,6 +1,6 @@
 import { MatrixClient } from "../MatrixClient";
 import { IPreprocessor } from "./IPreprocessor";
-import { LogService } from "..";
+import { EventKind, LogService } from "..";
 
 /**
  * Metadata for a rich reply. Usually stored under the "mx_richreply"
@@ -75,7 +75,9 @@ export class RichRepliesPreprocessor implements IPreprocessor {
         return ["m.room.message"];
     }
 
-    public async processEvent(event: any, client: MatrixClient): Promise<any> {
+    public async processEvent(event: any, client: MatrixClient, kind?: EventKind): Promise<any> {
+        if (kind && kind !== EventKind.RoomEvent) return;
+
         if (!event["content"]) return;
         if (!event["content"]["m.relates_to"]) return;
         if (!event["content"]["m.relates_to"]["m.in_reply_to"]) return;

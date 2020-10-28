@@ -1,16 +1,17 @@
 import * as expect from "expect";
 import {
+    EventKind,
     IJoinRoomStrategy,
     IPreprocessor,
     IStorageProvider,
     MatrixClient,
     MemoryStorageProvider,
-    setRequestFn
+    setRequestFn,
+    Membership,
 } from "../src";
 import * as simple from "simple-mock";
 import * as MockHttpBackend from 'matrix-mock-request';
 import { expectArrayEquals } from "./TestUtils";
-import { Membership } from "../src/models/events/MembershipEvent";
 
 export function createTestClient(storage: IStorageProvider = null, userId: string = null): { client: MatrixClient, http: MockHttpBackend, hsUrl: string, accessToken: string } {
     const http = new MockHttpBackend();
@@ -1800,7 +1801,8 @@ describe('MatrixClient', () => {
             ];
 
             const processor = <IPreprocessor>{
-                processEvent: (ev, procClient) => {
+                processEvent: (ev, procClient, kind?) => {
+                    expect(kind).toEqual(EventKind.RoomEvent);
                     ev["processed"] = true;
                 },
                 getSupportedEventTypes: () => ["m.room.member", "m.room.message", "m.room.not_message"],
@@ -1883,13 +1885,15 @@ describe('MatrixClient', () => {
             const processedA = "A";
             const processedB = "B";
             const processorA = <IPreprocessor>{
-                processEvent: (ev, procClient) => {
+                processEvent: (ev, procClient, kind?) => {
+                    expect(kind).toEqual(EventKind.RoomEvent);
                     ev["processed"] = processedA;
                 },
                 getSupportedEventTypes: () => ["m.room.message"],
             };
             const processorB = <IPreprocessor>{
-                processEvent: (ev, procClient) => {
+                processEvent: (ev, procClient, kind?) => {
+                    expect(kind).toEqual(EventKind.RoomEvent);
                     ev["processed"] = processedB;
                 },
                 getSupportedEventTypes: () => ["m.room.not_message"],
@@ -1965,7 +1969,8 @@ describe('MatrixClient', () => {
             const eventId = "$example:matrix.org";
             const event = {type: "m.room.message"};
             const processor = <IPreprocessor>{
-                processEvent: (ev, procClient) => {
+                processEvent: (ev, procClient, kind?) => {
+                    expect(kind).toEqual(EventKind.RoomEvent);
                     ev["processed"] = true;
                 },
                 getSupportedEventTypes: () => ["m.room.message"],
@@ -2012,7 +2017,8 @@ describe('MatrixClient', () => {
             const roomId = "!abc123:example.org";
             const events = [{type: "m.room.message"}, {type: "m.room.not_message"}];
             const processor = <IPreprocessor>{
-                processEvent: (ev, procClient) => {
+                processEvent: (ev, procClient, kind?) => {
+                    expect(kind).toEqual(EventKind.RoomEvent);
                     ev["processed"] = true;
                 },
                 getSupportedEventTypes: () => ["m.room.message"],
@@ -2083,7 +2089,8 @@ describe('MatrixClient', () => {
             const eventType = "m.room.message";
             const event = {type: "m.room.message"};
             const processor = <IPreprocessor>{
-                processEvent: (ev, procClient) => {
+                processEvent: (ev, procClient, kind?) => {
+                    expect(kind).toEqual(EventKind.RoomEvent);
                     ev["processed"] = true;
                 },
                 getSupportedEventTypes: () => ["m.room.message"],
@@ -2110,7 +2117,8 @@ describe('MatrixClient', () => {
             const event = {type: "m.room.message"};
             const stateKey = "testing";
             const processor = <IPreprocessor>{
-                processEvent: (ev, procClient) => {
+                processEvent: (ev, procClient, kind?) => {
+                    expect(kind).toEqual(EventKind.RoomEvent);
                     ev["processed"] = true;
                 },
                 getSupportedEventTypes: () => ["m.room.message"],

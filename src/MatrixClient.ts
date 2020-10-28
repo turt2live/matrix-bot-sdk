@@ -16,6 +16,7 @@ import { Membership, MembershipEvent } from "./models/events/MembershipEvent";
 import { RoomEvent, RoomEventContent, StateEvent } from "./models/events/RoomEvent";
 import { EventContext } from "./models/EventContext";
 import { PowerLevelBounds } from "./models/PowerLevelBounds";
+import { EventKind } from "./models/events/EventKind";
 
 /**
  * A client that is capable of interacting with a matrix homeserver.
@@ -153,7 +154,7 @@ export class MatrixClient extends EventEmitter {
         if (!this.eventProcessors[event["type"]]) return event;
 
         for (const processor of this.eventProcessors[event["type"]]) {
-            await processor.processEvent(event, this);
+            await processor.processEvent(event, this, EventKind.RoomEvent);
         }
 
         return event;
