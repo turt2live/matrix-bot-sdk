@@ -2,7 +2,7 @@ import * as expect from "expect";
 import { AdminApis, IStorageProvider, MatrixClient, WhoisInfo } from "../src";
 import * as MockHttpBackend from 'matrix-mock-request';
 import { createTestClient } from "./MatrixClientTest";
-import { SynapseAdminApis, SynapseUpsertUserBody, SynapseUserListResponse, SynapseUserRecord } from "../src/SynapseAdminApis";
+import { SynapseAdminApis, SynapseUserProperties, SynapseUserList, SynapseUser } from "../src/SynapseAdminApis";
 
 export function createTestSynapseAdminClient(storage: IStorageProvider = null): { client: SynapseAdminApis, mxClient: MatrixClient, http: MockHttpBackend, hsUrl: string, accessToken: string } {
     const result = createTestClient(storage);
@@ -93,7 +93,7 @@ describe('SynapseAdminApis', () => {
             const {client, http, hsUrl} = createTestSynapseAdminClient();
 
             const userId = "@someone:example.org";
-            const response: SynapseUserRecord = {
+            const response: SynapseUser = {
                 displayname: "foobar",
                 threepids: [{
                     medium: "email",
@@ -140,7 +140,7 @@ describe('SynapseAdminApis', () => {
             const {client, http, hsUrl} = createTestSynapseAdminClient();
 
             const userId = "@someone:example.org";
-            const response: SynapseUserRecord = {
+            const response: SynapseUser = {
                 displayname: "foobar",
                 threepids: [{
                     medium: "email",
@@ -151,7 +151,7 @@ describe('SynapseAdminApis', () => {
                 deactivated: false,
             };
 
-            const request: SynapseUpsertUserBody = {
+            const request: SynapseUserProperties = {
                 ...response,
                 password: "foobar",
             }
@@ -172,7 +172,7 @@ describe('SynapseAdminApis', () => {
         it('should call the right endpoint', async () => {
             const {client, http, hsUrl} = createTestSynapseAdminClient();
 
-            const response: SynapseUserListResponse = {
+            const response: SynapseUserList = {
                 users: [{
                     name: "@someone:example.org",
                     displayname: "foobar",

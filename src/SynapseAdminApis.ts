@@ -1,58 +1,111 @@
 import { MatrixClient } from "./MatrixClient";
 
-export interface SynapseUserRecord {
+/**
+ * Information about a user on Synapse.
+ * @category Admin APIs
+ */
+export interface SynapseUser {
     /***
-     * 
+     * The display name of the user, if set.
      */
     displayname?: string;
+
     /**
-     * A set of 3pids to automatically bind to the user.
+     * A set of 3PIDs for the user.
      */
     threepids?: [{
         medium: string;
         address: string;
     }];
+
     /**
-     * The MXC URL of an image file to set as the avatar for the user.
+     * The avatar URL (usually MXC URI) for the user, if set.
      */
     avatar_url?: string;
+
     /**
-     * Should the user be a Synpase administrator. Defaults to false.
+     * Whether or not the user is a Synapse administrator.
      */
     admin?: boolean;
+
     /**
-     * If unspecified, deactivation state will be left unchanged on existing accounts and set to false for new accounts.
+     * Whether or not the user is deactivated.
      */
     deactivated?: boolean;
 }
 
-export interface SynapseUpsertUserBody extends SynapseUserRecord {
+/**
+ * Added information to include when updating/creating a user.
+ * @category Admin APIs
+ */
+export interface SynapseUserProperties extends SynapseUser {
     /**
      * The password for the user. Leave undefined to leave unchanged.
      */
     password?: string;
 }
 
-export interface SynapseUserListEntry {
+/**
+ * Information about a user on Synapse.
+ * @category Admin APIs
+ */
+export interface SynapseUserListing {
+    /**
+     * User ID.
+     */
     name: string;
+
+    /**
+     * Whether or not the user is a guest. 1 is true, 0 is false.
+     */
     is_guest: number;
+
+    /**
+     * Whether or not the user is an admin. 1 is true, 0 is false.
+     */
     admin: number;
+
+    /**
+     * Whether or not the user is deactivated. 1 is true, 0 is false.
+     */
     deactivated: number;
-    user_type: string|null;
-    password_hash: string|null;
-    displayname: string|null;
-    avatar_url: string|null;
+
+    /**
+     * The type of user, if relevant.
+     */
+    user_type: string | null;
+
+    /**
+     * The hash of the user's password, if relevant.
+     */
+    password_hash: string | null;
+
+    /**
+     * The display name of the user, if set.
+     */
+    displayname: string | null;
+
+    /**
+     * The avatar for the user, if set.
+     */
+    avatar_url: string | null;
 }
 
-export interface SynapseUserListResponse {
+/**
+ * A resulting list of users on Synapse.
+ * @category Admin APIs
+ */
+export interface SynapseUserList {
     /**
      * A set of users matching the criteria.
      */
-    users: SynapseUserListEntry[];
+    users: SynapseUserListing[];
+
     /**
      * The token to use to get the next set of users.
      */
     next_token: string;
+
     /**
      * The total number of users on the Synapse instance.
      */
@@ -70,9 +123,9 @@ export class SynapseAdminApis {
     /**
      * Get information about a user. The client making the request must be an admin user.
      * @param {string} userId The user ID to check.
-     * @returns {Promise<SynapseUserRecord>} The resulting Synapse user record
+     * @returns {Promise<SynapseUser>} The resulting Synapse user record
      */
-    public async getUser(userId: string): Promise<SynapseUserRecord> {
+    public async getUser(userId: string): Promise<SynapseUser> {
         return this.client.doRequest(
             "GET", "/_synapse/admin/v2/users/" + encodeURIComponent(userId),
         );
@@ -82,10 +135,10 @@ export class SynapseAdminApis {
      * Create or update a given user on a Synapse server. The
      * client making the request must be an admin user.
      * @param {string} userId The user ID to check.
-     * @param {SynapseUpsertUserBody} opts Options to set when creating or updating the user.
-     * @returns {Promise<Record<string, unknown>>} The resulting Synapse user record
+     * @param {SynapseUserProperties} opts Options to set when creating or updating the user.
+     * @returns {Promise<SynapseUser>} The resulting Synapse user record
      */
-    public async upsertUser(userId: string, opts: SynapseUpsertUserBody = {}): Promise<SynapseUserRecord> {
+    public async upsertUser(userId: string, opts: SynapseUserProperties = {}): Promise<SynapseUser> {
         return this.client.doRequest(
             "PUT", "/_synapse/admin/v2/users/" + encodeURIComponent(userId), undefined, opts,
         );
@@ -94,11 +147,14 @@ export class SynapseAdminApis {
     /**
      * Get a list of users registered with Synapse, optionally filtered by some criteria. The
      * client making the request must be an admin user.
-     * @param {string} userId The user ID to check.
-     * @param {SynapseUpsertUserBody} opts Options to set when creating or updating the user.
-     * @returns {Promise<Record<string, unknown>>} The resulting Synapse user record
+     * @param {string} from The token to continue listing users from.
+     * @param {number} limit The maximum number of users to request.
+     * @param {string} name Optional localpart or display name filter for results.
+     * @param {boolean} guests Whether or not to include guest accounts. Default true.
+     * @param {boolean} deactivated Whether or not to include deactivated accounts. Default false.
+     * @returns {Promise<SynapseUserList>} A batch of user results.
      */
-    public async listUsers(from: string, limit: number, name?: string, guests = true, deactivated = false): Promise<SynapseUserListResponse> {
+    public async listUsers(from: string, limit: number, name?: string, guests = true, deactivated = false): Promise<SynapseUserList> {
         return this.client.doRequest(
             "GET", "/_synapse/admin/v2/users", {from, limit, name, guests, deactivated},
         );
