@@ -33,7 +33,7 @@ export interface SynapseUpsertUserBody extends SynapseUserRecord {
     password?: string;
 }
 
-interface SynapseUserListEntry {
+export interface SynapseUserListEntry {
     name: string;
     is_guest: number;
     admin: number;
@@ -44,7 +44,7 @@ interface SynapseUserListEntry {
     avatar_url: string|null;
 }
 
-interface SynapseUserListResponse {
+export interface SynapseUserListResponse {
     /**
      * A set of users matching the criteria.
      */
@@ -100,7 +100,7 @@ export class SynapseAdminApis {
      */
     public async listUsers(from: string, limit: number, name?: string, guests = true, deactivated = false): Promise<SynapseUserListResponse> {
         return this.client.doRequest(
-            "GET", "/_synapse/admin/v2/users", {from, limit,name,guests,deactivated},
+            "GET", "/_synapse/admin/v2/users", {from, limit, name, guests, deactivated},
         );
     }
 
