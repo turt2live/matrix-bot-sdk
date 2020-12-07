@@ -58,7 +58,7 @@ describe('Metrics', () => {
         const metrics = new Metrics();
         const context = <IMetricContext>{uniqueId: "test1234", hello: "world"};
         const metricName = "test_metric";
-        const tolerance = 15;
+        const tolerance = 50;
         const delayMs = 200;
 
         const listener = createTestMetricListener(metricName, context, (i: number) => {
@@ -85,7 +85,7 @@ describe('Metrics', () => {
         const metrics = new Metrics(parentMetrics);
         const context = <IMetricContext>{uniqueId: "test1234", hello: "world"};
         const metricName = "test_metric";
-        const tolerance = 15;
+        const tolerance = 50;
         const delayMs = 200;
 
         const parentListener = createTestMetricListener(metricName, context, (i: number) => {
