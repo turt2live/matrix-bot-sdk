@@ -17,7 +17,7 @@
     "docs": "jsdoc -c jsdoc.json -P package.json",
     "build": "tsc",
     "lint": "eslint",
-    "test": "ts-mocha --project ./tsconfig.json test/**/*.ts",
+    "test": "ts-mocha --project ./tsconfig.json test/*Test.ts test/**/*.ts",
     "build:examples": "tsc -p tsconfig-examples.json",
     "example:appservice": "yarn build:examples && node lib/examples/appservice.js",
     "example:login_register": "yarn build:examples && node lib/examples/login_register.js"
