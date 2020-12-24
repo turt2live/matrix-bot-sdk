@@ -7,7 +7,10 @@ import * as globToRegexp from "glob-to-regexp";
  */
 export class MatrixGlob {
 
-    private regex: RegExp;
+    /**
+     * The regular expression which represents this glob.
+     */
+    public readonly regex: RegExp;
 
     /**
      * Creates a new Matrix Glob
