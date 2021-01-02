@@ -772,11 +772,11 @@ export class MatrixClient extends EventEmitter {
 
     /**
      * Sets a new display name for the user.
-     * @param {string?} displayName the new display name for the user, or undefined to clear
+     * @param {string} displayName the new display name for the user, or null to clear
      * @returns {Promise<any>} resolves when complete
      */
     @timedMatrixClientFunctionCall()
-    public async setDisplayName(displayName: string|undefined): Promise<any> {
+    public async setDisplayName(displayName: string|null): Promise<any> {
         const userId = encodeURIComponent(await this.getUserId());
         return this.doRequest("PUT", "/_matrix/client/r0/profile/" + userId + "/displayname", null, {
             displayname: displayName,
@@ -785,11 +785,11 @@ export class MatrixClient extends EventEmitter {
 
     /**
      * Sets a new avatar url for the user.
-     * @param {string?} avatarUrl the new avatar URL for the user, in the form of a Matrix Content URI
+     * @param {string} avatarUrl the new avatar URL for the user, in the form of a Matrix Content URI
      * @returns {Promise<any>} resolves when complete
      */
     @timedMatrixClientFunctionCall()
-    public async setAvatarUrl(avatarUrl: string|undefined): Promise<any> {
+    public async setAvatarUrl(avatarUrl: string|null): Promise<any> {
         const userId = encodeURIComponent(await this.getUserId());
         return this.doRequest("PUT", "/_matrix/client/r0/profile/" + userId + "/avatar_url", null, {
             avatar_url: avatarUrl,
