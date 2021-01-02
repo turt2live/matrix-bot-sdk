@@ -273,7 +273,7 @@ export class MatrixClient extends EventEmitter {
      * @returns {Promise<any>} Resolves when complete.
      */
     @timedMatrixClientFunctionCall()
-    public async setPresenceStatus(presence: "online" | "offline" | "unavailable", statusMessage: string = undefined): Promise<any> {
+    public async setPresenceStatus(presence: "online" | "offline" | "unavailable", statusMessage?: string): Promise<any> {
         return this.doRequest("PUT", "/_matrix/client/r0/presence/" + encodeURIComponent(await this.getUserId()) + "/status", null, {
             presence: presence,
             status_msg: statusMessage,
@@ -407,7 +407,7 @@ export class MatrixClient extends EventEmitter {
      * @returns {Promise<any>} resolves when completed
      */
     @timedMatrixClientFunctionCall()
-    public kickUser(userId, roomId, reason = undefined) {
+    public kickUser(userId, roomId, reason?) {
         return this.doRequest("POST", "/_matrix/client/r0/rooms/" + encodeURIComponent(roomId) + "/kick", null, {
             user_id: userId,
             reason: reason,
@@ -422,7 +422,7 @@ export class MatrixClient extends EventEmitter {
      * @returns {Promise<any>} resolves when completed
      */
     @timedMatrixClientFunctionCall()
-    public banUser(userId, roomId, reason = undefined) {
+    public banUser(userId, roomId, reason?) {
         return this.doRequest("POST", "/_matrix/client/r0/rooms/" + encodeURIComponent(roomId) + "/ban", null, {
             user_id: userId,
             reason: reason,
