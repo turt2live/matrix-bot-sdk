@@ -17,6 +17,8 @@ import { RoomEvent, RoomEventContent, StateEvent } from "./models/events/RoomEve
 import { EventContext } from "./models/EventContext";
 import { PowerLevelBounds } from "./models/PowerLevelBounds";
 import { EventKind } from "./models/events/EventKind";
+import { IdentityClient } from "./identity/IdentityClient";
+import { OpenIDConnectToken } from "./models/OpenIDConnect";
 import { doHttpRequest } from "./http";
 
 /**
@@ -126,6 +128,21 @@ export class MatrixClient extends EventEmitter {
     }
 
     /**
+     * Acquires an identity server client for communicating with an identity server. Note that
+     * this will automatically do the login portion to establish a usable token with the identity
+     * server provided, but it will not automatically accept any terms of service.
+     *
+     * The identity server name provided will in future be resolved to a server address - for now
+     * that resolution is assumed to be prefixing the name with `https://`.
+     * @param {string} identityServerName The domain of the identity server to connect to.
+     * @returns {Promise<IdentityClient>} Resolves to a prepared identity client.
+     */
+    public async getIdentityServerClient(identityServerName: string): Promise<IdentityClient> {
+        const oidcToken = await this.getOpenIDConnectToken();
+        return IdentityClient.acquire(oidcToken, `https://${identityServerName}`);
+    }
+
+    /**
      * Sets the strategy to use for when joinRoom is called on this client
      * @param {IJoinRoomStrategy} strategy The strategy to use, or null to use none
      */
@@ -159,6 +176,16 @@ export class MatrixClient extends EventEmitter {
         }
 
         return event;
+    }
+
+    /**
+     * Retrieves an OpenID Connect token from the homeserver for the current user.
+     * @returns {Promise<OpenIDConnectToken>} Resolves to the token.
+     */
+    @timedMatrixClientFunctionCall()
+    public async getOpenIDConnectToken(): Promise<OpenIDConnectToken> {
+        const userId = encodeURIComponent(await this.getUserId());
+        return this.doRequest("POST", "/_matrix/client/r0/user/"+userId+"/openid/request_token");
     }
 
     /**

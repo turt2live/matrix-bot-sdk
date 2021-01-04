@@ -35,6 +35,9 @@ export * from "./models/Presence";
 export * from "./models/MatrixProfile";
 export * from "./models/EventContext";
 export * from "./models/PowerLevelBounds";
+export * from "./models/OpenIDConnect";
+export * from "./models/Policies";
+export * from "./models/Threepid";
 
 // Event models
 export * from "./models/events/EventKind";
@@ -69,6 +72,9 @@ export * from "./storage/SimpleFsStorageProvider";
 // Strategies
 export * from "./strategies/AppserviceJoinRoomStrategy";
 export * from "./strategies/JoinRoomStrategy";
+
+// Other clients
+export * from "./identity/IdentityClient";
 
 // Root-level stuff
 export * from "./IFilter";

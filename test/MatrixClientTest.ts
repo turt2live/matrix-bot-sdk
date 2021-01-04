@@ -7,7 +7,7 @@ import {
     MatrixClient,
     MemoryStorageProvider,
     setRequestFn,
-    Membership,
+    Membership, OpenIDConnectToken,
 } from "../src";
 import * as simple from "simple-mock";
 import * as MockHttpBackend from 'matrix-mock-request';
@@ -221,6 +221,60 @@ describe('MatrixClient', () => {
 
             const result = client.adminApis;
             expect(result).toBeDefined();
+        });
+    });
+
+    describe('getOpenIDConnectToken', () => {
+        it('should call the right endpoint', async () => {
+            const {client, http, hsUrl} = createTestClient();
+
+            const testToken: OpenIDConnectToken = {
+                access_token: "s3cret",
+                expires_in: 1200,
+                matrix_server_name: "localhost",
+                token_type: "Bearer",
+            };
+            const userId = "@test:example.org";
+
+            client.getUserId = () => Promise.resolve(userId);
+
+            http.when("POST", "/_matrix/client/r0/user").respond(200, (path) => {
+                expect(path).toEqual(`${hsUrl}/_matrix/client/r0/user/${encodeURIComponent(userId)}/openid/request_token`);
+                return testToken;
+            });
+
+            http.flushAllExpected();
+            const r = await client.getOpenIDConnectToken();
+            expect(r).toMatchObject(<any>testToken); // <any> to fix typescript
+        });
+    });
+
+    describe('getIdentityServerClient', () => {
+        // This doubles as the test for IdentityClient#acquire()
+        it('should prepare an identity server client', async () => {
+            const {client, http, hsUrl} = createTestClient();
+
+            const testToken: OpenIDConnectToken = {
+                access_token: "s3cret",
+                expires_in: 1200,
+                matrix_server_name: "localhost",
+                token_type: "Bearer",
+            };
+            const userId = "@test:example.org";
+            const identityDomain = "identity.example.org";
+            const identityToken = "t0ken";
+
+            client.getUserId = () => Promise.resolve(userId);
+            client.getOpenIDConnectToken = () => Promise.resolve(testToken);
+
+            http.when("POST", "/_matrix/identity/v2/account").respond(200, (path) => {
+                expect(path).toEqual(`https://${identityDomain}/_matrix/identity/v2/account/register`);
+                return {token: identityToken};
+            });
+
+            http.flushAllExpected();
+            const iClient = await client.getIdentityServerClient(identityDomain);
+            expect(iClient).toBeDefined();
         });
     });
 
