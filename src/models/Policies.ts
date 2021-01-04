@@ -13,10 +13,10 @@ export interface Policies {
  * @category Models
  */
 export interface Policy {
-    // @ts-ignore
     version: string;
+
     [language: string]: {
         name: string;
         url: string;
-    };
+    } | string; // "|string" is required for `version` to work
 }
