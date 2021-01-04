@@ -11,6 +11,7 @@ export * from "./helpers/Permalinks";
 export * from "./helpers/MatrixGlob";
 export * from "./helpers/ProfileCache";
 export * from "./helpers/MatrixEntity";
+export * from "./helpers/UnpaddedBase64";
 
 // Logging
 export * from "./logging/ConsoleLogger";
