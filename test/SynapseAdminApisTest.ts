@@ -1,8 +1,14 @@
 import * as expect from "expect";
-import { AdminApis, IStorageProvider, MatrixClient, WhoisInfo } from "../src";
+import {
+    IStorageProvider,
+    MatrixClient,
+    SynapseAdminApis,
+    SynapseUser,
+    SynapseUserList,
+    SynapseUserProperties
+} from "../src";
 import * as MockHttpBackend from 'matrix-mock-request';
 import { createTestClient } from "./MatrixClientTest";
-import { SynapseAdminApis, SynapseUserProperties, SynapseUserList, SynapseUser } from "../src/SynapseAdminApis";
 
 export function createTestSynapseAdminClient(storage: IStorageProvider = null): { client: SynapseAdminApis, mxClient: MatrixClient, http: MockHttpBackend, hsUrl: string, accessToken: string } {
     const result = createTestClient(storage);
@@ -100,7 +106,7 @@ describe('SynapseAdminApis', () => {
                     address: "foobar@example.org",
                 }],
                 avatar_url: "mxc://example.org/animage",
-                admin: true, 
+                admin: true,
                 deactivated: false,
             };
 
@@ -147,7 +153,7 @@ describe('SynapseAdminApis', () => {
                     address: "foobar@example.org",
                 }],
                 avatar_url: "mxc://example.org/animage",
-                admin: true, 
+                admin: true,
                 deactivated: false,
             };
 
@@ -167,7 +173,7 @@ describe('SynapseAdminApis', () => {
             expect(result).toEqual(response);
         });
     });
-    
+
     describe('listUsers', () => {
         it('should call the right endpoint', async () => {
             const {client, http, hsUrl} = createTestSynapseAdminClient();
@@ -177,7 +183,7 @@ describe('SynapseAdminApis', () => {
                     name: "@someone:example.org",
                     displayname: "foobar",
                     avatar_url: "mxc://example.org/animage",
-                    admin: 1, 
+                    admin: 1,
                     deactivated: 0,
                     is_guest: 0,
                     user_type: null,

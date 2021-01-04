@@ -215,6 +215,15 @@ describe('MatrixClient', () => {
         });
     });
 
+    describe('adminApis', () => {
+        it('should always return an object', async () => {
+            const {client} = createTestClient();
+
+            const result = client.adminApis;
+            expect(result).toBeDefined();
+        });
+    });
+
     describe('getAccountData', () => {
         it('should call the right endpoint', async () => {
             const {client, http, hsUrl} = createTestClient();
