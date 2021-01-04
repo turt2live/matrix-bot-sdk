@@ -166,7 +166,7 @@ export class MatrixClient extends EventEmitter {
      * @returns {Promise<any>} Resolves to the content of that account data.
      */
     @timedMatrixClientFunctionCall()
-    public async getAccountData(eventType: string): Promise<any> {
+    public async getAccountData<T>(eventType: string): Promise<T> {
         const userId = encodeURIComponent(await this.getUserId());
         eventType = encodeURIComponent(eventType);
         return this.doRequest("GET", "/_matrix/client/r0/user/" + userId + "/account_data/" + eventType);
@@ -179,7 +179,7 @@ export class MatrixClient extends EventEmitter {
      * @returns {Promise<any>} Resolves to the content of that account data.
      */
     @timedMatrixClientFunctionCall()
-    public async getRoomAccountData(eventType: string, roomId: string): Promise<any> {
+    public async getRoomAccountData<T>(eventType: string, roomId: string): Promise<T> {
         const userId = encodeURIComponent(await this.getUserId());
         eventType = encodeURIComponent(eventType);
         roomId = encodeURIComponent(roomId);
@@ -194,7 +194,7 @@ export class MatrixClient extends EventEmitter {
      * @returns {Promise<any>} Resolves to the content of that account data, or the default.
      */
     @timedMatrixClientFunctionCall()
-    public async getSafeAccountData(eventType: string, defaultContent: any = null): Promise<any> {
+    public async getSafeAccountData<T>(eventType: string, defaultContent: T = null): Promise<T> {
         try {
             return await this.getAccountData(eventType);
         } catch (e) {
@@ -212,7 +212,7 @@ export class MatrixClient extends EventEmitter {
      * @returns {Promise<any>} Resolves to the content of that room account data, or the default.
      */
     @timedMatrixClientFunctionCall()
-    public async getSafeRoomAccountData(eventType: string, roomId: string, defaultContent: any = null): Promise<any> {
+    public async getSafeRoomAccountData<T>(eventType: string, roomId: string, defaultContent: T = null): Promise<T> {
         try {
             return await this.getRoomAccountData(eventType, roomId);
         } catch (e) {
