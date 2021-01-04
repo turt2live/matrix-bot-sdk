@@ -15,8 +15,14 @@ export interface Policies {
 export interface Policy {
     version: string;
 
-    [language: string]: {
-        name: string;
-        url: string;
-    } | string; // "|string" is required for `version` to work
+    [language: string]: TranslatedPolicy | string; // "|string" is required for `version` to work
+}
+
+/**
+ * Information about a (translated) policy (terms of service).
+ * @category Models
+ */
+export interface TranslatedPolicy {
+    name: string;
+    url: string;
 }

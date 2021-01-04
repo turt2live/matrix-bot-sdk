@@ -1,7 +1,7 @@
 import { OpenIDConnectToken } from "../models/OpenIDConnect";
 import { doHttpRequest } from "../http";
 import { timedIdentityClientFunctionCall } from "../metrics/decorators";
-import { Policies } from "../models/Policies";
+import { Policies, Policy, TranslatedPolicy } from "../models/Policies";
 import { Metrics } from "../metrics/Metrics";
 import { Threepid } from "../models/Threepid";
 import * as crypto from "crypto";
@@ -57,9 +57,9 @@ export class IdentityClient {
         const terms = await this.getTermsOfService();
         const urls = new Set<string>();
         for (const policy of Object.values(terms.policies)) {
-            let chosenLang = policy["en"];
+            let chosenLang = policy["en"] as TranslatedPolicy;
             if (!chosenLang) {
-                chosenLang = policy[Object.keys(policy).find(k => k !== "version")];
+                chosenLang = policy[Object.keys(policy).find(k => k !== "version")] as TranslatedPolicy;
             }
             if (!chosenLang) continue; // skip - invalid
             urls.add(chosenLang.url);
