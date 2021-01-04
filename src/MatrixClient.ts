@@ -5,7 +5,7 @@ import { IJoinRoomStrategy } from "./strategies/JoinRoomStrategy";
 import { UnstableApis } from "./UnstableApis";
 import { IPreprocessor } from "./preprocessors/IPreprocessor";
 import { getRequestFn } from "./request";
-import { LogLevel, LogService } from "./logging/LogService";
+import { LogService } from "./logging/LogService";
 import { htmlEncode } from "htmlencode";
 import { RichReply } from "./helpers/RichReply";
 import { Metrics } from "./metrics/Metrics";
@@ -17,6 +17,7 @@ import { RoomEvent, RoomEventContent, StateEvent } from "./models/events/RoomEve
 import { EventContext } from "./models/EventContext";
 import { PowerLevelBounds } from "./models/PowerLevelBounds";
 import { EventKind } from "./models/events/EventKind";
+import { doHttpRequest } from "./http";
 
 /**
  * A client that is capable of interacting with a matrix homeserver.
@@ -980,7 +981,7 @@ export class MatrixClient extends EventEmitter {
      */
     @timedMatrixClientFunctionCall()
     public sendEvent(roomId: string, eventType: string, content: any): Promise<string> {
-        const txnId = (new Date().getTime()) + "__REQ" + this.requestId;
+        const txnId = (new Date().getTime()) + "__inc" + (++this.requestId);
         return this.doRequest("PUT", "/_matrix/client/r0/rooms/" + encodeURIComponent(roomId) + "/send/" + encodeURIComponent(eventType) + "/" + encodeURIComponent(txnId), null, content).then(response => {
             return response['event_id'];
         });
@@ -1010,7 +1011,7 @@ export class MatrixClient extends EventEmitter {
      */
     @timedMatrixClientFunctionCall()
     public redactEvent(roomId: string, eventId: string, reason: string | null = null): Promise<string> {
-        const txnId = (new Date().getTime()) + "__REQ" + this.requestId;
+        const txnId = (new Date().getTime()) + "__inc" + (++this.requestId);
         const content = reason !== null ? {reason} : {};
         return this.doRequest("PUT", `/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/redact/${encodeURIComponent(eventId)}/${txnId}`, null, content).then(response => {
             return response['event_id'];
@@ -1345,130 +1346,15 @@ export class MatrixClient extends EventEmitter {
      */
     @timedMatrixClientFunctionCall()
     public doRequest(method, endpoint, qs = null, body = null, timeout = 60000, raw = false, contentType = "application/json", noEncoding = false): Promise<any> {
-        if (!endpoint.startsWith('/')) {
-            endpoint = '/' + endpoint;
-        }
-
-        const requestId = ++this.requestId;
-        const url = this.homeserverUrl + endpoint;
-
-        // This is logged at info so that when a request fails people can figure out which one.
-        LogService.info("MatrixLiteClient (REQ-" + requestId + ")", method + " " + url);
-
         if (this.impersonatedUserId) {
             if (!qs) qs = {"user_id": this.impersonatedUserId};
             else qs["user_id"] = this.impersonatedUserId;
         }
-
         const headers = {};
         if (this.accessToken) {
             headers["Authorization"] = `Bearer ${this.accessToken}`;
         }
-
-        // Don't log the request unless we're in debug mode. It can be large.
-        if (LogService.level.includes(LogLevel.DEBUG)) {
-            if (qs) LogService.debug("MatrixLiteClient (REQ-" + requestId + ")", "qs = " + JSON.stringify(qs));
-            if (body && !Buffer.isBuffer(body)) LogService.debug("MatrixLiteClient (REQ-" + requestId + ")", "body = " + JSON.stringify(this.redactObjectForLogging(body)));
-            if (body && Buffer.isBuffer(body)) LogService.debug("MatrixLiteClient (REQ-" + requestId + ")", "body = <Buffer>");
-        }
-
-        const params: { [k: string]: any } = {
-            uri: url,
-            method: method,
-            qs: qs,
-            // If this is undefined, then a string will be returned. If it's null, a Buffer will be returned.
-            encoding: noEncoding === false ? undefined : null,
-            useQuerystring: true,
-            qsStringifyOptions: {
-                options: {arrayFormat: 'repeat'},
-            },
-            timeout: timeout,
-            headers: headers,
-        };
-
-        if (body) {
-            if (Buffer.isBuffer(body)) {
-                params.headers["Content-Type"] = contentType;
-                params.body = body;
-            } else {
-                params.headers["Content-Type"] = "application/json";
-                params.body = JSON.stringify(body);
-            }
-        }
-
-        return new Promise((resolve, reject) => {
-            getRequestFn()(params, (err, response, resBody) => {
-                if (err) {
-                    LogService.error("MatrixLiteClient (REQ-" + requestId + ")", err);
-                    reject(err);
-                } else {
-                    if (typeof (resBody) === 'string') {
-                        try {
-                            resBody = JSON.parse(resBody);
-                        } catch (e) {
-                        }
-                    }
-
-                    if (typeof (response.body) === 'string') {
-                        try {
-                            response.body = JSON.parse(response.body);
-                        } catch (e) {
-                        }
-                    }
-
-                    // Don't log the body unless we're in debug mode. They can be large.
-                    if (LogService.level.includes(LogLevel.DEBUG)) {
-                        const redactedBody = this.redactObjectForLogging(response.body);
-                        LogService.debug("MatrixLiteClient (REQ-" + requestId + " RESP-H" + response.statusCode + ")", redactedBody);
-                    }
-                    if (response.statusCode < 200 || response.statusCode >= 300) {
-                        const redactedBody = this.redactObjectForLogging(response.body);
-                        LogService.error("MatrixLiteClient (REQ-" + requestId + ")", redactedBody);
-                        reject(response);
-                    } else resolve(raw ? response : resBody);
-                }
-            });
-        });
-    }
-
-    private redactObjectForLogging(input: any): any {
-        if (!input) return input;
-
-        const fieldsToRedact = [
-            'access_token',
-            'password',
-        ];
-
-        const redactFn = (i) => {
-            if (!i) return i;
-
-            // Don't treat strings like arrays/objects
-            if (typeof i === 'string') return i;
-
-            if (Array.isArray(i)) {
-                const rebuilt = [];
-                for (const v of i) {
-                    rebuilt.push(redactFn(v));
-                }
-                return rebuilt;
-            }
-
-            if (i instanceof Object) {
-                const rebuilt = {};
-                for (const key of Object.keys(i)) {
-                    if (fieldsToRedact.includes(key)) {
-                        rebuilt[key] = '<redacted>';
-                    } else {
-                        rebuilt[key] = redactFn(i[key]);
-                    }
-                }
-                return rebuilt;
-            }
-
-            return i; // It's a primitive value
-        };
-
-        return redactFn(input);
+        return doHttpRequest(this.homeserverUrl, method, endpoint, qs, body, headers, timeout, raw, contentType, noEncoding);
     }
 }
 

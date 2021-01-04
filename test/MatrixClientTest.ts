@@ -12,6 +12,7 @@ import {
 import * as simple from "simple-mock";
 import * as MockHttpBackend from 'matrix-mock-request';
 import { expectArrayEquals } from "./TestUtils";
+import { redactObjectForLogging } from "../src/http";
 
 export function createTestClient(storage: IStorageProvider = null, userId: string = null): { client: MatrixClient, http: MockHttpBackend, hsUrl: string, accessToken: string } {
     const http = new MockHttpBackend();
@@ -4509,11 +4510,6 @@ describe('MatrixClient', () => {
 
     describe('redactObjectForLogging', () => {
         it('should redact multilevel objects', () => {
-            const {client} = createTestClient();
-
-            // We have to do private access to get at the function
-            const fn = (<any>client).redactObjectForLogging;
-
             const input = {
                 "untouched_one": 1,
                 "untouched_two": "test",
@@ -4615,7 +4611,7 @@ describe('MatrixClient', () => {
                 ],
             };
 
-            const result = fn(input);
+            const result = redactObjectForLogging(input);
             expect(result).toMatchObject(output);
         });
     });
