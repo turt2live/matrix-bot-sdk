@@ -51,6 +51,7 @@ export class MatrixClient extends EventEmitter {
     private filterId = 0;
     private stopSyncing = false;
     private metricsInstance: Metrics = new Metrics();
+    private unstableApisInstance = new UnstableApis(this);
 
     /**
      * Set this to true to have the client only persist the sync token after the sync
@@ -104,7 +105,7 @@ export class MatrixClient extends EventEmitter {
      * @return {UnstableApis} The unstable API access class.
      */
     public get unstableApis(): UnstableApis {
-        return new UnstableApis(this);
+        return this.unstableApisInstance;
     }
 
     /**
