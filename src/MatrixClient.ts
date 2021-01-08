@@ -20,6 +20,7 @@ import { EventKind } from "./models/events/EventKind";
 import { IdentityClient } from "./identity/IdentityClient";
 import { OpenIDConnectToken } from "./models/OpenIDConnect";
 import { doHttpRequest } from "./http";
+import { htmlToText } from "html-to-text";
 
 /**
  * A client that is capable of interacting with a matrix homeserver.
@@ -945,6 +946,20 @@ export class MatrixClient extends EventEmitter {
     }
 
     /**
+     * Replies to a given event with the given HTML. The event is sent with a msgtype of m.text.
+     * @param {string} roomId the room ID to reply in
+     * @param {any} event the event to reply to
+     * @param {string} html the HTML to reply with.
+     * @returns {Promise<string>} resolves to the event ID which was sent
+     */
+    @timedMatrixClientFunctionCall()
+    public replyHtmlText(roomId: string, event: any, html: string): Promise<string> {
+        const text = htmlToText(html, {wordwrap: false});
+        const reply = RichReply.createFor(roomId, event, text, html);
+        return this.sendMessage(roomId, reply);
+    }
+
+    /**
      * Replies to a given event with the given text. The event is sent with a msgtype of m.notice.
      * @param {string} roomId the room ID to reply in
      * @param {any} event the event to reply to
@@ -956,6 +971,21 @@ export class MatrixClient extends EventEmitter {
     public replyNotice(roomId: string, event: any, text: string, html: string = null): Promise<string> {
         if (!html) html = htmlEncode(text);
 
+        const reply = RichReply.createFor(roomId, event, text, html);
+        reply['msgtype'] = 'm.notice';
+        return this.sendMessage(roomId, reply);
+    }
+
+    /**
+     * Replies to a given event with the given HTML. The event is sent with a msgtype of m.notice.
+     * @param {string} roomId the room ID to reply in
+     * @param {any} event the event to reply to
+     * @param {string} html the HTML to reply with.
+     * @returns {Promise<string>} resolves to the event ID which was sent
+     */
+    @timedMatrixClientFunctionCall()
+    public replyHtmlNotice(roomId: string, event: any, html: string): Promise<string> {
+        const text = htmlToText(html, {wordwrap: false});
         const reply = RichReply.createFor(roomId, event, text, html);
         reply['msgtype'] = 'm.notice';
         return this.sendMessage(roomId, reply);
@@ -976,6 +1006,22 @@ export class MatrixClient extends EventEmitter {
     }
 
     /**
+     * Sends a notice to the given room with HTML content
+     * @param {string} roomId the room ID to send the notice to
+     * @param {string} html the HTML to send
+     * @returns {Promise<string>} resolves to the event ID that represents the message
+     */
+    @timedMatrixClientFunctionCall()
+    public sendHtmlNotice(roomId: string, html: string): Promise<string> {
+        return this.sendMessage(roomId, {
+            body: htmlToText(html, {wordwrap: false}),
+            msgtype: "m.notice",
+            format: "org.matrix.custom.html",
+            formatted_body: html,
+        });
+    }
+
+    /**
      * Sends a text message to the given room
      * @param {string} roomId the room ID to send the text to
      * @param {string} text the text to send
@@ -986,6 +1032,22 @@ export class MatrixClient extends EventEmitter {
         return this.sendMessage(roomId, {
             body: text,
             msgtype: "m.text",
+        });
+    }
+
+    /**
+     * Sends a text message to the given room with HTML content
+     * @param {string} roomId the room ID to send the text to
+     * @param {string} html the HTML to send
+     * @returns {Promise<string>} resolves to the event ID that represents the message
+     */
+    @timedMatrixClientFunctionCall()
+    public sendHtmlText(roomId: string, html: string): Promise<string> {
+        return this.sendMessage(roomId, {
+            body: htmlToText(html, {wordwrap: false}),
+            msgtype: "m.text",
+            format: "org.matrix.custom.html",
+            formatted_body: html,
         });
     }
 
