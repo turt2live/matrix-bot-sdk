@@ -34,7 +34,7 @@ export class MatrixProfile {
      * may be based upon their user ID if no explicit display name is set.
      */
     public get displayName(): string {
-        if (!this.profile.displayname) return new UserID(this.userId).localpart;
+        if (!this.profile?.displayname) return new UserID(this.userId).localpart;
         return this.profile.displayname;
     }
 
@@ -43,7 +43,7 @@ export class MatrixProfile {
      * be null.
      */
     public get avatarUrl(): string {
-        return this.profile.avatar_url || null; // enforce null over boolean semantics
+        return this.profile?.avatar_url || null; // enforce null over boolean semantics
     }
 
     /**

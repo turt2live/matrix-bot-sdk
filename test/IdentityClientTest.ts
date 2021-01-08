@@ -30,6 +30,25 @@ export async function createTestIdentityClient(): Promise<{ client: IdentityClie
 }
 
 describe('IdentityClient', () => {
+    describe('getAccount', () => {
+        it('should call the right endpoint', async () => {
+            const {client, http, identityUrl} = await createTestIdentityClient();
+
+            const accountResponse = {
+                user_id: "@alice:example.org",
+            };
+
+            http.when("GET", "/_matrix/identity/v2/account").respond(200, (path, content) => {
+                expect(path).toEqual(`${identityUrl}/_matrix/identity/v2/account`);
+                return accountResponse;
+            });
+
+            http.flushAllExpected();
+            const resp = await client.getAccount();
+            expect(resp).toMatchObject(accountResponse);
+        });
+    });
+
     describe('getTermsOfService', () => {
         it('should call the right endpoint', async () => {
             const {client, http, identityUrl} = await createTestIdentityClient();
@@ -587,6 +606,121 @@ describe('IdentityClient', () => {
 
             http.flushAllExpected();
             await client.doRequest("GET", "/test", null, null, timeout);
+        });
+    });
+
+    describe('makeEmailInvite', () => {
+        it('should call the right endpoint', async () => {
+            const {client, http, identityUrl} = await createTestIdentityClient();
+
+            const mxUserId = "@bob:example.org";
+            client.matrixClient.getUserId = () => Promise.resolve(mxUserId);
+
+            const inviteEmail = "alice@example.org";
+            const inviteRoomId = "!room:example.org";
+            const storedInvite = {
+                display_name: "a...@e...",
+                public_keys: [
+                    "serverkey",
+                    "ephemeralkey",
+                ],
+                token: "s3cret",
+            };
+
+            const stateStub = () => Promise.resolve(null);
+            client.matrixClient.getRoomStateEvent = stateStub;
+            client.matrixClient.getUserProfile = stateStub;
+
+            http.when("POST", "/_matrix/identity/v2/store-invite").respond(200, (path, content) => {
+                expect(content).toMatchObject({
+                    address: inviteEmail,
+                    room_id: inviteRoomId,
+                    medium: "email",
+                    sender: mxUserId,
+                });
+                return storedInvite;
+            });
+
+            http.flushAllExpected();
+            const resp = await client.makeEmailInvite(inviteEmail, inviteRoomId);
+            expect(resp).toMatchObject(storedInvite);
+        });
+
+        it('should request room state events and user profile', async () => {
+            const {client, http, identityUrl} = await createTestIdentityClient();
+
+            const mxUserId = "@bob:example.org";
+            client.matrixClient.getUserId = () => Promise.resolve(mxUserId);
+
+            const inviteEmail = "alice@example.org";
+            const inviteRoomId = "!room:example.org";
+            const inviteRoomName = "Test Room";
+            const inviteRoomAvatar = "mxc://example.org/roomavatar";
+            const inviteRoomJoinRules = "public";
+            const inviteRoomAlias = "#test:example.org";
+            const senderDisplayName = "Bob Test";
+            const senderAvatarUrl = "mxc://example.org/avatar";
+            const storedInvite = {
+                display_name: "a...@e...",
+                public_keys: [
+                    {public_key: "serverkey", key_validity_url: "/_matrix/identity/v1/pubkey/isvalid"},
+                    {public_key: "ephemeralkey", key_validity_url: "/_matrix/identity/v1/pubkey/isvalid"},
+                ],
+                public_key: "serverkey",
+                token: "s3cret",
+            };
+            const expectedStateEvents = [
+                "m.room.canonical_alias",
+                "m.room.avatar",
+                "m.room.name",
+                "m.room.join_rules",
+            ];
+
+            const calledStateEvents:string[] = [];
+            const stateStub = async (roomId: string, evType: string, stateKey: string) => {
+                expect(roomId).toBe(inviteRoomId);
+                expect(stateKey).toBe("");
+                calledStateEvents.push(evType);
+
+                switch(evType) {
+                    case "m.room.name":
+                        return {name: inviteRoomName};
+                    case "m.room.canonical_alias":
+                        return {alias: inviteRoomAlias};
+                    case "m.room.join_rules":
+                        return {join_rule: inviteRoomJoinRules};
+                    case "m.room.avatar":
+                        return {url: inviteRoomAvatar};
+                    default:
+                        throw new Error("Unknown event type");
+                }
+            };
+            client.matrixClient.getRoomStateEvent = stateStub;
+            const profileSpy = simple.mock(client.matrixClient, "getUserProfile").callFn(() => {
+                return Promise.resolve({displayname: senderDisplayName, avatar_url: senderAvatarUrl});
+            })
+
+            http.when("POST", "/_matrix/identity/v2/store-invite").respond(200, (path, content) => {
+                expect(content).toMatchObject({
+                    address: inviteEmail,
+                    room_id: inviteRoomId,
+                    medium: "email",
+                    sender: mxUserId,
+                    sender_avatar_url: senderAvatarUrl,
+                    sender_display_name: senderDisplayName,
+                    room_alias: inviteRoomAlias,
+                    room_avatar_url: inviteRoomAvatar,
+                    room_join_rules: inviteRoomJoinRules,
+                    room_name: inviteRoomName,
+                });
+                return storedInvite;
+            });
+
+            http.flushAllExpected();
+            const resp = await client.makeEmailInvite(inviteEmail, inviteRoomId);
+            expect(resp).toMatchObject(storedInvite);
+            expect(profileSpy.callCount).toBe(1);
+            expect({calledStateEvents}).toMatchObject({calledStateEvents: expectedStateEvents});
         });
     });
 });

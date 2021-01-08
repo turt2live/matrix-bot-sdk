@@ -6,6 +6,9 @@ import { Metrics } from "../metrics/Metrics";
 import { Threepid } from "../models/Threepid";
 import * as crypto from "crypto";
 import { UnpaddedBase64 } from "../helpers/UnpaddedBase64";
+import { MatrixClient } from "../MatrixClient";
+import { MatrixProfile, MatrixProfileInfo } from "../models/MatrixProfile";
+import { IdentityServerAccount, IdentityServerInvite } from "../models/IdentityServerModels";
 
 /**
  * A way to access an Identity Server using the Identity Service API from a MatrixClient.
@@ -19,8 +22,17 @@ export class IdentityClient {
      */
     public readonly metrics: Metrics;
 
-    private constructor(public readonly accessToken: string, public readonly serverUrl: string) {
+    private constructor(public readonly accessToken: string, public readonly serverUrl: string, public readonly matrixClient: MatrixClient) {
         this.metrics = new Metrics();
+    }
+
+    /**
+     * Gets account information for the logged in user.
+     * @returns {Promise<IdentityServerAccount>} Resolves to the account information
+     */
+    @timedIdentityClientFunctionCall()
+    public getAccount(): Promise<IdentityServerAccount> {
+        return this.doRequest("GET", "/_matrix/identity/v2/account");
     }
 
     /**
@@ -76,6 +88,7 @@ export class IdentityClient {
      * lookups when no other methods are available. The function will always prefer hashed methods.
      * @returns {Promise<string[]>} Resolves to the user IDs (or falsey values) in the same order as the input.
      */
+    @timedIdentityClientFunctionCall()
     public async lookup(identifiers: Threepid[], allowPlaintext = false): Promise<string[]> {
         const hashInfo = await this.doRequest("GET", "/_matrix/identity/v2/hash_details");
         if (!hashInfo?.["algorithms"]) throw new Error("Server not supported: invalid response");
@@ -117,6 +130,57 @@ export class IdentityClient {
     }
 
     /**
+     * Creates a third party email invite. This will store the invite in the identity server, but
+     * not publish the invite to the room - the caller is expected to handle the remaining part. Note
+     * that this function is not required to be called when using the Client-Server API for inviting
+     * third party addresses to a room. This will make several calls into the room state to populate
+     * the invite details, therefore the inviter (the client backing this identity client) must be
+     * present in the room.
+     * @param {string} emailAddress The email address to invite.
+     * @param {string} roomId The room ID to invite to.
+     * @returns {Promise<IdentityServerInvite>} Resolves to the identity server's stored invite.
+     */
+    @timedIdentityClientFunctionCall()
+    public async makeEmailInvite(emailAddress: string, roomId: string): Promise<IdentityServerInvite> {
+        const req = {
+            address: emailAddress,
+            medium: "email",
+            room_id: roomId,
+            sender: await this.matrixClient.getUserId(),
+        };
+
+        const tryFetch = async (eventType: string, stateKey: string): Promise<any> => {
+            try {
+                return await this.matrixClient.getRoomStateEvent(roomId, eventType, stateKey);
+            } catch (e) {
+                return null;
+            }
+        };
+
+        req["room_alias"] = (await tryFetch("m.room.canonical_alias", ""))?.["alias"];
+        req["room_avatar_url"] = (await tryFetch("m.room.avatar", ""))?.["url"];
+        req["room_name"] = (await tryFetch("m.room.name", ""))?.["name"];
+        req["room_join_rules"] = (await tryFetch("m.room.join_rules", ""))?.["join_rule"];
+
+        let profileInfo: MatrixProfileInfo;
+        try {
+            profileInfo = await this.matrixClient.getUserProfile(await this.matrixClient.getUserId());
+        } catch (e) {
+            // ignore
+        }
+        const senderProfile = new MatrixProfile(await this.matrixClient.getUserId(), profileInfo);
+        req["sender_avatar_url"] = senderProfile.avatarUrl;
+        req["sender_display_name"] = senderProfile.displayName;
+
+        const inviteReq = {};
+        for (const entry of Object.entries(req)) {
+            if (!!entry[1]) inviteReq[entry[0]] = entry[1];
+        }
+
+        return await this.doRequest("POST", "/_matrix/identity/v2/store-invite", null, inviteReq);
+    }
+
+    /**
      * Performs a web request to the server, applying appropriate authorization headers for
      * this client.
      * @param {"GET"|"POST"|"PUT"|"DELETE"} method The HTTP method to use in the request
@@ -143,8 +207,8 @@ export class IdentityClient {
      * @param {OpenIDConnectToken} oidc The OpenID Connect token to register to the identity server with.
      * @param {string} serverUrl The full URL where the identity server can be reached at.
      */
-    public static async acquire(oidc: OpenIDConnectToken, serverUrl: string): Promise<IdentityClient> {
+    public static async acquire(oidc: OpenIDConnectToken, serverUrl: string, mxClient: MatrixClient): Promise<IdentityClient> {
         const account = await doHttpRequest(serverUrl, "POST", "/_matrix/identity/v2/account/register", null, oidc);
-        return new IdentityClient(account['token'], serverUrl);
+        return new IdentityClient(account['token'], serverUrl, mxClient);
     }
 }

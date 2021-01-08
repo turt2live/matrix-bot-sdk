@@ -140,7 +140,7 @@ export class MatrixClient extends EventEmitter {
      */
     public async getIdentityServerClient(identityServerName: string): Promise<IdentityClient> {
         const oidcToken = await this.getOpenIDConnectToken();
-        return IdentityClient.acquire(oidcToken, `https://${identityServerName}`);
+        return IdentityClient.acquire(oidcToken, `https://${identityServerName}`, this);
     }
 
     /**
@@ -186,7 +186,7 @@ export class MatrixClient extends EventEmitter {
     @timedMatrixClientFunctionCall()
     public async getOpenIDConnectToken(): Promise<OpenIDConnectToken> {
         const userId = encodeURIComponent(await this.getUserId());
-        return this.doRequest("POST", "/_matrix/client/r0/user/"+userId+"/openid/request_token");
+        return this.doRequest("POST", "/_matrix/client/r0/user/" + userId + "/openid/request_token", null, {});
     }
 
     /**

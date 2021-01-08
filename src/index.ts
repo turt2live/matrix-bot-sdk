@@ -39,6 +39,7 @@ export * from "./models/OpenIDConnect";
 export * from "./models/Policies";
 export * from "./models/Threepid";
 export * from "./models/MSC1772Space";
+export * from "./models/IdentityServerModels";
 
 // Event models
 export * from "./models/events/EventKind";
