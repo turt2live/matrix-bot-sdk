@@ -7,11 +7,12 @@ import {
     MatrixClient,
     MemoryStorageProvider,
     setRequestFn,
-    Membership,
+    Membership, OpenIDConnectToken,
 } from "../src";
 import * as simple from "simple-mock";
 import * as MockHttpBackend from 'matrix-mock-request';
 import { expectArrayEquals } from "./TestUtils";
+import { redactObjectForLogging } from "../src/http";
 
 export function createTestClient(storage: IStorageProvider = null, userId: string = null): { client: MatrixClient, http: MockHttpBackend, hsUrl: string, accessToken: string } {
     const http = new MockHttpBackend();
@@ -211,6 +212,69 @@ describe('MatrixClient', () => {
 
             const result = client.unstableApis;
             expect(result).toBeDefined();
+        });
+    });
+
+    describe('adminApis', () => {
+        it('should always return an object', async () => {
+            const {client} = createTestClient();
+
+            const result = client.adminApis;
+            expect(result).toBeDefined();
+        });
+    });
+
+    describe('getOpenIDConnectToken', () => {
+        it('should call the right endpoint', async () => {
+            const {client, http, hsUrl} = createTestClient();
+
+            const testToken: OpenIDConnectToken = {
+                access_token: "s3cret",
+                expires_in: 1200,
+                matrix_server_name: "localhost",
+                token_type: "Bearer",
+            };
+            const userId = "@test:example.org";
+
+            client.getUserId = () => Promise.resolve(userId);
+
+            http.when("POST", "/_matrix/client/r0/user").respond(200, (path) => {
+                expect(path).toEqual(`${hsUrl}/_matrix/client/r0/user/${encodeURIComponent(userId)}/openid/request_token`);
+                return testToken;
+            });
+
+            http.flushAllExpected();
+            const r = await client.getOpenIDConnectToken();
+            expect(r).toMatchObject(<any>testToken); // <any> to fix typescript
+        });
+    });
+
+    describe('getIdentityServerClient', () => {
+        // This doubles as the test for IdentityClient#acquire()
+        it('should prepare an identity server client', async () => {
+            const {client, http, hsUrl} = createTestClient();
+
+            const testToken: OpenIDConnectToken = {
+                access_token: "s3cret",
+                expires_in: 1200,
+                matrix_server_name: "localhost",
+                token_type: "Bearer",
+            };
+            const userId = "@test:example.org";
+            const identityDomain = "identity.example.org";
+            const identityToken = "t0ken";
+
+            client.getUserId = () => Promise.resolve(userId);
+            client.getOpenIDConnectToken = () => Promise.resolve(testToken);
+
+            http.when("POST", "/_matrix/identity/v2/account").respond(200, (path) => {
+                expect(path).toEqual(`https://${identityDomain}/_matrix/identity/v2/account/register`);
+                return {token: identityToken};
+            });
+
+            http.flushAllExpected();
+            const iClient = await client.getIdentityServerClient(identityDomain);
+            expect(iClient).toBeDefined();
         });
     });
 
@@ -2701,6 +2765,48 @@ describe('MatrixClient', () => {
         });
     });
 
+    describe('replyHtmlText', () => {
+        it('should call the right endpoint', async () => {
+            const {client, http, hsUrl} = createTestClient();
+
+            const roomId = "!testing:example.org";
+            const eventId = "$something:example.org";
+            const originalEvent = {
+                content: {
+                    body: "*Hello World*",
+                    formatted_body: "<i>Hello World</i>",
+                },
+                sender: "@abc:example.org",
+                event_id: "$abc:example.org",
+            };
+            const replyText = "HELLO WORLD"; // expected
+            const replyHtml = "<h1>Hello World</h1>";
+
+            const expectedContent = {
+                "m.relates_to": {
+                    "m.in_reply_to": {
+                        "event_id": originalEvent.event_id,
+                    },
+                },
+                msgtype: "m.text",
+                format: "org.matrix.custom.html",
+                body: `> <${originalEvent.sender}> ${originalEvent.content.body}\n\n${replyText}`,
+                formatted_body: `<mx-reply><blockquote><a href="https://matrix.to/#/${roomId}/${originalEvent.event_id}">In reply to</a><a href="https://matrix.to/#/${originalEvent.sender}">${originalEvent.sender}</a><br />${originalEvent.content.formatted_body}</blockquote></mx-reply>${replyHtml}`,
+            };
+
+            http.when("PUT", "/_matrix/client/r0/rooms").respond(200, (path, content) => {
+                const idx = path.indexOf(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/send/m.room.message/`);
+                expect(idx).toBe(0);
+                expect(content).toMatchObject(expectedContent);
+                return {event_id: eventId};
+            });
+
+            http.flushAllExpected();
+            const result = await client.replyHtmlText(roomId, originalEvent, replyHtml);
+            expect(result).toEqual(eventId);
+        });
+    });
+
     describe('replyNotice', () => {
         it('should call the right endpoint', async () => {
             const {client, http, hsUrl} = createTestClient();
@@ -2783,6 +2889,48 @@ describe('MatrixClient', () => {
         });
     });
 
+    describe('replyHtmlNotice', () => {
+        it('should call the right endpoint', async () => {
+            const {client, http, hsUrl} = createTestClient();
+
+            const roomId = "!testing:example.org";
+            const eventId = "$something:example.org";
+            const originalEvent = {
+                content: {
+                    body: "*Hello World*",
+                    formatted_body: "<i>Hello World</i>",
+                },
+                sender: "@abc:example.org",
+                event_id: "$abc:example.org",
+            };
+            const replyText = "HELLO WORLD"; // expected
+            const replyHtml = "<h1>Hello World</h1>";
+
+            const expectedContent = {
+                "m.relates_to": {
+                    "m.in_reply_to": {
+                        "event_id": originalEvent.event_id,
+                    },
+                },
+                msgtype: "m.notice",
+                format: "org.matrix.custom.html",
+                body: `> <${originalEvent.sender}> ${originalEvent.content.body}\n\n${replyText}`,
+                formatted_body: `<mx-reply><blockquote><a href="https://matrix.to/#/${roomId}/${originalEvent.event_id}">In reply to</a><a href="https://matrix.to/#/${originalEvent.sender}">${originalEvent.sender}</a><br />${originalEvent.content.formatted_body}</blockquote></mx-reply>${replyHtml}`,
+            };
+
+            http.when("PUT", "/_matrix/client/r0/rooms").respond(200, (path, content) => {
+                const idx = path.indexOf(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/send/m.room.message/`);
+                expect(idx).toBe(0);
+                expect(content).toMatchObject(expectedContent);
+                return {event_id: eventId};
+            });
+
+            http.flushAllExpected();
+            const result = await client.replyHtmlNotice(roomId, originalEvent, replyHtml);
+            expect(result).toEqual(eventId);
+        });
+    });
+
     describe('sendNotice', () => {
         it('should call the right endpoint', async () => {
             const {client, http, hsUrl} = createTestClient();
@@ -2807,6 +2955,32 @@ describe('MatrixClient', () => {
         });
     });
 
+    describe('sendHtmlNotice', () => {
+        it('should call the right endpoint', async () => {
+            const {client, http, hsUrl} = createTestClient();
+
+            const roomId = "!testing:example.org";
+            const eventId = "$something:example.org";
+            const eventContent = {
+                body: "HELLO WORLD",
+                msgtype: "m.notice",
+                format: "org.matrix.custom.html",
+                formatted_body: "<h1>Hello World</h1>",
+            };
+
+            http.when("PUT", "/_matrix/client/r0/rooms").respond(200, (path, content) => {
+                const idx = path.indexOf(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/send/m.room.message/`);
+                expect(idx).toBe(0);
+                expect(content).toMatchObject(eventContent);
+                return {event_id: eventId};
+            });
+
+            http.flushAllExpected();
+            const result = await client.sendHtmlNotice(roomId, eventContent.formatted_body);
+            expect(result).toEqual(eventId);
+        });
+    });
+
     describe('sendText', () => {
         it('should call the right endpoint', async () => {
             const {client, http, hsUrl} = createTestClient();
@@ -2827,6 +3001,32 @@ describe('MatrixClient', () => {
 
             http.flushAllExpected();
             const result = await client.sendText(roomId, eventContent.body);
+            expect(result).toEqual(eventId);
+        });
+    });
+
+    describe('sendHtmlText', () => {
+        it('should call the right endpoint', async () => {
+            const {client, http, hsUrl} = createTestClient();
+
+            const roomId = "!testing:example.org";
+            const eventId = "$something:example.org";
+            const eventContent = {
+                body: "HELLO WORLD",
+                msgtype: "m.text",
+                format: "org.matrix.custom.html",
+                formatted_body: "<h1>Hello World</h1>",
+            };
+
+            http.when("PUT", "/_matrix/client/r0/rooms").respond(200, (path, content) => {
+                const idx = path.indexOf(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/send/m.room.message/`);
+                expect(idx).toBe(0);
+                expect(content).toMatchObject(eventContent);
+                return {event_id: eventId};
+            });
+
+            http.flushAllExpected();
+            const result = await client.sendHtmlText(roomId, eventContent.formatted_body);
             expect(result).toEqual(eventId);
         });
     });
@@ -4509,11 +4709,6 @@ describe('MatrixClient', () => {
 
     describe('redactObjectForLogging', () => {
         it('should redact multilevel objects', () => {
-            const {client} = createTestClient();
-
-            // We have to do private access to get at the function
-            const fn = (<any>client).redactObjectForLogging;
-
             const input = {
                 "untouched_one": 1,
                 "untouched_two": "test",
@@ -4615,7 +4810,7 @@ describe('MatrixClient', () => {
                 ],
             };
 
-            const result = fn(input);
+            const result = redactObjectForLogging(input);
             expect(result).toMatchObject(output);
         });
     });

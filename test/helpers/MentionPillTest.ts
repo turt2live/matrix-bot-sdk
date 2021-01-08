@@ -127,5 +127,55 @@ describe('MentionPill', () => {
             expect(profileSpy.callCount).toBe(0);
             expect(stateSpy.callCount).toBe(1);
         });
+
+        it('should generate a pill for a room alias', async () => {
+            const roomAlias = "#test:example.org";
+            const displayName = roomAlias;
+            const expectedHtml = `<a href="https://matrix.to/#/${roomAlias}">${displayName}</a>`;
+            const expectedText = displayName;
+
+            const mention = await MentionPill.forRoom(roomAlias);
+            expect(mention).toBeDefined();
+            expect(mention.html).toBe(expectedHtml);
+            expect(mention.text).toBe(expectedText);
+        });
+
+        it('should generate a pill for a room ID', async () => {
+            const roomId = "!test:example.org";
+            const displayName = roomId;
+            const expectedHtml = `<a href="https://matrix.to/#/${roomId}">${displayName}</a>`;
+            const expectedText = displayName;
+
+            const mention = await MentionPill.forRoom(roomId);
+            expect(mention).toBeDefined();
+            expect(mention.html).toBe(expectedHtml);
+            expect(mention.text).toBe(expectedText);
+        });
+
+        it('should try to fetch the canonical alias for a room', async () => {
+            const {client} = createTestClient();
+
+            const roomAlias = "#alias:example.org";
+            const canonicalAlias = "#canonical:example.org";
+            const roomId = "!test:example.org";
+            const expectedHtml = `<a href="https://matrix.to/#/${canonicalAlias}">${canonicalAlias}</a>`;
+            const expectedText = canonicalAlias;
+
+            const resolveSpy = simple.mock(client, "resolveRoom").callFn(async ref => {
+                expect(ref).toBe(roomAlias);
+                return roomId;
+            });
+            const getStateSpy = simple.mock(client, "getRoomStateEvent").callFn(async (sRoomId, type, stateKey) => {
+                expect(sRoomId).toBe(roomId);
+                expect(type).toBe("m.room.canonical_alias");
+                expect(stateKey).toBe("");
+                return {alias: canonicalAlias};
+            });
+
+            const mention = await MentionPill.forRoom(roomAlias, client);
+            expect(mention).toBeDefined();
+            expect(mention.html).toBe(expectedHtml);
+            expect(mention.text).toBe(expectedText);
+        });
     });
 });

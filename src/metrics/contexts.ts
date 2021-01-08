@@ -4,6 +4,7 @@
  */
 import { MatrixClient } from "../MatrixClient";
 import { Intent } from "../appservice/Intent";
+import { IdentityClient } from "../identity/IdentityClient";
 
 export interface IMetricContext {
     /**
@@ -33,6 +34,14 @@ export interface MatrixClientCallContext extends FunctionCallContext {
      * The client that raised the metric.
      */
     client: MatrixClient;
+}
+
+/**
+ * Metric context for metrics from an IdentityClient
+ * @category Metrics
+ */
+export interface IdentityClientCallContext extends FunctionCallContext {
+    client: IdentityClient;
 }
 
 /**
