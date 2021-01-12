@@ -9,7 +9,7 @@ Documentation for the develop branch is available [here](https://turt2live.githu
 
 # Templates and guides
 
-* [matrix.org's guide on the basic functions of the bot](https://matrix.org/docs/guides/usage-of-matrix-js-bot-sdk)
+* [matrix.org's guide on the basic functions of the bot](https://matrix.org/docs/guides/usage-of-matrix-bot-sdk)
 * [GitHub bot template repository](https://github.com/turt2live/matrix-bot-sdk-bot-template)
 
 # Installing
