@@ -269,6 +269,21 @@ export class UnstableApis {
             creation_content: {
                 'org.matrix.msc1772.type': 'org.matrix.msc1772.space',
             },
+            power_level_content_override: {
+                ban: 100,
+                events_default: 50,
+                invite: 50,
+                kick: 100,
+                notifications: {
+                    room: 100,
+                },
+                redact: 100,
+                state_default: 100,
+                users: {
+                    [await this.client.getUserId()]: 100,
+                },
+                users_default: 0,
+            },
         };
         const roomId = await this.client.createRoom(roomCreateOpts);
         return new MSC1772Space(roomId, this.client);
