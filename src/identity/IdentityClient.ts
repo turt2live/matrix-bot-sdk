@@ -22,6 +22,12 @@ export class IdentityClient {
      */
     public readonly metrics: Metrics;
 
+    /**
+     * If truthy, this is a string that will be supplied as `?brand=$brand` where endpoints can
+     * result in communications to a user.
+     */
+    public brand: string;
+
     private constructor(public readonly accessToken: string, public readonly serverUrl: string, public readonly matrixClient: MatrixClient) {
         this.metrics = new Metrics();
     }
@@ -177,7 +183,9 @@ export class IdentityClient {
             if (!!entry[1]) inviteReq[entry[0]] = entry[1];
         }
 
-        return await this.doRequest("POST", "/_matrix/identity/v2/store-invite", null, inviteReq);
+        const qs = {};
+        if (this.brand) qs['brand'] = this.brand;
+        return await this.doRequest("POST", "/_matrix/identity/v2/store-invite", qs, inviteReq);
     }
 
     /**
