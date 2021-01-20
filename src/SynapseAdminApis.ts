@@ -168,7 +168,7 @@ export class SynapseAdminApis {
      * Throws if there's an error.
      */
     public async isAdmin(userId: string): Promise<boolean> {
-        const response = await this.client.doRequest("GET", `/_synapse/admin/v2/users/${encodeURIComponent(userId)}/admin`);
+        const response = await this.client.doRequest("GET", `/_synapse/admin/v1/users/${encodeURIComponent(userId)}/admin`);
         return response['admin'] || false;
     }
 
