@@ -426,7 +426,9 @@ describe('UnstableApis', () => {
 
     describe('createSpace', () => {
         it('should create a typed private room', async () => {
-            const {client, http, hsUrl} = createTestUnstableClient();
+            const {client, http, mxClient} = createTestUnstableClient();
+
+            mxClient.getUserId = () => Promise.resolve("@alice:example.org");
 
             const roomId = "!test:example.org";
             const name = "Test Space";
@@ -470,7 +472,9 @@ describe('UnstableApis', () => {
         });
 
         it('should create a typed public room', async () => {
-            const {client, http, hsUrl} = createTestUnstableClient();
+            const {client, http, mxClient} = createTestUnstableClient();
+
+            mxClient.getUserId = () => Promise.resolve("@alice:example.org");
 
             const roomId = "!test:example.org";
             const name = "Test Space";
