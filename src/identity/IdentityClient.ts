@@ -163,9 +163,12 @@ export class IdentityClient {
             }
         };
 
-        req["room_alias"] = (await tryFetch("m.room.canonical_alias", ""))?.["alias"];
+        const canonicalAlias = (await tryFetch("m.room.canonical_alias", ""))?.["alias"];
+        const roomName = (await tryFetch("m.room.name", ""))?.["name"];
+
+        req["room_alias"] = canonicalAlias;
         req["room_avatar_url"] = (await tryFetch("m.room.avatar", ""))?.["url"];
-        req["room_name"] = (await tryFetch("m.room.name", ""))?.["name"];
+        req["room_name"] = roomName || canonicalAlias;
         req["room_join_rules"] = (await tryFetch("m.room.join_rules", ""))?.["join_rule"];
 
         let profileInfo: MatrixProfileInfo;
