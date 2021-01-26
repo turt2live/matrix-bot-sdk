@@ -37,6 +37,17 @@ export class UnstableApis {
     }
 
     /**
+     * Gets the local room aliases that are published for a given room.
+     * @param {string} roomId The room ID to get local aliases for.
+     * @returns {Promise<string[]>} Resolves to the aliases on the room, or an empty array.
+     * @deprecated Relies on MSC2432 endpoint.
+     */
+    public async getRoomAliases(roomId: string): Promise<string[]> {
+        const r = await this.client.doRequest("GET", "/_matrix/client/unstable/org.matrix.msc2432/rooms/" + encodeURIComponent(roomId) + "/aliases");
+        return r['aliases'] || [];
+    }
+
+    /**
      * Creates a group.
      * @param {string} localpart The localpart for the group
      * @return {Promise<string>} Resolves to the created group ID.

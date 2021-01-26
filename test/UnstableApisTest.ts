@@ -15,6 +15,24 @@ export function createTestUnstableClient(storage: IStorageProvider = null): { cl
 }
 
 describe('UnstableApis', () => {
+    describe('getRoomAliases', () => {
+        it('should call the right endpoint', async () => {
+            const {client, http, hsUrl} = createTestUnstableClient();
+
+            const aliases = ["#test:example.org", "#test2:example.org"];
+            const roomId = "!room:example.org";
+
+            http.when("GET", "/_matrix/client/unstable/org.matrix.msc2432/rooms").respond(200, (path, content) => {
+                expect(path).toEqual(`${hsUrl}/_matrix/client/unstable/org.matrix.msc2432/rooms/${encodeURIComponent(roomId)}/aliases`);
+                return {aliases: aliases};
+            });
+
+            http.flushAllExpected();
+            const result = await client.getRoomAliases(roomId);
+            expect(result).toMatchObject(aliases);
+        });
+    });
+
     describe('createGroup', () => {
         it('should call the right endpoint', async () => {
             const {client, http} = createTestUnstableClient();
