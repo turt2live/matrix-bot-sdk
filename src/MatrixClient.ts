@@ -503,7 +503,7 @@ export class MatrixClient extends EventEmitter {
     public start(filter: any = null): Promise<any> {
         this.stopSyncing = false;
         if (!filter || typeof (filter) !== "object") {
-            LogService.debug("MatrixClientLite", "No filter given or invalid object - using defaults.");
+            LogService.trace("MatrixClientLite", "No filter given or invalid object - using defaults.");
             filter = null;
         }
 
@@ -512,9 +512,9 @@ export class MatrixClient extends EventEmitter {
 
             let existingFilter = await Promise.resolve(this.storage.getFilter());
             if (existingFilter) {
-                LogService.debug("MatrixClientLite", "Found existing filter. Checking consistency with given filter");
+                LogService.trace("MatrixClientLite", "Found existing filter. Checking consistency with given filter");
                 if (JSON.stringify(existingFilter.filter) === JSON.stringify(filter)) {
-                    LogService.debug("MatrixClientLite", "Filters match");
+                    LogService.trace("MatrixClientLite", "Filters match");
                     this.filterId = existingFilter.id;
                 } else {
                     createFilter = true;
@@ -524,7 +524,7 @@ export class MatrixClient extends EventEmitter {
             }
 
             if (createFilter && filter) {
-                LogService.debug("MatrixClientLite", "Creating new filter");
+                LogService.trace("MatrixClientLite", "Creating new filter");
                 return this.doRequest("POST", "/_matrix/client/r0/user/" + encodeURIComponent(userId) + "/filter", null, filter).then(async response => {
                     this.filterId = response["filter_id"];
                     await Promise.resolve(this.storage.setSyncToken(null));
@@ -535,10 +535,10 @@ export class MatrixClient extends EventEmitter {
                 });
             }
         }).then(async () => {
-            LogService.debug("MatrixClientLite", "Populating joined rooms to avoid excessive join emits");
+            LogService.trace("MatrixClientLite", "Populating joined rooms to avoid excessive join emits");
             this.lastJoinedRoomIds = await this.getJoinedRooms();
 
-            LogService.debug("MatrixClientLite", "Starting sync with filter ID " + this.filterId);
+            LogService.trace("MatrixClientLite", "Starting sync with filter ID " + this.filterId);
             this.startSyncInternal();
         });
     }
@@ -1293,7 +1293,7 @@ export class MatrixClient extends EventEmitter {
                 } else {
                     const contentType = response.headers['content-type'] || "application/octet-stream";
 
-                    LogService.debug("MatrixLiteClient (REQ-" + requestId + " RESP-H" + response.statusCode + ")", "<data>");
+                    LogService.trace("MatrixLiteClient (REQ-" + requestId + " RESP-H" + response.statusCode + ")", "<data>");
                     if (response.statusCode < 200 || response.statusCode >= 300) {
                         LogService.error("MatrixLiteClient (REQ-" + requestId + ")", "<data>");
                         reject(response);

@@ -8,6 +8,11 @@ import { ILogger } from "./ILogger";
 export class LogLevel {
 
     /**
+     * The TRACE channel
+     */
+    public static readonly TRACE = new LogLevel("TRACE", -1);
+
+    /**
      * The DEBUG channel
      */
     public static readonly DEBUG = new LogLevel("DEBUG", 0);
@@ -40,6 +45,7 @@ export class LogLevel {
 
     public static fromString(level: string, defaultLevel = LogLevel.DEBUG): LogLevel {
         if (!level) return defaultLevel;
+        if (level.toUpperCase() === LogLevel.TRACE.level) return LogLevel.TRACE;
         if (level.toUpperCase() === LogLevel.DEBUG.level) return LogLevel.DEBUG;
         if (level.toUpperCase() === LogLevel.INFO.level) return LogLevel.INFO;
         if (level.toUpperCase() === LogLevel.WARN.level) return LogLevel.WARN;
@@ -55,7 +61,7 @@ export class LogLevel {
 export class LogService {
 
     private static logger: ILogger = new ConsoleLogger();
-    private static logLevel: LogLevel = LogLevel.DEBUG;
+    private static logLevel: LogLevel = LogLevel.INFO;
 
     private constructor() {
     }
@@ -81,6 +87,16 @@ export class LogService {
      */
     public static setLogger(logger: ILogger) {
         LogService.logger = logger;
+    }
+
+    /**
+     * Logs to the TRACE channel
+     * @param {string} module The module being logged
+     * @param {any[]} messageOrObject The data to log
+     */
+    public static trace(module: string, ...messageOrObject: any[]) {
+        if (!LogService.logLevel.includes(LogLevel.TRACE)) return;
+        LogService.logger.trace(module, ...messageOrObject);
     }
 
     /**
