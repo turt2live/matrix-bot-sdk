@@ -1,7 +1,7 @@
 # matrix-bot-sdk
 
 [![npm version](https://badge.fury.io/js/matrix-bot-sdk.svg)](https://www.npmjs.com/package/matrix-bot-sdk)
-[![TravisCI badge](https://travis-ci.org/turt2live/matrix-bot-sdk.svg?branch=master)](https://travis-ci.org/turt2live/matrix-js-bot-sdk)
+[![Build status](https://badge.buildkite.com/ccaf93af1d4570b64fcb62b25aa708813584c4990787688037.svg)](https://buildkite.com/t2bot/matrix-bot-sdk)
 
 TypeScript/JavaScript SDK for Matrix bots. For help and support, visit [#matrix-bot-sdk:t2bot.io](https://matrix.to/#/#matrix-bot-sdk:t2bot.io)
 
