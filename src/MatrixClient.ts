@@ -564,7 +564,7 @@ export class MatrixClient extends EventEmitter {
                     await Promise.resolve(this.storage.setSyncToken(token));
                 }
 
-                LogService.info("MatrixClientLite", "Received sync. Next token: " + token);
+                LogService.debug("MatrixClientLite", "Received sync. Next token: " + token);
                 await this.processSync(response, emitFn);
 
                 if (this.persistTokenAfterSync) {
@@ -582,7 +582,7 @@ export class MatrixClient extends EventEmitter {
 
     @timedMatrixClientFunctionCall()
     protected doSync(token: string): Promise<any> {
-        LogService.info("MatrixClientLite", "Performing sync with token " + token);
+        LogService.debug("MatrixClientLite", "Performing sync with token " + token);
         const conf = {
             full_state: false,
             timeout: Math.max(0, this.syncingTimeout),
