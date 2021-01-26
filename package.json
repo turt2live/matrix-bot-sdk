@@ -32,11 +32,14 @@
     "bot",
     "sdk",
     "js",
+    "ts",
     "node",
     "helpers",
     "snippets",
     "chat",
-    "modules"
+    "modules",
+    "bot-sdk",
+    "appservices"
   ],
   "files": [
     "src/*",
