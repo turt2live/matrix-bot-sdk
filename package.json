@@ -1,7 +1,7 @@
 {
   "name": "matrix-bot-sdk",
-  "version": "0.5.12",
-  "description": "TypeScript/JavaScript SDK for Matrix bots",
+  "version": "develop",
+  "description": "TypeScript/JavaScript SDK for Matrix bots and appservices",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/turt2live/matrix-bot-sdk.git"
@@ -25,20 +25,21 @@
   "main": "./lib/index.js",
   "typings": "./lib/index.d.ts",
   "engines": {
-    "node": ">=10.0.0",
-    "npm": "^6.0.0",
-    "yarn": "^1.19.0"
+    "node": ">=10.0.0"
   },
   "keywords": [
     "matrix",
     "bot",
     "sdk",
     "js",
+    "ts",
     "node",
     "helpers",
     "snippets",
     "chat",
-    "modules"
+    "modules",
+    "bot-sdk",
+    "appservices"
   ],
   "files": [
     "src/*",

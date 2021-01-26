@@ -30,4 +30,11 @@ export interface ILogger {
      * @param {any[]} messageOrObject The data to log
      */
     debug(module: string, ...messageOrObject: any[]);
+
+    /**
+     * Logs to the TRACE channel
+     * @param {string} module The module being logged
+     * @param {any[]} messageOrObject The data to log
+     */
+    trace(module: string, ...messageOrObject: any[]);
 }

@@ -28,8 +28,8 @@ describe('SynapseAdminApis', () => {
             const userId = "@someone:example.org";
             const response = {admin: true};
 
-            http.when("GET", "/_synapse/admin/v2/users").respond(200, (path, content) => {
-                expect(path).toEqual(`${hsUrl}/_synapse/admin/v2/users/${encodeURIComponent(userId)}/admin`);
+            http.when("GET", "/_synapse/admin/v1/users").respond(200, (path, content) => {
+                expect(path).toEqual(`${hsUrl}/_synapse/admin/v1/users/${encodeURIComponent(userId)}/admin`);
                 return response;
             });
 
@@ -44,8 +44,8 @@ describe('SynapseAdminApis', () => {
             const userId = "@someone:example.org";
             const response = {admin: false};
 
-            http.when("GET", "/_synapse/admin/v2/users").respond(200, (path, content) => {
-                expect(path).toEqual(`${hsUrl}/_synapse/admin/v2/users/${encodeURIComponent(userId)}/admin`);
+            http.when("GET", "/_synapse/admin/v1/users").respond(200, (path, content) => {
+                expect(path).toEqual(`${hsUrl}/_synapse/admin/v1/users/${encodeURIComponent(userId)}/admin`);
                 return response;
             });
 
@@ -65,8 +65,8 @@ describe('SynapseAdminApis', () => {
             http.when("GET", "/_matrix/client/r0/account/whoami").respond(200, (path, content) => {
                 return {user_id: userId};
             });
-            http.when("GET", "/_synapse/admin/v2/users").respond(200, (path, content) => {
-                expect(path).toEqual(`${hsUrl}/_synapse/admin/v2/users/${encodeURIComponent(userId)}/admin`);
+            http.when("GET", "/_synapse/admin/v1/users").respond(200, (path, content) => {
+                expect(path).toEqual(`${hsUrl}/_synapse/admin/v1/users/${encodeURIComponent(userId)}/admin`);
                 return response;
             });
 
@@ -83,8 +83,8 @@ describe('SynapseAdminApis', () => {
             http.when("GET", "/_matrix/client/r0/account/whoami").respond(200, (path, content) => {
                 return {user_id: userId};
             });
-            http.when("GET", "/_synapse/admin/v2/users").respond(200, (path, content) => {
-                expect(path).toEqual(`${hsUrl}/_synapse/admin/v2/users/${encodeURIComponent(userId)}/admin`);
+            http.when("GET", "/_synapse/admin/v1/users").respond(200, (path, content) => {
+                expect(path).toEqual(`${hsUrl}/_synapse/admin/v1/users/${encodeURIComponent(userId)}/admin`);
                 return {errcode: "M_FORBIDDEN", error: "You are not a server admin"};
             });
 

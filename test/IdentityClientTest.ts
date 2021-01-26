@@ -671,8 +671,8 @@ describe('IdentityClient', () => {
             };
             const expectedStateEvents = [
                 "m.room.canonical_alias",
-                "m.room.avatar",
                 "m.room.name",
+                "m.room.avatar",
                 "m.room.join_rules",
             ];
 
@@ -712,6 +712,82 @@ describe('IdentityClient', () => {
                     room_avatar_url: inviteRoomAvatar,
                     room_join_rules: inviteRoomJoinRules,
                     room_name: inviteRoomName,
+                });
+                return storedInvite;
+            });
+
+            http.flushAllExpected();
+            const resp = await client.makeEmailInvite(inviteEmail, inviteRoomId);
+            expect(resp).toMatchObject(storedInvite);
+            expect(profileSpy.callCount).toBe(1);
+            expect({calledStateEvents}).toMatchObject({calledStateEvents: expectedStateEvents});
+        });
+
+        it('should use the canonical alias when no explicit name is present', async () => {
+            const {client, http, identityUrl} = await createTestIdentityClient();
+
+            const mxUserId = "@bob:example.org";
+            client.matrixClient.getUserId = () => Promise.resolve(mxUserId);
+
+            const inviteEmail = "alice@example.org";
+            const inviteRoomId = "!room:example.org";
+            const inviteRoomAvatar = "mxc://example.org/roomavatar";
+            const inviteRoomJoinRules = "public";
+            const inviteRoomAlias = "#test:example.org";
+            const senderDisplayName = "Bob Test";
+            const senderAvatarUrl = "mxc://example.org/avatar";
+            const storedInvite = {
+                display_name: "a...@e...",
+                public_keys: [
+                    {public_key: "serverkey", key_validity_url: "/_matrix/identity/v1/pubkey/isvalid"},
+                    {public_key: "ephemeralkey", key_validity_url: "/_matrix/identity/v1/pubkey/isvalid"},
+                ],
+                public_key: "serverkey",
+                token: "s3cret",
+            };
+            const expectedStateEvents = [
+                "m.room.canonical_alias",
+                "m.room.name",
+                "m.room.avatar",
+                "m.room.join_rules",
+            ];
+
+            const calledStateEvents:string[] = [];
+            const stateStub = async (roomId: string, evType: string, stateKey: string) => {
+                expect(roomId).toBe(inviteRoomId);
+                expect(stateKey).toBe("");
+                calledStateEvents.push(evType);
+
+                switch(evType) {
+                    case "m.room.name":
+                        throw new Error("ROOM_NAME: Not found");
+                    case "m.room.canonical_alias":
+                        return {alias: inviteRoomAlias};
+                    case "m.room.join_rules":
+                        return {join_rule: inviteRoomJoinRules};
+                    case "m.room.avatar":
+                        return {url: inviteRoomAvatar};
+                    default:
+                        throw new Error("Unknown event type");
+                }
+            };
+            client.matrixClient.getRoomStateEvent = stateStub;
+            const profileSpy = simple.mock(client.matrixClient, "getUserProfile").callFn(() => {
+                return Promise.resolve({displayname: senderDisplayName, avatar_url: senderAvatarUrl});
+            })
+
+            http.when("POST", "/_matrix/identity/v2/store-invite").respond(200, (path, content) => {
+                expect(content).toMatchObject({
+                    address: inviteEmail,
+                    room_id: inviteRoomId,
+                    medium: "email",
+                    sender: mxUserId,
+                    sender_avatar_url: senderAvatarUrl,
+                    sender_display_name: senderDisplayName,
+                    room_alias: inviteRoomAlias,
+                    room_avatar_url: inviteRoomAvatar,
+                    room_join_rules: inviteRoomJoinRules,
+                    room_name: inviteRoomAlias, // !! This is what we're testing
                 });
                 return storedInvite;
             });

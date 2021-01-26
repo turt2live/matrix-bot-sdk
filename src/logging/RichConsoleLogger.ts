@@ -19,6 +19,15 @@ export class RichConsoleLogger implements ILogger {
         return this.chalkTimestamp(now);
     }
 
+    public trace(module: string, ...messageOrObject: any[]) {
+        console.trace(
+            this.getTimestamp(),
+            this.chalkDebug("[TRACE]"),
+            this.chalkModule(`[${module}]`),
+            ...messageOrObject,
+        );
+    }
+
     public debug(module: string, ...messageOrObject: any[]) {
         console.debug(
             this.getTimestamp(),

@@ -5,6 +5,10 @@ import { ILogger } from "./ILogger";
  * @category Logging
  */
 export class ConsoleLogger implements ILogger {
+    public trace(module: string, ...messageOrObject: any[]) {
+        console.trace(module, ...messageOrObject);
+    }
+
     public debug(module: string, ...messageOrObject: any[]) {
         console.debug(module, ...messageOrObject);
     }
