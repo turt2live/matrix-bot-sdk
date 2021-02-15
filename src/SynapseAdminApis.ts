@@ -208,10 +208,12 @@ export class SynapseAdminApis {
      * @param {boolean} deactivated Whether or not to include deactivated accounts. Default false.
      * @returns {Promise<SynapseUserList>} A batch of user results.
      */
-    public async listUsers(from: string, limit: number, name?: string, guests = true, deactivated = false): Promise<SynapseUserList> {
-        return this.client.doRequest(
-            "GET", "/_synapse/admin/v2/users", {from, limit, name, guests, deactivated},
-        );
+    public async listUsers(from?: string, limit?: number, name?: string, guests = true, deactivated = false): Promise<SynapseUserList> {
+        const qs = {guests, deactivated};
+        if (from) qs['from'] = from;
+        if (limit) qs['limit'] = limit;
+        if (name) qs['name'] = name;
+        return this.client.doRequest("GET", "/_synapse/admin/v2/users", qs);
     }
 
     /**
