@@ -3,6 +3,8 @@ import {
     IStorageProvider,
     MatrixClient,
     SynapseAdminApis,
+    SynapseRoomList,
+    SynapseRoomProperty,
     SynapseUser,
     SynapseUserList,
     SynapseUserProperties
@@ -212,6 +214,94 @@ describe('SynapseAdminApis', () => {
                 request.from, request.limit, request.name, request.guests, request.deactivated
             );
             expect(result).toEqual(response);
+        });
+    });
+
+    describe('listRooms', () => {
+        it('should call the right endpoint', async () => {
+            const {client, http, hsUrl} = createTestSynapseAdminClient();
+
+            const response: SynapseRoomList = {
+                rooms: [{
+                    room_id: "!room:example.org",
+                    canonical_alias: "#room:example.org",
+                    creator: "@alice:example.org",
+                    encryption: "org.example.algorithm",
+                    federatable: true,
+                    guest_access: "can_join",
+                    history_visibility: "world_readable",
+                    join_rules: "public",
+                    joined_local_members: 1,
+                    joined_members: 2,
+                    name: "Test Room",
+                    public: true,
+                    state_events: 43,
+                    version: "6",
+                }],
+                next_batch: "next",
+                offset: "prev",
+                prev_batch: "prev",
+                total_rooms: 1,
+            };
+
+            const request = {
+                search_term: "lookup",
+                from: "from",
+                limit: 1000,
+                order_by: SynapseRoomProperty.CanFederate,
+                dir: "b",
+            };
+
+            http.when("GET", "/_synapse/admin/v1/rooms").respond(200, (path, _content, req) => {
+                expect(req.opts.qs).toEqual(request);
+                expect(path).toEqual(`${hsUrl}/_synapse/admin/v1/rooms`);
+                return response;
+            });
+
+            http.flushAllExpected();
+            const result = await client.listRooms(
+                request.search_term, request.from, request.limit, request.order_by, request.dir === 'b',
+            );
+            expect(result).toEqual(response);
+        });
+
+        describe('getRoomState', () => {
+            it('should call the right endpoint', async () => {
+                const {client, http, hsUrl} = createTestSynapseAdminClient();
+
+                const roomId = "!room:example.org";
+                const state = [
+                    {type: "m.room.create", content: {}, state_key: ""},
+                    {type: "m.room.member", content: {membership: "join"}, state_key: "@alice:example.org"},
+                    {type: "m.room.member", content: {membership: "leave"}, state_key: "@bob:example.org"},
+                ];
+
+                http.when("GET", "/_synapse/admin/v1/rooms").respond(200, (path, _content, req) => {
+                    expect(path).toEqual(`${hsUrl}/_synapse/admin/v1/rooms/${encodeURIComponent(roomId)}/state`);
+                    return {state};
+                });
+
+                http.flushAllExpected();
+                const result = await client.getRoomState(roomId);
+                expect(result).toMatchObject(state);
+            });
+        });
+
+        describe('deleteRoom', () => {
+            it('should call the right endpoint', async () => {
+                const {client, http, hsUrl} = createTestSynapseAdminClient();
+
+                const roomId = "!room:example.org";
+
+                http.when("POST", "/_synapse/admin/v1/rooms").respond(200, (path, _content, req) => {
+                    expect(JSON.parse(req.opts.body)).toMatchObject({purge: true});
+                    expect(path).toEqual(`${hsUrl}/_synapse/admin/v1/rooms/${encodeURIComponent(roomId)}/delete`);
+                    return {};
+                });
+
+                http.flushAllExpected();
+                await client.deleteRoom(roomId);
+            });
         });
     });
 });
