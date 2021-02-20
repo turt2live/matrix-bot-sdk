@@ -305,7 +305,7 @@ export class MatrixClient extends EventEmitter {
      * @returns {Promise<any>} Resolves when complete.
      */
     @timedMatrixClientFunctionCall()
-    public async setPresenceStatus(presence: "online" | "offline" | "unavailable", statusMessage: string = null): Promise<any> {
+    public async setPresenceStatus(presence: "online" | "offline" | "unavailable", statusMessage?: string): Promise<any> {
         return this.doRequest("PUT", "/_matrix/client/r0/presence/" + encodeURIComponent(await this.getUserId()) + "/status", null, {
             presence: presence,
             status_msg: statusMessage,
