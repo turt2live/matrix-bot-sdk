@@ -317,14 +317,14 @@ export class UnstableApis {
     }
 
     /**
-     * Adds a reaction to an event. The contract for this function may change in the future.
+     * Get relations for a given event.
      * @param {string} roomId The room ID to for the given event.
      * @param {string} eventId The event ID to list reacations for.
      * @param {string?} relationType The type of reaction (e.g. `m.room.member`) to filter for. Optional.
-     * @param {string?} eventType The type of event to look for (e.g. `m.room.member`)
+     * @param {string?} eventType The type of event to look for (e.g. `m.room.member`). Optional.
      * @returns {Promise<{original_event: any, chunk: any[]}>} Resolves a object containing the original event, and a chunk of relations
      */
-     public async getReactionForEvent(roomId: string, eventId: string, relationType?: string, eventType?: string): Promise<{original_event: any, chunk: any[]}> {
+     public async getRelationsForEvent(roomId: string, eventId: string, relationType?: string, eventType?: string): Promise<{original_event: any, chunk: any[]}> {
         let url = `/_matrix/client/unstable/rooms/${roomId}/relations/${eventId}`;
         if (relationType) {
             url += `/${relationType}`;
