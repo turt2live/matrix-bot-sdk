@@ -315,4 +315,24 @@ export class UnstableApis {
         }
         return new MSC1772Space(roomId, this.client);
     }
+
+    /**
+     * Adds a reaction to an event. The contract for this function may change in the future.
+     * @param {string} roomId The room ID to for the given event.
+     * @param {string} eventId The event ID to list reacations for.
+     * @param {string?} relationType The type of reaction (e.g. `m.room.member`) to filter for. Optional.
+     * @param {string?} eventType The type of event to look for (e.g. `m.room.member`)
+     * @returns {Promise<{original_event: any, chunk: any[]}>} Resolves a object containing the original event, and a chunk of relations
+     */
+     public async getReactionForEvent(roomId: string, eventId: string, relationType?: string, eventType?: string): Promise<{original_event: any, chunk: any[]}> {
+        let url = `/_matrix/client/unstable/rooms/${roomId}/relations/${eventId}`;
+        if (relationType) {
+            url += `/${relationType}`;
+        }
+        if (eventType) {
+            url += `/${eventType}`;
+        }
+        return this.client.doRequest("GET", url);
+    }
 }
+     
