@@ -1,5 +1,6 @@
 import { MatrixClient } from "./MatrixClient";
 import { MSC1772Space, MSC1772SpaceCreateOptions } from "./models/MSC1772Space";
+import { MSC2380MediaInfo } from "./models/unstable/MediaInfo";
 
 /**
  * Represents a profile for a group
@@ -314,5 +315,43 @@ export class UnstableApis {
             throw new Error("Room is not a space");
         }
         return new MSC1772Space(roomId, this.client);
+    }
+
+    /**
+     * Get relations for a given event.
+     * @param {string} roomId The room ID to for the given event.
+     * @param {string} eventId The event ID to list reacations for.
+     * @param {string?} relationType The type of reaction (e.g. `m.room.member`) to filter for. Optional.
+     * @param {string?} eventType The type of event to look for (e.g. `m.room.member`). Optional.
+     * @returns {Promise<{original_event: any, chunk: any[]}>} Resolves a object containing the original event, and a chunk of relations
+     */
+     public async getRelationsForEvent(roomId: string, eventId: string, relationType?: string, eventType?: string): Promise<{original_event: any, chunk: any[]}> {
+        let url = `/_matrix/client/unstable/rooms/${roomId}/relations/${eventId}`;
+        if (relationType) {
+            url += `/${relationType}`;
+        }
+        if (eventType) {
+            url += `/${eventType}`;
+        }
+        return this.client.doRequest("GET", url);
+    }
+
+    /**
+     * Get information about a media item. Implements MSC2380
+     * @param {string} mxc The MXC to get information about.
+     * @returns {Promise<MSC2380MediaInfo>} Resolves a object containing the media information.
+     */
+     public async getMediaInfo(mxcUrl: string): Promise<MSC2380MediaInfo> {
+        if (!mxcUrl.toLowerCase().startsWith("mxc://")) {
+            throw Error("'mxcUrl' does not begin with mxc://");
+        }
+        const [domain, mediaId] = mxcUrl.substr("mxc://".length).split("/");
+        if (!domain || !mediaId) {
+            throw Error('Missing domain');
+        }
+        if (!mediaId) {
+            throw Error('Missing mediaId');
+        }
+        return this.client.doRequest("GET", `/_matrix/media/unstable/info/${encodeURIComponent(domain)}/${encodeURIComponent(mediaId)}`);
     }
 }
