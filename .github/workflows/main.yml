@@ -2,7 +2,7 @@ name: Docs
 on: 
   push:
     branches:
-      - develop
+      - master
     # TODO: Keep all historical builds (like the js-sdk)
     #tags: ['v*']
 jobs:
