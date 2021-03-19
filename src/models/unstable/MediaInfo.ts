@@ -5,7 +5,7 @@ export interface MSC2380MediaInfo {
     content_type: string;
     width: number|undefined;
     height: number|undefined;
-    size: string;
+    size: number;
     thumbnails?: {
         width: number;
         height: number;
