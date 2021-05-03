@@ -10,7 +10,7 @@ module.exports = {
     },
     "plugins": [
         "@typescript-eslint",
-        "@typescript-eslint/tslint"
+        "@typescript-eslint/eslint-plugin-tslint"
     ],
     "rules": {
         "@typescript-eslint/dot-notation": "off",
