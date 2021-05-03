@@ -21,6 +21,7 @@ import { IdentityClient } from "./identity/IdentityClient";
 import { OpenIDConnectToken } from "./models/OpenIDConnect";
 import { doHttpRequest } from "./http";
 import { htmlToText } from "html-to-text";
+import { MatrixProfileInfo } from "./models/MatrixProfile";
 
 /**
  * A client that is capable of interacting with a matrix homeserver.
@@ -871,6 +872,15 @@ export class MatrixClient extends EventEmitter {
         });
     }
 
+    /**
+     * Gets the joined members in a room, as an object mapping userIds to profiles. The client must be in the room to make this request.
+     * @param {string} roomId The room ID to get the joined members of.
+     * @returns The joined user IDs in the room as an object mapped to a set of profiles.
+     */
+    @timedMatrixClientFunctionCall()
+    public async getJoinedRoomMembersWithProfiles(roomId: string): Promise<{[userId: string]: MatrixProfileInfo}> {
+        return (await this.doRequest("GET", "/_matrix/client/r0/rooms/" + encodeURIComponent(roomId) + "/joined_members")).joined;
+    }
     /**
      * Gets the membership events of users in the room. Defaults to all membership
      * types, though this can be controlled with the membership and notMembership
