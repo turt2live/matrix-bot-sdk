@@ -1,4 +1,5 @@
 import { MatrixClient } from "./MatrixClient";
+import { LoginFlowsType } from "./models/Login";
 
 /**
  * Functions for interacting with Matrix prior to having an access token. Intended
@@ -105,23 +106,18 @@ export class MatrixAuth {
      * @returns {Promise<MatrixClient>} Resolves to a logged-in MatrixClient
      */
     public async passwordLogin(username: string, password: string, deviceName?: string): Promise<MatrixClient> {
-        const body = {
-            type: "m.login.password",
-            identifier: {
-                type: "m.id.user",
-                user: username,
-            },
-            password: password,
-            initial_device_display_name: deviceName,
+        const identifier = {
+            type: "m.id.user",
+            user: username,
         };
 
-        const response = await this.createTemplateClient().doRequest("POST", "/_matrix/client/r0/login", null, body);
-        const accessToken = response["access_token"];
+        const response = await this.createTemplateClient().doLogin(LoginFlowsType.Password, identifier, password, { initial_device_display_name: deviceName });
+        const accessToken = response.access_token;
         if (!accessToken) throw new Error("Expected access token in response - got nothing");
 
         let homeserverUrl = this.homeserverUrl;
-        if (response['well_known'] && response['well_known']['m.homeserver'] && response['well_known']['m.homeserver']['base_url']) {
-            homeserverUrl = response['well_known']['m.homeserver']['base_url'];
+        if (response.well_known && response.well_known["m.homeserver"]?.base_url) {
+            homeserverUrl = response.well_known["m.homeserver"].base_url;
         }
 
         return new MatrixClient(homeserverUrl, accessToken);

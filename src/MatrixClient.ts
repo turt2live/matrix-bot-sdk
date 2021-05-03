@@ -21,6 +21,7 @@ import { IdentityClient } from "./identity/IdentityClient";
 import { OpenIDConnectToken } from "./models/OpenIDConnect";
 import { doHttpRequest } from "./http";
 import { htmlToText } from "html-to-text";
+import { LoginFlows, LoginFlowsType, LoginResponse } from "./models/Login";
 
 /**
  * A client that is capable of interacting with a matrix homeserver.
@@ -178,6 +179,34 @@ export class MatrixClient extends EventEmitter {
         }
 
         return event;
+    }
+
+    /**
+     * Gets the homeserver’s supported login types to authenticate users.
+     */
+    public getLoginFlows(): Promise<LoginFlows> {
+        return this.doRequest("GET", "/_matrix/client/r0/login");
+    }
+
+    /**
+     * Authenticate with the homeserver.
+     * @param type The type of login to attempt. Not all login types are supported by all homeservers, so use `getLoginFlows()` to check.
+     * @param identifier The identifier for the type of login being attempted. See https://spec.matrix.org/unstable/client-server-api/#identifier-types
+     * @param passwordOrToken The password for a `m.login.password` login attempt, or a token for `m.login.token`. Other `types` ignore this value.
+     * @param opts Extra device options to include.
+     */
+     public doLogin(type: LoginFlowsType, identifier: Record<string, string>, passwordOrToken?: string, opts?: {device_id?: string, initial_device_display_name?: string}): Promise<LoginResponse> {
+        const body: Record<string, unknown> = {
+            type: type.toString(),
+            identifier,
+            ...opts,
+        };
+        if (type === LoginFlowsType.Token) {
+            body.token = passwordOrToken;
+        } else if (type === LoginFlowsType.Password) {
+            body.password = passwordOrToken;
+        }
+        return this.doRequest("POST", "/_matrix/client/r0/login", null, body);
     }
 
     /**
