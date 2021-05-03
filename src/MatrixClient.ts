@@ -195,7 +195,7 @@ export class MatrixClient extends EventEmitter {
      * @param passwordOrToken The password for a `m.login.password` login attempt, or a token for `m.login.token`. Other `types` ignore this value.
      * @param opts Extra device options to include.
      */
-     public doLogin(type: LoginFlowsType, identifier: Record<string, string>, passwordOrToken?: string, opts?: {device_id?: string, initial_device_display_name?: string}): Promise<LoginResponse> {
+    public doLogin(type: LoginFlowsType, identifier: Record<string, string>, passwordOrToken?: string, opts?: {device_id?: string, initial_device_display_name?: string}): Promise<LoginResponse> {
         const body: Record<string, unknown> = {
             type: type.toString(),
             identifier,
