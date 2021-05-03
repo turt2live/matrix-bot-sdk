@@ -189,7 +189,7 @@ export class MatrixClient extends EventEmitter {
     }
 
     /**
-     * Authenticate with the homeserver.
+     * Authenticate with the homeserver. This does NOT modify the access token of the client.
      * @param type The type of login to attempt. Not all login types are supported by all homeservers, so use `getLoginFlows()` to check.
      * @param identifier The identifier for the type of login being attempted. See https://spec.matrix.org/unstable/client-server-api/#identifier-types
      * @param passwordOrToken The password for a `m.login.password` login attempt, or a token for `m.login.token`. Other `types` ignore this value.

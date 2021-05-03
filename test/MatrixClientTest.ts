@@ -13,6 +13,7 @@ import * as simple from "simple-mock";
 import * as MockHttpBackend from 'matrix-mock-request';
 import { expectArrayEquals } from "./TestUtils";
 import { redactObjectForLogging } from "../src/http";
+import { LoginFlows, LoginFlowsType, LoginResponse } from "../src/models/Login";
 
 export function createTestClient(storage: IStorageProvider = null, userId: string = null): { client: MatrixClient, http: MockHttpBackend, hsUrl: string, accessToken: string } {
     const http = new MockHttpBackend();
@@ -4704,6 +4705,57 @@ describe('MatrixClient', () => {
 
             const result = await client.getRoomUpgradeHistory("!current:localhost");
             expect(result).toMatchObject(expected);
+        });
+    });
+
+    describe('getLoginFlows', () => {
+        it('should call the right endpoint', async () => {
+            const {client, http, hsUrl} = createTestClient();
+
+            http.when("GET", "/_matrix/client/r0/login").respond(200, (path) => {
+                expect(path).toEqual(`${hsUrl}/_matrix/client/r0/login`);
+                return {
+                    flows: [{
+                        type: LoginFlowsType.Password,
+                    }]
+                } as LoginFlows;
+            });
+
+            http.flushAllExpected();
+            const result = await client.getLoginFlows();
+            expectArrayEquals(result.flows, [{type: LoginFlowsType.Password}]);
+        });
+    });
+
+    describe('doLogin', () => {
+        it('should call the right endpoint', async () => {
+            const {client, http, hsUrl} = createTestClient();
+            const expected: LoginResponse = {
+                access_token: "fake_token",
+                device_id: "fake_device",
+                user_id: "@foo:example.com",
+                well_known: {
+                    "m.homeserver": {
+                        "base_url": "https://example.com",
+                    }
+                }
+            };
+            http.when("POST", "/_matrix/client/r0/login").respond(200, (path, content) => {
+                expect(content).toMatchObject({
+                    type: LoginFlowsType.Password,
+                    identifier: {
+                        id: "m.id.user",
+                        user: "foo",
+                    },
+                    password: "s3cret!",
+                });
+                expect(path).toEqual(`${hsUrl}/_matrix/client/r0/login`);
+                return expected;
+            });
+
+            http.flushAllExpected();
+            const result = await client.doLogin(LoginFlowsType.Password, { id: "m.id.user", user: "foo"}, "s3cret!");
+            expect(result).toEqual(expected);
         });
     });
 
