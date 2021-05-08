@@ -1,12 +1,12 @@
 import * as expect from "expect";
 import * as simple from "simple-mock";
 import { createTestClient } from "../MatrixClientTest";
-import { MSC1772Space } from "../../src";
+import { Space } from "../../src";
 
-describe('MSC1772Space', () => {
+describe('Space', () => {
     describe('createChildSpace', () => {
         it('should call the right endpoint', async () => {
-            const {client, http} = createTestClient();
+            const {client} = createTestClient();
 
             const via = 'example.org';
             (<any>client).userId = `@alice:${via}`;
@@ -20,29 +20,27 @@ describe('MSC1772Space', () => {
                 isPublic: true,
             };
             const parentEvContent = {
-                room_id: childRoomId,
                 via: [via],
             };
             const childEvContent = {
-                present: true,
                 via: [via],
             };
 
             const createSpy = simple.spy(async (opts) => {
                 expect(opts).toMatchObject(createOpts);
-                return new MSC1772Space(childRoomId, client);
+                return new Space(childRoomId, client);
             });
-            client.unstableApis.createSpace = createSpy;
+            client.createSpace = createSpy;
 
             const calledFor = [];
-            const expectedCalledFor = ["org.matrix.msc1772.room.parent", "org.matrix.msc1772.space.child"];
+            const expectedCalledFor = ["m.space.parent", "m.space.child"];
             const stateEventSpy = simple.spy(async (roomId, type, stateKey, content) => {
                 calledFor.push(type);
-                if (type === "org.matrix.msc1772.room.parent") {
-                    expect(stateKey).toBe("");
+                if (type === "m.space.parent") {
+                    expect(stateKey).toBe(parentRoomId);
                     expect(content).toMatchObject(parentEvContent);
                     expect(roomId).toBe(childRoomId);
-                } else if (type === "org.matrix.msc1772.space.child") {
+                } else if (type === "m.space.child") {
                     expect(stateKey).toBe(childRoomId);
                     expect(content).toMatchObject(childEvContent);
                     expect(roomId).toBe(parentRoomId);
@@ -52,7 +50,7 @@ describe('MSC1772Space', () => {
             });
             client.sendStateEvent = stateEventSpy;
 
-            const parent = new MSC1772Space(parentRoomId, client);
+            const parent = new Space(parentRoomId, client);
             const child = await parent.createChildSpace(createOpts);
             expect(child).toBeDefined();
             expect(child.roomId).toBe(childRoomId);
