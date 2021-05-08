@@ -1421,13 +1421,12 @@ export class MatrixClient extends EventEmitter {
         return result;
     }
 
-
     /**
      * Creates a Space room.
      * @param {SpaceCreateOptions} opts The creation options.
      * @returns {Promise<Space>} Resolves to the created space.
      */
-     public async createSpace(opts: SpaceCreateOptions): Promise<Space> {
+    public async createSpace(opts: SpaceCreateOptions): Promise<Space> {
         const roomCreateOpts = {
             name: opts.name,
             topic: opts.topic || "",
@@ -1457,7 +1456,7 @@ export class MatrixClient extends EventEmitter {
                 redact: 100,
                 state_default: 100,
                 users: {
-                    [await this.client.getUserId()]: 100,
+                    [await this.getUserId()]: 100,
                 },
                 users_default: 0,
             },
@@ -1471,8 +1470,8 @@ export class MatrixClient extends EventEmitter {
                 }
             })
         }
-        const roomId = await this.client.createRoom(roomCreateOpts);
-        return new Space(roomId, this.client);
+        const roomId = await this.createRoom(roomCreateOpts);
+        return new Space(roomId, this);
     }
 
     /**
@@ -1488,7 +1487,7 @@ export class MatrixClient extends EventEmitter {
         if (createEvent["type"] !== "m.space") {
             throw new Error("Room is not a space");
         }
-        return new Space(roomId, this.client);
+        return new Space(roomId, this);
     }
 
     /**
