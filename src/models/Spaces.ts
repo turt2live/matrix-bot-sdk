@@ -136,7 +136,7 @@ export class Space {
      */
     public async getChildEntities(): Promise<{[roomId: string]: SpaceChildEventContent}> {
         const roomState = await this.client.getRoomState(this.roomId);
-        let mapping: {[roomId: string]: SpaceChildEventContent};
+        let mapping: {[roomId: string]: SpaceChildEventContent} = {};
         roomState
             .filter(s => s.type === "m.space.child")
             .filter(s => s.content?.via)

@@ -38,7 +38,7 @@ export * from "./models/PowerLevelBounds";
 export * from "./models/OpenIDConnect";
 export * from "./models/Policies";
 export * from "./models/Threepid";
-export * from "./models/MSC1772Space";
+export * from "./models/Spaces";
 export * from "./models/IdentityServerModels";
 
 // Event models

@@ -4842,7 +4842,7 @@ describe('MatrixClient', () => {
             expect(resolveSpy.callCount).toBe(1);
             expect(stateSpy.callCount).toBe(1);
             expect(result).toBeDefined();
-            expect(result.client).toEqual((<any>client).client); // XXX: Private member access
+            expect(result.client).toEqual(client); // XXX: Private member access
             expect(result.roomId).toEqual(roomId);
         });
 
