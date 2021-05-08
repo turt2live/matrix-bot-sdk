@@ -1,5 +1,5 @@
 import { MatrixClient } from "./MatrixClient";
-import { Space, SpaceCreateOptions } from "./models/Spaces";
+import { MSC2380MediaInfo } from "./models/unstable/MediaInfo";
 
 /**
  * Represents a profile for a group
@@ -272,5 +272,24 @@ export class UnstableApis {
             url += `/${eventType}`;
         }
         return this.client.doRequest("GET", url);
+    }
+
+    /**
+     * Get information about a media item. Implements MSC2380
+     * @param {string} mxc The MXC to get information about.
+     * @returns {Promise<MSC2380MediaInfo>} Resolves a object containing the media information.
+     */
+    public async getMediaInfo(mxcUrl: string): Promise<MSC2380MediaInfo> {
+        if (!mxcUrl.toLowerCase().startsWith("mxc://")) {
+            throw Error("'mxcUrl' does not begin with mxc://");
+        }
+        const [domain, mediaId] = mxcUrl.substr("mxc://".length).split("/");
+        if (!domain || !mediaId) {
+            throw Error('Missing domain');
+        }
+        if (!mediaId) {
+            throw Error('Missing mediaId');
+        }
+        return this.client.doRequest("GET", `/_matrix/media/unstable/info/${encodeURIComponent(domain)}/${encodeURIComponent(mediaId)}`);
     }
 }
