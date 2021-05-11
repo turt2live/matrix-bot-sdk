@@ -22,6 +22,7 @@ import { OpenIDConnectToken } from "./models/OpenIDConnect";
 import { doHttpRequest } from "./http";
 import { htmlToText } from "html-to-text";
 import { LoginFlows, LoginFlowsType, LoginResponse } from "./models/Login";
+import { Space, SpaceCreateOptions } from "./models/Spaces";
 
 /**
  * A client that is capable of interacting with a matrix homeserver.
@@ -1448,6 +1449,75 @@ export class MatrixClient extends EventEmitter {
         await chaseCreates(roomId);
         await chaseTombstones(roomId);
         return result;
+    }
+
+    /**
+     * Creates a Space room.
+     * @param {SpaceCreateOptions} opts The creation options.
+     * @returns {Promise<Space>} Resolves to the created space.
+     */
+    public async createSpace(opts: SpaceCreateOptions): Promise<Space> {
+        const roomCreateOpts = {
+            name: opts.name,
+            topic: opts.topic || "",
+            preset: opts.isPublic ? 'public_chat' : 'private_chat',
+            room_alias_name: opts.localpart,
+            initial_state: [
+                {
+                    type: "m.room.history_visibility",
+                    state_key: "",
+                    content: {
+                        history_visibility: opts.isPublic ? 'world_readable' : 'shared',
+                    },
+                },
+            ] as unknown[],
+            creation_content: {
+                type: "m.space",
+            },
+            invite: opts.invites || [],
+            power_level_content_override: {
+                ban: 100,
+                events_default: 50,
+                invite: 50,
+                kick: 100,
+                notifications: {
+                    room: 100,
+                },
+                redact: 100,
+                state_default: 100,
+                users: {
+                    [await this.getUserId()]: 100,
+                },
+                users_default: 0,
+            },
+        };
+        if (opts.avatarUrl) {
+            roomCreateOpts.initial_state.push({
+                type: 'm.room.avatar',
+                state_key: "",
+                content: {
+                    url: opts.avatarUrl,
+                },
+            });
+        }
+        const roomId = await this.createRoom(roomCreateOpts);
+        return new Space(roomId, this);
+    }
+
+    /**
+     * Gets a Space.
+     * This API does not work with unstable spaces (e.g. org.matrix.msc.1772.space)
+     *
+     * @throws If the room is not a space or there was an error
+     * @returns {Promise<Space>} Resolves to the space.
+     */
+    public async getSpace(roomIdOrAlias: string): Promise<Space> {
+        const roomId = await this.resolveRoom(roomIdOrAlias);
+        const createEvent = await this.getRoomStateEvent(roomId, "m.room.create", "");
+        if (createEvent["type"] !== "m.space") {
+            throw new Error("Room is not a space");
+        }
+        return new Space(roomId, this);
     }
 
     /**
