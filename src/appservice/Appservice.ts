@@ -405,7 +405,7 @@ export class Appservice extends EventEmitter {
      * @returns {string} The suffix from the user ID.
      */
     public getSuffixForUserId(userId: string): string {
-        if (!userId || !userId.startsWith(this.userPrefix) && !userId.endsWith(`:${this.options.homeserverName}`)) {
+        if (!userId || !userId.startsWith(this.userPrefix) || !userId.endsWith(`:${this.options.homeserverName}`)) {
             // Invalid ID
             return null;
         }
