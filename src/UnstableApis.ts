@@ -1,5 +1,4 @@
 import { MatrixClient } from "./MatrixClient";
-import { MSC1772Space, MSC1772SpaceCreateOptions } from "./models/MSC1772Space";
 import { MSC2380MediaInfo } from "./models/unstable/MediaInfo";
 
 /**
@@ -254,67 +253,6 @@ export class UnstableApis {
                 rel_type: "m.annotation",
             },
         });
-    }
-
-    /**
-     * Creates an unstable MSC1772 Space. Note that this function may change without notice,
-     * or may be entirely removed, and as such should not be used in most cases.
-     * @param {MSC1772SpaceCreateOptions} opts The creation options.
-     * @returns {Promise<MSC1772Space>} Resolves to the created space.
-     * @deprecated Not intended for use until MSC1772 is ready, at which point the function is replaced.
-     */
-    public async createSpace(opts: MSC1772SpaceCreateOptions): Promise<MSC1772Space> {
-        const roomCreateOpts = {
-            name: opts.name,
-            topic: opts.topic || "",
-            preset: opts.isPublic ? 'public_chat' : 'private_chat',
-            room_alias_name: opts.localpart,
-            initial_state: [
-                {
-                    type: "m.room.history_visibility",
-                    state_key: "",
-                    content: {
-                        history_visibility: opts.isPublic ? 'world_readable' : 'shared',
-                    },
-                },
-            ],
-            creation_content: {
-                'org.matrix.msc1772.type': 'org.matrix.msc1772.space',
-            },
-            power_level_content_override: {
-                ban: 100,
-                events_default: 50,
-                invite: 50,
-                kick: 100,
-                notifications: {
-                    room: 100,
-                },
-                redact: 100,
-                state_default: 100,
-                users: {
-                    [await this.client.getUserId()]: 100,
-                },
-                users_default: 0,
-            },
-        };
-        const roomId = await this.client.createRoom(roomCreateOpts);
-        return new MSC1772Space(roomId, this.client);
-    }
-
-    /**
-     * Gets an unstable MSC1772 Space. Throws if the room is not a space or there was an error.
-     * Note that this function may change without notice, or may be entirely removed, and as such
-     * should not be used in most cases.
-     * @returns {Promise<MSC1772Space>} Resolves to the space.
-     * @deprecated Not intended for use until MSC1772 is ready, at which point the function is replaced.
-     */
-    public async getSpace(roomIdOrAlias: string): Promise<MSC1772Space> {
-        const roomId = await this.client.resolveRoom(roomIdOrAlias);
-        const createEvent = await this.client.getRoomStateEvent(roomId, "m.room.create", "");
-        if (createEvent["org.matrix.msc1772.type"] !== "org.matrix.msc1772.space") {
-            throw new Error("Room is not a space");
-        }
-        return new MSC1772Space(roomId, this.client);
     }
 
     /**

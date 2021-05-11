@@ -4707,6 +4707,177 @@ describe('MatrixClient', () => {
         });
     });
 
+
+    describe('createSpace', () => {
+        it('should create a typed private room', async () => {
+            const {client, http} = createTestClient();
+
+            client.getUserId = () => Promise.resolve("@alice:example.org");
+
+            const roomId = "!test:example.org";
+            const name = "Test Space";
+            const topic = "This is a topic";
+            const aliasLocalpart = "test-space";
+            const avatarUrl = "mxc://example.org/foobar";
+            const publicSpace = false;
+            const invites = ['@foo:example.org', '@bar:example.org'];
+            const expectedRequest = {
+                name: name,
+                topic: topic,
+                preset: 'private_chat',
+                room_alias_name: aliasLocalpart,
+                invite: invites,
+                initial_state: [
+                    {
+                        type: "m.room.history_visibility",
+                        state_key: "",
+                        content: {
+                            history_visibility: 'shared',
+                        },
+                    },
+                    {
+                        type: "m.room.avatar",
+                        state_key: "",
+                        content: {
+                            url: avatarUrl,
+                        },
+                    },
+                ],
+                creation_content: {
+                    type: 'm.space',
+                },
+            };
+
+            http.when("POST", "/_matrix/client/r0/createRoom").respond(200, (path, content) => {
+                expect(content).toMatchObject(expectedRequest);
+                return {room_id: roomId};
+            });
+
+            http.flushAllExpected();
+            const result = await client.createSpace({
+                name: name,
+                topic: topic,
+                localpart: aliasLocalpart,
+                avatarUrl,
+                isPublic: publicSpace,
+                invites,
+            });
+            expect(result).toBeDefined();
+            expect(result.client).toEqual(client);
+            expect(result.roomId).toEqual(roomId);
+        });
+
+        it('should create a typed public room', async () => {
+            const {client, http} = createTestClient();
+
+            client.getUserId = () => Promise.resolve("@alice:example.org");
+
+            const roomId = "!test:example.org";
+            const name = "Test Space";
+            const topic = "This is a topic";
+            const aliasLocalpart = "test-space";
+            const publicSpace = true;
+            const expectedRequest = {
+                name: name,
+                topic: topic,
+                preset: 'public_chat',
+                room_alias_name: aliasLocalpart,
+                initial_state: [
+                    {
+                        type: "m.room.history_visibility",
+                        state_key: "",
+                        content: {
+                            history_visibility: 'world_readable',
+                        },
+                    },
+                ],
+                creation_content: {
+                    type: 'm.space',
+                },
+            };
+
+            http.when("POST", "/_matrix/client/r0/createRoom").respond(200, (path, content) => {
+                expect(content).toMatchObject(expectedRequest);
+                return {room_id: roomId};
+            });
+
+            http.flushAllExpected();
+            const result = await client.createSpace({
+                name: name,
+                topic: topic,
+                localpart: aliasLocalpart,
+                isPublic: publicSpace,
+            });
+            expect(result).toBeDefined();
+            expect(result.client).toEqual(client);
+            expect(result.roomId).toEqual(roomId);
+        });
+    });
+
+    describe('getSpace', () => {
+        it('should verify the room reference', async () => {
+            const {client} = createTestClient();
+
+            const roomId = "!test:example.org";
+            const roomAlias = '#woot:example.org';
+
+            const resolveSpy = simple.spy(async (idOrAlias) => {
+                expect(idOrAlias).toEqual(roomAlias);
+                return roomId;
+            });
+    
+            client.resolveRoom = resolveSpy;
+
+            const stateSpy = simple.spy(async (sRoomId, type, stateKey) => {
+                expect(sRoomId).toEqual(roomId);
+                expect(type).toEqual("m.room.create");
+                expect(stateKey).toEqual("");
+                return {
+                    type: 'm.space',
+                };
+            });
+            client.getRoomStateEvent = stateSpy;
+
+            const result = await client.getSpace(roomAlias);
+            expect(resolveSpy.callCount).toBe(1);
+            expect(stateSpy.callCount).toBe(1);
+            expect(result).toBeDefined();
+            expect(result.client).toEqual(client); // XXX: Private member access
+            expect(result.roomId).toEqual(roomId);
+        });
+
+        it('should throw if the type is wrong', async () => {
+            const {client} = createTestClient();
+
+            const roomId = "!test:example.org";
+
+            const resolveSpy = simple.spy(async (idOrAlias) => {
+                expect(idOrAlias).toEqual(roomId);
+                return idOrAlias;
+            });
+            client.resolveRoom = resolveSpy;
+
+            const stateSpy = simple.spy(async (sRoomId, type, stateKey) => {
+                expect(sRoomId).toEqual(roomId);
+                expect(type).toEqual("m.room.create");
+                expect(stateKey).toEqual("");
+                return {
+                    'type': 'fibble',
+                };
+            });
+            client.getRoomStateEvent = stateSpy;
+
+            try {
+                await client.getSpace(roomId);
+                throw new Error("Failed to fail");
+            } catch (e) {
+                expect(resolveSpy.callCount).toBe(1);
+                expect(stateSpy.callCount).toBe(1);
+                expect(e.message).toEqual("Room is not a space");
+            }
+        });
+    });
+
     describe('redactObjectForLogging', () => {
         it('should redact multilevel objects', () => {
             const input = {
