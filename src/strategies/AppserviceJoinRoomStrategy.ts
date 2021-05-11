@@ -26,11 +26,11 @@ export class AppserviceJoinRoomStrategy implements IJoinRoomStrategy {
                 try {
                     // First start with having the bridge bot invite the user to the room
                     await client.inviteUser(userId, roomId);
-                } catch (err) {
+                } catch (inviteErr) {
                     // The invite failed - use the underlying join strategy to join the room, just in case.
                     // If there's no join strategy, we want to fall through to an error.
                     if (this.underlyingStrategy) return this.underlyingStrategy.joinRoom(roomId, userId, apiCall);
-                    throw err;
+                    throw inviteErr;
                 }
 
                 // The invite succeeded - use the underlying join strategy to join the room or just call use

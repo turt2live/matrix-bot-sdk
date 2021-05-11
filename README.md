@@ -155,9 +155,7 @@ client.start().then(() => console.log("Client started!"));
 
 ## Application Services
 
-**Note**: If you plan on using application services, you'll need to install the `peerDependencies` of this project.
-
-Application service support is an experimental feature of the SDK. This does things like Intent management, impersonation, and transaction handling on behalf of the application.
+Application service support is a feature of the SDK. This does things like Intent management, impersonation, and transaction handling on behalf of the application.
 
 You'll need to load your registration file from somewhere, however the fastest path is:
 
