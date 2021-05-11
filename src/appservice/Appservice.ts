@@ -269,7 +269,7 @@ export class Appservice extends EventEmitter {
         }
 
         this.userPrefix = (this.registration.namespaces.users[0].regex || "").split(":")[0];
-        if (!this.userPrefix.endsWith(".*") || !this.userPrefix.endsWith(".+")) {
+        if (!this.userPrefix.endsWith(".*") && !this.userPrefix.endsWith(".+")) {
             throw new Error("Expected user namespace to be a prefix");
         }
         this.userPrefix = this.userPrefix.substring(0, this.userPrefix.length - 2); // trim off the .* part
@@ -405,7 +405,7 @@ export class Appservice extends EventEmitter {
      * @returns {string} The suffix from the user ID.
      */
     public getSuffixForUserId(userId: string): string {
-        if (!userId || !userId.startsWith(this.userPrefix) || !userId.endsWith(`:${this.options.homeserverName}`)) {
+        if (!userId || !userId.startsWith(this.userPrefix) && !userId.endsWith(`:${this.options.homeserverName}`)) {
             // Invalid ID
             return null;
         }
