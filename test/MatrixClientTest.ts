@@ -2510,6 +2510,33 @@ describe('MatrixClient', () => {
         });
     });
 
+    describe('getJoinedRoomMembersWithProfiles', () => {
+        it('should call the right endpoint', async () => {
+            const {client, http, hsUrl} = createTestClient();
+
+            const roomId = "!testing:example.org";
+            const members = {
+                "@alice:example.org": {
+                    displayname: "Alice of Wonderland"
+                },
+                "@bob:example.org": {
+                    displayname: "Bob the Builder",
+                    avatar_url: "mxc://foo/bar"
+                }
+            };
+
+            http.when("GET", "/_matrix/client/r0/rooms").respond(200, path => {
+                expect(path).toEqual(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/joined_members`);
+                return {joined: members};
+            });
+
+            http.flushAllExpected();
+            const result = await client.getJoinedRoomMembersWithProfiles(roomId);
+            expect(result).toEqual(members);
+        });
+    });
+
+
     describe('getRoomMembers', () => {
         it('should call the right endpoint', async () => {
             const {client, http, hsUrl} = createTestClient();
