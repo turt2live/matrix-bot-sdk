@@ -22,6 +22,7 @@ import { OpenIDConnectToken } from "./models/OpenIDConnect";
 import { doHttpRequest } from "./http";
 import { htmlToText } from "html-to-text";
 import { Space, SpaceCreateOptions } from "./models/Spaces";
+
 /**
  * A client that is capable of interacting with a matrix homeserver.
  */
@@ -1467,8 +1468,8 @@ export class MatrixClient extends EventEmitter {
                 state_key: "",
                 content: {
                     url: opts.avatarUrl,
-                }
-            })
+                },
+            });
         }
         const roomId = await this.createRoom(roomCreateOpts);
         return new Space(roomId, this);
