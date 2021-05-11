@@ -278,7 +278,7 @@ export class Appservice extends EventEmitter {
             this.aliasPrefix = null;
         } else {
             this.aliasPrefix = (this.registration.namespaces.aliases[0].regex || "").split(":")[0];
-            if (!this.aliasPrefix.endsWith(".*") || !this.aliasPrefix.endsWith(".+")) {
+            if (!this.aliasPrefix.endsWith(".*") && !this.aliasPrefix.endsWith(".+")) {
                 this.aliasPrefix = null;
             } else {
                 this.aliasPrefix = this.aliasPrefix.substring(0, this.aliasPrefix.length - 2); // trim off the .* part
