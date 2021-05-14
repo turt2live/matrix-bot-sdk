@@ -269,7 +269,7 @@ export class Appservice extends EventEmitter {
         }
 
         this.userPrefix = (this.registration.namespaces.users[0].regex || "").split(":")[0];
-        if (!this.userPrefix.endsWith(".*") || !this.userPrefix.endsWith(".+")) {
+        if (!this.userPrefix.endsWith(".*") && !this.userPrefix.endsWith(".+")) {
             throw new Error("Expected user namespace to be a prefix");
         }
         this.userPrefix = this.userPrefix.substring(0, this.userPrefix.length - 2); // trim off the .* part
@@ -278,7 +278,7 @@ export class Appservice extends EventEmitter {
             this.aliasPrefix = null;
         } else {
             this.aliasPrefix = (this.registration.namespaces.aliases[0].regex || "").split(":")[0];
-            if (!this.aliasPrefix.endsWith(".*") || !this.aliasPrefix.endsWith(".+")) {
+            if (!this.aliasPrefix.endsWith(".*") && !this.aliasPrefix.endsWith(".+")) {
                 this.aliasPrefix = null;
             } else {
                 this.aliasPrefix = this.aliasPrefix.substring(0, this.aliasPrefix.length - 2); // trim off the .* part
