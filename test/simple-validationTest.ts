@@ -20,7 +20,6 @@ describe('validateSpaceOrderString', () => {
             throw new Error("Failed to fail");
         } catch (e) {
             expect(e.message).toBe("order is not a string");
-            throw new Error("Failed to fail");
         }
     });
 
@@ -69,7 +68,7 @@ describe('validateSpaceOrderString', () => {
             // noinspection ExceptionCaughtLocallyJS
             throw new Error("Failed to fail");
         } catch (e) {
-            expect(e.message).toBe("order is more than 50 characters and is disallowed");
+            expect(e.message).toBe("order contained characters outside the range of the spec.");
         }
     });
 });

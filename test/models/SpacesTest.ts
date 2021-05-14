@@ -224,15 +224,15 @@ describe('Space', () => {
 
             const parent = new Space(parentRoomId, client);
             const children = await parent.getChildEntities();
-            expect(Object.keys(children)).toBe(4);
+            expect(Object.keys(children).length).toBe(4);
             expect(children["!room1:example.org"]).toBeDefined();
             expect(children["!room1:example.org"].content).toMatchObject(stateEvents[1].content);
             expect(children["!room2:example.org"]).toBeDefined();
-            expect(children["!room2:example.org"].content).toMatchObject(stateEvents[1].content);
+            expect(children["!room2:example.org"].content).toMatchObject(stateEvents[2].content);
             expect(children["!room3:example.org"]).toBeDefined();
-            expect(children["!room3:example.org"].content).toMatchObject(stateEvents[1].content);
+            expect(children["!room3:example.org"].content).toMatchObject(stateEvents[3].content);
             expect(children["!room4:example.org"]).toBeDefined();
-            expect(children["!room5:example.org"].content).toMatchObject(stateEvents[1].content);
+            expect(children["!room4:example.org"].content).toMatchObject(stateEvents[4].content);
         });
     });
 

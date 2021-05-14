@@ -11,15 +11,19 @@ export function validateSpaceOrderString(order: string): true {
         // Just in case, even though TS should catch this.
         throw Error('order is not a string');
     }
+
     if (order.length === 0) {
         throw Error('order cannot be empty');
     }
+
     if (order.length > 50) {
         throw Error('order is more than 50 characters and is disallowed');
     }
+
     if (!order.match(/^[\x20-\x7E]+$/)) {
         // String must be between this range
         throw Error('order contained characters outside the range of the spec.');
     }
+
     return true;
 }
