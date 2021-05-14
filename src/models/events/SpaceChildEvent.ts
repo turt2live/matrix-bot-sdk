@@ -62,7 +62,7 @@ export class SpaceChildEvent extends StateEvent<SpaceChildEventContent> {
      * @see validateSpaceOrderString
      */
     public get order(): string {
-       return this.content.order;
+        return this.content.order;
     }
 
     /**
