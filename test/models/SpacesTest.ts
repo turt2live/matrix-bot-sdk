@@ -19,9 +19,6 @@ describe('Space', () => {
                 localpart: "my-space",
                 isPublic: true,
             };
-            const parentEvContent = {
-                via: [via],
-            };
             const childEvContent = {
                 via: [via],
             };
@@ -33,14 +30,10 @@ describe('Space', () => {
             client.createSpace = createSpy;
 
             const calledFor = [];
-            const expectedCalledFor = ["m.space.parent", "m.space.child"];
+            const expectedCalledFor = ["m.space.child"];
             const stateEventSpy = simple.spy(async (roomId, type, stateKey, content) => {
                 calledFor.push(type);
-                if (type === "m.space.parent") {
-                    expect(stateKey).toBe(parentRoomId);
-                    expect(content).toMatchObject(parentEvContent);
-                    expect(roomId).toBe(childRoomId);
-                } else if (type === "m.space.child") {
+                if (type === "m.space.child") {
                     expect(stateKey).toBe(childRoomId);
                     expect(content).toMatchObject(childEvContent);
                     expect(roomId).toBe(parentRoomId);
@@ -56,7 +49,7 @@ describe('Space', () => {
             expect(child.roomId).toBe(childRoomId);
             expect(child.client).toBe(client);
             expect(createSpy.callCount).toBe(1);
-            expect(stateEventSpy.callCount).toBe(2);
+            expect(stateEventSpy.callCount).toBe(1);
             expect(calledFor).toMatchObject(expectedCalledFor);
         });
     });
@@ -76,9 +69,6 @@ describe('Space', () => {
                 localpart: "my-space",
                 isPublic: true,
             };
-            const parentEvContent = {
-                via: [via],
-            };
             const childEvContent = {
                 via: [via],
             };
@@ -90,14 +80,10 @@ describe('Space', () => {
             client.createSpace = createSpy;
 
             const calledFor = [];
-            const expectedCalledFor = ["m.space.parent", "m.space.child"];
+            const expectedCalledFor = ["m.space.child"];
             const stateEventSpy = simple.spy(async (roomId, type, stateKey, content) => {
                 calledFor.push(type);
-                if (type === "m.space.parent") {
-                    expect(stateKey).toBe(parentRoomId);
-                    expect(content).toMatchObject(parentEvContent);
-                    expect(roomId).toBe(childRoomId);
-                } else if (type === "m.space.child") {
+                if (type === "m.space.child") {
                     expect(stateKey).toBe(childRoomId);
                     expect(content).toMatchObject(childEvContent);
                     expect(roomId).toBe(parentRoomId);
@@ -111,7 +97,7 @@ describe('Space', () => {
             const parent = new Space(parentRoomId, client);
             await parent.addChildSpace(child);
             expect(createSpy.callCount).toBe(0);
-            expect(stateEventSpy.callCount).toBe(2);
+            expect(stateEventSpy.callCount).toBe(1);
             expect(calledFor).toMatchObject(expectedCalledFor);
         });
     });
@@ -131,9 +117,6 @@ describe('Space', () => {
                 localpart: "my-space",
                 isPublic: true,
             };
-            const parentEvContent = {
-                via: [via],
-            };
             const childEvContent = {
                 via: [via],
             };
@@ -145,14 +128,10 @@ describe('Space', () => {
             client.createSpace = createSpy;
 
             const calledFor = [];
-            const expectedCalledFor = ["m.space.parent", "m.space.child"];
+            const expectedCalledFor = ["m.space.child"];
             const stateEventSpy = simple.spy(async (roomId, type, stateKey, content) => {
                 calledFor.push(type);
-                if (type === "m.space.parent") {
-                    expect(stateKey).toBe(parentRoomId);
-                    expect(content).toMatchObject(parentEvContent);
-                    expect(roomId).toBe(childRoomId);
-                } else if (type === "m.space.child") {
+                if (type === "m.space.child") {
                     expect(stateKey).toBe(childRoomId);
                     expect(content).toMatchObject(childEvContent);
                     expect(roomId).toBe(parentRoomId);
@@ -165,7 +144,7 @@ describe('Space', () => {
             const parent = new Space(parentRoomId, client);
             await parent.addChildRoom(childRoomId);
             expect(createSpy.callCount).toBe(0);
-            expect(stateEventSpy.callCount).toBe(2);
+            expect(stateEventSpy.callCount).toBe(1);
             expect(calledFor).toMatchObject(expectedCalledFor);
         });
     });
@@ -245,12 +224,32 @@ describe('Space', () => {
 
             const parent = new Space(parentRoomId, client);
             const children = await parent.getChildEntities();
-            expect(children).toMatchObject({
-                "!room1:example.org": stateEvents[1].content,
-                "!room2:example.org": stateEvents[2].content,
-                "!room3:example.org": stateEvents[3].content,
-                "!room4:example.org": stateEvents[4].content,
-            });
+            expect(Object.keys(children)).toBe(4);
+            expect(children["!room1:example.org"]).toBeDefined();
+            expect(children["!room1:example.org"].content).toMatchObject(stateEvents[1].content);
+            expect(children["!room2:example.org"]).toBeDefined();
+            expect(children["!room2:example.org"].content).toMatchObject(stateEvents[1].content);
+            expect(children["!room3:example.org"]).toBeDefined();
+            expect(children["!room3:example.org"].content).toMatchObject(stateEvents[1].content);
+            expect(children["!room4:example.org"]).toBeDefined();
+            expect(children["!room5:example.org"].content).toMatchObject(stateEvents[1].content);
+        });
+    });
+
+    describe('inviteUser', () => {
+        it('should call the right endpoint', async () => {
+            const {client} = createTestClient();
+
+            const parentRoomId = "!parent:example.org";
+            const targetUserId = "@alice:example.org";
+            client.inviteUser = async (userId: string, roomId: string) => {
+                expect(userId).toBe(targetUserId);
+                expect(roomId).toBe(roomId);
+                return {};
+            };
+
+            const space = new Space(parentRoomId, client);
+            await space.inviteUser(targetUserId);
         });
     });
 });

@@ -60,6 +60,7 @@ export * from "./models/events/PinnedEventsEvent";
 export * from "./models/events/RoomAvatarEvent";
 export * from "./models/events/RoomNameEvent";
 export * from "./models/events/RoomTopicEvent";
+export * from "./models/events/SpaceChildEvent";
 
 // Preprocessors
 export * from "./preprocessors/IPreprocessor";
@@ -88,3 +89,4 @@ export * from "./request";
 export * from "./PantalaimonClient";
 export * from "./SynchronousMatrixClient";
 export * from "./SynapseAdminApis";
+export * from "./simple-validation";
