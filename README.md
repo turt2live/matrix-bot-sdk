@@ -18,6 +18,7 @@ This package can be found on [npm](https://www.npmjs.com):
 ```
 npm install matrix-bot-sdk
 ```
+# 🚫 REMEMBER:BOT WILL NOT WORK IN ENCRYPTED ROOM 🚫
 
 # Quickstart Bot
 
