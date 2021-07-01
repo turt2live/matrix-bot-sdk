@@ -23,6 +23,7 @@ import { doHttpRequest } from "./http";
 import { htmlToText } from "html-to-text";
 import { MatrixProfileInfo } from "./models/MatrixProfile";
 import { Space, SpaceCreateOptions } from "./models/Spaces";
+import { PowerLevelAction } from "./models/PowerLevelAction";
 
 /**
  * A client that is capable of interacting with a matrix homeserver.
@@ -230,7 +231,7 @@ export class MatrixClient extends EventEmitter {
         try {
             return await this.getAccountData(eventType);
         } catch (e) {
-            LogService.warn("MatrixClient", `Error getting ${eventType} account data:`, e);
+            LogService.warn("MatrixClient", `Error getting ${eventType} account data:`, extractRequestError(e));
             return defaultContent;
         }
     }
@@ -248,7 +249,7 @@ export class MatrixClient extends EventEmitter {
         try {
             return await this.getRoomAccountData(eventType, roomId);
         } catch (e) {
-            LogService.warn("MatrixClient", `Error getting ${eventType} room account data in ${roomId}:`, e);
+            LogService.warn("MatrixClient", `Error getting ${eventType} room account data in ${roomId}:`, extractRequestError(e));
             return defaultContent;
         }
     }
@@ -1136,7 +1137,7 @@ export class MatrixClient extends EventEmitter {
     }
 
     /**
-     * Checks if a given user has a required power level
+     * Checks if a given user has a required power level required to send the given event.
      * @param {string} userId the user ID to check the power level of
      * @param {string} roomId the room ID to check the power level in
      * @param {string} eventType the event type to look for in the `events` property of the power levels
@@ -1147,16 +1148,56 @@ export class MatrixClient extends EventEmitter {
     public async userHasPowerLevelFor(userId: string, roomId: string, eventType: string, isState: boolean): Promise<boolean> {
         const powerLevelsEvent = await this.getRoomStateEvent(roomId, "m.room.power_levels", "");
         if (!powerLevelsEvent) {
+            // This is technically supposed to be non-fatal, but it's pretty unreasonable for a room to be missing
+            // power levels.
             throw new Error("No power level event found");
         }
 
         let requiredPower = isState ? 50 : 0;
-        if (isState && powerLevelsEvent["state_default"]) requiredPower = powerLevelsEvent["state_default"];
-        if (!isState && powerLevelsEvent["users_default"]) requiredPower = powerLevelsEvent["users_default"];
-        if (powerLevelsEvent["events"] && powerLevelsEvent["events"][eventType]) requiredPower = powerLevelsEvent["events"][eventType];
+        if (isState && Number.isFinite(powerLevelsEvent["state_default"])) requiredPower = powerLevelsEvent["state_default"];
+        if (!isState && Number.isFinite(powerLevelsEvent["events_default"])) requiredPower = powerLevelsEvent["events_default"];
+        if (Number.isFinite(powerLevelsEvent["events"]?.[eventType])) requiredPower = powerLevelsEvent["events"][eventType];
 
         let userPower = 0;
-        if (powerLevelsEvent["users"] && powerLevelsEvent["users"][userId]) userPower = powerLevelsEvent["users"][userId];
+        if (Number.isFinite(powerLevelsEvent["users_default"])) userPower = powerLevelsEvent["users_default"];
+        if (Number.isFinite(powerLevelsEvent["users"]?.[userId])) userPower = powerLevelsEvent["users"][userId];
+
+        return userPower >= requiredPower;
+    }
+
+    /**
+     * Checks if a given user has a required power level to perform the given action
+     * @param {string} userId the user ID to check the power level of
+     * @param {string} roomId the room ID to check the power level in
+     * @param {PowerLevelAction} action the action to check power level for
+     * @returns {Promise<boolean>} resolves to true if the user has the required power level, resolves to false otherwise
+     */
+    @timedMatrixClientFunctionCall()
+    public async userHasPowerLevelForAction(userId: string, roomId: string, action: PowerLevelAction): Promise<boolean> {
+        const powerLevelsEvent = await this.getRoomStateEvent(roomId, "m.room.power_levels", "");
+        if (!powerLevelsEvent) {
+            // This is technically supposed to be non-fatal, but it's pretty unreasonable for a room to be missing
+            // power levels.
+            throw new Error("No power level event found");
+        }
+
+        const defaultForActions: {[A in PowerLevelAction]: number} = {
+            [PowerLevelAction.Ban]: 50,
+            [PowerLevelAction.Invite]: 50,
+            [PowerLevelAction.Kick]: 50,
+            [PowerLevelAction.RedactEvents]: 50,
+            [PowerLevelAction.NotifyRoom]: 50,
+        };
+
+        let requiredPower = defaultForActions[action];
+
+        let investigate = powerLevelsEvent;
+        action.split('.').forEach(k => {investigate = investigate?.[k]});
+        if (Number.isFinite(investigate)) requiredPower = investigate;
+
+        let userPower = 0;
+        if (Number.isFinite(powerLevelsEvent["users_default"])) userPower = powerLevelsEvent["users_default"];
+        if (Number.isFinite(powerLevelsEvent["users"]?.[userId])) userPower = powerLevelsEvent["users"][userId];
 
         return userPower >= requiredPower;
     }
