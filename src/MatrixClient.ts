@@ -1192,7 +1192,7 @@ export class MatrixClient extends EventEmitter {
         let requiredPower = defaultForActions[action];
 
         let investigate = powerLevelsEvent;
-        action.split('.').forEach(k => {investigate = investigate?.[k]});
+        action.split('.').forEach(k => (investigate = investigate?.[k]));
         if (Number.isFinite(investigate)) requiredPower = investigate;
 
         let userPower = 0;
