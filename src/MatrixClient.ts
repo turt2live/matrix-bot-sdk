@@ -5,7 +5,7 @@ import { IJoinRoomStrategy } from "./strategies/JoinRoomStrategy";
 import { UnstableApis } from "./UnstableApis";
 import { IPreprocessor } from "./preprocessors/IPreprocessor";
 import { getRequestFn } from "./request";
-import { LogService } from "./logging/LogService";
+import { extractRequestError, LogService } from "./logging/LogService";
 import { htmlEncode } from "htmlencode";
 import { RichReply } from "./helpers/RichReply";
 import { Metrics } from "./metrics/Metrics";
@@ -573,7 +573,7 @@ export class MatrixClient extends EventEmitter {
                     await Promise.resolve(this.storage.setSyncToken(token));
                 }
             } catch (e) {
-                LogService.error("MatrixClientLite", e);
+                LogService.error("MatrixClientLite", extractRequestError(e));
             }
 
             return promiseWhile();
@@ -1300,7 +1300,7 @@ export class MatrixClient extends EventEmitter {
             };
             getRequestFn()(params, (err, response, resBody) => {
                 if (err) {
-                    LogService.error("MatrixLiteClient (REQ-" + requestId + ")", err);
+                    LogService.error("MatrixLiteClient (REQ-" + requestId + ")", extractRequestError(err));
                     reject(err);
                 } else {
                     const contentType = response.headers['content-type'] || "application/octet-stream";

@@ -1,6 +1,6 @@
 import { MatrixClient } from "../MatrixClient";
 import { Permalinks } from "./Permalinks";
-import { LogService } from "..";
+import { extractRequestError, LogService } from "..";
 
 /**
  * Represents a system for generating a mention pill for an entity.
@@ -52,7 +52,7 @@ export class MentionPill {
                 }
             }
         } catch (e) {
-            LogService.warn("MentionPill", "Error getting profile", e);
+            LogService.warn("MentionPill", "Error getting profile", extractRequestError(e));
         }
 
         return new MentionPill(permalink, displayName);
@@ -78,7 +78,7 @@ export class MentionPill {
                 }
             }
         } catch (e) {
-            LogService.warn("MentionPill", "Error getting room information", e);
+            LogService.warn("MentionPill", "Error getting room information", extractRequestError(e));
         }
 
         return new MentionPill(permalink, displayProp);

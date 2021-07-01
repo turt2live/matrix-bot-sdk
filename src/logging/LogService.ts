@@ -139,3 +139,16 @@ export class LogService {
         LogService.logger.warn(module, ...messageOrObject);
     }
 }
+
+/**
+ * Extracts the useful part of a request's error into something loggable.
+ * @param {Error} err The error to parse.
+ * @returns {*} The extracted error, or the given error if unaltered.
+ * @category Logging
+ */
+export function extractRequestError(err: Error): any {
+    if (err?.['body']) {
+        return err['body'];
+    }
+    return err;
+}

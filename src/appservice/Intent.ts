@@ -1,4 +1,4 @@
-import { IAppserviceStorageProvider, LogService, MatrixClient, Metrics } from "..";
+import { extractRequestError, IAppserviceStorageProvider, LogService, MatrixClient, Metrics } from "..";
 import { Appservice, IAppserviceOptions } from "./Appservice";
 
 // noinspection TypeScriptPreferShortImport
@@ -197,7 +197,7 @@ export class Intent {
                     }
                 } else {
                     LogService.error("Appservice", "Encountered error registering user: ");
-                    LogService.error("Appservice", err);
+                    LogService.error("Appservice", extractRequestError(err));
                 }
                 throw err;
             }
