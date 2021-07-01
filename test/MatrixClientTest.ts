@@ -2738,7 +2738,7 @@ describe('MatrixClient', () => {
                 msgtype: "m.text",
                 format: "org.matrix.custom.html",
                 body: `> <${originalEvent.sender}> ${originalEvent.content.body}\n\n${replyText}`,
-                formatted_body: `<mx-reply><blockquote><a href="https://matrix.to/#/${roomId}/${originalEvent.event_id}">In reply to</a><a href="https://matrix.to/#/${originalEvent.sender}">${originalEvent.sender}</a><br />${originalEvent.content.formatted_body}</blockquote></mx-reply>${replyHtml}`,
+                formatted_body: `<mx-reply><blockquote><a href="https://matrix.to/#/${roomId}/${originalEvent.event_id}">In reply to</a> <a href="https://matrix.to/#/${originalEvent.sender}">${originalEvent.sender}</a><br />${originalEvent.content.formatted_body}</blockquote></mx-reply>${replyHtml}`,
             };
 
             http.when("PUT", "/_matrix/client/r0/rooms").respond(200, (path, content) => {
@@ -2778,7 +2778,7 @@ describe('MatrixClient', () => {
                 msgtype: "m.text",
                 format: "org.matrix.custom.html",
                 body: `> <${originalEvent.sender}> ${originalEvent.content.body}\n\n${replyText}`,
-                formatted_body: `<mx-reply><blockquote><a href="https://matrix.to/#/${roomId}/${originalEvent.event_id}">In reply to</a><a href="https://matrix.to/#/${originalEvent.sender}">${originalEvent.sender}</a><br />${originalEvent.content.formatted_body}</blockquote></mx-reply>${replyHtml}`,
+                formatted_body: `<mx-reply><blockquote><a href="https://matrix.to/#/${roomId}/${originalEvent.event_id}">In reply to</a> <a href="https://matrix.to/#/${originalEvent.sender}">${originalEvent.sender}</a><br />${originalEvent.content.formatted_body}</blockquote></mx-reply>${replyHtml}`,
             };
 
             http.when("PUT", "/_matrix/client/r0/rooms").respond(200, (path, content) => {
@@ -2820,7 +2820,7 @@ describe('MatrixClient', () => {
                 msgtype: "m.text",
                 format: "org.matrix.custom.html",
                 body: `> <${originalEvent.sender}> ${originalEvent.content.body}\n\n${replyText}`,
-                formatted_body: `<mx-reply><blockquote><a href="https://matrix.to/#/${roomId}/${originalEvent.event_id}">In reply to</a><a href="https://matrix.to/#/${originalEvent.sender}">${originalEvent.sender}</a><br />${originalEvent.content.formatted_body}</blockquote></mx-reply>${replyHtml}`,
+                formatted_body: `<mx-reply><blockquote><a href="https://matrix.to/#/${roomId}/${originalEvent.event_id}">In reply to</a> <a href="https://matrix.to/#/${originalEvent.sender}">${originalEvent.sender}</a><br />${originalEvent.content.formatted_body}</blockquote></mx-reply>${replyHtml}`,
             };
 
             http.when("PUT", "/_matrix/client/r0/rooms").respond(200, (path, content) => {
@@ -2862,7 +2862,7 @@ describe('MatrixClient', () => {
                 msgtype: "m.notice",
                 format: "org.matrix.custom.html",
                 body: `> <${originalEvent.sender}> ${originalEvent.content.body}\n\n${replyText}`,
-                formatted_body: `<mx-reply><blockquote><a href="https://matrix.to/#/${roomId}/${originalEvent.event_id}">In reply to</a><a href="https://matrix.to/#/${originalEvent.sender}">${originalEvent.sender}</a><br />${originalEvent.content.formatted_body}</blockquote></mx-reply>${replyHtml}`,
+                formatted_body: `<mx-reply><blockquote><a href="https://matrix.to/#/${roomId}/${originalEvent.event_id}">In reply to</a> <a href="https://matrix.to/#/${originalEvent.sender}">${originalEvent.sender}</a><br />${originalEvent.content.formatted_body}</blockquote></mx-reply>${replyHtml}`,
             };
 
             http.when("PUT", "/_matrix/client/r0/rooms").respond(200, (path, content) => {
@@ -2902,7 +2902,7 @@ describe('MatrixClient', () => {
                 msgtype: "m.notice",
                 format: "org.matrix.custom.html",
                 body: `> <${originalEvent.sender}> ${originalEvent.content.body}\n\n${replyText}`,
-                formatted_body: `<mx-reply><blockquote><a href="https://matrix.to/#/${roomId}/${originalEvent.event_id}">In reply to</a><a href="https://matrix.to/#/${originalEvent.sender}">${originalEvent.sender}</a><br />${originalEvent.content.formatted_body}</blockquote></mx-reply>${replyHtml}`,
+                formatted_body: `<mx-reply><blockquote><a href="https://matrix.to/#/${roomId}/${originalEvent.event_id}">In reply to</a> <a href="https://matrix.to/#/${originalEvent.sender}">${originalEvent.sender}</a><br />${originalEvent.content.formatted_body}</blockquote></mx-reply>${replyHtml}`,
             };
 
             http.when("PUT", "/_matrix/client/r0/rooms").respond(200, (path, content) => {
@@ -2944,7 +2944,7 @@ describe('MatrixClient', () => {
                 msgtype: "m.notice",
                 format: "org.matrix.custom.html",
                 body: `> <${originalEvent.sender}> ${originalEvent.content.body}\n\n${replyText}`,
-                formatted_body: `<mx-reply><blockquote><a href="https://matrix.to/#/${roomId}/${originalEvent.event_id}">In reply to</a><a href="https://matrix.to/#/${originalEvent.sender}">${originalEvent.sender}</a><br />${originalEvent.content.formatted_body}</blockquote></mx-reply>${replyHtml}`,
+                formatted_body: `<mx-reply><blockquote><a href="https://matrix.to/#/${roomId}/${originalEvent.event_id}">In reply to</a> <a href="https://matrix.to/#/${originalEvent.sender}">${originalEvent.sender}</a><br />${originalEvent.content.formatted_body}</blockquote></mx-reply>${replyHtml}`,
             };
 
             http.when("PUT", "/_matrix/client/r0/rooms").respond(200, (path, content) => {
