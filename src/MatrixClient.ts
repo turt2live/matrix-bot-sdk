@@ -24,6 +24,10 @@ import { htmlToText } from "html-to-text";
 import { MatrixProfileInfo } from "./models/MatrixProfile";
 import { Space, SpaceCreateOptions } from "./models/Spaces";
 import { PowerLevelAction } from "./models/PowerLevelAction";
+import { CryptoClient } from "./e2ee/CryptoClient";
+import { isCryptoCapable } from "./isCryptoCapable";
+import { DeviceKeyAlgorithm, DeviceKeyLabel, EncryptionAlgorithm, OTKCounts, OTKs } from "./models/Crypto";
+import { requiresCrypto } from "./e2ee/decorators";
 
 /**
  * A client that is capable of interacting with a matrix homeserver.
@@ -45,6 +49,14 @@ export class MatrixClient extends EventEmitter {
      * Has no effect if the client is not syncing. Does not apply until the next sync request.
      */
     public syncingTimeout = 10000;
+
+    /**
+     * The crypto manager instance for this client. Generally speaking, this shouldn't
+     * need to be accessed but is made available.
+     *
+     * Will be null/undefined if crypto is not possible.
+     */
+    public readonly crypto: CryptoClient;
 
     private userId: string;
     private requestId = 0;
@@ -69,12 +81,26 @@ export class MatrixClient extends EventEmitter {
      * @param {string} homeserverUrl The homeserver's client-server API URL
      * @param {string} accessToken The access token for the homeserver
      * @param {IStorageProvider} storage The storage provider to use. Defaults to MemoryStorageProvider.
+     * @param {boolean} withCrypto True to enable end-to-end encryption, false (default) otherwise.
      */
-    constructor(public readonly homeserverUrl: string, public readonly accessToken: string, private storage: IStorageProvider = null) {
+    constructor(public readonly homeserverUrl: string, public readonly accessToken: string, private storage: IStorageProvider = null, withCrypto = false) {
         super();
 
         if (this.homeserverUrl.endsWith("/")) {
             this.homeserverUrl = this.homeserverUrl.substring(0, this.homeserverUrl.length - 1);
+        }
+
+        const e2eeCapable = isCryptoCapable();
+        if (withCrypto && !e2eeCapable) {
+            throw new Error("Cannot enable encryption: missing dependencies");
+        } else if (withCrypto) {
+            if (!this.storage || this.storage instanceof MemoryStorageProvider) {
+                LogService.warn("MatrixClientLite", "Starting an encryption-capable client with a memory store is not considered a good idea.");
+            }
+            this.crypto = new CryptoClient(this);
+            LogService.debug("MatrixClientLite", "End-to-end encryption client created");
+        } else {
+            LogService.trace("MatrixClientLite", "Not setting up encryption");
         }
 
         if (!this.storage) this.storage = new MemoryStorageProvider();
@@ -485,10 +511,18 @@ export class MatrixClient extends EventEmitter {
     public getUserId(): Promise<string> {
         if (this.userId) return Promise.resolve(this.userId);
 
-        return this.doRequest("GET", "/_matrix/client/r0/account/whoami").then(response => {
+        return this.getWhoAmI().then(response => {
             this.userId = response["user_id"];
             return this.userId;
         });
+    }
+
+    /**
+     * Gets the user's information from the server directly.
+     * @returns {Promise<{user_id: string, device_id?: string}>} The "who am I" response.
+     */
+    public getWhoAmI(): Promise<{user_id: string, device_id?: string}> {
+        return this.doRequest("GET", "/_matrix/client/r0/account/whoami");
     }
 
     /**
@@ -503,47 +537,50 @@ export class MatrixClient extends EventEmitter {
      * @param {any} filter The filter to use, or null for none
      * @returns {Promise<any>} Resolves when the client has started syncing
      */
-    public start(filter: any = null): Promise<any> {
+    public async start(filter: any = null): Promise<any> {
         this.stopSyncing = false;
         if (!filter || typeof (filter) !== "object") {
             LogService.trace("MatrixClientLite", "No filter given or invalid object - using defaults.");
             filter = null;
         }
 
-        return this.getUserId().then(async userId => {
-            let createFilter = false;
+        const userId = await this.getUserId();
 
-            let existingFilter = await Promise.resolve(this.storage.getFilter());
-            if (existingFilter) {
-                LogService.trace("MatrixClientLite", "Found existing filter. Checking consistency with given filter");
-                if (JSON.stringify(existingFilter.filter) === JSON.stringify(filter)) {
-                    LogService.trace("MatrixClientLite", "Filters match");
-                    this.filterId = existingFilter.id;
-                } else {
-                    createFilter = true;
-                }
+        if (this.crypto) {
+            LogService.debug("MatrixClientLite", "Preparing end-to-end encryption");
+            await this.crypto.prepare();
+            LogService.info("MatrixClientLite", "End-to-end encryption enabled");
+        }
+
+        let createFilter = false;
+
+        // noinspection ES6RedundantAwait
+        let existingFilter = await Promise.resolve(this.storage.getFilter());
+        if (existingFilter) {
+            LogService.trace("MatrixClientLite", "Found existing filter. Checking consistency with given filter");
+            if (JSON.stringify(existingFilter.filter) === JSON.stringify(filter)) {
+                LogService.trace("MatrixClientLite", "Filters match");
+                this.filterId = existingFilter.id;
             } else {
                 createFilter = true;
             }
+        } else {
+            createFilter = true;
+        }
 
-            if (createFilter && filter) {
-                LogService.trace("MatrixClientLite", "Creating new filter");
-                return this.doRequest("POST", "/_matrix/client/r0/user/" + encodeURIComponent(userId) + "/filter", null, filter).then(async response => {
-                    this.filterId = response["filter_id"];
-                    await Promise.resolve(this.storage.setSyncToken(null));
-                    await Promise.resolve(this.storage.setFilter({
-                        id: this.filterId,
-                        filter: filter,
-                    }));
-                });
-            }
-        }).then(async () => {
-            LogService.trace("MatrixClientLite", "Populating joined rooms to avoid excessive join emits");
-            this.lastJoinedRoomIds = await this.getJoinedRooms();
-
-            LogService.trace("MatrixClientLite", "Starting sync with filter ID " + this.filterId);
-            this.startSyncInternal();
-        });
+        if (createFilter && filter) {
+            LogService.trace("MatrixClientLite", "Creating new filter");
+            return this.doRequest("POST", "/_matrix/client/r0/user/" + encodeURIComponent(userId) + "/filter", null, filter).then(async response => {
+                this.filterId = response["filter_id"];
+                // noinspection ES6RedundantAwait
+                await Promise.resolve(this.storage.setSyncToken(null));
+                // noinspection ES6RedundantAwait
+                await Promise.resolve(this.storage.setFilter({
+                    id: this.filterId,
+                    filter: filter,
+                }));
+            });
+        }
     }
 
     protected startSyncInternal(): Promise<any> {
@@ -1479,6 +1516,7 @@ export class MatrixClient extends EventEmitter {
      * @param {SpaceCreateOptions} opts The creation options.
      * @returns {Promise<Space>} Resolves to the created space.
      */
+    @timedMatrixClientFunctionCall()
     public async createSpace(opts: SpaceCreateOptions): Promise<Space> {
         const roomCreateOpts = {
             name: opts.name,
@@ -1534,6 +1572,7 @@ export class MatrixClient extends EventEmitter {
      * @throws If the room is not a space or there was an error
      * @returns {Promise<Space>} Resolves to the space.
      */
+    @timedMatrixClientFunctionCall()
     public async getSpace(roomIdOrAlias: string): Promise<Space> {
         const roomId = await this.resolveRoom(roomIdOrAlias);
         const createEvent = await this.getRoomStateEvent(roomId, "m.room.create", "");
@@ -1541,6 +1580,36 @@ export class MatrixClient extends EventEmitter {
             throw new Error("Room is not a space");
         }
         return new Space(roomId, this);
+    }
+
+    @timedMatrixClientFunctionCall()
+    @requiresCrypto()
+    public async uploadDeviceKeys(algorithms: EncryptionAlgorithm[], keys: Record<DeviceKeyLabel<DeviceKeyAlgorithm, string>, string>): Promise<OTKCounts> {
+        const obj = {
+            user_id: await this.getUserId(),
+            device_id: this.crypto.clientDeviceId,
+            algorithms: algorithms,
+            keys: keys,
+        };
+        obj['signatures'] = await this.crypto.sign(obj);
+        return this.doRequest("POST", "/_matrix/client/r0/keys/upload", null, {
+            device_keys: obj,
+        }).then(r => r['one_time_key_counts']);
+    }
+
+    @timedMatrixClientFunctionCall()
+    @requiresCrypto()
+    public async uploadDeviceOneTimeKeys(keys: OTKs): Promise<OTKCounts> {
+        return this.doRequest("POST", "/_matrix/client/r0/keys/upload", null, {
+            one_time_keys: keys,
+        }).then(r => r['one_time_key_counts']);
+    }
+
+    @timedMatrixClientFunctionCall()
+    @requiresCrypto()
+    public async checkOneTimeKeyCounts(): Promise<OTKCounts> {
+        return this.doRequest("POST", "/_matrix/client/r0/keys/upload", null, {})
+            .then(r => r['one_time_key_counts']);
     }
 
     /**

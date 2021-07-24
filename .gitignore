@@ -1,5 +1,6 @@
 .idea/
 lib/
+examples/storage/
 
 # Logs
 logs
