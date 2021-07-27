@@ -1,4 +1,5 @@
 import { LogLevel, LogService, MatrixClient, RichConsoleLogger, SimpleFsStorageProvider } from "../src";
+import { RoomEncryptionAlgorithm } from "../src/models/events/EncryptionEvent";
 
 LogService.setLogger(new RichConsoleLogger());
 LogService.setLevel(LogLevel.TRACE);
@@ -19,5 +20,10 @@ const storage = new SimpleFsStorageProvider("./examples/storage/encryption_bot.j
 const client = new MatrixClient(homeserverUrl, accessToken, storage, true);
 
 (async function() {
-    await client.crypto.prepare();
+    client.on("room.event", (roomId: string, event: any) => {
+        LogService.debug("index", `${roomId}`, event);
+    });
+
+    LogService.info("index", "Starting bot...");
+    await client.start();
 })();

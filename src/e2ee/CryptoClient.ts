@@ -12,6 +12,7 @@ import {
     SignedCurve25519OTK
 } from "../models/Crypto";
 import { requiresReady } from "./decorators";
+import { RoomTracker } from "./RoomTracker";
 
 const DEVICE_ID_STORAGE_KEY = "device_id";
 const E25519_STORAGE_KEY = "device_ed25519";
@@ -33,8 +34,10 @@ export class CryptoClient {
     private deviceEd25519: string;
     private deviceCurve25519: string;
     private maxOTKs: number;
+    private roomTracker: RoomTracker;
 
     public constructor(private client: MatrixClient) {
+        this.roomTracker = new RoomTracker(this.client);
     }
 
     public get clientDeviceId(): string {
@@ -127,11 +130,33 @@ export class CryptoClient {
         }
     }
 
+    /**
+     * Updates the One Time Key counts, potentially triggering an async upload of more
+     * one time keys.
+     * @param {OTKCounts} counts The current counts to work within.
+     */
+    public updateCounts(counts: OTKCounts) {
+        // noinspection JSIgnoredPromiseFromCall
+        this.tryOtkUpload(counts);
+    }
+
+    /**
+     * Checks if a room is encrypted.
+     * @param {string} roomId The room ID to check.
+     * @returns {Promise<boolean>} Resolves to true if encrypted, false otherwise.
+     */
+    public async isRoomEncrypted(roomId: string): Promise<boolean> {
+        const config = await this.roomTracker.getRoomCryptoConfig(roomId);
+        return !!config?.algorithm;
+    }
+
     @requiresReady()
     private async tryOtkUpload(counts: OTKCounts) {
         const have = counts[OTKAlgorithm.Signed] || 0;
         const need = Math.floor(this.maxOTKs / 2) - have;
         if (need <= 0) return;
+
+        LogService.debug("CryptoClient", `Creating ${need} more OTKs`);
 
         const account = await this.getOlmAccount();
         try {

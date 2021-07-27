@@ -581,6 +581,12 @@ export class MatrixClient extends EventEmitter {
                 }));
             });
         }
+
+        LogService.trace("MatrixClientLite", "Populating joined rooms to avoid excessive join emits");
+        this.lastJoinedRoomIds = await this.getJoinedRooms();
+
+        LogService.trace("MatrixClientLite", "Starting sync with filter ID " + this.filterId);
+        return this.startSyncInternal();
     }
 
     protected startSyncInternal(): Promise<any> {
@@ -641,6 +647,10 @@ export class MatrixClient extends EventEmitter {
         if (!emitFn) emitFn = (e, ...p) => Promise.resolve<any>(this.emit(e, ...p));
 
         if (!raw) return; // nothing to process
+
+        if (raw['device_one_time_keys_count']) {
+            this.crypto?.updateCounts(raw['device_one_time_keys_count']);
+        }
 
         if (raw['groups']) {
             const leave = raw['groups']['leave'] || {};
