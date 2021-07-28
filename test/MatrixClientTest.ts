@@ -5226,7 +5226,7 @@ describe('MatrixClient', () => {
             const { client, http } = createTestClient(null, userId, true);
 
             client.getWhoAmI = () => Promise.resolve({ user_id: userId, device_id: TEST_DEVICE_ID });
-            (<any>client.crypto).tryOtkUpload = () => Promise.resolve(); // private member access
+            client.crypto.updateCounts = () => Promise.resolve();
             client.checkOneTimeKeyCounts = () => Promise.resolve({});
             await feedOlmAccount(client);
             await client.crypto.prepare([]);

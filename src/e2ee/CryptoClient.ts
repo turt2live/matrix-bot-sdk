@@ -126,7 +126,7 @@ export class CryptoClient {
                     [`${DeviceKeyAlgorithm.Ed25119}:${this.deviceId}`]: this.deviceEd25519,
                     [`${DeviceKeyAlgorithm.Curve25519}:${this.deviceId}`]: this.deviceCurve25519,
                 });
-                await this.tryOtkUpload(counts);
+                await this.updateCounts(counts);
             } else {
                 account.unpickle(pickleKey, pickled);
                 this.pickleKey = pickleKey;
@@ -135,7 +135,7 @@ export class CryptoClient {
                 this.deviceCurve25519 = deviceC25519;
                 this.maxOTKs = account.max_number_of_one_time_keys();
                 this.ready = true;
-                await this.tryOtkUpload(await this.client.checkOneTimeKeyCounts());
+                await this.updateCounts(await this.client.checkOneTimeKeyCounts());
             }
         } finally {
             account.free();
@@ -143,27 +143,24 @@ export class CryptoClient {
     }
 
     /**
-     * Updates the One Time Key counts, potentially triggering an async upload of more
-     * one time keys.
-     * @param {OTKCounts} counts The current counts to work within.
-     */
-    public updateCounts(counts: OTKCounts) {
-        // noinspection JSIgnoredPromiseFromCall
-        this.tryOtkUpload(counts);
-    }
-
-    /**
      * Checks if a room is encrypted.
      * @param {string} roomId The room ID to check.
      * @returns {Promise<boolean>} Resolves to true if encrypted, false otherwise.
      */
+    @requiresReady()
     public async isRoomEncrypted(roomId: string): Promise<boolean> {
         const config = await this.roomTracker.getRoomCryptoConfig(roomId);
         return !!config?.algorithm;
     }
 
+    /**
+     * Updates the One Time Key counts, potentially triggering an async upload of more
+     * one time keys.
+     * @param {OTKCounts} counts The current counts to work within.
+     * @returns {Promise<void>} Resolves when complete.
+     */
     @requiresReady()
-    private async tryOtkUpload(counts: OTKCounts) {
+    public async updateCounts(counts: OTKCounts) {
         const have = counts[OTKAlgorithm.Signed] || 0;
         const need = Math.floor(this.maxOTKs / 2) - have;
         if (need <= 0) return;
@@ -195,6 +192,7 @@ export class CryptoClient {
      */
     @requiresReady()
     public async sign(obj: object): Promise<Signatures> {
+        obj = JSON.parse(JSON.stringify(obj));
         const existingSignatures = obj['signatures'] || {};
 
         delete obj['signatures'];
