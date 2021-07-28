@@ -2,7 +2,7 @@ name: Docs
 on: 
   push:
     branches:
-      - develop
+      - master
     # TODO: Keep all historical builds (like the js-sdk)
     #tags: ['v*']
 jobs:
@@ -21,4 +21,4 @@ jobs:
         BASE_BRANCH: ${{ steps.extract_branch.outputs.branch }}
         BRANCH: gh-pages
         BUILD_SCRIPT: "yarn install && yarn docs"
-        FOLDER: ".jsdoc/matrix-bot-sdk/${{ steps.extract_branch.outputs.branch }}"
+        FOLDER: ".jsdoc/matrix-bot-sdk/develop"

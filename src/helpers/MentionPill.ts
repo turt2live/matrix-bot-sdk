@@ -1,6 +1,6 @@
 import { MatrixClient } from "../MatrixClient";
 import { Permalinks } from "./Permalinks";
-import { LogService } from "..";
+import { extractRequestError, LogService } from "..";
 
 /**
  * Represents a system for generating a mention pill for an entity.
@@ -52,10 +52,36 @@ export class MentionPill {
                 }
             }
         } catch (e) {
-            LogService.warn("MentionPill", "Error getting profile", e);
+            LogService.warn("MentionPill", "Error getting profile", extractRequestError(e));
         }
 
         return new MentionPill(permalink, displayName);
+    }
+
+    /**
+     * Creates a new mention for a room (not @room, but the room itself to be linked).
+     * @param {string} roomIdOrAlias The room ID or alias to mention.
+     * @param {MatrixClient} client Optional client for creating a more pleasing mention.
+     * @returns {Promise<MentionPill>} Resolves to the room's mention.
+     */
+    public static async forRoom(roomIdOrAlias: string, client: MatrixClient = null): Promise<MentionPill> {
+        let permalink = Permalinks.forRoom(roomIdOrAlias);
+        let displayProp = roomIdOrAlias;
+
+        try {
+            if (client) {
+                const roomId = await client.resolveRoom(roomIdOrAlias);
+                const canonicalAlias = await client.getRoomStateEvent(roomId, "m.room.canonical_alias", "");
+                if (canonicalAlias?.alias) {
+                    displayProp = canonicalAlias.alias;
+                    permalink = Permalinks.forRoom(displayProp);
+                }
+            }
+        } catch (e) {
+            LogService.warn("MentionPill", "Error getting room information", extractRequestError(e));
+        }
+
+        return new MentionPill(permalink, displayProp);
     }
 
     /**

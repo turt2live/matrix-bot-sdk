@@ -2,6 +2,7 @@ import * as expect from "expect";
 import { GroupProfile, IStorageProvider, MatrixClient, UnstableApis } from "../src";
 import * as MockHttpBackend from 'matrix-mock-request';
 import { createTestClient } from "./MatrixClientTest";
+import * as simple from "simple-mock";
 
 export function createTestUnstableClient(storage: IStorageProvider = null): { client: UnstableApis, mxClient: MatrixClient, http: MockHttpBackend, hsUrl: string, accessToken: string } {
     const result = createTestClient(storage);
@@ -14,6 +15,24 @@ export function createTestUnstableClient(storage: IStorageProvider = null): { cl
 }
 
 describe('UnstableApis', () => {
+    describe('getRoomAliases', () => {
+        it('should call the right endpoint', async () => {
+            const {client, http, hsUrl} = createTestUnstableClient();
+
+            const aliases = ["#test:example.org", "#test2:example.org"];
+            const roomId = "!room:example.org";
+
+            http.when("GET", "/_matrix/client/unstable/org.matrix.msc2432/rooms").respond(200, (path, content) => {
+                expect(path).toEqual(`${hsUrl}/_matrix/client/unstable/org.matrix.msc2432/rooms/${encodeURIComponent(roomId)}/aliases`);
+                return {aliases: aliases};
+            });
+
+            http.flushAllExpected();
+            const result = await client.getRoomAliases(roomId);
+            expect(result).toMatchObject(aliases);
+        });
+    });
+
     describe('createGroup', () => {
         it('should call the right endpoint', async () => {
             const {client, http} = createTestUnstableClient();

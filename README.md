@@ -1,7 +1,7 @@
 # matrix-bot-sdk
 
 [![npm version](https://badge.fury.io/js/matrix-bot-sdk.svg)](https://www.npmjs.com/package/matrix-bot-sdk)
-[![TravisCI badge](https://travis-ci.org/turt2live/matrix-bot-sdk.svg?branch=master)](https://travis-ci.org/turt2live/matrix-js-bot-sdk)
+[![Build status](https://badge.buildkite.com/ccaf93af1d4570b64fcb62b25aa708813584c4990787688037.svg)](https://buildkite.com/t2bot/matrix-bot-sdk)
 
 TypeScript/JavaScript SDK for Matrix bots. For help and support, visit [#matrix-bot-sdk:t2bot.io](https://matrix.to/#/#matrix-bot-sdk:t2bot.io)
 
@@ -9,7 +9,7 @@ Documentation for the develop branch is available [here](https://turt2live.githu
 
 # Templates and guides
 
-* [matrix.org's guide on the basic functions of the bot](https://matrix.org/docs/guides/usage-of-matrix-js-bot-sdk)
+* [matrix.org's guide on the basic functions of the bot](https://matrix.org/docs/guides/usage-of-matrix-bot-sdk)
 * [GitHub bot template repository](https://github.com/turt2live/matrix-bot-sdk-bot-template)
 
 # Installing
@@ -155,9 +155,7 @@ client.start().then(() => console.log("Client started!"));
 
 ## Application Services
 
-**Note**: If you plan on using application services, you'll need to install the `peerDependencies` of this project.
-
-Application service support is an experimental feature of the SDK. This does things like Intent management, impersonation, and transaction handling on behalf of the application.
+Application service support is a feature of the SDK. This does things like Intent management, impersonation, and transaction handling on behalf of the application.
 
 You'll need to load your registration file from somewhere, however the fastest path is:
 

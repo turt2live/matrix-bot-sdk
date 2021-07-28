@@ -1,6 +1,6 @@
 import { MatrixClient } from "../MatrixClient";
 import { IPreprocessor } from "./IPreprocessor";
-import { EventKind, LogService } from "..";
+import { EventKind, extractRequestError, LogService } from "..";
 
 /**
  * Metadata for a rich reply. Usually stored under the "mx_richreply"
@@ -150,7 +150,7 @@ export class RichRepliesPreprocessor implements IPreprocessor {
                 metadata.realEvent = await client.getEvent(event["room_id"], parentEventId);
             } catch (e) {
                 LogService.error("RichRepliesPreprocessor", "Failed to fetch real event:");
-                LogService.error("RichRepliesPreprocessor", e);
+                LogService.error("RichRepliesPreprocessor", extractRequestError(e));
                 metadata.wasLenient = true; // failed to fetch event
             }
         }

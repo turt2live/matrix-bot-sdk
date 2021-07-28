@@ -11,6 +11,7 @@ export * from "./helpers/Permalinks";
 export * from "./helpers/MatrixGlob";
 export * from "./helpers/ProfileCache";
 export * from "./helpers/MatrixEntity";
+export * from "./helpers/UnpaddedBase64";
 
 // Logging
 export * from "./logging/ConsoleLogger";
@@ -34,6 +35,11 @@ export * from "./models/Presence";
 export * from "./models/MatrixProfile";
 export * from "./models/EventContext";
 export * from "./models/PowerLevelBounds";
+export * from "./models/OpenIDConnect";
+export * from "./models/Policies";
+export * from "./models/Threepid";
+export * from "./models/Spaces";
+export * from "./models/IdentityServerModels";
 
 // Event models
 export * from "./models/events/EventKind";
@@ -54,6 +60,7 @@ export * from "./models/events/PinnedEventsEvent";
 export * from "./models/events/RoomAvatarEvent";
 export * from "./models/events/RoomNameEvent";
 export * from "./models/events/RoomTopicEvent";
+export * from "./models/events/SpaceChildEvent";
 
 // Preprocessors
 export * from "./preprocessors/IPreprocessor";
@@ -69,6 +76,9 @@ export * from "./storage/SimpleFsStorageProvider";
 export * from "./strategies/AppserviceJoinRoomStrategy";
 export * from "./strategies/JoinRoomStrategy";
 
+// Other clients
+export * from "./identity/IdentityClient";
+
 // Root-level stuff
 export * from "./IFilter";
 export * from "./MatrixClient";
@@ -79,3 +89,4 @@ export * from "./request";
 export * from "./PantalaimonClient";
 export * from "./SynchronousMatrixClient";
 export * from "./SynapseAdminApis";
+export * from "./simple-validation";

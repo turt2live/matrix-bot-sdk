@@ -1,4 +1,5 @@
 import { MatrixClient } from "./MatrixClient";
+import { MSC2380MediaInfo } from "./models/unstable/MediaInfo";
 
 /**
  * Represents a profile for a group
@@ -33,6 +34,17 @@ export interface GroupProfile {
  */
 export class UnstableApis {
     constructor(private client: MatrixClient) {
+    }
+
+    /**
+     * Gets the local room aliases that are published for a given room.
+     * @param {string} roomId The room ID to get local aliases for.
+     * @returns {Promise<string[]>} Resolves to the aliases on the room, or an empty array.
+     * @deprecated Relies on MSC2432 endpoint.
+     */
+    public async getRoomAliases(roomId: string): Promise<string[]> {
+        const r = await this.client.doRequest("GET", "/_matrix/client/unstable/org.matrix.msc2432/rooms/" + encodeURIComponent(roomId) + "/aliases");
+        return r['aliases'] || [];
     }
 
     /**
@@ -102,7 +114,7 @@ export class UnstableApis {
      */
     public async addRoomToGroup(groupId: string, roomId: string, isPublic = true): Promise<any> {
         return this.client.doRequest("PUT", `/_matrix/client/unstable/groups/${encodeURIComponent(groupId)}/admin/rooms/${encodeURIComponent(roomId)}`, null, {
-            "m.visibility": { type: isPublic ? "public" : "private" },
+            "m.visibility": {type: isPublic ? "public" : "private"},
         });
     }
 
@@ -241,5 +253,43 @@ export class UnstableApis {
                 rel_type: "m.annotation",
             },
         });
+    }
+
+    /**
+     * Get relations for a given event.
+     * @param {string} roomId The room ID to for the given event.
+     * @param {string} eventId The event ID to list reacations for.
+     * @param {string?} relationType The type of reaction (e.g. `m.room.member`) to filter for. Optional.
+     * @param {string?} eventType The type of event to look for (e.g. `m.room.member`). Optional.
+     * @returns {Promise<{original_event: any, chunk: any[]}>} Resolves a object containing the original event, and a chunk of relations
+     */
+    public async getRelationsForEvent(roomId: string, eventId: string, relationType?: string, eventType?: string): Promise<{original_event: any, chunk: any[]}> {
+        let url = `/_matrix/client/unstable/rooms/${roomId}/relations/${eventId}`;
+        if (relationType) {
+            url += `/${relationType}`;
+        }
+        if (eventType) {
+            url += `/${eventType}`;
+        }
+        return this.client.doRequest("GET", url);
+    }
+
+    /**
+     * Get information about a media item. Implements MSC2380
+     * @param {string} mxc The MXC to get information about.
+     * @returns {Promise<MSC2380MediaInfo>} Resolves a object containing the media information.
+     */
+    public async getMediaInfo(mxcUrl: string): Promise<MSC2380MediaInfo> {
+        if (!mxcUrl.toLowerCase().startsWith("mxc://")) {
+            throw Error("'mxcUrl' does not begin with mxc://");
+        }
+        const [domain, mediaId] = mxcUrl.substr("mxc://".length).split("/");
+        if (!domain || !mediaId) {
+            throw Error('Missing domain');
+        }
+        if (!mediaId) {
+            throw Error('Missing mediaId');
+        }
+        return this.client.doRequest("GET", `/_matrix/media/unstable/info/${encodeURIComponent(domain)}/${encodeURIComponent(mediaId)}`);
     }
 }

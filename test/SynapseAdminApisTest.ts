@@ -1,8 +1,16 @@
 import * as expect from "expect";
-import { AdminApis, IStorageProvider, MatrixClient, WhoisInfo } from "../src";
+import {
+    IStorageProvider,
+    MatrixClient,
+    SynapseAdminApis,
+    SynapseRoomList,
+    SynapseRoomProperty,
+    SynapseUser,
+    SynapseUserList,
+    SynapseUserProperties
+} from "../src";
 import * as MockHttpBackend from 'matrix-mock-request';
 import { createTestClient } from "./MatrixClientTest";
-import { SynapseAdminApis } from "../src/SynapseAdminApis";
 
 export function createTestSynapseAdminClient(storage: IStorageProvider = null): { client: SynapseAdminApis, mxClient: MatrixClient, http: MockHttpBackend, hsUrl: string, accessToken: string } {
     const result = createTestClient(storage);
@@ -22,8 +30,8 @@ describe('SynapseAdminApis', () => {
             const userId = "@someone:example.org";
             const response = {admin: true};
 
-            http.when("GET", "/_synapse/admin/v2/users").respond(200, (path, content) => {
-                expect(path).toEqual(`${hsUrl}/_synapse/admin/v2/users/${encodeURIComponent(userId)}`);
+            http.when("GET", "/_synapse/admin/v1/users").respond(200, (path, content) => {
+                expect(path).toEqual(`${hsUrl}/_synapse/admin/v1/users/${encodeURIComponent(userId)}/admin`);
                 return response;
             });
 
@@ -38,8 +46,8 @@ describe('SynapseAdminApis', () => {
             const userId = "@someone:example.org";
             const response = {admin: false};
 
-            http.when("GET", "/_synapse/admin/v2/users").respond(200, (path, content) => {
-                expect(path).toEqual(`${hsUrl}/_synapse/admin/v2/users/${encodeURIComponent(userId)}`);
+            http.when("GET", "/_synapse/admin/v1/users").respond(200, (path, content) => {
+                expect(path).toEqual(`${hsUrl}/_synapse/admin/v1/users/${encodeURIComponent(userId)}/admin`);
                 return response;
             });
 
@@ -59,8 +67,8 @@ describe('SynapseAdminApis', () => {
             http.when("GET", "/_matrix/client/r0/account/whoami").respond(200, (path, content) => {
                 return {user_id: userId};
             });
-            http.when("GET", "/_synapse/admin/v2/users").respond(200, (path, content) => {
-                expect(path).toEqual(`${hsUrl}/_synapse/admin/v2/users/${encodeURIComponent(userId)}`);
+            http.when("GET", "/_synapse/admin/v1/users").respond(200, (path, content) => {
+                expect(path).toEqual(`${hsUrl}/_synapse/admin/v1/users/${encodeURIComponent(userId)}/admin`);
                 return response;
             });
 
@@ -77,14 +85,223 @@ describe('SynapseAdminApis', () => {
             http.when("GET", "/_matrix/client/r0/account/whoami").respond(200, (path, content) => {
                 return {user_id: userId};
             });
-            http.when("GET", "/_synapse/admin/v2/users").respond(200, (path, content) => {
-                expect(path).toEqual(`${hsUrl}/_synapse/admin/v2/users/${encodeURIComponent(userId)}`);
+            http.when("GET", "/_synapse/admin/v1/users").respond(200, (path, content) => {
+                expect(path).toEqual(`${hsUrl}/_synapse/admin/v1/users/${encodeURIComponent(userId)}/admin`);
                 return {errcode: "M_FORBIDDEN", error: "You are not a server admin"};
             });
 
             http.flushAllExpected();
             const result = await client.isSelfAdmin();
             expect(result).toEqual(false);
+        });
+    });
+
+    describe('getUser', () => {
+        it('should call the right endpoint', async () => {
+            const {client, http, hsUrl} = createTestSynapseAdminClient();
+
+            const userId = "@someone:example.org";
+            const response: SynapseUser = {
+                displayname: "foobar",
+                threepids: [{
+                    medium: "email",
+                    address: "foobar@example.org",
+                }],
+                avatar_url: "mxc://example.org/animage",
+                admin: true,
+                deactivated: false,
+            };
+
+            http.when("GET", "/_synapse/admin/v2/users").respond(200, (path) => {
+                expect(path).toEqual(`${hsUrl}/_synapse/admin/v2/users/${encodeURIComponent(userId)}`);
+                return response;
+            });
+
+            http.flushAllExpected();
+            const result = await client.getUser(userId);
+            expect(result).toEqual(response);
+        });
+
+        it('should throw if the user cannot be found', async () => {
+            const {client, http, hsUrl} = createTestSynapseAdminClient();
+
+            const userId = "@someone:example.org";
+
+            http.when("GET", "/_synapse/admin/v2/users").respond(404, (path) => {
+                expect(path).toEqual(`${hsUrl}/_synapse/admin/v2/users/${encodeURIComponent(userId)}`);
+                return {error: "User not found", errcode: "M_NOT_FOUND"};
+            });
+
+            http.flushAllExpected();
+            try {
+                await client.getUser(userId);
+            } catch (ex) {
+                expect(ex.statusCode).toBe(404);
+                return;
+            }
+            throw Error('Expected to throw');
+        });
+    });
+
+    describe('upsertUser', () => {
+        it('should call the right endpoint', async () => {
+            const {client, http, hsUrl} = createTestSynapseAdminClient();
+
+            const userId = "@someone:example.org";
+            const response: SynapseUser = {
+                displayname: "foobar",
+                threepids: [{
+                    medium: "email",
+                    address: "foobar@example.org",
+                }],
+                avatar_url: "mxc://example.org/animage",
+                admin: true,
+                deactivated: false,
+            };
+
+            const request: SynapseUserProperties = {
+                ...response,
+                password: "foobar",
+            }
+
+            http.when("PUT", "/_synapse/admin/v2/users").respond(200, (path, content) => {
+                expect(path).toEqual(`${hsUrl}/_synapse/admin/v2/users/${encodeURIComponent(userId)}`);
+                expect(content).toEqual(request);
+                return response;
+            });
+
+            http.flushAllExpected();
+            const result = await client.upsertUser(userId, request);
+            expect(result).toEqual(response);
+        });
+    });
+
+    describe('listUsers', () => {
+        it('should call the right endpoint', async () => {
+            const {client, http, hsUrl} = createTestSynapseAdminClient();
+
+            const response: SynapseUserList = {
+                users: [{
+                    name: "@someone:example.org",
+                    displayname: "foobar",
+                    avatar_url: "mxc://example.org/animage",
+                    admin: 1,
+                    deactivated: 0,
+                    is_guest: 0,
+                    user_type: null,
+                    password_hash: "$hashbrown"
+                }],
+                next_token: "foo",
+                total: 1,
+            };
+
+            const request = {
+                from: "foo",
+                limit: 5,
+                name: "bar",
+                guests: true,
+                deactivated: false,
+            }
+
+            http.when("GET", "/_synapse/admin/v2/users").respond(200, (path, _content, req) => {
+                expect(req.opts.qs).toEqual(request);
+                expect(path).toEqual(`${hsUrl}/_synapse/admin/v2/users`);
+                return response;
+            });
+
+            http.flushAllExpected();
+            const result = await client.listUsers(
+                request.from, request.limit, request.name, request.guests, request.deactivated
+            );
+            expect(result).toEqual(response);
+        });
+    });
+
+    describe('listRooms', () => {
+        it('should call the right endpoint', async () => {
+            const {client, http, hsUrl} = createTestSynapseAdminClient();
+
+            const response: SynapseRoomList = {
+                rooms: [{
+                    room_id: "!room:example.org",
+                    canonical_alias: "#room:example.org",
+                    creator: "@alice:example.org",
+                    encryption: "org.example.algorithm",
+                    federatable: true,
+                    guest_access: "can_join",
+                    history_visibility: "world_readable",
+                    join_rules: "public",
+                    joined_local_members: 1,
+                    joined_members: 2,
+                    name: "Test Room",
+                    public: true,
+                    state_events: 43,
+                    version: "6",
+                }],
+                next_batch: "next",
+                offset: "prev",
+                prev_batch: "prev",
+                total_rooms: 1,
+            };
+
+            const request = {
+                search_term: "lookup",
+                from: "from",
+                limit: 1000,
+                order_by: SynapseRoomProperty.CanFederate,
+                dir: "b",
+            };
+
+            http.when("GET", "/_synapse/admin/v1/rooms").respond(200, (path, _content, req) => {
+                expect(req.opts.qs).toEqual(request);
+                expect(path).toEqual(`${hsUrl}/_synapse/admin/v1/rooms`);
+                return response;
+            });
+
+            http.flushAllExpected();
+            const result = await client.listRooms(
+                request.search_term, request.from, request.limit, request.order_by, request.dir === 'b',
+            );
+            expect(result).toEqual(response);
+        });
+
+        describe('getRoomState', () => {
+            it('should call the right endpoint', async () => {
+                const {client, http, hsUrl} = createTestSynapseAdminClient();
+
+                const roomId = "!room:example.org";
+                const state = [
+                    {type: "m.room.create", content: {}, state_key: ""},
+                    {type: "m.room.member", content: {membership: "join"}, state_key: "@alice:example.org"},
+                    {type: "m.room.member", content: {membership: "leave"}, state_key: "@bob:example.org"},
+                ];
+
+                http.when("GET", "/_synapse/admin/v1/rooms").respond(200, (path, _content, req) => {
+                    expect(path).toEqual(`${hsUrl}/_synapse/admin/v1/rooms/${encodeURIComponent(roomId)}/state`);
+                    return {state};
+                });
+
+                http.flushAllExpected();
+                const result = await client.getRoomState(roomId);
+                expect(result).toMatchObject(state);
+            });
+        });
+
+        describe('deleteRoom', () => {
+            it('should call the right endpoint', async () => {
+                const {client, http, hsUrl} = createTestSynapseAdminClient();
+
+                const roomId = "!room:example.org";
+
+                http.when("POST", "/_synapse/admin/v1/rooms").respond(200, (path, _content, req) => {
+                    expect(JSON.parse(req.opts.body)).toMatchObject({purge: true});
+                    expect(path).toEqual(`${hsUrl}/_synapse/admin/v1/rooms/${encodeURIComponent(roomId)}/delete`);
+                    return {};
+                });
+
+                http.flushAllExpected();
+                await client.deleteRoom(roomId);
+            });
         });
     });
 });

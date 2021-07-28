@@ -1,5 +1,5 @@
 import * as LRU from "lru-cache";
-import { LogService, MatrixClient, MatrixProfile } from "..";
+import { extractRequestError, LogService, MatrixClient, MatrixProfile } from "..";
 import { MembershipEvent } from "../models/events/MembershipEvent";
 import { Appservice } from "../appservice/Appservice";
 
@@ -94,7 +94,7 @@ export class ProfileCache {
             }
         } catch (e) {
             LogService.warn("ProfileCache", "Non-fatal error getting user profile. They might not exist.");
-            LogService.warn("ProfileCache", e);
+            LogService.warn("ProfileCache", extractRequestError(e));
             return new MatrixProfile(userId, {});
         }
     }

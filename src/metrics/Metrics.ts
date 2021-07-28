@@ -91,7 +91,7 @@ export class Metrics {
             }
         }
 
-        LogService.debug("Metrics", metricName, trimmedContext, timeMs);
+        LogService.trace("Metrics", metricName, trimmedContext, timeMs);
     }
 
     /**

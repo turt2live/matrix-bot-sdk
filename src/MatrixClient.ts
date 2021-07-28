@@ -5,7 +5,7 @@ import { IJoinRoomStrategy } from "./strategies/JoinRoomStrategy";
 import { UnstableApis } from "./UnstableApis";
 import { IPreprocessor } from "./preprocessors/IPreprocessor";
 import { getRequestFn } from "./request";
-import { LogLevel, LogService } from "./logging/LogService";
+import { extractRequestError, LogService } from "./logging/LogService";
 import { htmlEncode } from "htmlencode";
 import { RichReply } from "./helpers/RichReply";
 import { Metrics } from "./metrics/Metrics";
@@ -17,6 +17,13 @@ import { RoomEvent, RoomEventContent, StateEvent } from "./models/events/RoomEve
 import { EventContext } from "./models/EventContext";
 import { PowerLevelBounds } from "./models/PowerLevelBounds";
 import { EventKind } from "./models/events/EventKind";
+import { IdentityClient } from "./identity/IdentityClient";
+import { OpenIDConnectToken } from "./models/OpenIDConnect";
+import { doHttpRequest } from "./http";
+import { htmlToText } from "html-to-text";
+import { MatrixProfileInfo } from "./models/MatrixProfile";
+import { Space, SpaceCreateOptions } from "./models/Spaces";
+import { PowerLevelAction } from "./models/PowerLevelAction";
 
 const SYNC_BACKOFF_MIN_MS = 5000;
 const SYNC_BACKOFF_MAX_MS = 15000;
@@ -51,6 +58,7 @@ export class MatrixClient extends EventEmitter {
     private filterId = 0;
     private stopSyncing = false;
     private metricsInstance: Metrics = new Metrics();
+    private unstableApisInstance = new UnstableApis(this);
 
     /**
      * Set this to true to have the client only persist the sync token after the sync
@@ -104,7 +112,7 @@ export class MatrixClient extends EventEmitter {
      * @return {UnstableApis} The unstable API access class.
      */
     public get unstableApis(): UnstableApis {
-        return new UnstableApis(this);
+        return this.unstableApisInstance;
     }
 
     /**
@@ -125,6 +133,21 @@ export class MatrixClient extends EventEmitter {
     public impersonateUserId(userId: string): void {
         this.impersonatedUserId = userId;
         this.userId = userId;
+    }
+
+    /**
+     * Acquires an identity server client for communicating with an identity server. Note that
+     * this will automatically do the login portion to establish a usable token with the identity
+     * server provided, but it will not automatically accept any terms of service.
+     *
+     * The identity server name provided will in future be resolved to a server address - for now
+     * that resolution is assumed to be prefixing the name with `https://`.
+     * @param {string} identityServerName The domain of the identity server to connect to.
+     * @returns {Promise<IdentityClient>} Resolves to a prepared identity client.
+     */
+    public async getIdentityServerClient(identityServerName: string): Promise<IdentityClient> {
+        const oidcToken = await this.getOpenIDConnectToken();
+        return IdentityClient.acquire(oidcToken, `https://${identityServerName}`, this);
     }
 
     /**
@@ -164,12 +187,22 @@ export class MatrixClient extends EventEmitter {
     }
 
     /**
+     * Retrieves an OpenID Connect token from the homeserver for the current user.
+     * @returns {Promise<OpenIDConnectToken>} Resolves to the token.
+     */
+    @timedMatrixClientFunctionCall()
+    public async getOpenIDConnectToken(): Promise<OpenIDConnectToken> {
+        const userId = encodeURIComponent(await this.getUserId());
+        return this.doRequest("POST", "/_matrix/client/r0/user/" + userId + "/openid/request_token", null, {});
+    }
+
+    /**
      * Retrieves content from account data.
      * @param {string} eventType The type of account data to retrieve.
      * @returns {Promise<any>} Resolves to the content of that account data.
      */
     @timedMatrixClientFunctionCall()
-    public async getAccountData(eventType: string): Promise<any> {
+    public async getAccountData<T>(eventType: string): Promise<T> {
         const userId = encodeURIComponent(await this.getUserId());
         eventType = encodeURIComponent(eventType);
         return this.doRequest("GET", "/_matrix/client/r0/user/" + userId + "/account_data/" + eventType);
@@ -182,7 +215,7 @@ export class MatrixClient extends EventEmitter {
      * @returns {Promise<any>} Resolves to the content of that account data.
      */
     @timedMatrixClientFunctionCall()
-    public async getRoomAccountData(eventType: string, roomId: string): Promise<any> {
+    public async getRoomAccountData<T>(eventType: string, roomId: string): Promise<T> {
         const userId = encodeURIComponent(await this.getUserId());
         eventType = encodeURIComponent(eventType);
         roomId = encodeURIComponent(roomId);
@@ -197,11 +230,11 @@ export class MatrixClient extends EventEmitter {
      * @returns {Promise<any>} Resolves to the content of that account data, or the default.
      */
     @timedMatrixClientFunctionCall()
-    public async getSafeAccountData(eventType: string, defaultContent: any = null): Promise<any> {
+    public async getSafeAccountData<T>(eventType: string, defaultContent: T = null): Promise<T> {
         try {
             return await this.getAccountData(eventType);
         } catch (e) {
-            LogService.warn("MatrixClient", `Error getting ${eventType} account data:`, e);
+            LogService.warn("MatrixClient", `Error getting ${eventType} account data:`, extractRequestError(e));
             return defaultContent;
         }
     }
@@ -215,11 +248,11 @@ export class MatrixClient extends EventEmitter {
      * @returns {Promise<any>} Resolves to the content of that room account data, or the default.
      */
     @timedMatrixClientFunctionCall()
-    public async getSafeRoomAccountData(eventType: string, roomId: string, defaultContent: any = null): Promise<any> {
+    public async getSafeRoomAccountData<T>(eventType: string, roomId: string, defaultContent: T = null): Promise<T> {
         try {
             return await this.getRoomAccountData(eventType, roomId);
         } catch (e) {
-            LogService.warn("MatrixClient", `Error getting ${eventType} room account data in ${roomId}:`, e);
+            LogService.warn("MatrixClient", `Error getting ${eventType} room account data in ${roomId}:`, extractRequestError(e));
             return defaultContent;
         }
     }
@@ -476,7 +509,7 @@ export class MatrixClient extends EventEmitter {
     public start(filter: any = null): Promise<any> {
         this.stopSyncing = false;
         if (!filter || typeof (filter) !== "object") {
-            LogService.debug("MatrixClientLite", "No filter given or invalid object - using defaults.");
+            LogService.trace("MatrixClientLite", "No filter given or invalid object - using defaults.");
             filter = null;
         }
 
@@ -485,9 +518,9 @@ export class MatrixClient extends EventEmitter {
 
             let existingFilter = await Promise.resolve(this.storage.getFilter());
             if (existingFilter) {
-                LogService.debug("MatrixClientLite", "Found existing filter. Checking consistency with given filter");
+                LogService.trace("MatrixClientLite", "Found existing filter. Checking consistency with given filter");
                 if (JSON.stringify(existingFilter.filter) === JSON.stringify(filter)) {
-                    LogService.debug("MatrixClientLite", "Filters match");
+                    LogService.trace("MatrixClientLite", "Filters match");
                     this.filterId = existingFilter.id;
                 } else {
                     createFilter = true;
@@ -497,7 +530,7 @@ export class MatrixClient extends EventEmitter {
             }
 
             if (createFilter && filter) {
-                LogService.debug("MatrixClientLite", "Creating new filter");
+                LogService.trace("MatrixClientLite", "Creating new filter");
                 return this.doRequest("POST", "/_matrix/client/r0/user/" + encodeURIComponent(userId) + "/filter", null, filter).then(async response => {
                     this.filterId = response["filter_id"];
                     await Promise.resolve(this.storage.setSyncToken(null));
@@ -508,10 +541,10 @@ export class MatrixClient extends EventEmitter {
                 });
             }
         }).then(async () => {
-            LogService.debug("MatrixClientLite", "Populating joined rooms to avoid excessive join emits");
+            LogService.trace("MatrixClientLite", "Populating joined rooms to avoid excessive join emits");
             this.lastJoinedRoomIds = await this.getJoinedRooms();
 
-            LogService.debug("MatrixClientLite", "Starting sync with filter ID " + this.filterId);
+            LogService.trace("MatrixClientLite", "Starting sync with filter ID " + this.filterId);
             this.startSyncInternal();
         });
     }
@@ -537,14 +570,14 @@ export class MatrixClient extends EventEmitter {
                     await Promise.resolve(this.storage.setSyncToken(token));
                 }
 
-                LogService.info("MatrixClientLite", "Received sync. Next token: " + token);
+                LogService.debug("MatrixClientLite", "Received sync. Next token: " + token);
                 await this.processSync(response, emitFn);
 
                 if (this.persistTokenAfterSync) {
                     await Promise.resolve(this.storage.setSyncToken(token));
                 }
             } catch (e) {
-                LogService.error("MatrixClientLite", "Error handling sync " + e);
+                LogService.error("MatrixClientLite", "Error handling sync " + extractRequestError(e));
                 const backoffTime = SYNC_BACKOFF_MIN_MS + Math.random() * (SYNC_BACKOFF_MAX_MS - SYNC_BACKOFF_MIN_MS);
                 LogService.info("MatrixClientLite", `Backing off for ${backoffTime}ms`);
                 await new Promise((r) => setTimeout(r, backoffTime));
@@ -558,7 +591,7 @@ export class MatrixClient extends EventEmitter {
 
     @timedMatrixClientFunctionCall()
     protected doSync(token: string): Promise<any> {
-        LogService.info("MatrixClientLite", "Performing sync with token " + token);
+        LogService.debug("MatrixClientLite", "Performing sync with token " + token);
         const conf = {
             full_state: false,
             timeout: Math.max(0, this.syncingTimeout),
@@ -848,6 +881,16 @@ export class MatrixClient extends EventEmitter {
     }
 
     /**
+     * Gets the joined members in a room, as an object mapping userIds to profiles. The client must be in the room to make this request.
+     * @param {string} roomId The room ID to get the joined members of.
+     * @returns {Object} The joined user IDs in the room as an object mapped to a set of profiles.
+     */
+    @timedMatrixClientFunctionCall()
+    public async getJoinedRoomMembersWithProfiles(roomId: string): Promise<{[userId: string]: MatrixProfileInfo}> {
+        return (await this.doRequest("GET", "/_matrix/client/r0/rooms/" + encodeURIComponent(roomId) + "/joined_members")).joined;
+    }
+
+    /**
      * Gets the membership events of users in the room. Defaults to all membership
      * types, though this can be controlled with the membership and notMembership
      * arguments. To change the point in time, use the batchToken.
@@ -922,6 +965,20 @@ export class MatrixClient extends EventEmitter {
     }
 
     /**
+     * Replies to a given event with the given HTML. The event is sent with a msgtype of m.text.
+     * @param {string} roomId the room ID to reply in
+     * @param {any} event the event to reply to
+     * @param {string} html the HTML to reply with.
+     * @returns {Promise<string>} resolves to the event ID which was sent
+     */
+    @timedMatrixClientFunctionCall()
+    public replyHtmlText(roomId: string, event: any, html: string): Promise<string> {
+        const text = htmlToText(html, {wordwrap: false});
+        const reply = RichReply.createFor(roomId, event, text, html);
+        return this.sendMessage(roomId, reply);
+    }
+
+    /**
      * Replies to a given event with the given text. The event is sent with a msgtype of m.notice.
      * @param {string} roomId the room ID to reply in
      * @param {any} event the event to reply to
@@ -933,6 +990,21 @@ export class MatrixClient extends EventEmitter {
     public replyNotice(roomId: string, event: any, text: string, html: string = null): Promise<string> {
         if (!html) html = htmlEncode(text);
 
+        const reply = RichReply.createFor(roomId, event, text, html);
+        reply['msgtype'] = 'm.notice';
+        return this.sendMessage(roomId, reply);
+    }
+
+    /**
+     * Replies to a given event with the given HTML. The event is sent with a msgtype of m.notice.
+     * @param {string} roomId the room ID to reply in
+     * @param {any} event the event to reply to
+     * @param {string} html the HTML to reply with.
+     * @returns {Promise<string>} resolves to the event ID which was sent
+     */
+    @timedMatrixClientFunctionCall()
+    public replyHtmlNotice(roomId: string, event: any, html: string): Promise<string> {
+        const text = htmlToText(html, {wordwrap: false});
         const reply = RichReply.createFor(roomId, event, text, html);
         reply['msgtype'] = 'm.notice';
         return this.sendMessage(roomId, reply);
@@ -953,6 +1025,22 @@ export class MatrixClient extends EventEmitter {
     }
 
     /**
+     * Sends a notice to the given room with HTML content
+     * @param {string} roomId the room ID to send the notice to
+     * @param {string} html the HTML to send
+     * @returns {Promise<string>} resolves to the event ID that represents the message
+     */
+    @timedMatrixClientFunctionCall()
+    public sendHtmlNotice(roomId: string, html: string): Promise<string> {
+        return this.sendMessage(roomId, {
+            body: htmlToText(html, {wordwrap: false}),
+            msgtype: "m.notice",
+            format: "org.matrix.custom.html",
+            formatted_body: html,
+        });
+    }
+
+    /**
      * Sends a text message to the given room
      * @param {string} roomId the room ID to send the text to
      * @param {string} text the text to send
@@ -963,6 +1051,22 @@ export class MatrixClient extends EventEmitter {
         return this.sendMessage(roomId, {
             body: text,
             msgtype: "m.text",
+        });
+    }
+
+    /**
+     * Sends a text message to the given room with HTML content
+     * @param {string} roomId the room ID to send the text to
+     * @param {string} html the HTML to send
+     * @returns {Promise<string>} resolves to the event ID that represents the message
+     */
+    @timedMatrixClientFunctionCall()
+    public sendHtmlText(roomId: string, html: string): Promise<string> {
+        return this.sendMessage(roomId, {
+            body: htmlToText(html, {wordwrap: false}),
+            msgtype: "m.text",
+            format: "org.matrix.custom.html",
+            formatted_body: html,
         });
     }
 
@@ -986,7 +1090,7 @@ export class MatrixClient extends EventEmitter {
      */
     @timedMatrixClientFunctionCall()
     public sendEvent(roomId: string, eventType: string, content: any): Promise<string> {
-        const txnId = (new Date().getTime()) + "__REQ" + this.requestId;
+        const txnId = (new Date().getTime()) + "__inc" + (++this.requestId);
         return this.doRequest("PUT", "/_matrix/client/r0/rooms/" + encodeURIComponent(roomId) + "/send/" + encodeURIComponent(eventType) + "/" + encodeURIComponent(txnId), null, content).then(response => {
             return response['event_id'];
         });
@@ -1016,7 +1120,7 @@ export class MatrixClient extends EventEmitter {
      */
     @timedMatrixClientFunctionCall()
     public redactEvent(roomId: string, eventId: string, reason: string | null = null): Promise<string> {
-        const txnId = (new Date().getTime()) + "__REQ" + this.requestId;
+        const txnId = (new Date().getTime()) + "__inc" + (++this.requestId);
         const content = reason !== null ? {reason} : {};
         return this.doRequest("PUT", `/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/redact/${encodeURIComponent(eventId)}/${txnId}`, null, content).then(response => {
             return response['event_id'];
@@ -1039,7 +1143,7 @@ export class MatrixClient extends EventEmitter {
     }
 
     /**
-     * Checks if a given user has a required power level
+     * Checks if a given user has a required power level required to send the given event.
      * @param {string} userId the user ID to check the power level of
      * @param {string} roomId the room ID to check the power level in
      * @param {string} eventType the event type to look for in the `events` property of the power levels
@@ -1050,16 +1154,56 @@ export class MatrixClient extends EventEmitter {
     public async userHasPowerLevelFor(userId: string, roomId: string, eventType: string, isState: boolean): Promise<boolean> {
         const powerLevelsEvent = await this.getRoomStateEvent(roomId, "m.room.power_levels", "");
         if (!powerLevelsEvent) {
+            // This is technically supposed to be non-fatal, but it's pretty unreasonable for a room to be missing
+            // power levels.
             throw new Error("No power level event found");
         }
 
         let requiredPower = isState ? 50 : 0;
-        if (isState && powerLevelsEvent["state_default"]) requiredPower = powerLevelsEvent["state_default"];
-        if (!isState && powerLevelsEvent["users_default"]) requiredPower = powerLevelsEvent["users_default"];
-        if (powerLevelsEvent["events"] && powerLevelsEvent["events"][eventType]) requiredPower = powerLevelsEvent["events"][eventType];
+        if (isState && Number.isFinite(powerLevelsEvent["state_default"])) requiredPower = powerLevelsEvent["state_default"];
+        if (!isState && Number.isFinite(powerLevelsEvent["events_default"])) requiredPower = powerLevelsEvent["events_default"];
+        if (Number.isFinite(powerLevelsEvent["events"]?.[eventType])) requiredPower = powerLevelsEvent["events"][eventType];
 
         let userPower = 0;
-        if (powerLevelsEvent["users"] && powerLevelsEvent["users"][userId]) userPower = powerLevelsEvent["users"][userId];
+        if (Number.isFinite(powerLevelsEvent["users_default"])) userPower = powerLevelsEvent["users_default"];
+        if (Number.isFinite(powerLevelsEvent["users"]?.[userId])) userPower = powerLevelsEvent["users"][userId];
+
+        return userPower >= requiredPower;
+    }
+
+    /**
+     * Checks if a given user has a required power level to perform the given action
+     * @param {string} userId the user ID to check the power level of
+     * @param {string} roomId the room ID to check the power level in
+     * @param {PowerLevelAction} action the action to check power level for
+     * @returns {Promise<boolean>} resolves to true if the user has the required power level, resolves to false otherwise
+     */
+    @timedMatrixClientFunctionCall()
+    public async userHasPowerLevelForAction(userId: string, roomId: string, action: PowerLevelAction): Promise<boolean> {
+        const powerLevelsEvent = await this.getRoomStateEvent(roomId, "m.room.power_levels", "");
+        if (!powerLevelsEvent) {
+            // This is technically supposed to be non-fatal, but it's pretty unreasonable for a room to be missing
+            // power levels.
+            throw new Error("No power level event found");
+        }
+
+        const defaultForActions: {[A in PowerLevelAction]: number} = {
+            [PowerLevelAction.Ban]: 50,
+            [PowerLevelAction.Invite]: 50,
+            [PowerLevelAction.Kick]: 50,
+            [PowerLevelAction.RedactEvents]: 50,
+            [PowerLevelAction.NotifyRoom]: 50,
+        };
+
+        let requiredPower = defaultForActions[action];
+
+        let investigate = powerLevelsEvent;
+        action.split('.').forEach(k => (investigate = investigate?.[k]));
+        if (Number.isFinite(investigate)) requiredPower = investigate;
+
+        let userPower = 0;
+        if (Number.isFinite(powerLevelsEvent["users_default"])) userPower = powerLevelsEvent["users_default"];
+        if (Number.isFinite(powerLevelsEvent["users"]?.[userId])) userPower = powerLevelsEvent["users"][userId];
 
         return userPower >= requiredPower;
     }
@@ -1203,12 +1347,12 @@ export class MatrixClient extends EventEmitter {
             };
             getRequestFn()(params, (err, response, resBody) => {
                 if (err) {
-                    LogService.error("MatrixLiteClient (REQ-" + requestId + ")", err);
+                    LogService.error("MatrixLiteClient (REQ-" + requestId + ")", extractRequestError(err));
                     reject(err);
                 } else {
                     const contentType = response.headers['content-type'] || "application/octet-stream";
 
-                    LogService.debug("MatrixLiteClient (REQ-" + requestId + " RESP-H" + response.statusCode + ")", "<data>");
+                    LogService.trace("MatrixLiteClient (REQ-" + requestId + " RESP-H" + response.statusCode + ")", "<data>");
                     if (response.statusCode < 200 || response.statusCode >= 300) {
                         LogService.error("MatrixLiteClient (REQ-" + requestId + ")", "<data>");
                         reject(response);
@@ -1337,6 +1481,75 @@ export class MatrixClient extends EventEmitter {
     }
 
     /**
+     * Creates a Space room.
+     * @param {SpaceCreateOptions} opts The creation options.
+     * @returns {Promise<Space>} Resolves to the created space.
+     */
+    public async createSpace(opts: SpaceCreateOptions): Promise<Space> {
+        const roomCreateOpts = {
+            name: opts.name,
+            topic: opts.topic || "",
+            preset: opts.isPublic ? 'public_chat' : 'private_chat',
+            room_alias_name: opts.localpart,
+            initial_state: [
+                {
+                    type: "m.room.history_visibility",
+                    state_key: "",
+                    content: {
+                        history_visibility: opts.isPublic ? 'world_readable' : 'shared',
+                    },
+                },
+            ] as unknown[],
+            creation_content: {
+                type: "m.space",
+            },
+            invite: opts.invites || [],
+            power_level_content_override: {
+                ban: 100,
+                events_default: 50,
+                invite: 50,
+                kick: 100,
+                notifications: {
+                    room: 100,
+                },
+                redact: 100,
+                state_default: 100,
+                users: {
+                    [await this.getUserId()]: 100,
+                },
+                users_default: 0,
+            },
+        };
+        if (opts.avatarUrl) {
+            roomCreateOpts.initial_state.push({
+                type: 'm.room.avatar',
+                state_key: "",
+                content: {
+                    url: opts.avatarUrl,
+                },
+            });
+        }
+        const roomId = await this.createRoom(roomCreateOpts);
+        return new Space(roomId, this);
+    }
+
+    /**
+     * Gets a Space.
+     * This API does not work with unstable spaces (e.g. org.matrix.msc.1772.space)
+     *
+     * @throws If the room is not a space or there was an error
+     * @returns {Promise<Space>} Resolves to the space.
+     */
+    public async getSpace(roomIdOrAlias: string): Promise<Space> {
+        const roomId = await this.resolveRoom(roomIdOrAlias);
+        const createEvent = await this.getRoomStateEvent(roomId, "m.room.create", "");
+        if (createEvent["type"] !== "m.space") {
+            throw new Error("Room is not a space");
+        }
+        return new Space(roomId, this);
+    }
+
+    /**
      * Performs a web request to the homeserver, applying appropriate authorization headers for
      * this client.
      * @param {"GET"|"POST"|"PUT"|"DELETE"} method The HTTP method to use in the request
@@ -1351,130 +1564,15 @@ export class MatrixClient extends EventEmitter {
      */
     @timedMatrixClientFunctionCall()
     public doRequest(method, endpoint, qs = null, body = null, timeout = 60000, raw = false, contentType = "application/json", noEncoding = false): Promise<any> {
-        if (!endpoint.startsWith('/')) {
-            endpoint = '/' + endpoint;
-        }
-
-        const requestId = ++this.requestId;
-        const url = this.homeserverUrl + endpoint;
-
-        // This is logged at info so that when a request fails people can figure out which one.
-        LogService.info("MatrixLiteClient (REQ-" + requestId + ")", method + " " + url);
-
         if (this.impersonatedUserId) {
             if (!qs) qs = {"user_id": this.impersonatedUserId};
             else qs["user_id"] = this.impersonatedUserId;
         }
-
         const headers = {};
         if (this.accessToken) {
             headers["Authorization"] = `Bearer ${this.accessToken}`;
         }
-
-        // Don't log the request unless we're in debug mode. It can be large.
-        if (LogService.level.includes(LogLevel.DEBUG)) {
-            if (qs) LogService.debug("MatrixLiteClient (REQ-" + requestId + ")", "qs = " + JSON.stringify(qs));
-            if (body && !Buffer.isBuffer(body)) LogService.debug("MatrixLiteClient (REQ-" + requestId + ")", "body = " + JSON.stringify(this.redactObjectForLogging(body)));
-            if (body && Buffer.isBuffer(body)) LogService.debug("MatrixLiteClient (REQ-" + requestId + ")", "body = <Buffer>");
-        }
-
-        const params: { [k: string]: any } = {
-            uri: url,
-            method: method,
-            qs: qs,
-            // If this is undefined, then a string will be returned. If it's null, a Buffer will be returned.
-            encoding: noEncoding === false ? undefined : null,
-            useQuerystring: true,
-            qsStringifyOptions: {
-                options: {arrayFormat: 'repeat'},
-            },
-            timeout: timeout,
-            headers: headers,
-        };
-
-        if (body) {
-            if (Buffer.isBuffer(body)) {
-                params.headers["Content-Type"] = contentType;
-                params.body = body;
-            } else {
-                params.headers["Content-Type"] = "application/json";
-                params.body = JSON.stringify(body);
-            }
-        }
-
-        return new Promise((resolve, reject) => {
-            getRequestFn()(params, (err, response, resBody) => {
-                if (err) {
-                    LogService.error("MatrixLiteClient (REQ-" + requestId + ")", err);
-                    reject(err);
-                } else {
-                    if (typeof (resBody) === 'string') {
-                        try {
-                            resBody = JSON.parse(resBody);
-                        } catch (e) {
-                        }
-                    }
-
-                    if (typeof (response.body) === 'string') {
-                        try {
-                            response.body = JSON.parse(response.body);
-                        } catch (e) {
-                        }
-                    }
-
-                    // Don't log the body unless we're in debug mode. They can be large.
-                    if (LogService.level.includes(LogLevel.DEBUG)) {
-                        const redactedBody = this.redactObjectForLogging(response.body);
-                        LogService.debug("MatrixLiteClient (REQ-" + requestId + " RESP-H" + response.statusCode + ")", redactedBody);
-                    }
-                    if (response.statusCode < 200 || response.statusCode >= 300) {
-                        const redactedBody = this.redactObjectForLogging(response.body);
-                        LogService.error("MatrixLiteClient (REQ-" + requestId + ")", redactedBody);
-                        reject(response);
-                    } else resolve(raw ? response : resBody);
-                }
-            });
-        });
-    }
-
-    private redactObjectForLogging(input: any): any {
-        if (!input) return input;
-
-        const fieldsToRedact = [
-            'access_token',
-            'password',
-        ];
-
-        const redactFn = (i) => {
-            if (!i) return i;
-
-            // Don't treat strings like arrays/objects
-            if (typeof i === 'string') return i;
-
-            if (Array.isArray(i)) {
-                const rebuilt = [];
-                for (const v of i) {
-                    rebuilt.push(redactFn(v));
-                }
-                return rebuilt;
-            }
-
-            if (i instanceof Object) {
-                const rebuilt = {};
-                for (const key of Object.keys(i)) {
-                    if (fieldsToRedact.includes(key)) {
-                        rebuilt[key] = '<redacted>';
-                    } else {
-                        rebuilt[key] = redactFn(i[key]);
-                    }
-                }
-                return rebuilt;
-            }
-
-            return i; // It's a primitive value
-        };
-
-        return redactFn(input);
+        return doHttpRequest(this.homeserverUrl, method, endpoint, qs, body, headers, timeout, raw, contentType, noEncoding);
     }
 }
 

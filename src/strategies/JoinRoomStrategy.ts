@@ -1,4 +1,4 @@
-import { LogService } from "..";
+import { extractRequestError, LogService } from "..";
 
 export interface IJoinRoomStrategy {
     joinRoom(roomIdOrAlias: string, userId: string, apiCall: (roomIdOrAlias: string) => Promise<string>): Promise<string>;
@@ -24,7 +24,7 @@ export class SimpleRetryJoinStrategy implements IJoinRoomStrategy {
 
         const doJoin = () => waitPromise(currentSchedule).then(() => apiCall(roomIdOrAlias));
         const errorHandler = err => {
-            LogService.error("SimpleRetryJoinStrategy", err);
+            LogService.error("SimpleRetryJoinStrategy", extractRequestError(err));
             const idx = this.schedule.indexOf(currentSchedule);
             if (idx === this.schedule.length - 1) {
                 LogService.warn("SimpleRetryJoinStrategy", "Failed to join room " + roomIdOrAlias);

@@ -30,12 +30,12 @@ describe('SimpleRetryJoinStrategy', () => {
     it('should retry joins on a schedule', async () => {
         const strategy = new SimpleRetryJoinStrategy();
 
-        const schedule = [0, 250, 500];
+        const schedule = [0, 500, 750];
         (<any>strategy).schedule = schedule;
 
         const roomId = "!somewhere:example.org";
         const userId = "@someone:example.org";
-        const tolerance = 15;
+        const tolerance = 100;
 
         let attempt = 0;
         let joinStarted = new Date().getTime();

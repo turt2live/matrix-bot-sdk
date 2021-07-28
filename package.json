@@ -1,7 +1,7 @@
 {
   "name": "matrix-bot-sdk",
-  "version": "develop",
-  "description": "TypeScript/JavaScript SDK for Matrix bots",
+  "version": "0.5.19",
+  "description": "TypeScript/JavaScript SDK for Matrix bots and appservices",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/turt2live/matrix-bot-sdk.git"
@@ -16,8 +16,8 @@
     "prepublishOnly": "yarn build",
     "docs": "jsdoc -c jsdoc.json -P package.json",
     "build": "tsc",
-    "lint": "eslint",
-    "test": "ts-mocha --project ./tsconfig.json test/**/*.ts",
+    "lint": "eslint 'src/**/*.ts'",
+    "test": "ts-mocha --project ./tsconfig.json test/*Test.ts test/**/*.ts",
     "build:examples": "tsc -p tsconfig-examples.json",
     "example:appservice": "yarn build:examples && node lib/examples/appservice.js",
     "example:login_register": "yarn build:examples && node lib/examples/login_register.js"
@@ -25,20 +25,21 @@
   "main": "./lib/index.js",
   "typings": "./lib/index.d.ts",
   "engines": {
-    "node": ">=10.0.0",
-    "npm": "^6.0.0",
-    "yarn": "^1.19.0"
+    "node": ">=10.0.0"
   },
   "keywords": [
     "matrix",
     "bot",
     "sdk",
     "js",
+    "ts",
     "node",
     "helpers",
     "snippets",
     "chat",
-    "modules"
+    "modules",
+    "bot-sdk",
+    "appservices"
   ],
   "files": [
     "src/*",
@@ -52,6 +53,7 @@
     "express": "^4.17.1",
     "glob-to-regexp": "^0.4.1",
     "hash.js": "^1.1.7",
+    "html-to-text": "^6.0.0",
     "htmlencode": "^0.0.4",
     "lowdb": "^1.0.0",
     "lru-cache": "^6.0.0",
@@ -59,7 +61,7 @@
     "morgan": "^1.10.0",
     "request": "^2.88.2",
     "request-promise": "^4.2.6",
-    "sanitize-html": "^1.27.2"
+    "sanitize-html": "^2.3.2"
   },
   "devDependencies": {
     "@types/expect": "^24.3.0",
@@ -78,6 +80,7 @@
     "simple-mock": "^0.8.0",
     "tmp": "^0.2.1",
     "ts-mocha": "^7.0.0",
+    "tslint": "^6.1.3",
     "typescript": "^3.9.7"
   }
 }

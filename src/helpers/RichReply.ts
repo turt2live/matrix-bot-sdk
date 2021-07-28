@@ -26,7 +26,7 @@ export class RichReply {
 
         const fallbackText = "> <" + event["sender"] + "> " + originalBody.split("\n").join("\n> ");
         const fallbackHtml = "<mx-reply><blockquote>"
-            + `<a href="https://matrix.to/#/${roomId}/${event["event_id"]}">In reply to</a>`
+            + `<a href="https://matrix.to/#/${roomId}/${event["event_id"]}">In reply to</a> `
             + `<a href="https://matrix.to/#/${event["sender"]}">${event["sender"]}</a>`
             + "<br />" + originalHtml
             + "</blockquote></mx-reply>";
