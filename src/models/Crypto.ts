@@ -43,6 +43,9 @@ export type OTKs = Record<OTKLabel<OTKAlgorithm.Signed, string>, SignedCurve2551
  * @category Models
  */
 export type OTKCounts = {
+    /**
+     * The number of keys which remain unused for the algorithm.
+     */
     [alg in OTKAlgorithm]?: number;
 };
 
@@ -69,3 +72,34 @@ export enum DeviceKeyAlgorithm {
  * @category Models
  */
 export type DeviceKeyLabel<Algorithm extends DeviceKeyAlgorithm, ID extends string> = `${Algorithm}:${ID}`;
+
+/**
+ * Represents a user's device.
+ * @category Models
+ */
+export interface UserDevice {
+    user_id: string;
+    device_id: string;
+    algorithms: (EncryptionAlgorithm | string)[];
+    keys: Record<DeviceKeyLabel<DeviceKeyAlgorithm, string>, string>;
+    signatures: Signatures;
+    unsigned?: {
+        [k: string]: any;
+        device_display_name?: string;
+    };
+}
+
+export interface MultiUserDeviceListResponse {
+    /**
+     * Federation failures, keyed by server name. The mapped object should be a standard
+     * error object.
+     */
+    failures: {
+        [serverName: string]: any;
+    };
+
+    /**
+     * A map of user ID to device ID to device.
+     */
+    device_keys: Record<string, Record<string, UserDevice>>;
+}

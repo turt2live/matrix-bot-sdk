@@ -26,7 +26,15 @@ import { Space, SpaceCreateOptions } from "./models/Spaces";
 import { PowerLevelAction } from "./models/PowerLevelAction";
 import { CryptoClient } from "./e2ee/CryptoClient";
 import { isCryptoCapable } from "./isCryptoCapable";
-import { DeviceKeyAlgorithm, DeviceKeyLabel, EncryptionAlgorithm, OTKCounts, OTKs } from "./models/Crypto";
+import {
+    DeviceKeyAlgorithm,
+    DeviceKeyLabel,
+    EncryptionAlgorithm,
+    MultiUserDeviceListResponse,
+    OTKCounts,
+    OTKs,
+    UserDevice
+} from "./models/Crypto";
 import { requiresCrypto } from "./e2ee/decorators";
 
 /**
@@ -1593,6 +1601,12 @@ export class MatrixClient extends EventEmitter {
         return new Space(roomId, this);
     }
 
+    /**
+     * Uploads new identity keys for the current device.
+     * @param {EncryptionAlgorithm[]} algorithms The supported algorithms.
+     * @param {Record<DeviceKeyLabel<DeviceKeyAlgorithm, string>, string>} keys The keys for the device.
+     * @returns {Promise<OTKCounts>} Resolves to the current One Time Key counts when complete.
+     */
     @timedMatrixClientFunctionCall()
     @requiresCrypto()
     public async uploadDeviceKeys(algorithms: EncryptionAlgorithm[], keys: Record<DeviceKeyLabel<DeviceKeyAlgorithm, string>, string>): Promise<OTKCounts> {
@@ -1608,6 +1622,11 @@ export class MatrixClient extends EventEmitter {
         }).then(r => r['one_time_key_counts']);
     }
 
+    /**
+     * Uploads One Time Keys for the current device.
+     * @param {OTKs} keys The keys to upload.
+     * @returns {Promise<OTKCounts>} Resolves to the current One Time Key counts when complete.
+     */
     @timedMatrixClientFunctionCall()
     @requiresCrypto()
     public async uploadDeviceOneTimeKeys(keys: OTKs): Promise<OTKCounts> {
@@ -1616,11 +1635,39 @@ export class MatrixClient extends EventEmitter {
         }).then(r => r['one_time_key_counts']);
     }
 
+    /**
+     * Gets the current One Time Key counts.
+     * @returns {Promise<OTKCounts>} Resolves to the One Time Key counts.
+     */
     @timedMatrixClientFunctionCall()
     @requiresCrypto()
     public async checkOneTimeKeyCounts(): Promise<OTKCounts> {
         return this.doRequest("POST", "/_matrix/client/r0/keys/upload", null, {})
             .then(r => r['one_time_key_counts']);
+    }
+
+    /**
+     * Gets <b>unverified</b> device lists for the given users. The caller is expected to validate
+     * and verify the device lists, including that the returned devices belong to the claimed users.
+     *
+     * Failures with federation are reported in the returned object. Users which did not fail a federation
+     * lookup but have no devices will not appear in either the failures or in the returned devices.
+     *
+     * See https://matrix.org/docs/spec/client_server/r0.6.1#post-matrix-client-r0-keys-query for more
+     * information.
+     * @param {string[]} userIds The user IDs to
+     * @param {number} federationTimeoutMs The default timeout for requesting devices over federation. Defaults to
+     * 10 seconds.
+     * @returns {Promise<MultiUserDeviceListResponse>} Resolves to the device list/errors for the requested user IDs.
+     */
+    @timedMatrixClientFunctionCall()
+    @requiresCrypto()
+    public async getUserDevices(userIds: string[], federationTimeoutMs = 10000): Promise<MultiUserDeviceListResponse> {
+        const req = {};
+        for (const userId of userIds) {
+            req[userId] = [];
+        }
+        return this.doRequest("POST", "/_matrix/client/r0/keys/query", { timeout: federationTimeoutMs }, req);
     }
 
     /**

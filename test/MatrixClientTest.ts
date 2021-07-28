@@ -5343,6 +5343,89 @@ describe('MatrixClient', () => {
         });
     });
 
+    describe('getUserDevices', () => {
+        notCryptoIt('it should fail', async () => {
+            try {
+                const { client } = createTestClient();
+                await client.getUserDevices([]);
+
+                // noinspection ExceptionCaughtLocallyJS
+                throw new Error("Failed to fail");
+            } catch (e) {
+                expect(e.message).toEqual("End-to-end encryption is not enabled");
+            }
+        });
+
+        cryptoIt('it should call the right endpoint', async () => {
+            const userId = "@test:example.org";
+            const { client, http } = createTestClient(null, userId, true);
+
+            const timeout = 15000;
+            const requestBody = {
+                "@alice:example.org": [],
+                "@bob:federated.example.org": [],
+            };
+            const response = {
+                failures: {
+                    "federated.example.org": {
+                        error: "Failed",
+                    },
+                },
+                device_keys: {
+                    "@alice:example.org": {
+                        [TEST_DEVICE_ID]: {
+                            // not populated in this test
+                        },
+                    },
+                },
+            };
+
+            http.when("POST", "/_matrix/client/r0/keys/query").respond(200, (path, content, req) => {
+                expect(req.opts.qs).toMatchObject({timeout});
+                expect(content).toMatchObject(requestBody);
+                return response;
+            });
+
+            http.flushAllExpected();
+            const result = await client.getUserDevices(Object.keys(requestBody), timeout);
+            expect(result).toMatchObject(response);
+        });
+
+        cryptoIt('it should call the right endpoint with a default timeout', async () => {
+            const userId = "@test:example.org";
+            const { client, http } = createTestClient(null, userId, true);
+
+            const requestBody = {
+                "@alice:example.org": [],
+                "@bob:federated.example.org": [],
+            };
+            const response = {
+                failures: {
+                    "federated.example.org": {
+                        error: "Failed",
+                    },
+                },
+                device_keys: {
+                    "@alice:example.org": {
+                        [TEST_DEVICE_ID]: {
+                            // not populated in this test
+                        },
+                    },
+                },
+            };
+
+            http.when("POST", "/_matrix/client/r0/keys/query").respond(200, (path, content, req) => {
+                expect(req.opts.qs).toMatchObject({timeout: 10000});
+                expect(content).toMatchObject(requestBody);
+                return response;
+            });
+
+            http.flushAllExpected();
+            const result = await client.getUserDevices(Object.keys(requestBody));
+            expect(result).toMatchObject(response);
+        });
+    });
+
     describe('redactObjectForLogging', () => {
         it('should redact multilevel objects', () => {
             const input = {
