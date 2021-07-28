@@ -10,13 +10,6 @@ const ROOM_STORAGE_PREFIX = "tracked_room.";
  */
 export class RoomTracker {
     public constructor(private client: MatrixClient) {
-        this.client.getJoinedRooms().then(roomIds => {
-            for (const roomId of roomIds) {
-                // noinspection JSIgnoredPromiseFromCall
-                this.queueRoomCheck(roomId);
-            }
-        });
-
         this.client.on("room.join", (roomId: string) => {
             // noinspection JSIgnoredPromiseFromCall
             this.queueRoomCheck(roomId);
@@ -30,6 +23,21 @@ export class RoomTracker {
         });
     }
 
+    /**
+     * Prepares the room tracker to track the given rooms.
+     * @param {string[]} roomIds The room IDs to track. This should be the joined rooms set.
+     */
+    public async prepare(roomIds: string[]) {
+        for (const roomId of roomIds) {
+            await this.queueRoomCheck(roomId);
+        }
+    }
+
+    /**
+     * Queues a room check for the tracker. If the room needs an update to the store, an
+     * update will be made.
+     * @param {string} roomId The room ID to check.
+     */
     public async queueRoomCheck(roomId: string) {
         const key = `${ROOM_STORAGE_PREFIX}${roomId}`;
         const config = await Promise.resolve(this.client.storageProvider.readValue(key));
@@ -40,10 +48,22 @@ export class RoomTracker {
             }
         }
 
-        const encEvent = await this.client.getRoomStateEvent(roomId, "m.room.encryption", "");
+        let encEvent: Partial<EncryptionEventContent>;
+        try {
+            encEvent = await this.client.getRoomStateEvent(roomId, "m.room.encryption", "");
+            encEvent.algorithm = encEvent.algorithm ?? 'UNKNOWN';
+        } catch (e) {
+            return; // failure == no encryption
+        }
         await Promise.resolve(this.client.storageProvider.storeValue(key, JSON.stringify(encEvent)));
     }
 
+    /**
+     * Gets the room's crypto configuration, as known by the underlying store. If the room is
+     * not encrypted then this will return an empty object.
+     * @param {string} roomId The room ID to get the config for.
+     * @returns {Promise<Partial<EncryptionEventContent>>} Resolves to the encryption config.
+     */
     public async getRoomCryptoConfig(roomId: string): Promise<Partial<EncryptionEventContent>> {
         const key = `${ROOM_STORAGE_PREFIX}${roomId}`;
         let config = await Promise.resolve(this.client.storageProvider.readValue(key));

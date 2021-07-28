@@ -4,6 +4,11 @@ export * from "./appservice/Intent";
 export * from "./appservice/MatrixBridge";
 export * from "./appservice/http_responses";
 
+// Encryption
+export * from "./e2ee/RoomTracker";
+export * from "./e2ee/CryptoClient";
+export * from "./e2ee/decorators";
+
 // Helpers
 export * from "./helpers/RichReply";
 export * from "./helpers/MentionPill";
@@ -40,6 +45,7 @@ export * from "./models/Policies";
 export * from "./models/Threepid";
 export * from "./models/Spaces";
 export * from "./models/IdentityServerModels";
+export * from "./models/Crypto";
 
 // Event models
 export * from "./models/events/EventKind";
@@ -61,6 +67,7 @@ export * from "./models/events/RoomAvatarEvent";
 export * from "./models/events/RoomNameEvent";
 export * from "./models/events/RoomTopicEvent";
 export * from "./models/events/SpaceChildEvent";
+export * from "./models/events/EncryptionEvent";
 
 // Preprocessors
 export * from "./preprocessors/IPreprocessor";
@@ -90,3 +97,4 @@ export * from "./PantalaimonClient";
 export * from "./SynchronousMatrixClient";
 export * from "./SynapseAdminApis";
 export * from "./simple-validation";
+export * from "./isCryptoCapable";

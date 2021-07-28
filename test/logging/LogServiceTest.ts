@@ -154,4 +154,31 @@ describe('LogService', () => {
         LogService.warn(module, a1, a2);
         expect(logSpy.callCount).toBe(0);
     });
+
+    it('should mute the requested modules', () => {
+        const mutedModule = "Mute Me";
+        const unmutedModule = "Hello World";
+
+        const logSpy = simple.stub().callFn((m) => {
+            expect(m).toEqual(unmutedModule);
+        });
+
+        LogService.setLogger({info: logSpy, warn: logSpy, error: logSpy, debug: logSpy, trace: logSpy});
+        LogService.setLevel(LogLevel.TRACE);
+        LogService.muteModule(mutedModule);
+
+        LogService.trace(mutedModule, "test");
+        LogService.debug(mutedModule, "test");
+        LogService.info(mutedModule, "test");
+        LogService.warn(mutedModule, "test");
+        LogService.error(mutedModule, "test");
+
+        LogService.trace(unmutedModule, "test");
+        LogService.debug(unmutedModule, "test");
+        LogService.info(unmutedModule, "test");
+        LogService.warn(unmutedModule, "test");
+        LogService.error(unmutedModule, "test");
+
+        expect(logSpy.callCount).toBe(5);
+    });
 });

@@ -544,11 +544,14 @@ export class MatrixClient extends EventEmitter {
             filter = null;
         }
 
+        LogService.trace("MatrixClientLite", "Populating joined rooms to avoid excessive join emits");
+        this.lastJoinedRoomIds = await this.getJoinedRooms();
+
         const userId = await this.getUserId();
 
         if (this.crypto) {
             LogService.debug("MatrixClientLite", "Preparing end-to-end encryption");
-            await this.crypto.prepare();
+            await this.crypto.prepare(this.lastJoinedRoomIds);
             LogService.info("MatrixClientLite", "End-to-end encryption enabled");
         }
 
@@ -582,9 +585,6 @@ export class MatrixClient extends EventEmitter {
             });
         }
 
-        LogService.trace("MatrixClientLite", "Populating joined rooms to avoid excessive join emits");
-        this.lastJoinedRoomIds = await this.getJoinedRooms();
-
         LogService.trace("MatrixClientLite", "Starting sync with filter ID " + this.filterId);
         return this.startSyncInternal();
     }
@@ -594,6 +594,7 @@ export class MatrixClient extends EventEmitter {
     }
 
     protected async startSync(emitFn: (emitEventType: string, ...payload: any[]) => Promise<any> = null) {
+        // noinspection ES6RedundantAwait
         let token = await Promise.resolve(this.storage.getSyncToken());
 
         const promiseWhile = async () => {

@@ -1,26 +1,33 @@
 import * as expect from "expect";
 import {
+    C25519_STORAGE_KEY,
+    DeviceKeyAlgorithm,
+    DeviceKeyLabel, E25519_STORAGE_KEY,
+    EncryptionAlgorithm,
     EventKind,
     IJoinRoomStrategy,
     IPreprocessor,
     IStorageProvider,
     MatrixClient,
     Membership,
-    MemoryStorageProvider,
-    OpenIDConnectToken,
+    MemoryStorageProvider, OLM_ACCOUNT_STORAGE_KEY,
+    OpenIDConnectToken, OTKAlgorithm, OTKCounts, OTKs, PICKLE_STORAGE_KEY, RoomDirectoryLookupResponse,
     setRequestFn,
 } from "../src";
 import * as simple from "simple-mock";
 import * as MockHttpBackend from 'matrix-mock-request';
-import { expectArrayEquals } from "./TestUtils";
+import { expectArrayEquals, feedOlmAccount } from "./TestUtils";
 import { redactObjectForLogging } from "../src/http";
 import { PowerLevelAction } from "../src/models/PowerLevelAction";
+import { cryptoIt, notCryptoIt } from "./isCryptoCapableTest";
 
-export function createTestClient(storage: IStorageProvider = null, userId: string = null): { client: MatrixClient, http: MockHttpBackend, hsUrl: string, accessToken: string } {
+export const TEST_DEVICE_ID = "TEST_DEVICE";
+
+export function createTestClient(storage: IStorageProvider = null, userId: string = null, crypto = false): { client: MatrixClient, http: MockHttpBackend, hsUrl: string, accessToken: string } {
     const http = new MockHttpBackend();
     const hsUrl = "https://localhost";
     const accessToken = "s3cret";
-    const client = new MatrixClient(hsUrl, accessToken, storage);
+    const client = new MatrixClient(hsUrl, accessToken, storage, crypto);
     (<any>client).userId = userId; // private member access
     setRequestFn(http.requestFn);
 
@@ -47,6 +54,36 @@ describe('MatrixClient', () => {
 
             expect(client.homeserverUrl).toEqual(homeserverUrl);
             expect(client.accessToken).toEqual(accessToken);
+        });
+
+        cryptoIt('should create a crypto client when requested', () => {
+            const homeserverUrl = "https://example.org";
+            const accessToken = "example_token";
+
+            const client = new MatrixClient(homeserverUrl, accessToken, null, true);
+            expect(client.crypto).toBeDefined();
+        });
+
+        it('should NOT create a crypto client when requested', () => {
+            const homeserverUrl = "https://example.org";
+            const accessToken = "example_token";
+
+            const client = new MatrixClient(homeserverUrl, accessToken, null, false);
+            expect(client.crypto).toBeUndefined();
+        });
+
+        notCryptoIt('should fail to create a crypto client', () => {
+            const homeserverUrl = "https://example.org";
+            const accessToken = "example_token";
+
+            try {
+                new MatrixClient(homeserverUrl, accessToken, null, true);
+
+                // noinspection ExceptionCaughtLocallyJS
+                throw new Error("Failed to fail");
+            } catch (e) {
+                expect(e.message).toEqual("Cannot enable encryption: missing dependencies");
+            }
         });
     });
 
@@ -661,7 +698,7 @@ describe('MatrixClient', () => {
             const roomId = "!abc123:example.org";
             const alias = "#test:example.org";
 
-            const spy = simple.stub().returnWith(new Promise(((resolve, reject) => resolve({
+            const spy = simple.stub().returnWith(new Promise<RoomDirectoryLookupResponse>(((resolve, reject) => resolve({
                 roomId: roomId,
                 residentServers: []
             }))));
@@ -836,15 +873,30 @@ describe('MatrixClient', () => {
         });
 
         it('should request the user ID if it is not known', async () => {
-            const {client, http} = createTestClient();
+            const {client} = createTestClient();
 
             const userId = "@example:matrix.org";
+            client.getWhoAmI = () => Promise.resolve({user_id: userId});
 
-            http.when("GET", "/_matrix/client/r0/account/whoami").respond(200, {user_id: userId});
-
-            http.flushAllExpected();
             const result = await client.getUserId();
             expect(result).toEqual(userId);
+        });
+    });
+
+    describe('getWhoAmI', () => {
+        it('should call the right endpoint', async () => {
+            const {client, http} = createTestClient();
+
+            const response = {
+                user_id: "@user:example.org",
+                device_id: "DEVICE",
+            };
+
+            http.when("GET", "/_matrix/client/r0/account/whoami").respond(200, response);
+
+            http.flushAllExpected();
+            const result = await client.getWhoAmI();
+            expect(result).toMatchObject(response);
         });
     });
 
@@ -1007,7 +1059,7 @@ describe('MatrixClient', () => {
             const filterId = "abc12345";
             const secondToken = "second";
 
-            const waitPromise = new Promise(((resolve, reject) => {
+            const waitPromise = new Promise<void>(((resolve, reject) => {
                 simple.mock(storage, "getFilter").returnWith({id: filterId, filter: filter});
                 const setSyncTokenFn = simple.mock(storage, "setSyncToken").callFn(newToken => {
                     expect(newToken).toEqual(secondToken);
@@ -1047,7 +1099,7 @@ describe('MatrixClient', () => {
 
             simple.mock(storage, "getFilter").returnWith({id: filterId, filter: filter});
             const getSyncTokenFn = simple.mock(storage, "getSyncToken").returnWith(syncToken);
-            const waitPromise = new Promise(((resolve, reject) => {
+            const waitPromise = new Promise<void>(((resolve, reject) => {
                 simple.mock(storage, "setSyncToken").callFn(newToken => {
                     expect(newToken).toEqual(syncToken);
                     resolve();
@@ -5153,6 +5205,141 @@ describe('MatrixClient', () => {
                 expect(stateSpy.callCount).toBe(1);
                 expect(e.message).toEqual("Room is not a space");
             }
+        });
+    });
+
+    describe('uploadDeviceKeys', () => {
+        notCryptoIt('it should fail', async () => {
+            try {
+                const { client } = createTestClient();
+                await client.uploadDeviceKeys([], {});
+
+                // noinspection ExceptionCaughtLocallyJS
+                throw new Error("Failed to fail");
+            } catch (e) {
+                expect(e.message).toEqual("End-to-end encryption is not enabled");
+            }
+        });
+
+        cryptoIt('it should call the right endpoint', async () => {
+            const userId = "@test:example.org";
+            const { client, http } = createTestClient(null, userId, true);
+
+            client.getWhoAmI = () => Promise.resolve({ user_id: userId, device_id: TEST_DEVICE_ID });
+            (<any>client.crypto).tryOtkUpload = () => Promise.resolve(); // private member access
+            client.checkOneTimeKeyCounts = () => Promise.resolve({});
+            await feedOlmAccount(client);
+            await client.crypto.prepare([]);
+
+            const algorithms = [EncryptionAlgorithm.MegolmV1AesSha2, EncryptionAlgorithm.OlmV1Curve25519AesSha2];
+            const keys: Record<DeviceKeyLabel<DeviceKeyAlgorithm, string>, string> = {
+                [DeviceKeyAlgorithm.Curve25519 + ":" + TEST_DEVICE_ID]: "key1",
+                [DeviceKeyAlgorithm.Ed25119 + ":" + TEST_DEVICE_ID]: "key2",
+            };
+            const counts: OTKCounts = {
+                [OTKAlgorithm.Signed]: 12,
+                [OTKAlgorithm.Unsigned]: 14,
+            };
+
+            http.when("POST", "/_matrix/client/r0/keys/upload").respond(200, (path, content) => {
+                expect(content).toMatchObject({
+                    device_keys: {
+                        user_id: userId,
+                        device_id: TEST_DEVICE_ID,
+                        algorithms: algorithms,
+                        keys: keys,
+                        signatures: {
+                            [userId]: {
+                                [DeviceKeyAlgorithm.Ed25119 + ":" + TEST_DEVICE_ID]: expect.any(String),
+                            },
+                        },
+                    },
+                });
+                return { one_time_key_counts: counts };
+            });
+
+            http.flushAllExpected();
+            const result = await client.uploadDeviceKeys(algorithms, keys);
+            expect(result).toMatchObject(counts);
+        });
+    });
+
+    describe('uploadDeviceOneTimeKeys', () => {
+        notCryptoIt('it should fail', async () => {
+            try {
+                const { client } = createTestClient();
+                await client.uploadDeviceOneTimeKeys({});
+
+                // noinspection ExceptionCaughtLocallyJS
+                throw new Error("Failed to fail");
+            } catch (e) {
+                expect(e.message).toEqual("End-to-end encryption is not enabled");
+            }
+        });
+
+        cryptoIt('it should call the right endpoint', async () => {
+            const userId = "@test:example.org";
+            const { client, http } = createTestClient(null, userId, true);
+
+            const keys: OTKs = {
+                [OTKAlgorithm.Signed]: {
+                    key: "test",
+                    signatures: {
+                        "entity": {
+                            "device": "sig",
+                        },
+                    },
+                },
+                [OTKAlgorithm.Unsigned]: "unsigned",
+            };
+            const counts: OTKCounts = {
+                [OTKAlgorithm.Signed]: 12,
+                [OTKAlgorithm.Unsigned]: 14,
+            };
+
+            http.when("POST", "/_matrix/client/r0/keys/upload").respond(200, (path, content) => {
+                expect(content).toMatchObject({
+                    one_time_keys: keys,
+                });
+                return { one_time_key_counts: counts };
+            });
+
+            http.flushAllExpected();
+            const result = await client.uploadDeviceOneTimeKeys(keys);
+            expect(result).toMatchObject(counts);
+        });
+    });
+
+    describe('checkOneTimeKeyCounts', () => {
+        notCryptoIt('it should fail', async () => {
+            try {
+                const { client } = createTestClient();
+                await client.checkOneTimeKeyCounts();
+
+                // noinspection ExceptionCaughtLocallyJS
+                throw new Error("Failed to fail");
+            } catch (e) {
+                expect(e.message).toEqual("End-to-end encryption is not enabled");
+            }
+        });
+
+        cryptoIt('it should call the right endpoint', async () => {
+            const userId = "@test:example.org";
+            const { client, http } = createTestClient(null, userId, true);
+
+            const counts: OTKCounts = {
+                [OTKAlgorithm.Signed]: 12,
+                [OTKAlgorithm.Unsigned]: 14,
+            };
+
+            http.when("POST", "/_matrix/client/r0/keys/upload").respond(200, (path, content) => {
+                expect(content).toMatchObject({});
+                return { one_time_key_counts: counts };
+            });
+
+            http.flushAllExpected();
+            const result = await client.checkOneTimeKeyCounts();
+            expect(result).toMatchObject(counts);
         });
     });
 

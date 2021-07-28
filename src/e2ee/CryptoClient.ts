@@ -9,16 +9,15 @@ import {
     OTKAlgorithm,
     OTKCounts, OTKs,
     Signatures,
-    SignedCurve25519OTK
 } from "../models/Crypto";
 import { requiresReady } from "./decorators";
 import { RoomTracker } from "./RoomTracker";
 
-const DEVICE_ID_STORAGE_KEY = "device_id";
-const E25519_STORAGE_KEY = "device_ed25519";
-const C25519_STORAGE_KEY = "device_Curve25519";
-const PICKLE_STORAGE_KEY = "device_pickle_key";
-const OLM_ACCOUNT_STORAGE_KEY = "device_olm_account";
+export const DEVICE_ID_STORAGE_KEY = "device_id";
+export const E25519_STORAGE_KEY = "device_ed25519";
+export const C25519_STORAGE_KEY = "device_Curve25519";
+export const PICKLE_STORAGE_KEY = "device_pickle_key";
+export const OLM_ACCOUNT_STORAGE_KEY = "device_olm_account";
 
 // noinspection ES6RedundantAwait
 /**
@@ -40,10 +39,17 @@ export class CryptoClient {
         this.roomTracker = new RoomTracker(this.client);
     }
 
+    /**
+     * The device ID for the MatrixClient.
+     */
     public get clientDeviceId(): string {
         return this.deviceId;
     }
 
+    /**
+     * Whether or not the crypto client is ready to be used. If not ready, prepare() should be called.
+     * @see prepare
+     */
     public get isReady(): boolean {
         return this.ready;
     }
@@ -60,7 +66,13 @@ export class CryptoClient {
         account.free();
     }
 
-    public async prepare() {
+    /**
+     * Prepares the crypto client for usage.
+     * @param {string[]} roomIds The room IDs the MatrixClient is joined to.
+     */
+    public async prepare(roomIds: string[]) {
+        await this.roomTracker.prepare(roomIds);
+
         const storedDeviceId = await Promise.resolve(this.client.storageProvider.readValue(DEVICE_ID_STORAGE_KEY));
         if (storedDeviceId) {
             this.deviceId = storedDeviceId;
