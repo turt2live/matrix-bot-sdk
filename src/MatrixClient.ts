@@ -664,6 +664,20 @@ export class MatrixClient extends EventEmitter {
             this.crypto?.updateCounts(raw['device_one_time_keys_count']);
         }
 
+        if (raw['device_lists']) {
+            const changed = raw['device_lists']['changed'];
+            const removed = raw['device_lists']['left'];
+
+            if (changed) {
+                this.crypto?.flagUsersDeviceListsOutdated(changed, true);
+            }
+            if (removed) {
+                // Don't resync removed device lists: they are uninteresting according to the server so we
+                // don't need them. When we request the user's device list again, we'll pull it all back in.
+                this.crypto?.flagUsersDeviceListsOutdated(removed, false);
+            }
+        }
+
         if (raw['groups']) {
             const leave = raw['groups']['leave'] || {};
             for (const groupId of Object.keys(leave)) {

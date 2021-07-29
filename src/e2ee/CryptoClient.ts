@@ -12,6 +12,7 @@ import {
 } from "../models/Crypto";
 import { requiresReady } from "./decorators";
 import { RoomTracker } from "./RoomTracker";
+import { DeviceTracker } from "./DeviceTracker";
 
 /**
  * Manages encryption for a MatrixClient. Get an instance from a MatrixClient directly
@@ -27,9 +28,11 @@ export class CryptoClient {
     private deviceCurve25519: string;
     private maxOTKs: number;
     private roomTracker: RoomTracker;
+    private deviceTracker: DeviceTracker;
 
     public constructor(private client: MatrixClient) {
         this.roomTracker = new RoomTracker(this.client);
+        this.deviceTracker = new DeviceTracker(this.client);
     }
 
     /**
@@ -196,5 +199,34 @@ export class CryptoClient {
         } finally {
             account.free();
         }
+    }
+
+    public async verifySignature(obj: object, key: string, signature: string): Promise<boolean> {
+        obj = JSON.parse(JSON.stringify(obj));
+
+        delete obj['signatures'];
+        delete obj['unsigned'];
+
+        const util = new Olm.Utility();
+        try {
+            const message = anotherJson.stringify(obj);
+            util.ed25519_verify(message, key, signature);
+        } catch (e) {
+            // Assume it's a verification failure
+            return false;
+        } finally {
+            util.free();
+        }
+
+        return true;
+    }
+
+    /**
+     * Flags multiple user's device lists as outdated, optionally queuing an immediate update.
+     * @param {string} userIds The user IDs to flag the device lists of.
+     * @param {boolean} resync True (default) to queue an immediate update, false otherwise.
+     */
+    public flagUsersDeviceListsOutdated(userIds: string[], resync = true) {
+        this.deviceTracker.flagUsersOutdated(userIds, resync);
     }
 }

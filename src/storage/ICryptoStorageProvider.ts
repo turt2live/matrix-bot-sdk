@@ -1,4 +1,5 @@
 import { EncryptionEventContent } from "../models/events/EncryptionEvent";
+import { UserDevice } from "../models/Crypto";
 
 /**
  * A storage provider capable of only providing crypto-related storage.
@@ -61,4 +62,36 @@ export interface ICryptoStorageProvider {
      * to falsy if the room is unknown.
      */
     getRoom(roomId: string): Promise<Partial<EncryptionEventContent>>;
+
+    /**
+     * Sets the user's stored devices to the given array. All devices not in this set will be deleted.
+     * This will clear the user's outdated flag, if set.
+     * @param {string} userId The user ID to set the devices for.
+     * @param {UserDevice[]} devices The devices to set for the user.
+     * @returns {Promise<void>} Resolves when complete.
+     */
+    setUserDevices(userId: string, devices: UserDevice[]): Promise<void>;
+
+    /**
+     * Gets the user's stored devices. If no devices are stored, an empty array is returned.
+     * @param {string} userId The user ID to get devices for.
+     * @returns {Promise<UserDevice[]>} Resolves to the array of devices for the user. If no
+     * devices are known, the array will be empty.
+     */
+    getUserDevices(userId: string): Promise<UserDevice[]>;
+
+    /**
+     * Flags multiple user's device lists as outdated.
+     * @param {string} userIds The user IDs to flag.
+     * @returns {Promise<void>} Resolves when complete.
+     */
+    flagUsersOutdated(userIds: string[]): Promise<void>;
+
+    /**
+     * Checks to see if a user's device list is flagged as outdated. If the user is not known
+     * then they will be considered outdated.
+     * @param {string} userId The user ID to check.
+     * @returns {Promise<boolean>} Resolves to true if outdated, false otherwise.
+     */
+    isUserOutdated(userId: string): Promise<boolean>;
 }
