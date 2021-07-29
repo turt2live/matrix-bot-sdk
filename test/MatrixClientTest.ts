@@ -1,8 +1,7 @@
 import * as expect from "expect";
 import {
-    C25519_STORAGE_KEY,
     DeviceKeyAlgorithm,
-    DeviceKeyLabel, E25519_STORAGE_KEY,
+    DeviceKeyLabel,
     EncryptionAlgorithm,
     EventKind,
     IJoinRoomStrategy,
@@ -10,8 +9,12 @@ import {
     IStorageProvider,
     MatrixClient,
     Membership,
-    MemoryStorageProvider, OLM_ACCOUNT_STORAGE_KEY,
-    OpenIDConnectToken, OTKAlgorithm, OTKCounts, OTKs, PICKLE_STORAGE_KEY, RoomDirectoryLookupResponse,
+    MemoryStorageProvider,
+    OpenIDConnectToken,
+    OTKAlgorithm,
+    OTKCounts,
+    OTKs,
+    RoomDirectoryLookupResponse,
     setRequestFn,
 } from "../src";
 import * as simple from "simple-mock";
@@ -19,7 +22,7 @@ import * as MockHttpBackend from 'matrix-mock-request';
 import { expectArrayEquals, feedOlmAccount } from "./TestUtils";
 import { redactObjectForLogging } from "../src/http";
 import { PowerLevelAction } from "../src/models/PowerLevelAction";
-import { cryptoIt, notCryptoIt } from "./isCryptoCapableTest";
+import { SqliteCryptoStorageProvider } from "../src/storage/SqliteCryptoStorageProvider";
 
 export const TEST_DEVICE_ID = "TEST_DEVICE";
 
@@ -27,7 +30,7 @@ export function createTestClient(storage: IStorageProvider = null, userId: strin
     const http = new MockHttpBackend();
     const hsUrl = "https://localhost";
     const accessToken = "s3cret";
-    const client = new MatrixClient(hsUrl, accessToken, storage, crypto);
+    const client = new MatrixClient(hsUrl, accessToken, storage, crypto ? new SqliteCryptoStorageProvider(":memory:") : null);
     (<any>client).userId = userId; // private member access
     setRequestFn(http.requestFn);
 
@@ -56,11 +59,11 @@ describe('MatrixClient', () => {
             expect(client.accessToken).toEqual(accessToken);
         });
 
-        cryptoIt('should create a crypto client when requested', () => {
+        it('should create a crypto client when requested', () => {
             const homeserverUrl = "https://example.org";
             const accessToken = "example_token";
 
-            const client = new MatrixClient(homeserverUrl, accessToken, null, true);
+            const client = new MatrixClient(homeserverUrl, accessToken, null, new SqliteCryptoStorageProvider(":memory:"));
             expect(client.crypto).toBeDefined();
         });
 
@@ -68,22 +71,8 @@ describe('MatrixClient', () => {
             const homeserverUrl = "https://example.org";
             const accessToken = "example_token";
 
-            const client = new MatrixClient(homeserverUrl, accessToken, null, false);
+            const client = new MatrixClient(homeserverUrl, accessToken, null, null);
             expect(client.crypto).toBeUndefined();
-        });
-
-        notCryptoIt('should fail to create a crypto client', () => {
-            const homeserverUrl = "https://example.org";
-            const accessToken = "example_token";
-
-            try {
-                new MatrixClient(homeserverUrl, accessToken, null, true);
-
-                // noinspection ExceptionCaughtLocallyJS
-                throw new Error("Failed to fail");
-            } catch (e) {
-                expect(e.message).toEqual("Cannot enable encryption: missing dependencies");
-            }
         });
     });
 
@@ -5209,7 +5198,7 @@ describe('MatrixClient', () => {
     });
 
     describe('uploadDeviceKeys', () => {
-        notCryptoIt('it should fail', async () => {
+        it('it should fail when no encryption', async () => {
             try {
                 const { client } = createTestClient();
                 await client.uploadDeviceKeys([], {});
@@ -5221,7 +5210,7 @@ describe('MatrixClient', () => {
             }
         });
 
-        cryptoIt('it should call the right endpoint', async () => {
+        it('it should call the right endpoint', async () => {
             const userId = "@test:example.org";
             const { client, http } = createTestClient(null, userId, true);
 
@@ -5265,7 +5254,7 @@ describe('MatrixClient', () => {
     });
 
     describe('uploadDeviceOneTimeKeys', () => {
-        notCryptoIt('it should fail', async () => {
+        it('it should fail when no encryption is available', async () => {
             try {
                 const { client } = createTestClient();
                 await client.uploadDeviceOneTimeKeys({});
@@ -5277,7 +5266,7 @@ describe('MatrixClient', () => {
             }
         });
 
-        cryptoIt('it should call the right endpoint', async () => {
+        it('it should call the right endpoint', async () => {
             const userId = "@test:example.org";
             const { client, http } = createTestClient(null, userId, true);
 
@@ -5311,7 +5300,7 @@ describe('MatrixClient', () => {
     });
 
     describe('checkOneTimeKeyCounts', () => {
-        notCryptoIt('it should fail', async () => {
+        it('it should fail when no encryption is available', async () => {
             try {
                 const { client } = createTestClient();
                 await client.checkOneTimeKeyCounts();
@@ -5323,7 +5312,7 @@ describe('MatrixClient', () => {
             }
         });
 
-        cryptoIt('it should call the right endpoint', async () => {
+        it('it should call the right endpoint', async () => {
             const userId = "@test:example.org";
             const { client, http } = createTestClient(null, userId, true);
 
@@ -5344,21 +5333,8 @@ describe('MatrixClient', () => {
     });
 
     describe('getUserDevices', () => {
-        notCryptoIt('it should fail', async () => {
-            try {
-                const { client } = createTestClient();
-                await client.getUserDevices([]);
-
-                // noinspection ExceptionCaughtLocallyJS
-                throw new Error("Failed to fail");
-            } catch (e) {
-                expect(e.message).toEqual("End-to-end encryption is not enabled");
-            }
-        });
-
-        cryptoIt('it should call the right endpoint', async () => {
-            const userId = "@test:example.org";
-            const { client, http } = createTestClient(null, userId, true);
+        it('it should call the right endpoint', async () => {
+            const { client, http } = createTestClient();
 
             const timeout = 15000;
             const requestBody = {
@@ -5391,7 +5367,7 @@ describe('MatrixClient', () => {
             expect(result).toMatchObject(response);
         });
 
-        cryptoIt('it should call the right endpoint with a default timeout', async () => {
+        it('it should call the right endpoint with a default timeout', async () => {
             const userId = "@test:example.org";
             const { client, http } = createTestClient(null, userId, true);
 

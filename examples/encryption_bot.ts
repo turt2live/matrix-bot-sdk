@@ -1,5 +1,5 @@
 import { LogLevel, LogService, MatrixClient, RichConsoleLogger, SimpleFsStorageProvider } from "../src";
-import { RoomEncryptionAlgorithm } from "../src/models/events/EncryptionEvent";
+import { SqliteCryptoStorageProvider } from "../src/storage/SqliteCryptoStorageProvider";
 
 LogService.setLogger(new RichConsoleLogger());
 LogService.setLevel(LogLevel.TRACE);
@@ -16,8 +16,9 @@ try {
 const homeserverUrl = creds?.['homeserverUrl'] ?? "http://localhost:8008";
 const accessToken = creds?.['accessToken'] ?? 'YOUR_TOKEN';
 const storage = new SimpleFsStorageProvider("./examples/storage/encryption_bot.json");
+const crypto = new SqliteCryptoStorageProvider("./examples/storage/encryption_bot.db");
 
-const client = new MatrixClient(homeserverUrl, accessToken, storage, true);
+const client = new MatrixClient(homeserverUrl, accessToken, storage, crypto);
 
 (async function() {
     client.on("room.event", (roomId: string, event: any) => {

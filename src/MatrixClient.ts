@@ -25,7 +25,6 @@ import { MatrixProfileInfo } from "./models/MatrixProfile";
 import { Space, SpaceCreateOptions } from "./models/Spaces";
 import { PowerLevelAction } from "./models/PowerLevelAction";
 import { CryptoClient } from "./e2ee/CryptoClient";
-import { isCryptoCapable } from "./isCryptoCapable";
 import {
     DeviceKeyAlgorithm,
     DeviceKeyLabel,
@@ -36,6 +35,7 @@ import {
     UserDevice
 } from "./models/Crypto";
 import { requiresCrypto } from "./e2ee/decorators";
+import { ICryptoStorageProvider } from "./storage/ICryptoStorageProvider";
 
 /**
  * A client that is capable of interacting with a matrix homeserver.
@@ -89,19 +89,22 @@ export class MatrixClient extends EventEmitter {
      * @param {string} homeserverUrl The homeserver's client-server API URL
      * @param {string} accessToken The access token for the homeserver
      * @param {IStorageProvider} storage The storage provider to use. Defaults to MemoryStorageProvider.
-     * @param {boolean} withCrypto True to enable end-to-end encryption, false (default) otherwise.
+     * @param {ICryptoStorageProvider} cryptoStore Optional crypto storage provider to use. If not supplied,
+     * end-to-end encryption will not be functional in this client.
      */
-    constructor(public readonly homeserverUrl: string, public readonly accessToken: string, private storage: IStorageProvider = null, withCrypto = false) {
+    constructor(
+        public readonly homeserverUrl: string,
+        public readonly accessToken: string,
+        private storage: IStorageProvider = null,
+        public readonly cryptoStore: ICryptoStorageProvider = null,
+    ) {
         super();
 
         if (this.homeserverUrl.endsWith("/")) {
             this.homeserverUrl = this.homeserverUrl.substring(0, this.homeserverUrl.length - 1);
         }
 
-        const e2eeCapable = isCryptoCapable();
-        if (withCrypto && !e2eeCapable) {
-            throw new Error("Cannot enable encryption: missing dependencies");
-        } else if (withCrypto) {
+        if (this.cryptoStore) {
             if (!this.storage || this.storage instanceof MemoryStorageProvider) {
                 LogService.warn("MatrixClientLite", "Starting an encryption-capable client with a memory store is not considered a good idea.");
             }
@@ -1661,7 +1664,6 @@ export class MatrixClient extends EventEmitter {
      * @returns {Promise<MultiUserDeviceListResponse>} Resolves to the device list/errors for the requested user IDs.
      */
     @timedMatrixClientFunctionCall()
-    @requiresCrypto()
     public async getUserDevices(userIds: string[], federationTimeoutMs = 10000): Promise<MultiUserDeviceListResponse> {
         const req = {};
         for (const userId of userIds) {

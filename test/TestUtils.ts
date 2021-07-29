@@ -1,10 +1,6 @@
 import * as expect from "expect";
 import {
-    C25519_STORAGE_KEY,
-    E25519_STORAGE_KEY,
     MatrixClient,
-    OLM_ACCOUNT_STORAGE_KEY,
-    PICKLE_STORAGE_KEY
 } from "../src";
 import * as crypto from "crypto";
 
@@ -42,12 +38,9 @@ export async function feedOlmAccount(client: MatrixClient) {
     const account = new (await prepareOlm()).Account();
     try {
         const pickled = account.pickle(pickleKey);
-        const keys = JSON.parse(account.identity_keys());
 
-        await Promise.resolve(client.storageProvider.storeValue(OLM_ACCOUNT_STORAGE_KEY, pickled));
-        await Promise.resolve(client.storageProvider.storeValue(PICKLE_STORAGE_KEY, pickleKey));
-        await Promise.resolve(client.storageProvider.storeValue(E25519_STORAGE_KEY, keys['ed25519']));
-        await Promise.resolve(client.storageProvider.storeValue(C25519_STORAGE_KEY, keys['curve25519']));
+        await client.cryptoStore.setPickledAccount(pickled);
+        await client.cryptoStore.setPickleKey(pickleKey);
     } finally {
         account.free();
     }

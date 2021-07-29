@@ -13,13 +13,6 @@ import {
 import { requiresReady } from "./decorators";
 import { RoomTracker } from "./RoomTracker";
 
-export const DEVICE_ID_STORAGE_KEY = "device_id";
-export const E25519_STORAGE_KEY = "device_ed25519";
-export const C25519_STORAGE_KEY = "device_Curve25519";
-export const PICKLE_STORAGE_KEY = "device_pickle_key";
-export const OLM_ACCOUNT_STORAGE_KEY = "device_olm_account";
-
-// noinspection ES6RedundantAwait
 /**
  * Manages encryption for a MatrixClient. Get an instance from a MatrixClient directly
  * rather than creating one manually.
@@ -62,7 +55,7 @@ export class CryptoClient {
 
     private async storeAndFreeOlmAccount(account: Olm.Account) {
         const pickled = account.pickle(this.pickleKey);
-        await Promise.resolve(this.client.storageProvider.storeValue(OLM_ACCOUNT_STORAGE_KEY, pickled));
+        await this.client.cryptoStore.setPickledAccount(pickled);
         account.free();
     }
 
@@ -73,7 +66,7 @@ export class CryptoClient {
     public async prepare(roomIds: string[]) {
         await this.roomTracker.prepare(roomIds);
 
-        const storedDeviceId = await Promise.resolve(this.client.storageProvider.readValue(DEVICE_ID_STORAGE_KEY));
+        const storedDeviceId = await this.client.cryptoStore.getDeviceId();
         if (storedDeviceId) {
             this.deviceId = storedDeviceId;
         } else {
@@ -82,7 +75,7 @@ export class CryptoClient {
                 throw new Error("Encryption not possible: server not revealing device ID");
             }
             this.deviceId = deviceId;
-            await Promise.resolve(this.client.storageProvider.storeValue(DEVICE_ID_STORAGE_KEY, this.deviceId));
+            await this.client.cryptoStore.setDeviceId(this.deviceId);
         }
 
         LogService.debug("CryptoClient", "Starting with device ID:", this.deviceId);
@@ -90,31 +83,22 @@ export class CryptoClient {
         // We should be in a ready enough shape to kick off Olm
         await Olm.init();
 
-        let pickled = await (Promise.resolve(this.client.storageProvider.readValue(OLM_ACCOUNT_STORAGE_KEY)));
-        let deviceC25519 = await (Promise.resolve(this.client.storageProvider.readValue(C25519_STORAGE_KEY)));
-        let deviceE25519 = await (Promise.resolve(this.client.storageProvider.readValue(E25519_STORAGE_KEY)));
-        let pickleKey = await (Promise.resolve(this.client.storageProvider.readValue(PICKLE_STORAGE_KEY)));
+        let pickled = await this.client.cryptoStore.getPickledAccount();
+        let pickleKey = await this.client.cryptoStore.getPickleKey();
 
         const account = new Olm.Account();
         try {
-            if (!pickled || !deviceC25519 || !deviceE25519 || !pickleKey) {
+            if (!pickled || !pickleKey) {
                 LogService.debug("CryptoClient", "Creating new Olm account: previous session lost or not set up");
 
                 account.create();
                 pickleKey = crypto.randomBytes(64).toString('hex');
                 pickled = account.pickle(pickleKey);
-                await Promise.resolve(this.client.storageProvider.storeValue(PICKLE_STORAGE_KEY, pickleKey));
-                await Promise.resolve(this.client.storageProvider.storeValue(OLM_ACCOUNT_STORAGE_KEY, pickled));
+                await this.client.cryptoStore.setPickleKey(pickleKey);
+                await this.client.cryptoStore.setPickledAccount(pickled);
 
                 this.pickleKey = pickleKey;
                 this.pickledAccount = pickled;
-
-                const keys = JSON.parse(account.identity_keys());
-                this.deviceCurve25519 = keys['curve25519'];
-                this.deviceEd25519 = keys['ed25519'];
-
-                await Promise.resolve(this.client.storageProvider.storeValue(E25519_STORAGE_KEY, this.deviceEd25519));
-                await Promise.resolve(this.client.storageProvider.storeValue(C25519_STORAGE_KEY, this.deviceCurve25519));
 
                 this.maxOTKs = account.max_number_of_one_time_keys();
                 this.ready = true;
@@ -131,12 +115,14 @@ export class CryptoClient {
                 account.unpickle(pickleKey, pickled);
                 this.pickleKey = pickleKey;
                 this.pickledAccount = pickled;
-                this.deviceEd25519 = deviceE25519;
-                this.deviceCurve25519 = deviceC25519;
                 this.maxOTKs = account.max_number_of_one_time_keys();
                 this.ready = true;
                 await this.updateCounts(await this.client.checkOneTimeKeyCounts());
             }
+
+            const keys = JSON.parse(account.identity_keys());
+            this.deviceCurve25519 = keys['curve25519'];
+            this.deviceEd25519 = keys['ed25519'];
         } finally {
             account.free();
         }

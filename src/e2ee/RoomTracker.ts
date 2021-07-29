@@ -1,8 +1,6 @@
 import { MatrixClient } from "../MatrixClient";
 import { EncryptionEventContent } from "../models/events/EncryptionEvent";
 
-const ROOM_STORAGE_PREFIX = "tracked_room.";
-
 // noinspection ES6RedundantAwait
 /**
  * Tracks room encryption status for a MatrixClient.
@@ -39,11 +37,9 @@ export class RoomTracker {
      * @param {string} roomId The room ID to check.
      */
     public async queueRoomCheck(roomId: string) {
-        const key = `${ROOM_STORAGE_PREFIX}${roomId}`;
-        const config = await Promise.resolve(this.client.storageProvider.readValue(key));
+        const config = await this.client.cryptoStore.getRoom(roomId);
         if (config) {
-            const parsed: EncryptionEventContent = JSON.parse(config);
-            if (parsed.algorithm !== undefined) {
+            if (config.algorithm !== undefined) {
                 return; // assume no change to encryption config
             }
         }
@@ -55,7 +51,7 @@ export class RoomTracker {
         } catch (e) {
             return; // failure == no encryption
         }
-        await Promise.resolve(this.client.storageProvider.storeValue(key, JSON.stringify(encEvent)));
+        await this.client.cryptoStore.storeRoom(roomId, encEvent);
     }
 
     /**
@@ -65,15 +61,14 @@ export class RoomTracker {
      * @returns {Promise<Partial<EncryptionEventContent>>} Resolves to the encryption config.
      */
     public async getRoomCryptoConfig(roomId: string): Promise<Partial<EncryptionEventContent>> {
-        const key = `${ROOM_STORAGE_PREFIX}${roomId}`;
-        let config = await Promise.resolve(this.client.storageProvider.readValue(key));
+        let config = await this.client.cryptoStore.getRoom(roomId);
         if (!config) {
             await this.queueRoomCheck(roomId);
-            config = await Promise.resolve(this.client.storageProvider.readValue(key));
+            config = await this.client.cryptoStore.getRoom(roomId);
         }
         if (!config) {
             return {};
         }
-        return JSON.parse(config);
+        return config;
     }
 }

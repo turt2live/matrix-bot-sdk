@@ -4,9 +4,9 @@ import { EncryptionEventContent, MatrixClient, RoomEncryptionAlgorithm, RoomTrac
 import { createTestClient } from "../MatrixClientTest";
 
 function prepareQueueSpies(client: MatrixClient, roomId: string, content: Partial<EncryptionEventContent> = {}, storedContent: Partial<EncryptionEventContent> = null): simple.Stub<any>[] {
-    const readSpy = simple.stub().callFn<any>((key: string) => {
-        expect(key).toEqual("tracked_room." + roomId);
-        return Promise.resolve(storedContent ? JSON.stringify(storedContent) : null);
+    const readSpy = simple.stub().callFn<any>((rid: string) => {
+        expect(rid).toEqual(roomId);
+        return Promise.resolve(storedContent);
     });
 
     const stateSpy = simple.stub().callFn((rid: string, eventType: string, stateKey: string) => {
@@ -16,18 +16,17 @@ function prepareQueueSpies(client: MatrixClient, roomId: string, content: Partia
         return Promise.resolve(content);
     });
 
-    const storeSpy = simple.stub().callFn((key: string, s: string) => {
-        expect(key).toEqual("tracked_room." + roomId);
-        const tryStoreContent = JSON.parse(s);
-        expect(tryStoreContent).toMatchObject({
+    const storeSpy = simple.stub().callFn((rid: string, c: Partial<EncryptionEventContent>) => {
+        expect(rid).toEqual(roomId);
+        expect(c).toMatchObject({
             ...content,
             algorithm: content['algorithm'] ?? 'UNKNOWN',
         });
         return Promise.resolve();
     });
 
-    client.storageProvider.readValue = readSpy;
-    client.storageProvider.storeValue = storeSpy;
+    client.cryptoStore.getRoom = readSpy;
+    client.cryptoStore.storeRoom = storeSpy;
     client.getRoomStateEvent = stateSpy;
 
     return [readSpy, stateSpy, storeSpy];
@@ -109,7 +108,7 @@ describe('RoomTracker', () => {
             const roomId = "!b:example.org";
             const content = { algorithm: RoomEncryptionAlgorithm.MegolmV1AesSha2, rid: "1" };
 
-            const { client } = createTestClient();
+            const { client } = createTestClient(null, "@user:example.org", true);
 
             const [readSpy, stateSpy, storeSpy] = prepareQueueSpies(client, roomId, content);
 
@@ -124,7 +123,7 @@ describe('RoomTracker', () => {
             const roomId = "!b:example.org";
             const content = { algorithm: RoomEncryptionAlgorithm.MegolmV1AesSha2, rid: "1" };
 
-            const { client } = createTestClient();
+            const { client } = createTestClient(null, "@user:example.org", true);
 
             const [readSpy, stateSpy, storeSpy] = prepareQueueSpies(client, roomId, { algorithm: "no" }, content);
 
@@ -139,7 +138,7 @@ describe('RoomTracker', () => {
             const roomId = "!b:example.org";
             const content = { algorithm: RoomEncryptionAlgorithm.MegolmV1AesSha2, rid: "1" };
 
-            const { client } = createTestClient();
+            const { client } = createTestClient(null, "@user:example.org", true);
 
             const [readSpy, stateSpy, storeSpy] = prepareQueueSpies(client, roomId, content);
             client.getRoomStateEvent = async (rid: string, et: string, sk: string) => {
@@ -160,14 +159,14 @@ describe('RoomTracker', () => {
             const roomId = "!a:example.org";
             const content: Partial<EncryptionEventContent> = {algorithm: RoomEncryptionAlgorithm.MegolmV1AesSha2};
 
-            const { client } = createTestClient();
+            const { client } = createTestClient(null, "@user:example.org", true);
 
-            const readSpy = simple.stub().callFn((key: string) => {
-                expect(key).toEqual("tracked_room." + roomId);
-                return Promise.resolve(JSON.stringify(content));
+            const readSpy = simple.stub().callFn<any>((rid: string) => {
+                expect(rid).toEqual(roomId);
+                return Promise.resolve(content);
             });
 
-            client.storageProvider.readValue = readSpy;
+            client.cryptoStore.getRoom = readSpy;
 
             const tracker = new RoomTracker(client);
             const config = await tracker.getRoomCryptoConfig(roomId);
@@ -179,19 +178,19 @@ describe('RoomTracker', () => {
             const roomId = "!a:example.org";
             const content: Partial<EncryptionEventContent> = {algorithm: RoomEncryptionAlgorithm.MegolmV1AesSha2};
 
-            const { client } = createTestClient();
+            const { client } = createTestClient(null, "@user:example.org", true);
 
-            const readSpy = simple.stub().callFn((key: string) => {
-                expect(key).toEqual("tracked_room." + roomId);
+            const readSpy = simple.stub().callFn<any>((rid: string) => {
+                expect(rid).toEqual(roomId);
                 if (readSpy.callCount === 1) return Promise.resolve(null);
-                return Promise.resolve(JSON.stringify(content));
+                return Promise.resolve(content);
             });
             const queueSpy = simple.stub().callFn((rid: string) => {
                 expect(rid).toEqual(roomId);
                 return Promise.resolve();
             });
 
-            client.storageProvider.readValue = readSpy;
+            client.cryptoStore.getRoom = readSpy;
 
             const tracker = new RoomTracker(client);
             tracker.queueRoomCheck = queueSpy;
@@ -204,10 +203,10 @@ describe('RoomTracker', () => {
         it('should return empty for unencrypted rooms', async () => {
             const roomId = "!a:example.org";
 
-            const { client } = createTestClient();
+            const { client } = createTestClient(null, "@user:example.org", true);
 
-            const readSpy = simple.stub().callFn((key: string) => {
-                expect(key).toEqual("tracked_room." + roomId);
+            const readSpy = simple.stub().callFn<any>((rid: string) => {
+                expect(rid).toEqual(roomId);
                 return Promise.resolve(null);
             });
             const queueSpy = simple.stub().callFn((rid: string) => {
@@ -215,7 +214,7 @@ describe('RoomTracker', () => {
                 return Promise.resolve();
             });
 
-            client.storageProvider.readValue = readSpy;
+            client.cryptoStore.getRoom = readSpy;
 
             const tracker = new RoomTracker(client);
             tracker.queueRoomCheck = queueSpy;

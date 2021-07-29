@@ -78,6 +78,8 @@ export * from "./storage/IAppserviceStorageProvider";
 export * from "./storage/IStorageProvider";
 export * from "./storage/MemoryStorageProvider";
 export * from "./storage/SimpleFsStorageProvider";
+export * from "./storage/ICryptoStorageProvider";
+//export * from "./storage/SqliteCryptoStorageProvider"; // Not exported because of optional dependency
 
 // Strategies
 export * from "./strategies/AppserviceJoinRoomStrategy";
@@ -97,4 +99,3 @@ export * from "./PantalaimonClient";
 export * from "./SynchronousMatrixClient";
 export * from "./SynapseAdminApis";
 export * from "./simple-validation";
-export * from "./isCryptoCapable";

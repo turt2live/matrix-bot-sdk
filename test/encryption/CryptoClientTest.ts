@@ -1,18 +1,14 @@
 import * as expect from "expect";
 import * as simple from "simple-mock";
 import {
-    C25519_STORAGE_KEY,
-    DEVICE_ID_STORAGE_KEY, E25519_STORAGE_KEY,
-    EncryptionEventContent,
-    MatrixClient, OLM_ACCOUNT_STORAGE_KEY, OTKAlgorithm, OTKCounts, PICKLE_STORAGE_KEY,
+    OTKAlgorithm,
+    OTKCounts,
     RoomEncryptionAlgorithm,
-    RoomTracker
 } from "../../src";
 import { createTestClient, TEST_DEVICE_ID } from "../MatrixClientTest";
-import { cryptoDescribe } from "../isCryptoCapableTest";
 import { feedOlmAccount } from "../TestUtils";
 
-cryptoDescribe('CryptoClient', () => {
+describe('CryptoClient', () => {
     it('should not have a device ID or be ready until prepared', async () => {
         const userId = "@alice:example.org";
         const { client } = createTestClient(null, userId, true);
@@ -58,8 +54,7 @@ cryptoDescribe('CryptoClient', () => {
             const userId = "@alice:example.org";
             const { client } = createTestClient(null, userId, true);
 
-            // noinspection ES6RedundantAwait
-            await Promise.resolve(client.storageProvider.storeValue(DEVICE_ID_STORAGE_KEY, TEST_DEVICE_ID));
+            await client.cryptoStore.setDeviceId(TEST_DEVICE_ID);
 
             const whoamiSpy = simple.stub().callFn(() => Promise.resolve({ user_id: userId, device_id: "wrong" }));
             client.getWhoAmI = whoamiSpy;
@@ -76,8 +71,7 @@ cryptoDescribe('CryptoClient', () => {
             const userId = "@alice:example.org";
             const { client } = createTestClient(null, userId, true);
 
-            // noinspection ES6RedundantAwait
-            await Promise.resolve(client.storageProvider.storeValue(DEVICE_ID_STORAGE_KEY, TEST_DEVICE_ID));
+            await client.cryptoStore.setDeviceId(TEST_DEVICE_ID);
 
             const deviceKeySpy = simple.stub().callFn(() => Promise.resolve({}));
             const otkSpy = simple.stub().callFn(() => Promise.resolve({}));
@@ -91,47 +85,24 @@ cryptoDescribe('CryptoClient', () => {
 
             // NEXT STAGE: Missing Olm Account
 
-            // noinspection ES6RedundantAwait
-            await Promise.resolve(client.storageProvider.storeValue(OLM_ACCOUNT_STORAGE_KEY, null));
-
+            await client.cryptoStore.setPickledAccount("");
             await client.crypto.prepare([]);
             expect(deviceKeySpy.callCount).toEqual(2);
             expect(otkSpy.callCount).toEqual(2);
 
             // NEXT STAGE: Missing Pickle
 
-            // noinspection ES6RedundantAwait
-            await Promise.resolve(client.storageProvider.storeValue(PICKLE_STORAGE_KEY, null));
-
+            await client.cryptoStore.setPickleKey("");
             await client.crypto.prepare([]);
             expect(deviceKeySpy.callCount).toEqual(3);
             expect(otkSpy.callCount).toEqual(3);
-
-            // NEXT STAGE: Missing Ed25519
-
-            // noinspection ES6RedundantAwait
-            await Promise.resolve(client.storageProvider.storeValue(E25519_STORAGE_KEY, null));
-
-            await client.crypto.prepare([]);
-            expect(deviceKeySpy.callCount).toEqual(4);
-            expect(otkSpy.callCount).toEqual(4);
-
-            // NEXT STAGE: Missing Curve25519
-
-            // noinspection ES6RedundantAwait
-            await Promise.resolve(client.storageProvider.storeValue(C25519_STORAGE_KEY, null));
-
-            await client.crypto.prepare([]);
-            expect(deviceKeySpy.callCount).toEqual(5);
-            expect(otkSpy.callCount).toEqual(5);
         });
 
         it('should use given values if they are all present', async () => {
             const userId = "@alice:example.org";
             const { client } = createTestClient(null, userId, true);
 
-            // noinspection ES6RedundantAwait
-            await Promise.resolve(client.storageProvider.storeValue(DEVICE_ID_STORAGE_KEY, TEST_DEVICE_ID));
+            await client.cryptoStore.setDeviceId(TEST_DEVICE_ID);
             await feedOlmAccount(client);
 
             const deviceKeySpy = simple.stub().callFn(() => Promise.resolve({}));
@@ -153,8 +124,7 @@ cryptoDescribe('CryptoClient', () => {
             const userId = "@alice:example.org";
             const { client } = createTestClient(null, userId, true);
 
-            // noinspection ES6RedundantAwait
-            await Promise.resolve(client.storageProvider.storeValue(DEVICE_ID_STORAGE_KEY, TEST_DEVICE_ID));
+            await client.cryptoStore.setDeviceId(TEST_DEVICE_ID);
             await feedOlmAccount(client);
             client.uploadDeviceKeys = () => Promise.resolve({});
             client.uploadDeviceOneTimeKeys = () => Promise.resolve({});
@@ -175,8 +145,7 @@ cryptoDescribe('CryptoClient', () => {
             const userId = "@alice:example.org";
             const { client } = createTestClient(null, userId, true);
 
-            // noinspection ES6RedundantAwait
-            await Promise.resolve(client.storageProvider.storeValue(DEVICE_ID_STORAGE_KEY, TEST_DEVICE_ID));
+            await client.cryptoStore.setDeviceId(TEST_DEVICE_ID);
             await feedOlmAccount(client);
             client.uploadDeviceKeys = () => Promise.resolve({});
             client.uploadDeviceOneTimeKeys = () => Promise.resolve({});
@@ -192,8 +161,7 @@ cryptoDescribe('CryptoClient', () => {
             const userId = "@alice:example.org";
             const { client } = createTestClient(null, userId, true);
 
-            // noinspection ES6RedundantAwait
-            await Promise.resolve(client.storageProvider.storeValue(DEVICE_ID_STORAGE_KEY, TEST_DEVICE_ID));
+            await client.cryptoStore.setDeviceId(TEST_DEVICE_ID);
             await feedOlmAccount(client);
             client.uploadDeviceKeys = () => Promise.resolve({});
             client.uploadDeviceOneTimeKeys = () => Promise.resolve({});
@@ -209,8 +177,7 @@ cryptoDescribe('CryptoClient', () => {
             const userId = "@alice:example.org";
             const { client } = createTestClient(null, userId, true);
 
-            // noinspection ES6RedundantAwait
-            await Promise.resolve(client.storageProvider.storeValue(DEVICE_ID_STORAGE_KEY, TEST_DEVICE_ID));
+            await client.cryptoStore.setDeviceId(TEST_DEVICE_ID);
             await feedOlmAccount(client);
             client.uploadDeviceKeys = () => Promise.resolve({});
             client.uploadDeviceOneTimeKeys = () => Promise.resolve({});
@@ -226,8 +193,7 @@ cryptoDescribe('CryptoClient', () => {
             const userId = "@alice:example.org";
             const { client } = createTestClient(null, userId, true);
 
-            // noinspection ES6RedundantAwait
-            await Promise.resolve(client.storageProvider.storeValue(DEVICE_ID_STORAGE_KEY, TEST_DEVICE_ID));
+            await client.cryptoStore.setDeviceId(TEST_DEVICE_ID);
             await feedOlmAccount(client);
             client.uploadDeviceOneTimeKeys = () => Promise.resolve({});
             client.checkOneTimeKeyCounts = () => Promise.resolve({});
@@ -246,8 +212,7 @@ cryptoDescribe('CryptoClient', () => {
 
             const expectedUpload = 50;
 
-            // noinspection ES6RedundantAwait
-            await Promise.resolve(client.storageProvider.storeValue(DEVICE_ID_STORAGE_KEY, TEST_DEVICE_ID));
+            await client.cryptoStore.setDeviceId(TEST_DEVICE_ID);
             await feedOlmAccount(client);
             client.uploadDeviceOneTimeKeys = () => Promise.resolve({});
             client.checkOneTimeKeyCounts = () => Promise.resolve({});
@@ -270,8 +235,7 @@ cryptoDescribe('CryptoClient', () => {
             const counts: OTKCounts = { [OTKAlgorithm.Signed]: 0, [OTKAlgorithm.Unsigned]: 5 };
             const expectedUpload = 50;
 
-            // noinspection ES6RedundantAwait
-            await Promise.resolve(client.storageProvider.storeValue(DEVICE_ID_STORAGE_KEY, TEST_DEVICE_ID));
+            await client.cryptoStore.setDeviceId(TEST_DEVICE_ID);
             await feedOlmAccount(client);
             client.uploadDeviceOneTimeKeys = () => Promise.resolve({});
             client.checkOneTimeKeyCounts = () => Promise.resolve({});
@@ -295,8 +259,7 @@ cryptoDescribe('CryptoClient', () => {
             const counts: OTKCounts = { [OTKAlgorithm.Signed]: 0, [OTKAlgorithm.Unsigned]: 5 };
             const expectedUpload = 50;
 
-            // noinspection ES6RedundantAwait
-            await Promise.resolve(client.storageProvider.storeValue(DEVICE_ID_STORAGE_KEY, TEST_DEVICE_ID));
+            await client.cryptoStore.setDeviceId(TEST_DEVICE_ID);
             await feedOlmAccount(client);
             client.uploadDeviceOneTimeKeys = () => Promise.resolve({});
             client.checkOneTimeKeyCounts = () => Promise.resolve({});
@@ -329,8 +292,7 @@ cryptoDescribe('CryptoClient', () => {
             const counts: OTKCounts = { [OTKAlgorithm.Signed]: 14, [OTKAlgorithm.Unsigned]: 5 };
             const expectedUpload = 50 - counts[OTKAlgorithm.Signed];
 
-            // noinspection ES6RedundantAwait
-            await Promise.resolve(client.storageProvider.storeValue(DEVICE_ID_STORAGE_KEY, TEST_DEVICE_ID));
+            await client.cryptoStore.setDeviceId(TEST_DEVICE_ID);
             await feedOlmAccount(client);
             client.uploadDeviceOneTimeKeys = () => Promise.resolve({});
             client.checkOneTimeKeyCounts = () => Promise.resolve({});
@@ -354,8 +316,7 @@ cryptoDescribe('CryptoClient', () => {
             const counts: OTKCounts = { [OTKAlgorithm.Signed]: 0, [OTKAlgorithm.Unsigned]: 5 };
             const expectedUpload = 50;
 
-            // noinspection ES6RedundantAwait
-            await Promise.resolve(client.storageProvider.storeValue(DEVICE_ID_STORAGE_KEY, TEST_DEVICE_ID));
+            await client.cryptoStore.setDeviceId(TEST_DEVICE_ID);
             await feedOlmAccount(client);
             client.uploadDeviceOneTimeKeys = () => Promise.resolve({});
             client.checkOneTimeKeyCounts = () => Promise.resolve({});
@@ -368,38 +329,29 @@ cryptoDescribe('CryptoClient', () => {
             });
             client.uploadDeviceOneTimeKeys = uploadSpy;
 
-            // noinspection ES6RedundantAwait
-            let account = await Promise.resolve(client.storageProvider.readValue(OLM_ACCOUNT_STORAGE_KEY));
+            let account = await client.cryptoStore.getPickledAccount();
 
             await client.crypto.updateCounts(counts);
             expect(uploadSpy.callCount).toEqual(1);
-
-            // noinspection ES6RedundantAwait
-            let newAccount = await Promise.resolve(client.storageProvider.readValue(OLM_ACCOUNT_STORAGE_KEY));
+            let newAccount = await client.cryptoStore.getPickledAccount();
             expect(account).not.toEqual(newAccount);
             account = newAccount;
 
             await client.crypto.updateCounts(counts);
             expect(uploadSpy.callCount).toEqual(2);
-
-            // noinspection ES6RedundantAwait
-            newAccount = await Promise.resolve(client.storageProvider.readValue(OLM_ACCOUNT_STORAGE_KEY));
+            newAccount = await client.cryptoStore.getPickledAccount();
             expect(account).not.toEqual(newAccount);
             account = newAccount;
 
             await client.crypto.updateCounts(counts);
             expect(uploadSpy.callCount).toEqual(3);
-
-            // noinspection ES6RedundantAwait
-            newAccount = await Promise.resolve(client.storageProvider.readValue(OLM_ACCOUNT_STORAGE_KEY));
+            newAccount = await client.cryptoStore.getPickledAccount();
             expect(account).not.toEqual(newAccount);
             account = newAccount;
 
             await client.crypto.updateCounts(counts);
             expect(uploadSpy.callCount).toEqual(4);
-
-            // noinspection ES6RedundantAwait
-            newAccount = await Promise.resolve(client.storageProvider.readValue(OLM_ACCOUNT_STORAGE_KEY));
+            newAccount = await client.cryptoStore.getPickledAccount();
             expect(account).not.toEqual(newAccount);
         });
     });
