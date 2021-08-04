@@ -1156,7 +1156,7 @@ export class MatrixClient extends EventEmitter {
      * @returns {Promise<string>} resolves to the event ID that represents the event
      */
     @timedMatrixClientFunctionCall()
-    public sendEvent(roomId: string, eventType: string, content: any): Promise<string> {
+    public async sendEvent(roomId: string, eventType: string, content: any): Promise<string> {
         const txnId = (new Date().getTime()) + "__inc" + (++this.requestId);
         return this.doRequest("PUT", "/_matrix/client/r0/rooms/" + encodeURIComponent(roomId) + "/send/" + encodeURIComponent(eventType) + "/" + encodeURIComponent(txnId), null, content).then(response => {
             return response['event_id'];

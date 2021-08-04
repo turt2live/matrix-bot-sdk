@@ -13,6 +13,29 @@ export class DeviceTracker {
     }
 
     /**
+     * Gets the device lists for the given user IDs. Outdated device lists will be updated before
+     * returning.
+     * @param {string[]} userIds The user IDs to get the device lists of.
+     * @returns {Promise<Record<string, UserDevice[]>>} Resolves to a map of user ID to device list.
+     * If a user has no devices, they may be excluded from the result or appear as an empty array.
+     */
+    public async getDevicesFor(userIds: string[]): Promise<Record<string, UserDevice[]>> {
+        const outdatedUserIds: string[] = [];
+        for (const userId of userIds) {
+            const isOutdated = await this.client.cryptoStore.isUserOutdated(userId);
+            if (isOutdated) outdatedUserIds.push(userId);
+        }
+
+        await this.updateUsersDeviceLists(outdatedUserIds);
+
+        const userDeviceMap: Record<string, UserDevice[]> = {};
+        for (const userId of userIds) {
+            userDeviceMap[userId] = await this.client.cryptoStore.getUserDevices(userId);
+        }
+        return userDeviceMap;
+    }
+
+    /**
      * Flags multiple user's device lists as outdated, optionally queuing an immediate update.
      * @param {string} userIds The user IDs to flag the device lists of.
      * @param {boolean} resync True (default) to queue an immediate update, false otherwise.

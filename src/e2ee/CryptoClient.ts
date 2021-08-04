@@ -13,6 +13,7 @@ import {
 import { requiresReady } from "./decorators";
 import { RoomTracker } from "./RoomTracker";
 import { DeviceTracker } from "./DeviceTracker";
+import { EncryptionEvent } from "../models/events/EncryptionEvent";
 
 /**
  * Manages encryption for a MatrixClient. Get an instance from a MatrixClient directly
@@ -227,6 +228,76 @@ export class CryptoClient {
      * @param {boolean} resync True (default) to queue an immediate update, false otherwise.
      */
     public flagUsersDeviceListsOutdated(userIds: string[], resync = true) {
+        // noinspection JSIgnoredPromiseFromCall
         this.deviceTracker.flagUsersOutdated(userIds, resync);
+    }
+
+    /**
+     * Encrypts the details of a room event, returning an encrypted payload to be sent in an
+     * `m.room.encrypted` event to the room. If needed, this function will send decryption keys
+     * to the appropriate devices in the room (this happens when the Megolm session rotates or
+     * gets created).
+     * @param {string} roomId The room ID to encrypt within. If the room is not encrypted, an
+     * error is thrown.
+     * @param {string} eventType The event type being encrypted.
+     * @param {any} content The event content being encrypted.
+     * @returns {Promise<any>} Resolves to the encrypted content for an `m.room.encrypted` event.
+     */
+    public async encryptEvent(roomId: string, eventType: string, content: any): Promise<any> {
+        if (!(await this.isRoomEncrypted(roomId))) {
+            throw new Error("Room is not encrypted");
+        }
+
+        const now = (new Date()).getTime();
+
+        let currentSession = await this.client.cryptoStore.getCurrentOutboundGroupSession(roomId);
+        if (currentSession && (currentSession.expiresTs <= now || currentSession.usesLeft <= 0)) {
+            currentSession = null; // force rotation
+        }
+        if (!currentSession) {
+            // Make a new session, either because we don't have one or it rotated.
+            const roomConfig = new EncryptionEvent({
+                type: "m.room.encryption",
+                state_key: "",
+                content: await this.roomTracker.getRoomCryptoConfig(roomId),
+            });
+
+            const session = new Olm.OutboundGroupSession();
+            try {
+                session.create();
+                const pickled = session.pickle(this.pickleKey);
+                currentSession = {
+                    sessionId: session.session_id(),
+                    roomId: roomId,
+                    pickled: pickled,
+                    isCurrent: true,
+                    usesLeft: roomConfig.rotationPeriodMessages,
+                    expiresTs: now + roomConfig.rotationPeriodMs,
+                };
+                await this.client.cryptoStore.storeOutboundGroupSession(currentSession);
+                // TODO: Store as inbound session too
+
+            } finally {
+                session.free();
+            }
+        }
+
+        // TODO: Include invited members?
+        const memberUserIds = await this.client.getJoinedRoomMembers(roomId);
+        const devices = await this.deviceTracker.getDevicesFor(memberUserIds);
+
+        const session = new Olm.OutboundGroupSession();
+        try {
+            session.unpickle(this.pickleKey, currentSession.pickled);
+
+            for (const userId of Object.keys(devices)) {
+                for (const deviceId of Object.keys(devices[userId])) {
+                    const device = devices[userId][deviceId];
+                    // TODO: Olm session management
+                }
+            }
+        } finally {
+            session.free();
+        }
     }
 }

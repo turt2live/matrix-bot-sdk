@@ -89,6 +89,10 @@ export interface UserDevice {
     };
 }
 
+/**
+ * Device list response for a multi-user query.
+ * @category Models
+ */
 export interface MultiUserDeviceListResponse {
     /**
      * Federation failures, keyed by server name. The mapped object should be a standard
@@ -102,4 +106,17 @@ export interface MultiUserDeviceListResponse {
      * A map of user ID to device ID to device.
      */
     device_keys: Record<string, Record<string, UserDevice>>;
+}
+
+/**
+ * An outbound group session.
+ * @category Models
+ */
+export interface IOutboundGroupSession {
+    sessionId: string;
+    roomId: string;
+    pickled: string;
+    isCurrent: boolean;
+    usesLeft: number;
+    expiresTs: number;
 }
