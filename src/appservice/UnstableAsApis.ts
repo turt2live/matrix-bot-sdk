@@ -16,18 +16,18 @@ export interface MSC2716BatchSendResponse {
 }
 
 export interface MSC2716InsertionEventContent {
-    "m.next_chunk_id": string;
-    "m.historical": true;
+    "org.matrix.msc2716.next_chunk_id": string;
+    "org.matrix.msc2716.historical": true;
 }
 
 export interface MSC2716ChunkEventContent {
-    "m.chunk_id": string;
-    "m.historical": true;
+    "org.matrix.msc2716.chunk_id": string;
+    "org.matrix.msc2716.historical": true;
 }
 
 export interface MSC2716MarkerEventContent {
-    "m.insertion_id": string;
-    "m.historical": true;
+    "org.matrix.msc2716.insertion_id": string;
+    "org.matrix.msc2716.historical": true;
 }
 
 /**
