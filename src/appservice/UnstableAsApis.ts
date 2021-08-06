@@ -44,7 +44,7 @@ export class UnstableAsApis {
      * @param prevEventId The event ID where this batch will be inserted
      * @param chunkId The chunk ID returned from a previous call. Leave empty if this is the first batch.
      * @param events A set of event contents for events to be inserted into the room.
-     * @param stateEventsAtStart A set of state events
+     * @param stateEventsAtStart A set of state events to be inserted into the room.
      * @returns A set of eventIds and the next chunk ID
      */
     public async sendHistoricalEventBatch(roomId: string, prevEventId: string, events: any[], stateEventsAtStart: any[] = [], chunkId?: string): Promise<MSC2716BatchSendResponse> {
