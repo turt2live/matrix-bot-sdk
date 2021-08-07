@@ -1,7 +1,7 @@
 import { ICryptoStorageProvider } from "./ICryptoStorageProvider";
 import { EncryptionEventContent } from "../models/events/EncryptionEvent";
 import * as Database from "better-sqlite3";
-import { IOutboundGroupSession, UserDevice } from "../models/Crypto";
+import { IOlmSession, IOutboundGroupSession, UserDevice } from "../models/Crypto";
 
 /**
  * Sqlite crypto storage provider. Requires `better-sqlite3` package to be installed.
@@ -19,6 +19,7 @@ export class SqliteCryptoStorageProvider implements ICryptoStorageProvider {
     private userDeviceUpsert: Database.Statement;
     private userDevicesDelete: Database.Statement;
     private userDevicesSelect: Database.Statement;
+    private userDeviceSelect: Database.Statement;
     private obGroupSessionUpsert: Database.Statement;
     private obGroupSessionSelect: Database.Statement;
     private obGroupCurrentSessionSelect: Database.Statement;
@@ -26,6 +27,8 @@ export class SqliteCryptoStorageProvider implements ICryptoStorageProvider {
     private obGroupSessionMarkAllInactive: Database.Statement;
     private obSentGroupSessionUpsert: Database.Statement;
     private obSentSelectLastSent: Database.Statement;
+    private olmSessionUpsert: Database.Statement;
+    private olmSessionCurrentSelect: Database.Statement;
 
     /**
      * Creates a new Sqlite storage provider.
@@ -40,7 +43,8 @@ export class SqliteCryptoStorageProvider implements ICryptoStorageProvider {
         this.db.exec("CREATE TABLE IF NOT EXISTS users (user_id TEXT PRIMARY KEY NOT NULL, outdated TINYINT NOT NULL)");
         this.db.exec("CREATE TABLE IF NOT EXISTS user_devices (user_id TEXT NOT NULL, device_id TEXT NOT NULL, device TEXT NOT NULL, PRIMARY KEY (user_id, device_id))");
         this.db.exec("CREATE TABLE IF NOT EXISTS outbound_group_sessions (session_id TEXT NOT NULL, room_id TEXT NOT NULL, current TINYINT NOT NULL, pickled TEXT NOT NULL, uses_left NUMBER NOT NULL, expires_ts NUMBER NOT NULL, PRIMARY KEY (session_id, room_id))");
-        this.db.exec("CREATE TABLE IF NOT EXISTS sent_outbound_group_sessions (session_id TEXT NOT NULL, room_id TEXT NOT NULL, index INT NOT NULL, user_id TEXT NOT NULL, device_id TEXT NOT NULL, PRIMARY KEY (session_id, room_id, user_id, device_id, index))");
+        this.db.exec("CREATE TABLE IF NOT EXISTS sent_outbound_group_sessions (session_id TEXT NOT NULL, room_id TEXT NOT NULL, session_index INT NOT NULL, user_id TEXT NOT NULL, device_id TEXT NOT NULL, PRIMARY KEY (session_id, room_id, user_id, device_id, session_index))");
+        this.db.exec("CREATE TABLE IF NOT EXISTS olm_sessions (user_id TEXT NOT NULL, device_id TEXT NOT NULL, session_id TEXT NOT NULL, last_decryption_ts NUMBER NOT NULL, pickled TEXT NOT NULL, PRIMARY KEY (user_id, device_id, session_id))");
 
         this.kvUpsert = this.db.prepare("INSERT INTO kv (name, value) VALUES (@name, @value) ON CONFLICT (name) DO UPDATE SET value = @value");
         this.kvSelect = this.db.prepare("SELECT name, value FROM kv WHERE name = @name");
@@ -54,6 +58,7 @@ export class SqliteCryptoStorageProvider implements ICryptoStorageProvider {
         this.userDeviceUpsert = this.db.prepare("INSERT INTO user_devices (user_id, device_id, device) VALUES (@userId, @deviceId, @device) ON CONFLICT (user_id, device_id) DO UPDATE SET device = @device");
         this.userDevicesDelete = this.db.prepare("DELETE FROM user_devices WHERE user_id = @userId");
         this.userDevicesSelect = this.db.prepare("SELECT user_id, device_id, device FROM user_devices WHERE user_id = @userId");
+        this.userDeviceSelect = this.db.prepare("SELECT user_id, device_id, device FROM user_devices WHERE user_id = @userId AND device_id = @deviceId");
 
         this.obGroupSessionUpsert = this.db.prepare("INSERT INTO outbound_group_sessions (session_id, room_id, current, pickled, uses_left, expires_ts) VALUES (@sessionId, @roomId, @current, @pickled, @usesLeft, @expiresTs) ON CONFLICT (session_id, room_id) DO UPDATE SET pickled = @pickled, current = @current, uses_left = @usesLeft, expires_ts = @expiresTs");
         this.obGroupSessionSelect = this.db.prepare("SELECT session_id, room_id, current, pickled, uses_left, expires_ts FROM outbound_group_sessions WHERE session_id = @sessionId AND room_id = @roomId");
@@ -61,8 +66,11 @@ export class SqliteCryptoStorageProvider implements ICryptoStorageProvider {
         this.obGroupSessionMarkUsage = this.db.prepare("UPDATE outbound_group_sessions SET uses_left = uses_left - 1 WHERE session_id = @sessionId and room_id = @roomId");
         this.obGroupSessionMarkAllInactive = this.db.prepare("UPDATE outbound_group_sessions SET current = 0 WHERE room_id = @roomId");
 
-        this.obSentGroupSessionUpsert = this.db.prepare("INSERT INTO sent_outbound_group_sessions (session_id, room_id, index, user_id, device_id) VALUES (@sessionId, @roomId, @index, @userId, @deviceId) ON CONFLICT (session_id, room_id, user_id, device_id, index) DO NOTHING");
-        this.obSentSelectLastSent = this.db.prepare("SELECT session_id, room_id, index, user_id, device_id FROM sent_outbound_group_sessions WHERE user_id = @userId AND device_id = @deviceId AND room_id = @roomId");
+        this.obSentGroupSessionUpsert = this.db.prepare("INSERT INTO sent_outbound_group_sessions (session_id, room_id, session_index, user_id, device_id) VALUES (@sessionId, @roomId, @sessionIndex, @userId, @deviceId) ON CONFLICT (session_id, room_id, user_id, device_id, session_index) DO NOTHING");
+        this.obSentSelectLastSent = this.db.prepare("SELECT session_id, room_id, session_index, user_id, device_id FROM sent_outbound_group_sessions WHERE user_id = @userId AND device_id = @deviceId AND room_id = @roomId");
+
+        this.olmSessionUpsert = this.db.prepare("INSERT INTO olm_sessions (user_id, device_id, session_id, last_decryption_ts, pickled) VALUES (@userId, @deviceId, @sessionId, @lastDecryptionTs, @pickled) ON CONFLICT (user_id, device_id, session_id) DO UPDATE SET last_decryption_ts = @lastDecryptionTs, pickled = @pickled");
+        this.olmSessionCurrentSelect = this.db.prepare("SELECT user_id, device_id, session_id, last_decryption_ts, pickled FROM olm_sessions WHERE user_id = @userId AND device_id = @deviceId ORDER BY last_decryption_ts DESC LIMIT 1");
     }
 
     public async setDeviceId(deviceId: string): Promise<void> {
@@ -128,6 +136,12 @@ export class SqliteCryptoStorageProvider implements ICryptoStorageProvider {
         const results = this.userDevicesSelect.all({userId: userId})
         if (!results) return [];
         return results.map(d => JSON.parse(d.device));
+    }
+
+    public async getUserDevice(userId: string, deviceId: string): Promise<UserDevice> {
+        const result = this.userDeviceSelect.get({userId: userId, deviceId: deviceId});
+        if (!result) return null;
+        return JSON.parse(result.device);
     }
 
     public async flagUsersOutdated(userIds: string[]): Promise<void> {
@@ -199,7 +213,7 @@ export class SqliteCryptoStorageProvider implements ICryptoStorageProvider {
         this.obSentGroupSessionUpsert.run({
             sessionId: session.sessionId,
             roomId: session.roomId,
-            index: index,
+            sessionIndex: index,
             userId: device.user_id,
             deviceId: device.device_id,
         });
@@ -208,9 +222,29 @@ export class SqliteCryptoStorageProvider implements ICryptoStorageProvider {
     public async getLastSentOutboundGroupSession(userId: string, deviceId: string, roomId: string): Promise<{sessionId: string, index: number}> {
         const result = this.obSentSelectLastSent.get({userId: userId, deviceId: deviceId, roomId: roomId});
         if (result) {
-            return {sessionId: result.session_id, index: result.index};
+            return {sessionId: result.session_id, index: result.session_index};
         }
         return null;
+    }
+
+    public async storeOlmSession(userId: string, deviceId: string, session: IOlmSession): Promise<void> {
+        this.olmSessionUpsert.run({
+            userId: userId,
+            deviceId: deviceId,
+            sessionId: session.sessionId,
+            lastDecryptionTs: session.lastDecryptionTs,
+            pickled: session.pickled,
+        });
+    }
+
+    public async getCurrentOlmSession(userId: string, deviceId: string): Promise<IOlmSession> {
+        const result = this.olmSessionCurrentSelect.get({userId: userId, deviceId: deviceId});
+        if (!result) return null;
+        return {
+            sessionId: result.session_id,
+            pickled: result.pickled,
+            lastDecryptionTs: result.last_decryption_ts,
+        };
     }
 
     /**

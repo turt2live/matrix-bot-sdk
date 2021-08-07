@@ -62,14 +62,9 @@ const client = new MatrixClient(homeserverUrl, accessToken, storage, crypto);
 })();
 
 async function sendEncryptedNotice(roomId: string, text: string) {
-    const payload = {
-        room_id: roomId,
-        type: "m.room.message",
-        content: {
-            msgtype: "m.notice",
-            body: text,
-        },
-    };
-
-
+    const encrypted = await client.crypto.encryptRoomEvent(roomId, "m.room.message", {
+        msgtype: "m.notice",
+        body: text,
+    });
+    await client.sendEvent(roomId, "m.room.encrypted", encrypted);
 }

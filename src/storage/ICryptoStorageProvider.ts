@@ -1,5 +1,5 @@
 import { EncryptionEventContent } from "../models/events/EncryptionEvent";
-import { IOutboundGroupSession, UserDevice } from "../models/Crypto";
+import { IOlmSession, IOutboundGroupSession, UserDevice } from "../models/Crypto";
 
 /**
  * A storage provider capable of only providing crypto-related storage.
@@ -81,6 +81,14 @@ export interface ICryptoStorageProvider {
     getUserDevices(userId: string): Promise<UserDevice[]>;
 
     /**
+     * Gets a user's stored device. If the device is not known or active, falsy is returned.
+     * @param {string} userId The user ID.
+     * @param {string} deviceId The device ID.
+     * @returns {Promise<UserDevice>} Resolves to the user's device, or falsy if not known.
+     */
+    getUserDevice(userId: string, deviceId: string): Promise<UserDevice>;
+
+    /**
      * Flags multiple user's device lists as outdated.
      * @param {string} userIds The user IDs to flag.
      * @returns {Promise<void>} Resolves when complete.
@@ -147,4 +155,21 @@ export interface ICryptoStorageProvider {
      * sent, or falsy if not known.
      */
     getLastSentOutboundGroupSession(userId: string, deviceId: string, roomId: string): Promise<{sessionId: string, index: number}>;
+
+    /**
+     * Stores/updates an Olm session for a user's device.
+     * @param {string} userId The user ID.
+     * @param {string} deviceId The device ID.
+     * @param {IOlmSession} session The session.
+     * @returns {Promise<void>} Resolves when complete.
+     */
+    storeOlmSession(userId: string, deviceId: string, session: IOlmSession): Promise<void>;
+
+    /**
+     * Gets the most current Olm session for the user's device. If none is present, a falsy value is returned.
+     * @param {string} userId The user ID.
+     * @param {string} deviceId The device ID.
+     * @returns {Promise<IOlmSession>} Resolves to the Olm session, or falsy if none found.
+     */
+    getCurrentOlmSession(userId: string, deviceId: string): Promise<IOlmSession>;
 }

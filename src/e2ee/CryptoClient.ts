@@ -6,9 +6,14 @@ import * as anotherJson from "another-json";
 import {
     DeviceKeyAlgorithm,
     EncryptionAlgorithm,
+    IOlmEncrypted,
+    IOlmPayload,
+    IOlmSession,
     OTKAlgorithm,
-    OTKCounts, OTKs,
+    OTKCounts,
+    OTKs,
     Signatures,
+    UserDevice,
 } from "../models/Crypto";
 import { requiresReady } from "./decorators";
 import { RoomTracker } from "./RoomTracker";
@@ -105,6 +110,11 @@ export class CryptoClient {
                 this.pickledAccount = pickled;
 
                 this.maxOTKs = account.max_number_of_one_time_keys();
+
+                const keys = JSON.parse(account.identity_keys());
+                this.deviceCurve25519 = keys['curve25519'];
+                this.deviceEd25519 = keys['ed25519'];
+
                 this.ready = true;
 
                 const counts = await this.client.uploadDeviceKeys([
@@ -120,13 +130,14 @@ export class CryptoClient {
                 this.pickleKey = pickleKey;
                 this.pickledAccount = pickled;
                 this.maxOTKs = account.max_number_of_one_time_keys();
+
+                const keys = JSON.parse(account.identity_keys());
+                this.deviceCurve25519 = keys['curve25519'];
+                this.deviceEd25519 = keys['ed25519'];
+
                 this.ready = true;
                 await this.updateCounts(await this.client.checkOneTimeKeyCounts());
             }
-
-            const keys = JSON.parse(account.identity_keys());
-            this.deviceCurve25519 = keys['curve25519'];
-            this.deviceEd25519 = keys['ed25519'];
         } finally {
             account.free();
         }
@@ -211,7 +222,7 @@ export class CryptoClient {
         const util = new Olm.Utility();
         try {
             const message = anotherJson.stringify(obj);
-            util.ed25519_verify(message, key, signature);
+            util.ed25519_verify(key, message, signature);
         } catch (e) {
             // Assume it's a verification failure
             return false;
@@ -233,6 +244,142 @@ export class CryptoClient {
     }
 
     /**
+     * Gets or creates Olm sessions for the given users and devices. Where sessions cannot be created,
+     * the user/device will be excluded from the returned map.
+     * @param {Record<string, string[]>} userDeviceMap Map of user IDs to device IDs
+     * @returns {Promise<Record<string, Record<string, IOlmSession>>>} Resolves to a map of user ID to device
+     * ID to session. Users/devices which cannot have sessions made will not be included, thus the object
+     * may be empty.
+     */
+    public async getOrCreateOlmSessions(userDeviceMap: Record<string, string[]>): Promise<Record<string, Record<string, IOlmSession>>> {
+        const otkClaimRequest: Record<string, Record<string, OTKAlgorithm>> = {};
+        const userDeviceSessionIds: Record<string, Record<string, IOlmSession>> = {};
+
+        const myUserId = await this.client.getUserId();
+        const myDeviceId = this.clientDeviceId;
+        for (const userId of Object.keys(userDeviceMap)) {
+            for (const deviceId of userDeviceMap[userId]) {
+                if (userId === myUserId && deviceId === myDeviceId) {
+                    // Skip creating a session for our own device
+                    continue;
+                }
+
+                const existingSession = await this.client.cryptoStore.getCurrentOlmSession(userId, deviceId);
+                if (existingSession) {
+                    if (!userDeviceSessionIds[userId]) userDeviceSessionIds[userId] = {};
+                    userDeviceSessionIds[userId][deviceId] = existingSession;
+                } else {
+                    if (!otkClaimRequest[userId]) otkClaimRequest[userId] = {};
+                    otkClaimRequest[userId][deviceId] = OTKAlgorithm.Signed;
+                }
+            }
+        }
+
+        const claimed = await this.client.claimOneTimeKeys(otkClaimRequest);
+        for (const userId of Object.keys(claimed.one_time_keys)) {
+            const storedDevices = await this.client.cryptoStore.getUserDevices(userId);
+            for (const deviceId of Object.keys(claimed.one_time_keys[userId])) {
+                try {
+                    const device = storedDevices.find(d => d.user_id === userId && d.device_id === deviceId);
+                    if (!device) {
+                        LogService.warn("CryptoClient", `Failed to handle claimed OTK: unable to locate stored device for user: ${userId} ${deviceId}`);
+                        continue;
+                    }
+
+                    const deviceKeyLabel = `${DeviceKeyAlgorithm.Ed25119}:${deviceId}`;
+
+                    const keyId = Object.keys(claimed.one_time_keys[userId][deviceId])[0];
+                    const signedKey = claimed.one_time_keys[userId][deviceId][keyId];
+                    const signature = signedKey?.signatures?.[userId]?.[deviceKeyLabel];
+                    if (!signature) {
+                        LogService.warn("CryptoClient", `Failed to find appropriate signature for claimed OTK ${userId} ${deviceId}`);
+                        continue;
+                    }
+
+                    const verified = await this.verifySignature(signedKey, device.keys[deviceKeyLabel], signature);
+                    if (!verified) {
+                        LogService.warn("CryptoClient", `Invalid signature for claimed OTK ${userId} ${deviceId}`);
+                        continue;
+                    }
+
+                    // TODO: Handle spec rate limiting
+                    // Clients should rate-limit the number of sessions it creates per device that it receives a message
+                    // from. Clients should not create a new session with another device if it has already created one
+                    // for that given device in the past 1 hour.
+
+                    // Finally, we can create a session. We do this on each loop just in case something goes wrong given
+                    // we don't have app-level transaction support here. We want to persist as many outbound sessions as
+                    // we can before exploding.
+                    const account = await this.getOlmAccount();
+                    const session = new Olm.Session();
+                    try {
+                        const curveDeviceKey = device.keys[`${DeviceKeyAlgorithm.Curve25519}:${deviceId}`];
+                        session.create_outbound(account, curveDeviceKey, signedKey.key);
+                        const storedSession: IOlmSession = {
+                            sessionId: session.session_id(),
+                            lastDecryptionTs: Date.now(),
+                            pickled: session.pickle(this.pickleKey),
+                        };
+                        await this.client.cryptoStore.storeOlmSession(userId, deviceId, storedSession);
+
+                        if (!userDeviceSessionIds[userId]) userDeviceSessionIds[userId] = {};
+                        userDeviceSessionIds[userId][deviceId] = storedSession;
+
+                        // Send a dummy event so the device can prepare the session.
+                        // await this.encryptAndSendOlmMessage(device, storedSession, "m.dummy", {});
+                    } finally {
+                        session.free();
+                        await this.storeAndFreeOlmAccount(account);
+                    }
+                } catch (e) {
+                    LogService.warn("CryptoClient", `Unable to verify signature of claimed OTK ${userId} ${deviceId}:`, e);
+                }
+            }
+        }
+
+        return userDeviceSessionIds;
+    }
+
+    private async encryptAndSendOlmMessage(device: UserDevice, session: IOlmSession, type: string, content: any): Promise<void> {
+        const olmSession = new Olm.Session();
+        try {
+            olmSession.unpickle(this.pickleKey, session.pickled);
+            const payload: IOlmPayload = {
+                keys: {
+                    ed25519: this.deviceEd25519,
+                },
+                recipient_keys: {
+                    ed25519: device.keys[`${DeviceKeyAlgorithm.Ed25119}:${device.device_id}`],
+                },
+                recipient: device.user_id,
+                sender: await this.client.getUserId(),
+                content: content,
+                type: type,
+            };
+            const encrypted = olmSession.encrypt(JSON.stringify(payload));
+            await this.client.cryptoStore.storeOlmSession(device.user_id, device.device_id, {
+                pickled: olmSession.pickle(this.pickleKey),
+                lastDecryptionTs: session.lastDecryptionTs,
+                sessionId: olmSession.session_id(),
+            });
+            const message: IOlmEncrypted = {
+                algorithm: EncryptionAlgorithm.OlmV1Curve25519AesSha2,
+                ciphertext: {
+                    [device.keys[`${DeviceKeyAlgorithm.Curve25519}:${device.device_id}`]]: encrypted as any,
+                },
+                sender_key: this.deviceCurve25519,
+            };
+            await this.client.sendToDevices("m.room.encrypted", {
+                [device.user_id]: {
+                    [device.device_id]: message,
+                },
+            });
+        } finally {
+            olmSession.free();
+        }
+    }
+
+    /**
      * Encrypts the details of a room event, returning an encrypted payload to be sent in an
      * `m.room.encrypted` event to the room. If needed, this function will send decryption keys
      * to the appropriate devices in the room (this happens when the Megolm session rotates or
@@ -243,7 +390,7 @@ export class CryptoClient {
      * @param {any} content The event content being encrypted.
      * @returns {Promise<any>} Resolves to the encrypted content for an `m.room.encrypted` event.
      */
-    public async encryptEvent(roomId: string, eventType: string, content: any): Promise<any> {
+    public async encryptRoomEvent(roomId: string, eventType: string, content: any): Promise<any> {
         if (!(await this.isRoomEncrypted(roomId))) {
             throw new Error("Room is not encrypted");
         }
@@ -290,14 +437,45 @@ export class CryptoClient {
         try {
             session.unpickle(this.pickleKey, currentSession.pickled);
 
+            const neededSessions: Record<string, string[]> = {};
             for (const userId of Object.keys(devices)) {
-                for (const deviceId of Object.keys(devices[userId])) {
-                    const device = devices[userId][deviceId];
-                    // TODO: Olm session management
+                neededSessions[userId] = devices[userId].map(d => d.device_id);
+            }
+            const olmSessions = await this.getOrCreateOlmSessions(neededSessions);
+
+            for (const userId of Object.keys(devices)) {
+                for (const device of devices[userId]) {
+                    const olmSession = olmSessions[userId]?.[device.device_id];
+                    if (!olmSession) {
+                        LogService.warn("CryptoClient", `Unable to send Megolm session to ${userId} ${device.device_id}: No Olm session`);
+                        continue;
+                    }
+                    await this.encryptAndSendOlmMessage(device, olmSession, "m.room_key", {
+                        algorithm: EncryptionAlgorithm.MegolmV1AesSha2,
+                        room_id: roomId,
+                        session_id: session.session_id(),
+                        session_key: session.session_key(),
+                    });
                 }
             }
+
+            const encrypted = session.encrypt(JSON.stringify({
+                type: eventType,
+                content: content,
+                room_id: roomId,
+            }));
+
+            return {
+                algorithm: EncryptionAlgorithm.MegolmV1AesSha2,
+                sender_key: this.deviceCurve25519,
+                ciphertext: encrypted,
+                session_id: session.session_id(),
+                device_id: this.clientDeviceId,
+            };
         } finally {
             session.free();
         }
+
+
     }
 }

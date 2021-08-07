@@ -109,6 +109,25 @@ export interface MultiUserDeviceListResponse {
 }
 
 /**
+ * One Time Key claim response.
+ * @category Models
+ */
+export interface OTKClaimResponse {
+    /**
+     * Federation failures, keyed by server name. The mapped object should be a standard
+     * error object.
+     */
+    failures: {
+        [serverName: string]: any;
+    };
+
+    /**
+     * The claimed One Time Keys, as a map from user ID to device ID to key ID to OTK.
+     */
+    one_time_keys: Record<string, Record<string, OTKs>>;
+}
+
+/**
  * An outbound group session.
  * @category Models
  */
@@ -119,4 +138,76 @@ export interface IOutboundGroupSession {
     isCurrent: boolean;
     usesLeft: number;
     expiresTs: number;
+}
+
+/**
+ * An Olm session.
+ * @category Models
+ */
+export interface IOlmSession {
+    sessionId: string;
+    pickled: string;
+    lastDecryptionTs: number;
+}
+
+/**
+ * An Olm payload (plaintext).
+ * @category Models
+ */
+export interface IOlmPayload {
+    type: string;
+    content: any;
+    sender: string;
+    recipient: string; // user ID
+    recipient_keys: {
+        ed25519: string; // our key
+    };
+    keys: {
+        ed25519: string; // their key
+    };
+}
+
+/**
+ * An encrypted Olm payload.
+ * @category Models
+ */
+export interface IOlmEncrypted {
+    algorithm: EncryptionAlgorithm.OlmV1Curve25519AesSha2;
+    sender_key: string;
+    ciphertext: {
+        [deviceCurve25519Key: string]: {
+            type: number;
+            body: string; // base64
+        };
+    };
+}
+
+/**
+ * The kind of payload which is sent encrypted from an Olm device.
+ * @category Models
+ */
+export enum OlmPayloadKind {
+    CanSetUpSession = 0,
+    RequiresKnownSession = 1,
+}
+
+/**
+ * A device message.
+ * @category Models
+ */
+export interface IDeviceMessage {
+    /**
+     * The recipient user ID.
+     */
+    targetUserId: string;
+
+    /**
+     * The recipient device ID. May be "*" to denote all of the user's devices.
+     */
+    targetDeviceId: string;
+
+    /**
+     * The payload.
+     */
+    content: any;
 }

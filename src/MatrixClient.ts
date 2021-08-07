@@ -28,8 +28,8 @@ import { CryptoClient } from "./e2ee/CryptoClient";
 import {
     DeviceKeyAlgorithm,
     DeviceKeyLabel,
-    EncryptionAlgorithm,
-    MultiUserDeviceListResponse,
+    EncryptionAlgorithm, IDeviceMessage,
+    MultiUserDeviceListResponse, OTKAlgorithm, OTKClaimResponse,
     OTKCounts,
     OTKs,
     UserDevice
@@ -1672,7 +1672,7 @@ export class MatrixClient extends EventEmitter {
      *
      * See https://matrix.org/docs/spec/client_server/r0.6.1#post-matrix-client-r0-keys-query for more
      * information.
-     * @param {string[]} userIds The user IDs to
+     * @param {string[]} userIds The user IDs to query.
      * @param {number} federationTimeoutMs The default timeout for requesting devices over federation. Defaults to
      * 10 seconds.
      * @returns {Promise<MultiUserDeviceListResponse>} Resolves to the device list/errors for the requested user IDs.
@@ -1683,7 +1683,44 @@ export class MatrixClient extends EventEmitter {
         for (const userId of userIds) {
             req[userId] = [];
         }
-        return this.doRequest("POST", "/_matrix/client/r0/keys/query", { timeout: federationTimeoutMs }, req);
+        return this.doRequest("POST", "/_matrix/client/r0/keys/query", {}, {
+            timeout: federationTimeoutMs,
+            device_keys: req,
+        });
+    }
+
+    /**
+     * Claims One Time Keys for a set of user devices, returning those keys. The caller is expected to verify
+     * and validate the returned keys.
+     *
+     * Failures with federation are reported in the returned object.
+     * @param {Record<string, Record<string, OTKAlgorithm>>} userDeviceMap The map of user IDs to device IDs to
+     * OTKAlgorithm to request a claim for.
+     * @param {number} federationTimeoutMs The default timeout for claiming keys over federation. Defaults to
+     * 10 seconds.
+     */
+    @timedMatrixClientFunctionCall()
+    @requiresCrypto()
+    public async claimOneTimeKeys(userDeviceMap: Record<string, Record<string, OTKAlgorithm>>, federationTimeoutMs = 10000): Promise<OTKClaimResponse> {
+        return this.doRequest("POST", "/_matrix/client/r0/keys/claim", {}, {
+            timeout: federationTimeoutMs,
+            one_time_keys: userDeviceMap,
+        });
+    }
+
+    /**
+     * Sends to-device messages to the respective users/devices.
+     * @param {string} type The message type being sent.
+     * @param {Record<string, Record<string, any>>} messages The messages to send, mapped as user ID to
+     * device ID (or "*" to denote all of the user's devices) to message payload (content).
+     * @returns {Promise<void>} Resolves when complete.
+     */
+    @timedMatrixClientFunctionCall()
+    public async sendToDevices(type: string, messages: Record<string, Record<string, any>>): Promise<void> {
+        const txnId = (new Date().getTime()) + "_TDEV__inc" + (++this.requestId);
+        return this.doRequest("PUT", `/_matrix/client/r0/sendToDevice/${encodeURIComponent(type)}/${encodeURIComponent(txnId)}`, null, {
+            messages: messages,
+        });
     }
 
     /**
