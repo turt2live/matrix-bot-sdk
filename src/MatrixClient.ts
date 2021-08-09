@@ -880,7 +880,7 @@ export class MatrixClient extends EventEmitter {
      * @returns {Object} The joined user IDs in the room as an object mapped to a set of profiles.
      */
     @timedMatrixClientFunctionCall()
-    public async getJoinedRoomMembersWithProfiles(roomId: string): Promise<{[userId: string]: MatrixProfileInfo}> {
+    public async getJoinedRoomMembersWithProfiles(roomId: string): Promise<{[userId: string]: {display_name?: string, avatar_url?: string}> {
         return (await this.doRequest("GET", "/_matrix/client/r0/rooms/" + encodeURIComponent(roomId) + "/joined_members")).joined;
     }
 
