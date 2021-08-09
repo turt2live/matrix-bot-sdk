@@ -542,33 +542,33 @@ export class CryptoClient {
                 const sessions = await this.client.cryptoStore.getOlmSessions(senderDevice.user_id, senderDevice.device_id);
                 let trySession: IOlmSession;
                 for (const storedSession of sessions) {
-                    const session = new Olm.Session();
+                    const checkSession = new Olm.Session();
                     try {
-                        session.unpickle(this.pickleKey, storedSession.pickled);
-                        if (session.matches_inbound(myMessage.body)) {
+                        checkSession.unpickle(this.pickleKey, storedSession.pickled);
+                        if (checkSession.matches_inbound(myMessage.body)) {
                             trySession = storedSession;
                             break;
                         }
                     } finally {
-                        session.free();
+                        checkSession.free();
                     }
                 }
 
                 if (myMessage.type === 0 && !trySession) {
                     // Store the session because we can
-                    const session = new Olm.Session();
+                    const inboundSession = new Olm.Session();
                     const account = await this.getOlmAccount();
                     try {
-                        session.create_inbound_from(account, message.content.sender_key, myMessage.body);
-                        account.remove_one_time_keys(session);
+                        inboundSession.create_inbound_from(account, message.content.sender_key, myMessage.body);
+                        account.remove_one_time_keys(inboundSession);
                         trySession = {
-                            pickled: session.pickle(this.pickleKey),
-                            sessionId: session.session_id(),
+                            pickled: inboundSession.pickle(this.pickleKey),
+                            sessionId: inboundSession.session_id(),
                             lastDecryptionTs: Date.now(),
                         };
                         await this.client.cryptoStore.storeOlmSession(senderDevice.user_id, senderDevice.device_id, trySession);
                     } finally {
-                        session.free();
+                        inboundSession.free();
                         await this.storeAndFreeOlmAccount(account);
                     }
                 }
