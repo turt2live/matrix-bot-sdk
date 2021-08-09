@@ -1,5 +1,4 @@
 import { IJoinRoomStrategy } from "./JoinRoomStrategy";
-import { LogService } from "..";
 import { Appservice } from "../appservice/Appservice";
 
 /**

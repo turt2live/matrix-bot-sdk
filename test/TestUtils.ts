@@ -1,7 +1,6 @@
 import * as expect from "expect";
 import { EncryptionAlgorithm, IOlmSession, IOutboundGroupSession, MatrixClient, UserDevice, } from "../src";
 import * as crypto from "crypto";
-import * as anotherJson from "another-json";
 
 export function expectArrayEquals(expected: any[], actual: any[]) {
     expect(expected).toBeDefined();
@@ -87,13 +86,3 @@ export const STATIC_OUTBOUND_SESSION: IOutboundGroupSession = {
     usesLeft: 100,
     expiresTs: Date.now() + 3600000,
 };
-
-export async function temp() {
-    const session = new (await prepareOlm()).OutboundGroupSession();
-    try {
-        session.unpickle(STATIC_PICKLE_KEY, STATIC_OUTBOUND_SESSION.pickled);
-        throw session.session_id();
-    } finally {
-        session.free();
-    }
-}

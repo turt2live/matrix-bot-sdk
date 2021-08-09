@@ -2,10 +2,12 @@ import * as expect from "expect";
 import * as simple from "simple-mock";
 import {
     DeviceKeyAlgorithm,
-    EncryptionAlgorithm, IOlmSession, MatrixClient,
+    EncryptionAlgorithm,
+    IOlmSession,
+    MatrixClient,
     OTKAlgorithm,
     OTKCounts,
-    RoomEncryptionAlgorithm, UserDevice,
+    RoomEncryptionAlgorithm,
 } from "../../src";
 import { createTestClient, TEST_DEVICE_ID } from "../MatrixClientTest";
 import {
@@ -13,11 +15,9 @@ import {
     feedStaticOlmAccount,
     RECEIVER_DEVICE,
     RECEIVER_OLM_SESSION,
-    STATIC_OUTBOUND_SESSION,
-    temp
+    STATIC_OUTBOUND_SESSION
 } from "../TestUtils";
 import { DeviceTracker } from "../../src/e2ee/DeviceTracker";
-import { STATIC_TEST_DEVICES } from "./DeviceTrackerTest";
 
 describe('CryptoClient', () => {
     it('should not have a device ID or be ready until prepared', async () => {

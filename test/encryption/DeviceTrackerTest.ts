@@ -1,12 +1,6 @@
 import * as expect from "expect";
 import * as simple from "simple-mock";
-import {
-    EncryptionAlgorithm,
-    EncryptionEventContent,
-    MatrixClient,
-    RoomEncryptionAlgorithm,
-    RoomTracker, UserDevice
-} from "../../src";
+import { EncryptionAlgorithm, UserDevice } from "../../src";
 import { createTestClient, TEST_DEVICE_ID } from "../MatrixClientTest";
 import { DeviceTracker } from "../../src/e2ee/DeviceTracker";
 

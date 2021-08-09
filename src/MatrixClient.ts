@@ -28,11 +28,12 @@ import { CryptoClient } from "./e2ee/CryptoClient";
 import {
     DeviceKeyAlgorithm,
     DeviceKeyLabel,
-    EncryptionAlgorithm, IDeviceMessage,
-    MultiUserDeviceListResponse, OTKAlgorithm, OTKClaimResponse,
+    EncryptionAlgorithm,
+    MultiUserDeviceListResponse,
+    OTKAlgorithm,
+    OTKClaimResponse,
     OTKCounts,
-    OTKs,
-    UserDevice
+    OTKs
 } from "./models/Crypto";
 import { requiresCrypto } from "./e2ee/decorators";
 import { ICryptoStorageProvider } from "./storage/ICryptoStorageProvider";

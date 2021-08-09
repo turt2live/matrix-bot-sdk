@@ -1,10 +1,10 @@
 import * as expect from "expect";
 import * as simple from "simple-mock";
 import {
-    timedMatrixClientFunctionCall,
-    timedIntentFunctionCall,
     Metrics,
-    timedIdentityClientFunctionCall
+    timedIdentityClientFunctionCall,
+    timedIntentFunctionCall,
+    timedMatrixClientFunctionCall
 } from "../../src";
 
 class InterceptedClass {
