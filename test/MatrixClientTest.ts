@@ -2518,10 +2518,10 @@ describe('MatrixClient', () => {
             const roomId = "!testing:example.org";
             const members = {
                 "@alice:example.org": {
-                    displayname: "Alice of Wonderland"
+                    display_name: "Alice of Wonderland"
                 },
                 "@bob:example.org": {
-                    displayname: "Bob the Builder",
+                    display_name: "Bob the Builder",
                     avatar_url: "mxc://foo/bar"
                 }
             };
