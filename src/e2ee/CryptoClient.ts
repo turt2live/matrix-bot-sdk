@@ -203,16 +203,24 @@ export class CryptoClient {
         try {
             const sig = account.sign(anotherJson.stringify(obj));
             return {
-                ...existingSignatures,
                 [await this.client.getUserId()]: {
                     [`${DeviceKeyAlgorithm.Ed25119}:${this.deviceId}`]: sig,
                 },
+                ...existingSignatures,
             };
         } finally {
             account.free();
         }
     }
 
+    /**
+     * Verifies a signature on an object.
+     * @param {object} obj The signed object.
+     * @param {string} key The key which has supposedly signed the object.
+     * @param {string} signature The advertised signature.
+     * @returns {Promise<boolean>} Resolves to true if a valid signature, false otherwise.
+     */
+    @requiresReady()
     public async verifySignature(obj: object, key: string, signature: string): Promise<boolean> {
         obj = JSON.parse(JSON.stringify(obj));
 
@@ -237,10 +245,12 @@ export class CryptoClient {
      * Flags multiple user's device lists as outdated, optionally queuing an immediate update.
      * @param {string} userIds The user IDs to flag the device lists of.
      * @param {boolean} resync True (default) to queue an immediate update, false otherwise.
+     * @returns {Promise<void>} Resolves when the device lists have been flagged. Will also wait
+     * for the resync if one was requested.
      */
-    public flagUsersDeviceListsOutdated(userIds: string[], resync = true) {
-        // noinspection JSIgnoredPromiseFromCall
-        this.deviceTracker.flagUsersOutdated(userIds, resync);
+    @requiresReady()
+    public flagUsersDeviceListsOutdated(userIds: string[], resync = true): Promise<void> {
+        return this.deviceTracker.flagUsersOutdated(userIds, resync);
     }
 
     /**
@@ -251,6 +261,7 @@ export class CryptoClient {
      * ID to session. Users/devices which cannot have sessions made will not be included, thus the object
      * may be empty.
      */
+    @requiresReady()
     public async getOrCreateOlmSessions(userDeviceMap: Record<string, string[]>): Promise<Record<string, Record<string, IOlmSession>>> {
         const otkClaimRequest: Record<string, Record<string, OTKAlgorithm>> = {};
         const userDeviceSessionIds: Record<string, Record<string, IOlmSession>> = {};
@@ -275,64 +286,72 @@ export class CryptoClient {
             }
         }
 
-        const claimed = await this.client.claimOneTimeKeys(otkClaimRequest);
-        for (const userId of Object.keys(claimed.one_time_keys)) {
-            const storedDevices = await this.client.cryptoStore.getUserDevices(userId);
-            for (const deviceId of Object.keys(claimed.one_time_keys[userId])) {
-                try {
-                    const device = storedDevices.find(d => d.user_id === userId && d.device_id === deviceId);
-                    if (!device) {
-                        LogService.warn("CryptoClient", `Failed to handle claimed OTK: unable to locate stored device for user: ${userId} ${deviceId}`);
-                        continue;
-                    }
-
-                    const deviceKeyLabel = `${DeviceKeyAlgorithm.Ed25119}:${deviceId}`;
-
-                    const keyId = Object.keys(claimed.one_time_keys[userId][deviceId])[0];
-                    const signedKey = claimed.one_time_keys[userId][deviceId][keyId];
-                    const signature = signedKey?.signatures?.[userId]?.[deviceKeyLabel];
-                    if (!signature) {
-                        LogService.warn("CryptoClient", `Failed to find appropriate signature for claimed OTK ${userId} ${deviceId}`);
-                        continue;
-                    }
-
-                    const verified = await this.verifySignature(signedKey, device.keys[deviceKeyLabel], signature);
-                    if (!verified) {
-                        LogService.warn("CryptoClient", `Invalid signature for claimed OTK ${userId} ${deviceId}`);
-                        continue;
-                    }
-
-                    // TODO: Handle spec rate limiting
-                    // Clients should rate-limit the number of sessions it creates per device that it receives a message
-                    // from. Clients should not create a new session with another device if it has already created one
-                    // for that given device in the past 1 hour.
-
-                    // Finally, we can create a session. We do this on each loop just in case something goes wrong given
-                    // we don't have app-level transaction support here. We want to persist as many outbound sessions as
-                    // we can before exploding.
-                    const account = await this.getOlmAccount();
-                    const session = new Olm.Session();
+        if (Object.keys(otkClaimRequest).length > 0) {
+            const claimed = await this.client.claimOneTimeKeys(otkClaimRequest);
+            for (const userId of Object.keys(claimed.one_time_keys)) {
+                if (!otkClaimRequest[userId]) {
+                    LogService.warn("CryptoClient", `Server injected unexpected user: ${userId} - not claiming keys`);
+                    continue;
+                }
+                const storedDevices = await this.client.cryptoStore.getUserDevices(userId);
+                for (const deviceId of Object.keys(claimed.one_time_keys[userId])) {
                     try {
-                        const curveDeviceKey = device.keys[`${DeviceKeyAlgorithm.Curve25519}:${deviceId}`];
-                        session.create_outbound(account, curveDeviceKey, signedKey.key);
-                        const storedSession: IOlmSession = {
-                            sessionId: session.session_id(),
-                            lastDecryptionTs: Date.now(),
-                            pickled: session.pickle(this.pickleKey),
-                        };
-                        await this.client.cryptoStore.storeOlmSession(userId, deviceId, storedSession);
+                        if (!otkClaimRequest[userId][deviceId]) {
+                            LogService.warn("CryptoClient", `Server provided an unexpected device in claim response (skipping): ${userId} ${deviceId}`);
+                            continue;
+                        }
 
-                        if (!userDeviceSessionIds[userId]) userDeviceSessionIds[userId] = {};
-                        userDeviceSessionIds[userId][deviceId] = storedSession;
+                        const device = storedDevices.find(d => d.user_id === userId && d.device_id === deviceId);
+                        if (!device) {
+                            LogService.warn("CryptoClient", `Failed to handle claimed OTK: unable to locate stored device for user: ${userId} ${deviceId}`);
+                            continue;
+                        }
 
-                        // Send a dummy event so the device can prepare the session.
-                        // await this.encryptAndSendOlmMessage(device, storedSession, "m.dummy", {});
-                    } finally {
-                        session.free();
-                        await this.storeAndFreeOlmAccount(account);
+                        const deviceKeyLabel = `${DeviceKeyAlgorithm.Ed25119}:${deviceId}`;
+
+                        const keyId = Object.keys(claimed.one_time_keys[userId][deviceId])[0];
+                        const signedKey = claimed.one_time_keys[userId][deviceId][keyId];
+                        const signature = signedKey?.signatures?.[userId]?.[deviceKeyLabel];
+                        if (!signature) {
+                            LogService.warn("CryptoClient", `Failed to find appropriate signature for claimed OTK ${userId} ${deviceId}`);
+                            continue;
+                        }
+
+                        const verified = await this.verifySignature(signedKey, device.keys[deviceKeyLabel], signature);
+                        if (!verified) {
+                            LogService.warn("CryptoClient", `Invalid signature for claimed OTK ${userId} ${deviceId}`);
+                            continue;
+                        }
+
+                        // TODO: Handle spec rate limiting
+                        // Clients should rate-limit the number of sessions it creates per device that it receives a message
+                        // from. Clients should not create a new session with another device if it has already created one
+                        // for that given device in the past 1 hour.
+
+                        // Finally, we can create a session. We do this on each loop just in case something goes wrong given
+                        // we don't have app-level transaction support here. We want to persist as many outbound sessions as
+                        // we can before exploding.
+                        const account = await this.getOlmAccount();
+                        const session = new Olm.Session();
+                        try {
+                            const curveDeviceKey = device.keys[`${DeviceKeyAlgorithm.Curve25519}:${deviceId}`];
+                            session.create_outbound(account, curveDeviceKey, signedKey.key);
+                            const storedSession: IOlmSession = {
+                                sessionId: session.session_id(),
+                                lastDecryptionTs: Date.now(),
+                                pickled: session.pickle(this.pickleKey),
+                            };
+                            await this.client.cryptoStore.storeOlmSession(userId, deviceId, storedSession);
+
+                            if (!userDeviceSessionIds[userId]) userDeviceSessionIds[userId] = {};
+                            userDeviceSessionIds[userId][deviceId] = storedSession;
+                        } finally {
+                            session.free();
+                            await this.storeAndFreeOlmAccount(account);
+                        }
+                    } catch (e) {
+                        LogService.warn("CryptoClient", `Unable to verify signature of claimed OTK ${userId} ${deviceId}:`, e);
                     }
-                } catch (e) {
-                    LogService.warn("CryptoClient", `Unable to verify signature of claimed OTK ${userId} ${deviceId}:`, e);
                 }
             }
         }
@@ -340,6 +359,7 @@ export class CryptoClient {
         return userDeviceSessionIds;
     }
 
+    @requiresReady()
     private async encryptAndSendOlmMessage(device: UserDevice, session: IOlmSession, type: string, content: any): Promise<void> {
         const olmSession = new Olm.Session();
         try {
@@ -390,6 +410,7 @@ export class CryptoClient {
      * @param {any} content The event content being encrypted.
      * @returns {Promise<any>} Resolves to the encrypted content for an `m.room.encrypted` event.
      */
+    @requiresReady()
     public async encryptRoomEvent(roomId: string, eventType: string, content: any): Promise<any> {
         if (!(await this.isRoomEncrypted(roomId))) {
             throw new Error("Room is not encrypted");
@@ -475,7 +496,5 @@ export class CryptoClient {
         } finally {
             session.free();
         }
-
-
     }
 }

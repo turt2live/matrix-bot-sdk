@@ -5198,7 +5198,7 @@ describe('MatrixClient', () => {
     });
 
     describe('uploadDeviceKeys', () => {
-        it('it should fail when no encryption', async () => {
+        it('should fail when no encryption', async () => {
             try {
                 const { client } = createTestClient();
                 await client.uploadDeviceKeys([], {});
@@ -5210,7 +5210,7 @@ describe('MatrixClient', () => {
             }
         });
 
-        it('it should call the right endpoint', async () => {
+        it('should call the right endpoint', async () => {
             const userId = "@test:example.org";
             const { client, http } = createTestClient(null, userId, true);
 
@@ -5254,7 +5254,7 @@ describe('MatrixClient', () => {
     });
 
     describe('uploadDeviceOneTimeKeys', () => {
-        it('it should fail when no encryption is available', async () => {
+        it('should fail when no encryption is available', async () => {
             try {
                 const { client } = createTestClient();
                 await client.uploadDeviceOneTimeKeys({});
@@ -5266,7 +5266,7 @@ describe('MatrixClient', () => {
             }
         });
 
-        it('it should call the right endpoint', async () => {
+        it('should call the right endpoint', async () => {
             const userId = "@test:example.org";
             const { client, http } = createTestClient(null, userId, true);
 
@@ -5300,7 +5300,7 @@ describe('MatrixClient', () => {
     });
 
     describe('checkOneTimeKeyCounts', () => {
-        it('it should fail when no encryption is available', async () => {
+        it('should fail when no encryption is available', async () => {
             try {
                 const { client } = createTestClient();
                 await client.checkOneTimeKeyCounts();
@@ -5312,7 +5312,7 @@ describe('MatrixClient', () => {
             }
         });
 
-        it('it should call the right endpoint', async () => {
+        it('should call the right endpoint', async () => {
             const userId = "@test:example.org";
             const { client, http } = createTestClient(null, userId, true);
 
@@ -5333,7 +5333,7 @@ describe('MatrixClient', () => {
     });
 
     describe('getUserDevices', () => {
-        it('it should call the right endpoint', async () => {
+        it('should call the right endpoint', async () => {
             const { client, http } = createTestClient();
 
             const timeout = 15000;
@@ -5357,8 +5357,7 @@ describe('MatrixClient', () => {
             };
 
             http.when("POST", "/_matrix/client/r0/keys/query").respond(200, (path, content, req) => {
-                expect(req.opts.qs).toMatchObject({timeout});
-                expect(content).toMatchObject(requestBody);
+                expect(content).toMatchObject({ timeout, device_keys: requestBody });
                 return response;
             });
 
@@ -5367,7 +5366,7 @@ describe('MatrixClient', () => {
             expect(result).toMatchObject(response);
         });
 
-        it('it should call the right endpoint with a default timeout', async () => {
+        it('should call the right endpoint with a default timeout', async () => {
             const userId = "@test:example.org";
             const { client, http } = createTestClient(null, userId, true);
 
@@ -5391,14 +5390,140 @@ describe('MatrixClient', () => {
             };
 
             http.when("POST", "/_matrix/client/r0/keys/query").respond(200, (path, content, req) => {
-                expect(req.opts.qs).toMatchObject({timeout: 10000});
-                expect(content).toMatchObject(requestBody);
+                expect(content).toMatchObject({ timeout: 10000, device_keys: requestBody });
                 return response;
             });
 
             http.flushAllExpected();
             const result = await client.getUserDevices(Object.keys(requestBody));
             expect(result).toMatchObject(response);
+        });
+    });
+
+    describe('claimOneTimeKeys', () => {
+        it('should fail when no encryption is available', async () => {
+            try {
+                const { client } = createTestClient();
+                await client.claimOneTimeKeys({});
+
+                // noinspection ExceptionCaughtLocallyJS
+                throw new Error("Failed to fail");
+            } catch (e) {
+                expect(e.message).toEqual("End-to-end encryption is not enabled");
+            }
+        });
+
+        it('should call the right endpoint', async () => {
+            const userId = "@test:example.org";
+            const { client, http } = createTestClient(null, userId, true);
+
+            const request = {
+                "@alice:example.org": {
+                    [TEST_DEVICE_ID]: OTKAlgorithm.Signed,
+                },
+                "@bob:federated.example.org": {
+                    [TEST_DEVICE_ID + "_2ND"]: OTKAlgorithm.Unsigned,
+                },
+            };
+            const response = {
+                failures: {
+                    "federated.example.org": {
+                        error: "Failed",
+                    },
+                },
+                one_time_keys: {
+                    "@alice:example.org": {
+                        [TEST_DEVICE_ID]: {
+                            // not populated in this test
+                        },
+                    },
+                },
+            };
+
+            http.when("POST", "/_matrix/client/r0/keys/claim").respond(200, (path, content) => {
+                expect(content).toMatchObject({
+                    timeout: 10000,
+                    one_time_keys: request,
+                });
+                return response;
+            });
+
+            http.flushAllExpected();
+            const result = await client.claimOneTimeKeys(request);
+            expect(result).toMatchObject(response);
+        });
+
+        it('should use the timeout parameter', async () => {
+            const userId = "@test:example.org";
+            const { client, http } = createTestClient(null, userId, true);
+
+            const request = {
+                "@alice:example.org": {
+                    [TEST_DEVICE_ID]: OTKAlgorithm.Signed,
+                },
+                "@bob:federated.example.org": {
+                    [TEST_DEVICE_ID + "_2ND"]: OTKAlgorithm.Unsigned,
+                },
+            };
+            const response = {
+                failures: {
+                    "federated.example.org": {
+                        error: "Failed",
+                    },
+                },
+                one_time_keys: {
+                    "@alice:example.org": {
+                        [TEST_DEVICE_ID]: {
+                            // not populated in this test
+                        },
+                    },
+                },
+            };
+
+            const timeout = 60;
+
+            http.when("POST", "/_matrix/client/r0/keys/claim").respond(200, (path, content) => {
+                expect(content).toMatchObject({
+                    timeout: timeout,
+                    one_time_keys: request,
+                });
+                return response;
+            });
+
+            http.flushAllExpected();
+            const result = await client.claimOneTimeKeys(request, timeout);
+            expect(result).toMatchObject(response);
+        });
+    });
+
+    describe('sendToDevices', () => {
+        it('should call the right endpoint', async () => {
+            const userId = "@test:example.org";
+            const { client, http, hsUrl } = createTestClient(null, userId, true);
+
+            const type = "org.example.message";
+            const messages = {
+                [userId]: {
+                    "*": {
+                        isContent: true,
+                    },
+                },
+                "@alice:example.org": {
+                    [TEST_DEVICE_ID]: {
+                        moreContent: true,
+                    },
+                },
+            };
+
+            http.when("PUT", "/_matrix/client/r0/sendToDevice").respond(200, (path, content) => {
+                const idx = path.indexOf(`${hsUrl}/_matrix/client/r0/sendToDevice/${encodeURIComponent(type)}/`);
+                expect(idx).toBe(0);
+                expect(content).toMatchObject({messages});
+                return {};
+            });
+
+            http.flushAllExpected();
+            await client.sendToDevices(type, messages);
         });
     });
 

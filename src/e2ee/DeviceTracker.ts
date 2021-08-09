@@ -39,13 +39,13 @@ export class DeviceTracker {
      * Flags multiple user's device lists as outdated, optionally queuing an immediate update.
      * @param {string} userIds The user IDs to flag the device lists of.
      * @param {boolean} resync True (default) to queue an immediate update, false otherwise.
+     * @returns {Promise<void>} Resolves when the flagging has completed. Will wait for the resync
+     * if requested too.
      */
-    public async flagUsersOutdated(userIds: string[], resync = true) {
+    public async flagUsersOutdated(userIds: string[], resync = true): Promise<void> {
         await this.client.cryptoStore.flagUsersOutdated(userIds);
         if (resync) {
-            // We don't really want to wait around for this, so let it work in the background
-            // noinspection ES6MissingAwait
-            this.updateUsersDeviceLists(userIds);
+            await this.updateUsersDeviceLists(userIds);
         }
     }
 
@@ -63,52 +63,62 @@ export class DeviceTracker {
             await Promise.all(existingPromises);
         }
 
-        const promise = new Promise<void>(async resolve => {
-            const resp = await this.client.getUserDevices(userIds);
-            for (const userId of Object.keys(resp.device_keys)) {
-                const validated: UserDevice[] = [];
-                for (const deviceId of Object.keys(resp.device_keys[userId])) {
-                    const device = resp.device_keys[userId][deviceId];
-                    if (device.user_id !== userId || device.device_id !== deviceId) {
-                        LogService.warn("DeviceTracker", `Server appears to be lying about device lists: ${userId} ${deviceId} has unexpected device ${device.user_id} ${device.device_id} listed - ignoring device`);
+        const promise = new Promise<void>(async (resolve, reject) => {
+            try {
+                const resp = await this.client.getUserDevices(userIds);
+                for (const userId of Object.keys(resp.device_keys)) {
+                    if (!userIds.includes(userId)) {
+                        LogService.warn("DeviceTracker", `Server returned unexpected user ID: ${userId} - ignoring user`);
                         continue;
                     }
 
-                    const ed25519 = device.keys[`${DeviceKeyAlgorithm.Ed25119}:${deviceId}`];
-                    const curve25519 = device.keys[`${DeviceKeyAlgorithm.Curve25519}:${deviceId}`];
-
-                    if (!ed25519 || !curve25519) {
-                        LogService.warn("DeviceTracker", `Device ${userId} ${deviceId} is missing either an Ed25519 or Curve25519 key - ignoring device`);
-                        continue;
-                    }
-
-                    const currentDevices = await this.client.cryptoStore.getUserDevices(userId);
-                    const existingDevice = currentDevices.find(d => d.device_id === deviceId);
-
-                    if (existingDevice) {
-                        const existingEd25519 = existingDevice.keys[`${DeviceKeyAlgorithm.Ed25119}:${deviceId}`];
-                        if (existingEd25519 !== ed25519) {
-                            LogService.warn("DeviceTracker", `Device ${userId} ${deviceId} appears compromised: Ed25519 key changed - ignoring device`);
+                    const validated: UserDevice[] = [];
+                    for (const deviceId of Object.keys(resp.device_keys[userId])) {
+                        const device = resp.device_keys[userId][deviceId];
+                        if (device.user_id !== userId || device.device_id !== deviceId) {
+                            LogService.warn("DeviceTracker", `Server appears to be lying about device lists: ${userId} ${deviceId} has unexpected device ${device.user_id} ${device.device_id} listed - ignoring device`);
                             continue;
                         }
+
+                        const ed25519 = device.keys[`${DeviceKeyAlgorithm.Ed25119}:${deviceId}`];
+                        const curve25519 = device.keys[`${DeviceKeyAlgorithm.Curve25519}:${deviceId}`];
+
+                        if (!ed25519 || !curve25519) {
+                            LogService.warn("DeviceTracker", `Device ${userId} ${deviceId} is missing either an Ed25519 or Curve25519 key - ignoring device`);
+                            continue;
+                        }
+
+                        const currentDevices = await this.client.cryptoStore.getUserDevices(userId);
+                        const existingDevice = currentDevices.find(d => d.device_id === deviceId);
+
+                        if (existingDevice) {
+                            const existingEd25519 = existingDevice.keys[`${DeviceKeyAlgorithm.Ed25119}:${deviceId}`];
+                            if (existingEd25519 !== ed25519) {
+                                LogService.warn("DeviceTracker", `Device ${userId} ${deviceId} appears compromised: Ed25519 key changed - ignoring device`);
+                                continue;
+                            }
+                        }
+
+                        const signature = device.signatures?.[userId]?.[`${DeviceKeyAlgorithm.Ed25119}:${deviceId}`];
+                        if (!signature) {
+                            LogService.warn("DeviceTracker", `Device ${userId} ${deviceId} is missing a signature - ignoring device`);
+                            continue;
+                        }
+
+                        const validSignature = await this.client.crypto.verifySignature(device, ed25519, signature);
+                        if (!validSignature) {
+                            LogService.warn("DeviceTracker", `Device ${userId} ${deviceId} has an invalid signature - ignoring device`);
+                            continue;
+                        }
+
+                        validated.push(device);
                     }
 
-                    const signature = device.signatures?.[userId]?.[`${DeviceKeyAlgorithm.Ed25119}:${deviceId}`];
-                    if (!signature) {
-                        LogService.warn("DeviceTracker", `Device ${userId} ${deviceId} is missing a signature - ignoring device`);
-                        continue;
-                    }
-
-                    const validSignature = await this.client.crypto.verifySignature(device, ed25519, signature);
-                    if (!validSignature) {
-                        LogService.warn("DeviceTracker", `Device ${userId} ${deviceId} has an invalid signature - ignoring device`);
-                        continue;
-                    }
-
-                    validated.push(device);
+                    await this.client.cryptoStore.setUserDevices(userId, validated);
                 }
-
-                await this.client.cryptoStore.setUserDevices(userId, validated);
+            } catch (e) {
+                LogService.error("DeviceTracker", "Error updating device lists:", e);
+                // return reject(e);
             }
             resolve();
         });

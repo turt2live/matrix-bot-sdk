@@ -172,7 +172,7 @@ export class SqliteCryptoStorageProvider implements ICryptoStorageProvider {
                 usesLeft: session.usesLeft,
                 expiresTs: session.expiresTs,
             });
-        });
+        })();
     }
 
     public async getOutboundGroupSession(sessionId: string, roomId: string): Promise<IOutboundGroupSession> {
@@ -183,8 +183,8 @@ export class SqliteCryptoStorageProvider implements ICryptoStorageProvider {
                 roomId: result.room_id,
                 pickled: result.pickled,
                 isCurrent: result.current === 1,
-                usesLeft: result.usesLeft,
-                expiresTs: result.expiresTs,
+                usesLeft: result.uses_left,
+                expiresTs: result.expires_ts,
             };
         }
         return null;
@@ -198,8 +198,8 @@ export class SqliteCryptoStorageProvider implements ICryptoStorageProvider {
                 roomId: result.room_id,
                 pickled: result.pickled,
                 isCurrent: result.current === 1,
-                usesLeft: result.usesLeft,
-                expiresTs: result.expiresTs,
+                usesLeft: result.uses_left,
+                expiresTs: result.expires_ts,
             };
         }
         return null;

@@ -111,7 +111,7 @@ export class MatrixClient extends EventEmitter {
             this.crypto = new CryptoClient(this);
             LogService.debug("MatrixClientLite", "End-to-end encryption client created");
         } else {
-            LogService.trace("MatrixClientLite", "Not setting up encryption");
+            // LogService.trace("MatrixClientLite", "Not setting up encryption");
         }
 
         if (!this.storage) this.storage = new MemoryStorageProvider();
