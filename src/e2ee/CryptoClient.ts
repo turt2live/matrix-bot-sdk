@@ -6,9 +6,12 @@ import * as anotherJson from "another-json";
 import {
     DeviceKeyAlgorithm,
     EncryptionAlgorithm,
+    IMegolmEncrypted,
+    IMRoomKey,
     IOlmEncrypted,
     IOlmPayload,
     IOlmSession,
+    IToDeviceMessage,
     OTKAlgorithm,
     OTKCounts,
     OTKs,
@@ -257,12 +260,13 @@ export class CryptoClient {
      * Gets or creates Olm sessions for the given users and devices. Where sessions cannot be created,
      * the user/device will be excluded from the returned map.
      * @param {Record<string, string[]>} userDeviceMap Map of user IDs to device IDs
+     * @param {boolean} force If true, force creation of a session for the referenced users.
      * @returns {Promise<Record<string, Record<string, IOlmSession>>>} Resolves to a map of user ID to device
      * ID to session. Users/devices which cannot have sessions made will not be included, thus the object
      * may be empty.
      */
     @requiresReady()
-    public async getOrCreateOlmSessions(userDeviceMap: Record<string, string[]>): Promise<Record<string, Record<string, IOlmSession>>> {
+    public async getOrCreateOlmSessions(userDeviceMap: Record<string, string[]>, force = false): Promise<Record<string, Record<string, IOlmSession>>> {
         const otkClaimRequest: Record<string, Record<string, OTKAlgorithm>> = {};
         const userDeviceSessionIds: Record<string, Record<string, IOlmSession>> = {};
 
@@ -275,7 +279,7 @@ export class CryptoClient {
                     continue;
                 }
 
-                const existingSession = await this.client.cryptoStore.getCurrentOlmSession(userId, deviceId);
+                const existingSession = force ? null : (await this.client.cryptoStore.getCurrentOlmSession(userId, deviceId));
                 if (existingSession) {
                     if (!userDeviceSessionIds[userId]) userDeviceSessionIds[userId] = {};
                     userDeviceSessionIds[userId][deviceId] = existingSession;
@@ -408,10 +412,10 @@ export class CryptoClient {
      * error is thrown.
      * @param {string} eventType The event type being encrypted.
      * @param {any} content The event content being encrypted.
-     * @returns {Promise<any>} Resolves to the encrypted content for an `m.room.encrypted` event.
+     * @returns {Promise<IMegolmEncrypted>} Resolves to the encrypted content for an `m.room.encrypted` event.
      */
     @requiresReady()
-    public async encryptRoomEvent(roomId: string, eventType: string, content: any): Promise<any> {
+    public async encryptRoomEvent(roomId: string, eventType: string, content: any): Promise<IMegolmEncrypted> {
         if (!(await this.isRoomEncrypted(roomId))) {
             throw new Error("Room is not encrypted");
         }
@@ -430,12 +434,12 @@ export class CryptoClient {
                 content: await this.roomTracker.getRoomCryptoConfig(roomId),
             });
 
-            const session = new Olm.OutboundGroupSession();
+            const newSession = new Olm.OutboundGroupSession();
             try {
-                session.create();
-                const pickled = session.pickle(this.pickleKey);
+                newSession.create();
+                const pickled = newSession.pickle(this.pickleKey);
                 currentSession = {
-                    sessionId: session.session_id(),
+                    sessionId: newSession.session_id(),
                     roomId: roomId,
                     pickled: pickled,
                     isCurrent: true,
@@ -443,10 +447,14 @@ export class CryptoClient {
                     expiresTs: now + roomConfig.rotationPeriodMs,
                 };
                 await this.client.cryptoStore.storeOutboundGroupSession(currentSession);
-                // TODO: Store as inbound session too
-
+                await this.storeInboundGroupSession({
+                    room_id: roomId,
+                    session_id: newSession.session_id(),
+                    session_key: newSession.session_key(),
+                    algorithm: EncryptionAlgorithm.MegolmV1AesSha2,
+                }, await this.client.getUserId(), this.clientDeviceId);
             } finally {
-                session.free();
+                newSession.free();
             }
         }
 
@@ -471,7 +479,7 @@ export class CryptoClient {
                         LogService.warn("CryptoClient", `Unable to send Megolm session to ${userId} ${device.device_id}: No Olm session`);
                         continue;
                     }
-                    await this.encryptAndSendOlmMessage(device, olmSession, "m.room_key", {
+                    await this.encryptAndSendOlmMessage(device, olmSession, "m.room_key", <IMRoomKey>{
                         algorithm: EncryptionAlgorithm.MegolmV1AesSha2,
                         room_id: roomId,
                         session_id: session.session_id(),
@@ -496,5 +504,175 @@ export class CryptoClient {
         } finally {
             session.free();
         }
+    }
+
+    /**
+     * Handles an inbound to-device message, decrypting it if needed. This will not throw
+     * under normal circumstances and should always resolve successfully.
+     * @param {IToDeviceMessage<IOlmEncrypted>} message The message to process.
+     * @returns {Promise<void>} Resolves when complete. Should never fail.
+     */
+    public async processInboundDeviceMessage(message: IToDeviceMessage<IOlmEncrypted>): Promise<void> {
+        if (!message.content || !message.sender || !message.type) return;
+        try {
+            if (message.type === "m.room.encrypted") {
+                if (message.content?.['algorithm'] !== EncryptionAlgorithm.OlmV1Curve25519AesSha2) {
+                    LogService.warn("CryptoClient", "Received encrypted message with unknown encryption algorithm");
+                    return;
+                }
+
+                const userDevices = await this.client.cryptoStore.getUserDevices(message.sender);
+                const senderDevice = userDevices.find(d => d.keys[`${DeviceKeyAlgorithm.Curve25519}:${d.device_id}`] === message.content.sender_key);
+                if (!senderDevice) {
+                    LogService.warn("CryptoClient", "Received encrypted message from unknown identity key (ignoring message):", message.content.sender_key);
+                    return;
+                }
+
+                const myMessage = message.content.ciphertext?.[this.deviceCurve25519];
+                if (!myMessage) {
+                    LogService.warn("CryptoClient", "Received encrypted message not intended for us (ignoring message)");
+                    return;
+                }
+
+                if (!Number.isFinite(myMessage.type) || !myMessage.body) {
+                    LogService.warn("CryptoClient", "Received invalid encrypted message (ignoring message)");
+                    return;
+                }
+
+                const sessions = await this.client.cryptoStore.getOlmSessions(senderDevice.user_id, senderDevice.device_id);
+                let trySession: IOlmSession;
+                for (const storedSession of sessions) {
+                    const session = new Olm.Session();
+                    try {
+                        session.unpickle(this.pickleKey, storedSession.pickled);
+                        if (session.matches_inbound(myMessage.body)) {
+                            trySession = storedSession;
+                            break;
+                        }
+                    } finally {
+                        session.free();
+                    }
+                }
+
+                if (myMessage.type === 0 && !trySession) {
+                    // Store the session because we can
+                    const session = new Olm.Session();
+                    const account = await this.getOlmAccount();
+                    try {
+                        session.create_inbound_from(account, message.content.sender_key, myMessage.body);
+                        account.remove_one_time_keys(session);
+                        trySession = {
+                            pickled: session.pickle(this.pickleKey),
+                            sessionId: session.session_id(),
+                            lastDecryptionTs: Date.now(),
+                        };
+                        await this.client.cryptoStore.storeOlmSession(senderDevice.user_id, senderDevice.device_id, trySession);
+                    } finally {
+                        session.free();
+                        await this.storeAndFreeOlmAccount(account);
+                    }
+                }
+
+                if (myMessage.type !== 0 && !trySession) {
+                    LogService.warn("CryptoClient", "Unable to find suitable session for encrypted to-device message; Establishing new session");
+                    await this.establishNewOlmSession(senderDevice);
+                    return;
+                }
+
+                // Try decryption (finally)
+                const session = new Olm.Session();
+                let decrypted: IOlmPayload;
+                try {
+                    session.unpickle(this.pickleKey, trySession.pickled);
+                    decrypted = JSON.parse(session.decrypt(myMessage.type, myMessage.body));
+                } catch (e) {
+                    LogService.warn("CryptoClient", "Decryption error with to-device message, assuming corrupted session and re-establishing.");
+                    await this.establishNewOlmSession(senderDevice);
+                    return;
+                } finally {
+                    session.free();
+                }
+
+                const wasForUs = decrypted.recipient !== (await this.client.getUserId());
+                const wasFromThem = decrypted.sender === message.sender;
+                const hasType = typeof(decrypted.type) === 'string';
+                const hasContent = typeof(decrypted.content) === 'object';
+                const ourKeyMatches = decrypted.recipient_keys?.ed25519 === this.deviceEd25519;
+                const theirKeyMatches = decrypted.keys?.ed25519 === senderDevice.keys[`${DeviceKeyAlgorithm.Ed25119}:${senderDevice.device_id}`];
+                if (!wasForUs || !wasFromThem || !hasType || !hasContent || !ourKeyMatches || !theirKeyMatches) {
+                    LogService.warn("CryptoClient", "Successfully decrypted to-device message, but if failed validation. Ignoring message.");
+                    return;
+                }
+
+                trySession.lastDecryptionTs = Date.now();
+                await this.client.cryptoStore.storeOlmSession(senderDevice.user_id, senderDevice.device_id, trySession);
+
+                if (decrypted.type === "m.room_key") {
+                    await this.handleInboundRoomKey(decrypted, senderDevice, message);
+                } else if (decrypted.type === "m.dummy") {
+                    // success! Nothing to do.
+                } else {
+                    LogService.warn("CryptoClient", `Unknown decrypted to-device message type: ${decrypted.type}`);
+                }
+            } else {
+                LogService.warn("CryptoClient", `Unknown to-device message type: ${message.type}`);
+            }
+        } catch (e) {
+            LogService.error("CryptoClient", "Non-fatal error while processing to-device message:", e);
+        }
+    }
+
+    private async handleInboundRoomKey(message: IToDeviceMessage<IMRoomKey>, device: UserDevice, original: IToDeviceMessage<IOlmEncrypted>): Promise<void> {
+        if (message.content?.algorithm !== EncryptionAlgorithm.MegolmV1AesSha2) {
+            LogService.warn("CryptoClient", "Ignoring m.room_key for unknown encryption algorithm");
+            return;
+        }
+        if (!message.content?.room_id || !message.content?.session_id || !message.content?.session_key) {
+            LogService.warn("CryptoClient", "Ignoring invalid m.room_key");
+            return;
+        }
+
+        const deviceKey = device.keys[`${DeviceKeyAlgorithm.Curve25519}:${device.device_id}`];
+        if (deviceKey !== original.content?.sender_key) {
+            LogService.warn("CryptoClient", "Ignoring m.room_key message from unexpected sender");
+            return;
+        }
+
+        // See if we already know about this session (if we do: ignore the message)
+        const knownSession = await this.client.cryptoStore.getInboundGroupSession(device.user_id, device.device_id, message.content.room_id, message.content.session_id);
+        if (knownSession) {
+            return; // ignore
+        }
+
+        await this.storeInboundGroupSession(message.content, device.user_id, device.device_id);
+    }
+
+    private async storeInboundGroupSession(key: IMRoomKey, senderUserId: string, senderDeviceId: string): Promise<void> {
+        const inboundSession = new Olm.InboundGroupSession();
+        try {
+            inboundSession.create(key.session_key);
+            if (inboundSession.session_id() !== key.session_id) {
+                LogService.warn("CryptoClient", "Ignoring m.room_key with mismatched session_id");
+                return;
+            }
+            await this.client.cryptoStore.storeInboundGroupSession({
+                roomId: key.room_id,
+                sessionId: key.session_id,
+                senderDeviceId: senderDeviceId,
+                senderUserId: senderUserId,
+                pickled: inboundSession.pickle(this.pickleKey),
+            });
+        } finally {
+            inboundSession.free();
+        }
+    }
+
+    private async establishNewOlmSession(device: UserDevice): Promise<void> {
+        const olmSessions = await this.getOrCreateOlmSessions({
+            [device.user_id]: [device.device_id],
+        }, true);
+
+        // Share the session immediately
+        await this.encryptAndSendOlmMessage(device, olmSessions[device.user_id][device.device_id], "m.dummy", {});
     }
 }

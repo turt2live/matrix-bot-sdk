@@ -679,6 +679,18 @@ export class MatrixClient extends EventEmitter {
             }
         }
 
+        // Always process device messages first to ensure there are decryption keys
+        if (raw['to_device']?.['events']) {
+            const inbox = raw['to_device']['events'];
+            for (const message of inbox) {
+                if (message['type'] === 'm.room.encrypted') {
+                    await this.crypto.processInboundDeviceMessage(message);
+                } else {
+                    // TODO: Emit or do something with unknown messages?
+                }
+            }
+        }
+
         if (raw['groups']) {
             const leave = raw['groups']['leave'] || {};
             for (const groupId of Object.keys(leave)) {

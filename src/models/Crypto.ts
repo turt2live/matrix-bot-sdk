@@ -141,6 +141,20 @@ export interface IOutboundGroupSession {
 }
 
 /**
+ * An inbound group session.
+ * @category Models
+ */
+export interface IInboundGroupSession {
+    sessionId: string;
+    roomId: string;
+    senderUserId: string;
+    senderDeviceId: string;
+    pickled: string;
+
+    // TODO: Store `keys` from the m.room_key alongside the session for "verified sender" support.
+}
+
+/**
  * An Olm session.
  * @category Models
  */
@@ -160,10 +174,10 @@ export interface IOlmPayload {
     sender: string;
     recipient: string; // user ID
     recipient_keys: {
-        ed25519: string; // our key
+        ed25519: string;
     };
     keys: {
-        ed25519: string; // their key
+        ed25519: string; // sender's key
     };
 }
 
@@ -183,31 +197,34 @@ export interface IOlmEncrypted {
 }
 
 /**
- * The kind of payload which is sent encrypted from an Olm device.
+ * A to-device message.
  * @category Models
  */
-export enum OlmPayloadKind {
-    CanSetUpSession = 0,
-    RequiresKnownSession = 1,
+export interface IToDeviceMessage<T = any> {
+    type: string;
+    sender: string;
+    content: T;
 }
 
 /**
- * A device message.
+ * An m.room_key to-device message's content.
  * @category Models
  */
-export interface IDeviceMessage {
-    /**
-     * The recipient user ID.
-     */
-    targetUserId: string;
+export interface IMRoomKey {
+    algorithm: EncryptionAlgorithm.MegolmV1AesSha2;
+    room_id: string;
+    session_id: string;
+    session_key: string;
+}
 
-    /**
-     * The recipient device ID. May be "*" to denote all of the user's devices.
-     */
-    targetDeviceId: string;
-
-    /**
-     * The payload.
-     */
-    content: any;
+/**
+ * Encrypted event content for a Megolm-encrypted m.room.encrypted event
+ * @category Models
+ */
+export interface IMegolmEncrypted {
+    algorithm: EncryptionAlgorithm.MegolmV1AesSha2;
+    sender_key: string;
+    ciphertext: string;
+    session_id: string;
+    device_id: string; // sender
 }

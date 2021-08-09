@@ -1,5 +1,5 @@
 import { EncryptionEventContent } from "../models/events/EncryptionEvent";
-import { IOlmSession, IOutboundGroupSession, UserDevice } from "../models/Crypto";
+import { IInboundGroupSession, IOlmSession, IOutboundGroupSession, UserDevice } from "../models/Crypto";
 
 /**
  * A storage provider capable of only providing crypto-related storage.
@@ -172,4 +172,30 @@ export interface ICryptoStorageProvider {
      * @returns {Promise<IOlmSession>} Resolves to the Olm session, or falsy if none found.
      */
     getCurrentOlmSession(userId: string, deviceId: string): Promise<IOlmSession>;
+
+    /**
+     * Gets all the Olm sessions known for a given user's device. Note that this may not return in order,
+     * so callers needing to know the "current" Olm session should use the appropriate function.
+     * @param {string} userId The user ID.
+     * @param {string} deviceId The device ID.
+     * @returns {Promise<IOlmSession[]>} Resolves to the known Olm sessions, or an empty array if none are known.
+     */
+    getOlmSessions(userId: string, deviceId: string): Promise<IOlmSession[]>;
+
+    /**
+     * Stores an inbound group session.
+     * @param {IInboundGroupSession} session The session to store.
+     * @returns {Promise<void>} Resolves when complete.
+     */
+    storeInboundGroupSession(session: IInboundGroupSession): Promise<void>;
+
+    /**
+     * Gets a previously stored inbound group session. If the session is not known, a falsy value is returned.
+     * @param {string} senderUserId The user ID who sent the session in the first place.
+     * @param {string} senderDeviceId The device ID of the sender.
+     * @param {string} roomId The room ID where the session should belong.
+     * @param {string} sessionId The session ID itself.
+     * @returns {Promise<IInboundGroupSession>} Resolves to the session, or falsy if not known.
+     */
+    getInboundGroupSession(senderUserId: string, senderDeviceId: string, roomId: string, sessionId: string): Promise<IInboundGroupSession>;
 }

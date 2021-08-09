@@ -1,7 +1,7 @@
 import { ICryptoStorageProvider } from "./ICryptoStorageProvider";
 import { EncryptionEventContent } from "../models/events/EncryptionEvent";
 import * as Database from "better-sqlite3";
-import { IOlmSession, IOutboundGroupSession, UserDevice } from "../models/Crypto";
+import { IInboundGroupSession, IOlmSession, IOutboundGroupSession, UserDevice } from "../models/Crypto";
 
 /**
  * Sqlite crypto storage provider. Requires `better-sqlite3` package to be installed.
@@ -29,6 +29,9 @@ export class SqliteCryptoStorageProvider implements ICryptoStorageProvider {
     private obSentSelectLastSent: Database.Statement;
     private olmSessionUpsert: Database.Statement;
     private olmSessionCurrentSelect: Database.Statement;
+    private olmSessionSelect: Database.Statement;
+    private ibGroupSessionUpsert: Database.Statement;
+    private ibGroupSessionSelect: Database.Statement;
 
     /**
      * Creates a new Sqlite storage provider.
@@ -45,6 +48,7 @@ export class SqliteCryptoStorageProvider implements ICryptoStorageProvider {
         this.db.exec("CREATE TABLE IF NOT EXISTS outbound_group_sessions (session_id TEXT NOT NULL, room_id TEXT NOT NULL, current TINYINT NOT NULL, pickled TEXT NOT NULL, uses_left NUMBER NOT NULL, expires_ts NUMBER NOT NULL, PRIMARY KEY (session_id, room_id))");
         this.db.exec("CREATE TABLE IF NOT EXISTS sent_outbound_group_sessions (session_id TEXT NOT NULL, room_id TEXT NOT NULL, session_index INT NOT NULL, user_id TEXT NOT NULL, device_id TEXT NOT NULL, PRIMARY KEY (session_id, room_id, user_id, device_id, session_index))");
         this.db.exec("CREATE TABLE IF NOT EXISTS olm_sessions (user_id TEXT NOT NULL, device_id TEXT NOT NULL, session_id TEXT NOT NULL, last_decryption_ts NUMBER NOT NULL, pickled TEXT NOT NULL, PRIMARY KEY (user_id, device_id, session_id))");
+        this.db.exec("CREATE TABLE IF NOT EXISTS inbound_group_sessions (session_id TEXT NOT NULL, room_id TEXT NOT NULL, user_id TEXT NOT NULL, device_id TEXT NOT NULL, pickled TEXT NOT NULL, PRIMARY KEY (session_id, room_id, user_id, device_id))");
 
         this.kvUpsert = this.db.prepare("INSERT INTO kv (name, value) VALUES (@name, @value) ON CONFLICT (name) DO UPDATE SET value = @value");
         this.kvSelect = this.db.prepare("SELECT name, value FROM kv WHERE name = @name");
@@ -71,6 +75,10 @@ export class SqliteCryptoStorageProvider implements ICryptoStorageProvider {
 
         this.olmSessionUpsert = this.db.prepare("INSERT INTO olm_sessions (user_id, device_id, session_id, last_decryption_ts, pickled) VALUES (@userId, @deviceId, @sessionId, @lastDecryptionTs, @pickled) ON CONFLICT (user_id, device_id, session_id) DO UPDATE SET last_decryption_ts = @lastDecryptionTs, pickled = @pickled");
         this.olmSessionCurrentSelect = this.db.prepare("SELECT user_id, device_id, session_id, last_decryption_ts, pickled FROM olm_sessions WHERE user_id = @userId AND device_id = @deviceId ORDER BY last_decryption_ts DESC LIMIT 1");
+        this.olmSessionSelect = this.db.prepare("SELECT user_id, device_id, session_id, last_decryption_ts, pickled FROM olm_sessions WHERE user_id = @userId AND device_id = @deviceId");
+
+        this.ibGroupSessionUpsert = this.db.prepare("INSERT INTO inbound_group_sessions (session_id, room_id, user_id, device_id, pickled) VALUES (@sessionId, @roomId, @userId, @deviceId, @pickled) ON CONFLICT (session_id, room_id, user_id, device_id) DO UPDATE SET pickled = @pickled");
+        this.ibGroupSessionSelect = this.db.prepare("SELECT session_id, room_id, user_id, device_id, pickled FROM inbound_group_sessions WHERE session_id = @sessionId AND room_id = @roomId AND user_id = @userId AND device_id = @deviceId");
     }
 
     public async setDeviceId(deviceId: string): Promise<void> {
@@ -245,6 +253,47 @@ export class SqliteCryptoStorageProvider implements ICryptoStorageProvider {
             pickled: result.pickled,
             lastDecryptionTs: result.last_decryption_ts,
         };
+    }
+
+    public async getOlmSessions(userId: string, deviceId: string): Promise<IOlmSession[]> {
+        const result = this.olmSessionSelect.all({
+            userId: userId,
+            deviceId: deviceId,
+        });
+        return (result || []).map(r => ({
+            sessionId: r.session_id,
+            pickled: r.pickled,
+            lastDecryptionTs: r.last_decryption_ts,
+        }));
+    }
+
+    public async storeInboundGroupSession(session: IInboundGroupSession): Promise<void> {
+        this.ibGroupSessionUpsert.run({
+            sessionId: session.sessionId,
+            roomId: session.roomId,
+            userId: session.senderUserId,
+            deviceId: session.senderDeviceId,
+            pickled: session.pickled,
+        });
+    }
+
+    public async getInboundGroupSession(senderUserId: string, senderDeviceId: string, roomId: string, sessionId: string): Promise<IInboundGroupSession> {
+        const result = this.ibGroupSessionSelect.get({
+            sessionId: sessionId,
+            roomId: roomId,
+            userId: senderUserId,
+            deviceId: senderDeviceId,
+        });
+        if (result) {
+            return {
+                sessionId: result.session_id,
+                roomId: result.room_id,
+                senderUserId: result.user_id,
+                senderDeviceId: result.device_id,
+                pickled: result.pickled,
+            };
+        }
+        return null;
     }
 
     /**
