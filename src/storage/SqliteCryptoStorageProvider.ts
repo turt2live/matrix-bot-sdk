@@ -32,6 +32,8 @@ export class SqliteCryptoStorageProvider implements ICryptoStorageProvider {
     private olmSessionSelect: Database.Statement;
     private ibGroupSessionUpsert: Database.Statement;
     private ibGroupSessionSelect: Database.Statement;
+    private deMetadataUpsert: Database.Statement;
+    private deMetadataSelect: Database.Statement;
 
     /**
      * Creates a new Sqlite storage provider.
@@ -49,6 +51,8 @@ export class SqliteCryptoStorageProvider implements ICryptoStorageProvider {
         this.db.exec("CREATE TABLE IF NOT EXISTS sent_outbound_group_sessions (session_id TEXT NOT NULL, room_id TEXT NOT NULL, session_index INT NOT NULL, user_id TEXT NOT NULL, device_id TEXT NOT NULL, PRIMARY KEY (session_id, room_id, user_id, device_id, session_index))");
         this.db.exec("CREATE TABLE IF NOT EXISTS olm_sessions (user_id TEXT NOT NULL, device_id TEXT NOT NULL, session_id TEXT NOT NULL, last_decryption_ts NUMBER NOT NULL, pickled TEXT NOT NULL, PRIMARY KEY (user_id, device_id, session_id))");
         this.db.exec("CREATE TABLE IF NOT EXISTS inbound_group_sessions (session_id TEXT NOT NULL, room_id TEXT NOT NULL, user_id TEXT NOT NULL, device_id TEXT NOT NULL, pickled TEXT NOT NULL, PRIMARY KEY (session_id, room_id, user_id, device_id))");
+        this.db.exec("CREATE TABLE IF NOT EXISTS decrypted_event_metadata (room_id TEXT NOT NULL, event_id TEXT NOT NULL, session_id TEXT NOT NULL, message_index INT NOT NULL, PRIMARY KEY (room_id, event_id))");
+        this.db.exec("CREATE INDEX IF NOT EXISTS idx_decrypted_event_metadata_by_message_index ON decrypted_event_metadata (room_id, session_id, message_index)");
 
         this.kvUpsert = this.db.prepare("INSERT INTO kv (name, value) VALUES (@name, @value) ON CONFLICT (name) DO UPDATE SET value = @value");
         this.kvSelect = this.db.prepare("SELECT name, value FROM kv WHERE name = @name");
@@ -79,6 +83,9 @@ export class SqliteCryptoStorageProvider implements ICryptoStorageProvider {
 
         this.ibGroupSessionUpsert = this.db.prepare("INSERT INTO inbound_group_sessions (session_id, room_id, user_id, device_id, pickled) VALUES (@sessionId, @roomId, @userId, @deviceId, @pickled) ON CONFLICT (session_id, room_id, user_id, device_id) DO UPDATE SET pickled = @pickled");
         this.ibGroupSessionSelect = this.db.prepare("SELECT session_id, room_id, user_id, device_id, pickled FROM inbound_group_sessions WHERE session_id = @sessionId AND room_id = @roomId AND user_id = @userId AND device_id = @deviceId");
+
+        this.deMetadataUpsert = this.db.prepare("INSERT INTO decrypted_event_metadata (room_id, event_id, session_id, message_index) VALUES (@roomId, @eventId, @sessionId, @messageIndex) ON CONFLICT (room_id, event_id) DO UPDATE SET message_index = @messageIndex, session_id = @sessionId");
+        this.deMetadataSelect = this.db.prepare("SELECT room_id, event_id, session_id, message_index FROM decrypted_event_metadata WHERE room_id = @roomId AND session_id = @sessionId AND message_index = @messageIndex LIMIT 1");
     }
 
     public async setDeviceId(deviceId: string): Promise<void> {
@@ -294,6 +301,20 @@ export class SqliteCryptoStorageProvider implements ICryptoStorageProvider {
             };
         }
         return null;
+    }
+
+    public async setMessageIndexForEvent(roomId: string, eventId: string, sessionId: string, messageIndex: number): Promise<void> {
+        this.deMetadataUpsert.run({
+            roomId: roomId,
+            eventId: eventId,
+            sessionId: sessionId,
+            messageIndex: messageIndex,
+        });
+    }
+
+    public async getEventForMessageIndex(roomId: string, sessionId: string, messageIndex: number): Promise<string> {
+        const result = this.deMetadataSelect.get({roomId: roomId, sessionId: sessionId, messageIndex: messageIndex});
+        return result?.event_id;
     }
 
     /**

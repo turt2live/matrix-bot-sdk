@@ -1,5 +1,10 @@
 import { EncryptionEventContent } from "../models/events/EncryptionEvent";
-import { IInboundGroupSession, IOlmSession, IOutboundGroupSession, UserDevice } from "../models/Crypto";
+import {
+    IInboundGroupSession,
+    IOlmSession,
+    IOutboundGroupSession,
+    UserDevice,
+} from "../models/Crypto";
 
 /**
  * A storage provider capable of only providing crypto-related storage.
@@ -198,4 +203,27 @@ export interface ICryptoStorageProvider {
      * @returns {Promise<IInboundGroupSession>} Resolves to the session, or falsy if not known.
      */
     getInboundGroupSession(senderUserId: string, senderDeviceId: string, roomId: string, sessionId: string): Promise<IInboundGroupSession>;
+
+    /**
+     * Sets the successfully decrypted message index for an event. Useful for tracking replay attacks.
+     * @param {string} roomId The room ID where the event was sent.
+     * @param {string} eventId The event ID.
+     * @param {string} sessionId The inbound group session ID for the event.
+     * @param {number} messageIndex The message index, as reported after decryption.
+     * @returns {Promise<void>} Resolves when complete.
+     */
+    setMessageIndexForEvent(roomId: string, eventId: string, sessionId: string, messageIndex: number): Promise<void>;
+
+    /**
+     * Gets the event ID for a previously successful decryption from a session and message index. If
+     * no event ID is known, this will return falsy. The caller can use this function to determine if
+     * a replay attack is being performed by checking the returned event ID, if present, against the
+     * event ID of the event it is decrypting. If the event IDs do not match but are truthy then the
+     * session may have been inappropriately re-used.
+     * @param {string} roomId The room ID.
+     * @param {string} sessionId The inbound group session ID.
+     * @param {number} messageIndex The message index.
+     * @returns {Promise<string>} Resolves to the event ID of the matching event, or falsy if not known.
+     */
+    getEventForMessageIndex(roomId: string, sessionId: string, messageIndex: number): Promise<string>;
 }

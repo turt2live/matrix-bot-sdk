@@ -22,6 +22,8 @@ import { requiresReady } from "./decorators";
 import { RoomTracker } from "./RoomTracker";
 import { DeviceTracker } from "./DeviceTracker";
 import { EncryptionEvent } from "../models/events/EncryptionEvent";
+import { EncryptedRoomEvent } from "../models/events/EncryptedRoomEvent";
+import { RoomEvent } from "../models/events/RoomEvent";
 
 /**
  * Manages encryption for a MatrixClient. Get an instance from a MatrixClient directly
@@ -507,6 +509,57 @@ export class CryptoClient {
     }
 
     /**
+     * Decrypts a room event. Currently only supports Megolm-encrypted events (default for this SDK).
+     * @param {EncryptedRoomEvent} event The encrypted event.
+     * @param {string} roomId The room ID where the event was sent.
+     * @returns {Promise<RoomEvent<unknown>>} Resolves to a decrypted room event, or rejects/throws with
+     * an error if the event is undecryptable.
+     */
+    public async decryptRoomEvent(event: EncryptedRoomEvent, roomId: string): Promise<RoomEvent<unknown>> {
+        if (event.algorithm !== EncryptionAlgorithm.MegolmV1AesSha2) {
+            throw new Error("Unable to decrypt: Unknown algorithm");
+        }
+
+        const encrypted = event.megolmProperties;
+        const senderDevice = await this.client.cryptoStore.getUserDevice(event.sender, encrypted.device_id);
+        if (!senderDevice) {
+            throw new Error("Unable to decrypt: Unknown device for sender");
+        }
+
+        if (senderDevice.keys[`${DeviceKeyAlgorithm.Curve25519}:${senderDevice.device_id}`] !== encrypted.sender_key) {
+            throw new Error("Unable to decrypt: Device key mismatch");
+        }
+
+        const storedSession = await this.client.cryptoStore.getInboundGroupSession(event.sender, encrypted.device_id, roomId, encrypted.session_id);
+        if (!storedSession) {
+            throw new Error("Unable to decrypt: Unknown inbound session ID");
+        }
+
+        const session = new Olm.InboundGroupSession();
+        try {
+            session.unpickle(this.pickleKey, storedSession.pickled);
+            const cleartext = session.decrypt(encrypted.ciphertext) as { plaintext: string, message_index: number };
+            const eventBody = JSON.parse(cleartext.plaintext);
+            const messageIndex = cleartext.message_index;
+
+            const existingEventId = await this.client.cryptoStore.getEventForMessageIndex(roomId, storedSession.sessionId, messageIndex);
+            if (existingEventId && existingEventId !== event.eventId) {
+                throw new Error("Unable to decrypt: Message replay attack");
+            }
+
+            await this.client.cryptoStore.setMessageIndexForEvent(roomId, event.eventId, storedSession.sessionId, messageIndex);
+
+            return new RoomEvent<unknown>({
+                ...event.raw,
+                type: eventBody.type || "io.t2bot.unknown",
+                content: (typeof(eventBody.content) === 'object') ? eventBody.content : {},
+            });
+        } finally {
+            session.free();
+        }
+    }
+
+    /**
      * Handles an inbound to-device message, decrypting it if needed. This will not throw
      * under normal circumstances and should always resolve successfully.
      * @param {IToDeviceMessage<IOlmEncrypted>} message The message to process.
@@ -593,14 +646,14 @@ export class CryptoClient {
                     session.free();
                 }
 
-                const wasForUs = decrypted.recipient !== (await this.client.getUserId());
+                const wasForUs = decrypted.recipient === (await this.client.getUserId());
                 const wasFromThem = decrypted.sender === message.sender;
                 const hasType = typeof(decrypted.type) === 'string';
                 const hasContent = typeof(decrypted.content) === 'object';
                 const ourKeyMatches = decrypted.recipient_keys?.ed25519 === this.deviceEd25519;
                 const theirKeyMatches = decrypted.keys?.ed25519 === senderDevice.keys[`${DeviceKeyAlgorithm.Ed25119}:${senderDevice.device_id}`];
                 if (!wasForUs || !wasFromThem || !hasType || !hasContent || !ourKeyMatches || !theirKeyMatches) {
-                    LogService.warn("CryptoClient", "Successfully decrypted to-device message, but if failed validation. Ignoring message.");
+                    LogService.warn("CryptoClient", "Successfully decrypted to-device message, but it failed validation. Ignoring message.");
                     return;
                 }
 

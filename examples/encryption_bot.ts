@@ -1,9 +1,10 @@
 import {
+    EncryptedRoomEvent,
     EncryptionAlgorithm,
     LogLevel,
     LogService,
-    MatrixClient,
-    RichConsoleLogger,
+    MatrixClient, MessageEvent,
+    RichConsoleLogger, RichReply,
     SimpleFsStorageProvider
 } from "../src";
 import { SqliteCryptoStorageProvider } from "../src/storage/SqliteCryptoStorageProvider";
@@ -50,21 +51,27 @@ const client = new MatrixClient(homeserverUrl, accessToken, storage, crypto);
             ],
         });
     }
-    await sendEncryptedNotice(encryptedRoomId, "This is an encrypted room");
 
-    client.on("room.event", (roomId: string, event: any) => {
-        if (roomId !== encryptedRoomId) return;
-        LogService.debug("index", `${roomId}`, event);
+    client.on("room.event", async (roomId: string, event: any) => {
+        if (roomId !== encryptedRoomId || event['type'] !== "m.room.encrypted") return;
+
+        try {
+            const decrypted = await client.crypto.decryptRoomEvent(new EncryptedRoomEvent(event), roomId);
+            if (decrypted.type === "m.room.message") {
+                const message = new MessageEvent(decrypted.raw);
+                if (message.messageType !== "m.text") return;
+                if (message.textBody.startsWith("!ping")) {
+                    const reply = RichReply.createFor(roomId, message.raw, "Pong", "Pong");
+                    reply['msgtype'] = "m.notice";
+                    const encrypted = await client.crypto.encryptRoomEvent(roomId, "m.room.message", reply);
+                    await client.sendEvent(roomId, "m.room.encrypted", encrypted);
+                }
+            }
+        } catch (e) {
+            LogService.error("index", e);
+        }
     });
 
     LogService.info("index", "Starting bot...");
     await client.start();
 })();
-
-async function sendEncryptedNotice(roomId: string, text: string) {
-    const encrypted = await client.crypto.encryptRoomEvent(roomId, "m.room.message", {
-        msgtype: "m.notice",
-        body: text,
-    });
-    await client.sendEvent(roomId, "m.room.encrypted", encrypted);
-}

@@ -68,6 +68,7 @@ export * from "./models/events/RoomNameEvent";
 export * from "./models/events/RoomTopicEvent";
 export * from "./models/events/SpaceChildEvent";
 export * from "./models/events/EncryptionEvent";
+export * from "./models/events/EncryptedRoomEvent";
 
 // Preprocessors
 export * from "./preprocessors/IPreprocessor";
