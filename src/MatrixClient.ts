@@ -37,6 +37,7 @@ import {
 } from "./models/Crypto";
 import { requiresCrypto } from "./e2ee/decorators";
 import { ICryptoStorageProvider } from "./storage/ICryptoStorageProvider";
+import { EncryptedRoomEvent } from "./models/events/EncryptedRoomEvent";
 
 /**
  * A client that is capable of interacting with a matrix homeserver.
@@ -799,6 +800,17 @@ export class MatrixClient extends EventEmitter {
 
             for (let event of room['timeline']['events']) {
                 event = await this.processEvent(event);
+                if (event['type'] === 'm.room.encrypted' && await this.crypto?.isRoomEncrypted(roomId)) {
+                    await emitFn("room.encrypted_event", roomId, event);
+                    try {
+                        event = (await this.crypto.decryptRoomEvent(new EncryptedRoomEvent(event), roomId)).raw;
+                        event = await this.processEvent(event);
+                        await emitFn("room.decrypted_event", roomId, event);
+                    } catch (e) {
+                        LogService.error("MatrixClientLite", `Decryption error on ${roomId} ${event['event_id']}`, e);
+                        await emitFn("room.failed_decryption", roomId, event);
+                    }
+                }
                 if (event['type'] === 'm.room.message') {
                     await emitFn("room.message", roomId, event);
                 }
@@ -815,13 +827,28 @@ export class MatrixClient extends EventEmitter {
     }
 
     /**
+     * Gets an event for a room. If the event is encrypted, and the client supports encryption,
+     * and the room is encrypted, then this will return a decrypted event.
+     * @param {string} roomId the room ID to get the event in
+     * @param {string} eventId the event ID to look up
+     * @returns {Promise<any>} resolves to the found event
+     */
+    @timedMatrixClientFunctionCall()
+    public async getEvent(roomId: string, eventId: string): Promise<any> {
+        const event = await this.getRawEvent(roomId, eventId);
+        if (event['type'] === 'm.room.encrypted' && await this.crypto?.isRoomEncrypted(roomId)) {
+            return this.processEvent((await this.crypto.decryptRoomEvent(new EncryptedRoomEvent(event), roomId)).raw);
+        }
+    }
+
+    /**
      * Gets an event for a room. Returned as a raw event.
      * @param {string} roomId the room ID to get the event in
      * @param {string} eventId the event ID to look up
      * @returns {Promise<any>} resolves to the found event
      */
     @timedMatrixClientFunctionCall()
-    public getEvent(roomId: string, eventId: string): Promise<any> {
+    public getRawEvent(roomId: string, eventId: string): Promise<any> {
         return this.doRequest("GET", "/_matrix/client/r0/rooms/" + encodeURIComponent(roomId) + "/event/" + encodeURIComponent(eventId))
             .then(ev => this.processEvent(ev));
     }
@@ -1030,6 +1057,7 @@ export class MatrixClient extends EventEmitter {
 
     /**
      * Replies to a given event with the given text. The event is sent with a msgtype of m.text.
+     * The message will be encrypted if the client supports encryption and the room is encrypted.
      * @param {string} roomId the room ID to reply in
      * @param {any} event the event to reply to
      * @param {string} text the text to reply with
@@ -1046,6 +1074,7 @@ export class MatrixClient extends EventEmitter {
 
     /**
      * Replies to a given event with the given HTML. The event is sent with a msgtype of m.text.
+     * The message will be encrypted if the client supports encryption and the room is encrypted.
      * @param {string} roomId the room ID to reply in
      * @param {any} event the event to reply to
      * @param {string} html the HTML to reply with.
@@ -1060,6 +1089,7 @@ export class MatrixClient extends EventEmitter {
 
     /**
      * Replies to a given event with the given text. The event is sent with a msgtype of m.notice.
+     * The message will be encrypted if the client supports encryption and the room is encrypted.
      * @param {string} roomId the room ID to reply in
      * @param {any} event the event to reply to
      * @param {string} text the text to reply with
@@ -1077,6 +1107,7 @@ export class MatrixClient extends EventEmitter {
 
     /**
      * Replies to a given event with the given HTML. The event is sent with a msgtype of m.notice.
+     * The message will be encrypted if the client supports encryption and the room is encrypted.
      * @param {string} roomId the room ID to reply in
      * @param {any} event the event to reply to
      * @param {string} html the HTML to reply with.
@@ -1091,7 +1122,8 @@ export class MatrixClient extends EventEmitter {
     }
 
     /**
-     * Sends a notice to the given room
+     * Sends a notice to the given room. The message will be encrypted if the client supports
+     * encryption and the room is encrypted.
      * @param {string} roomId the room ID to send the notice to
      * @param {string} text the text to send
      * @returns {Promise<string>} resolves to the event ID that represents the message
@@ -1105,7 +1137,8 @@ export class MatrixClient extends EventEmitter {
     }
 
     /**
-     * Sends a notice to the given room with HTML content
+     * Sends a notice to the given room with HTML content. The message will be encrypted if the client supports
+     * encryption and the room is encrypted.
      * @param {string} roomId the room ID to send the notice to
      * @param {string} html the HTML to send
      * @returns {Promise<string>} resolves to the event ID that represents the message
@@ -1121,7 +1154,8 @@ export class MatrixClient extends EventEmitter {
     }
 
     /**
-     * Sends a text message to the given room
+     * Sends a text message to the given room. The message will be encrypted if the client supports
+     * encryption and the room is encrypted.
      * @param {string} roomId the room ID to send the text to
      * @param {string} text the text to send
      * @returns {Promise<string>} resolves to the event ID that represents the message
@@ -1135,7 +1169,8 @@ export class MatrixClient extends EventEmitter {
     }
 
     /**
-     * Sends a text message to the given room with HTML content
+     * Sends a text message to the given room with HTML content. The message will be encrypted if the client supports
+     * encryption and the room is encrypted.
      * @param {string} roomId the room ID to send the text to
      * @param {string} html the HTML to send
      * @returns {Promise<string>} resolves to the event ID that represents the message
@@ -1151,7 +1186,8 @@ export class MatrixClient extends EventEmitter {
     }
 
     /**
-     * Sends a message to the given room
+     * Sends a message to the given room. The message will be encrypted if the client supports
+     * encryption and the room is encrypted.
      * @param {string} roomId the room ID to send the message to
      * @param {object} content the event content to send
      * @returns {Promise<string>} resolves to the event ID that represents the message
@@ -1162,7 +1198,8 @@ export class MatrixClient extends EventEmitter {
     }
 
     /**
-     * Sends an event to the given room
+     * Sends an event to the given room. This will encrypt the event before sending if the room is
+     * encrypted and the client supports encryption. Use sendRawEvent() to avoid this behaviour.
      * @param {string} roomId the room ID to send the event to
      * @param {string} eventType the type of event to send
      * @param {string} content the event body to send
@@ -1170,6 +1207,22 @@ export class MatrixClient extends EventEmitter {
      */
     @timedMatrixClientFunctionCall()
     public async sendEvent(roomId: string, eventType: string, content: any): Promise<string> {
+        if (await this.crypto?.isRoomEncrypted(roomId)) {
+            content = await this.crypto.encryptRoomEvent(roomId, eventType, content);
+            eventType = "m.room.encrypted";
+        }
+        return this.sendRawEvent(roomId, eventType, content);
+    }
+
+    /**
+     * Sends an event to the given room.
+     * @param {string} roomId the room ID to send the event to
+     * @param {string} eventType the type of event to send
+     * @param {string} content the event body to send
+     * @returns {Promise<string>} resolves to the event ID that represents the event
+     */
+    @timedMatrixClientFunctionCall()
+    public async sendRawEvent(roomId: string, eventType: string, content: any): Promise<string> {
         const txnId = (new Date().getTime()) + "__inc" + (++this.requestId);
         return this.doRequest("PUT", "/_matrix/client/r0/rooms/" + encodeURIComponent(roomId) + "/send/" + encodeURIComponent(eventType) + "/" + encodeURIComponent(txnId), null, content).then(response => {
             return response['event_id'];

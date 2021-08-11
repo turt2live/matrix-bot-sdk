@@ -134,14 +134,6 @@ export interface ICryptoStorageProvider {
     getCurrentOutboundGroupSession(roomId: string): Promise<IOutboundGroupSession>;
 
     /**
-     * Decrements the available usages for an outbound group session.
-     * @param {string} sessionId The session ID.
-     * @param {string} roomId The room ID.
-     * @returns {Promise<void>} Resolves when complete.
-     */
-    useOutboundGroupSession(sessionId: string, roomId: string): Promise<void>;
-
-    /**
      * Stores a session as sent to a user's device.
      * @param {IOutboundGroupSession} session The session that was sent.
      * @param {number} index The session index.

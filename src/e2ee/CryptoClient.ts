@@ -422,6 +422,9 @@ export class CryptoClient {
             throw new Error("Room is not encrypted");
         }
 
+        const relatesTo = JSON.parse(JSON.stringify(content['m.relates_to']));
+        delete content['m.relates_to'];
+
         const now = (new Date()).getTime();
 
         let currentSession = await this.client.cryptoStore.getCurrentOutboundGroupSession(roomId);
@@ -448,7 +451,10 @@ export class CryptoClient {
                     usesLeft: roomConfig.rotationPeriodMessages,
                     expiresTs: now + roomConfig.rotationPeriodMs,
                 };
-                await this.client.cryptoStore.storeOutboundGroupSession(currentSession);
+
+                // Store the session as an inbound session up front. This is to ensure that we have the
+                // earliest possible ratchet available to our own decryption functions. We don't store
+                // the outbound session here as it is stored earlier on.
                 await this.storeInboundGroupSession({
                     room_id: roomId,
                     session_id: newSession.session_id(),
@@ -496,12 +502,22 @@ export class CryptoClient {
                 room_id: roomId,
             }));
 
-            return {
-                algorithm: EncryptionAlgorithm.MegolmV1AesSha2,
+            currentSession.pickled = session.pickle(this.pickleKey);
+            currentSession.usesLeft--;
+            await this.client.cryptoStore.storeOutboundGroupSession(currentSession);
+
+            const body = {
                 sender_key: this.deviceCurve25519,
                 ciphertext: encrypted,
                 session_id: session.session_id(),
                 device_id: this.clientDeviceId,
+            };
+            if (relatesTo) {
+                body['m.relates_to'] = relatesTo;
+            }
+            return {
+                ...body,
+                algorithm: EncryptionAlgorithm.MegolmV1AesSha2,
             };
         } finally {
             session.free();
@@ -548,6 +564,9 @@ export class CryptoClient {
             }
 
             await this.client.cryptoStore.setMessageIndexForEvent(roomId, event.eventId, storedSession.sessionId, messageIndex);
+
+            storedSession.pickled = session.pickle(this.pickleKey);
+            await this.client.cryptoStore.storeInboundGroupSession(storedSession);
 
             return new RoomEvent<unknown>({
                 ...event.raw,

@@ -23,7 +23,6 @@ export class SqliteCryptoStorageProvider implements ICryptoStorageProvider {
     private obGroupSessionUpsert: Database.Statement;
     private obGroupSessionSelect: Database.Statement;
     private obGroupCurrentSessionSelect: Database.Statement;
-    private obGroupSessionMarkUsage: Database.Statement;
     private obGroupSessionMarkAllInactive: Database.Statement;
     private obSentGroupSessionUpsert: Database.Statement;
     private obSentSelectLastSent: Database.Statement;
@@ -71,7 +70,6 @@ export class SqliteCryptoStorageProvider implements ICryptoStorageProvider {
         this.obGroupSessionUpsert = this.db.prepare("INSERT INTO outbound_group_sessions (session_id, room_id, current, pickled, uses_left, expires_ts) VALUES (@sessionId, @roomId, @current, @pickled, @usesLeft, @expiresTs) ON CONFLICT (session_id, room_id) DO UPDATE SET pickled = @pickled, current = @current, uses_left = @usesLeft, expires_ts = @expiresTs");
         this.obGroupSessionSelect = this.db.prepare("SELECT session_id, room_id, current, pickled, uses_left, expires_ts FROM outbound_group_sessions WHERE session_id = @sessionId AND room_id = @roomId");
         this.obGroupCurrentSessionSelect = this.db.prepare("SELECT session_id, room_id, current, pickled, uses_left, expires_ts FROM outbound_group_sessions WHERE room_id = @roomId AND current = 1");
-        this.obGroupSessionMarkUsage = this.db.prepare("UPDATE outbound_group_sessions SET uses_left = uses_left - 1 WHERE session_id = @sessionId and room_id = @roomId");
         this.obGroupSessionMarkAllInactive = this.db.prepare("UPDATE outbound_group_sessions SET current = 0 WHERE room_id = @roomId");
 
         this.obSentGroupSessionUpsert = this.db.prepare("INSERT INTO sent_outbound_group_sessions (session_id, room_id, session_index, user_id, device_id) VALUES (@sessionId, @roomId, @sessionIndex, @userId, @deviceId) ON CONFLICT (session_id, room_id, user_id, device_id, session_index) DO NOTHING");
@@ -218,10 +216,6 @@ export class SqliteCryptoStorageProvider implements ICryptoStorageProvider {
             };
         }
         return null;
-    }
-
-    public async useOutboundGroupSession(sessionId: string, roomId: string): Promise<void> {
-        this.obGroupSessionMarkUsage.run({sessionId: sessionId, roomId: roomId});
     }
 
     public async storeSentOutboundGroupSession(session: IOutboundGroupSession, index: number, device: UserDevice): Promise<void> {

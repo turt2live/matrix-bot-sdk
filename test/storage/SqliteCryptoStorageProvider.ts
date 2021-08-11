@@ -341,54 +341,6 @@ describe('SqliteCryptoStorageProvider', () => {
         await store.close();
     });
 
-    it('should count usages of outbound sessions', async () => {
-        const sessionId = "session";
-        const roomId = "!room:example.org";
-        const usesLeft = 100;
-        const expiresTs = Date.now();
-        const pickle = "pickled";
-
-        const name = tmp.fileSync().name;
-        let store = new SqliteCryptoStorageProvider(name);
-
-        await store.storeOutboundGroupSession({
-            sessionId: sessionId,
-            roomId: roomId,
-            pickled: pickle,
-            expiresTs: expiresTs,
-            usesLeft: usesLeft,
-            isCurrent: true,
-        });
-        expect(await store.getOutboundGroupSession(sessionId, roomId)).toMatchObject({
-            sessionId: sessionId,
-            roomId: roomId,
-            pickled: pickle,
-            expiresTs: expiresTs,
-            usesLeft: usesLeft,
-            isCurrent: true,
-        });
-        await store.useOutboundGroupSession(sessionId, roomId);
-        expect(await store.getOutboundGroupSession(sessionId, roomId)).toMatchObject({
-            sessionId: sessionId,
-            roomId: roomId,
-            pickled: pickle,
-            expiresTs: expiresTs,
-            usesLeft: usesLeft - 1,
-            isCurrent: true,
-        });
-        await store.close();
-        store = new SqliteCryptoStorageProvider(name);
-        expect(await store.getOutboundGroupSession(sessionId, roomId)).toMatchObject({
-            sessionId: sessionId,
-            roomId: roomId,
-            pickled: pickle,
-            expiresTs: expiresTs,
-            usesLeft: usesLeft - 1,
-            isCurrent: true,
-        });
-        await store.close();
-    });
-
     it('should track sent outbound sessions', async () => {
         const sessionId = "session";
         const roomId = "!room:example.org";

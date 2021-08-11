@@ -1,10 +1,9 @@
 import {
-    EncryptedRoomEvent,
     EncryptionAlgorithm,
     LogLevel,
     LogService,
     MatrixClient, MessageEvent,
-    RichConsoleLogger, RichReply,
+    RichConsoleLogger,
     SimpleFsStorageProvider
 } from "../src";
 import { SqliteCryptoStorageProvider } from "../src/storage/SqliteCryptoStorageProvider";
@@ -52,23 +51,19 @@ const client = new MatrixClient(homeserverUrl, accessToken, storage, crypto);
         });
     }
 
-    client.on("room.event", async (roomId: string, event: any) => {
-        if (roomId !== encryptedRoomId || event['type'] !== "m.room.encrypted") return;
+    client.on("room.message", async (roomId: string, event: any) => {
+        if (roomId !== encryptedRoomId) return;
 
-        try {
-            const decrypted = await client.crypto.decryptRoomEvent(new EncryptedRoomEvent(event), roomId);
-            if (decrypted.type === "m.room.message") {
-                const message = new MessageEvent(decrypted.raw);
-                if (message.messageType !== "m.text") return;
-                if (message.textBody.startsWith("!ping")) {
-                    const reply = RichReply.createFor(roomId, message.raw, "Pong", "Pong");
-                    reply['msgtype'] = "m.notice";
-                    const encrypted = await client.crypto.encryptRoomEvent(roomId, "m.room.message", reply);
-                    await client.sendEvent(roomId, "m.room.encrypted", encrypted);
-                }
-            }
-        } catch (e) {
-            LogService.error("index", e);
+        const message = new MessageEvent(event);
+
+        if (message.sender === (await client.getUserId())) {
+            // yay, we decrypted our own message. Communicate that back for testing purposes.
+            return await client.unstableApis.addReactionToEvent(roomId, message.eventId, '🔐');
+        }
+
+        if (message.messageType !== "m.text") return;
+        if (message.textBody.startsWith("!ping")) {
+            await client.replyNotice(roomId, event, "Pong");
         }
     });
 
