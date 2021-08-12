@@ -839,6 +839,7 @@ export class MatrixClient extends EventEmitter {
         if (event['type'] === 'm.room.encrypted' && await this.crypto?.isRoomEncrypted(roomId)) {
             return this.processEvent((await this.crypto.decryptRoomEvent(new EncryptedRoomEvent(event), roomId)).raw);
         }
+        return event;
     }
 
     /**

@@ -422,8 +422,11 @@ export class CryptoClient {
             throw new Error("Room is not encrypted");
         }
 
-        const relatesTo = JSON.parse(JSON.stringify(content['m.relates_to']));
-        delete content['m.relates_to'];
+        let relatesTo: any;
+        if (content['m.relates_to']) {
+            relatesTo = JSON.parse(JSON.stringify(content['m.relates_to']));
+            delete content['m.relates_to'];
+        }
 
         const now = (new Date()).getTime();
 

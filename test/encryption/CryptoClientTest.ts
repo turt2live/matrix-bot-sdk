@@ -1450,7 +1450,7 @@ describe('CryptoClient', () => {
                 expect(s.roomId).toEqual(roomId);
                 expect(s.pickled).toBeDefined();
                 expect(s.isCurrent).toBe(true);
-                expect(s.usesLeft).toBe(rotationIntervals);
+                expect(s.usesLeft).toBe(rotationIntervals - 1);
                 expect(s.expiresTs - Date.now()).toBeLessThanOrEqual(rotationMs + 1000);
                 expect(s.expiresTs - Date.now()).toBeGreaterThanOrEqual(rotationMs - 1000);
             });
@@ -1540,7 +1540,7 @@ describe('CryptoClient', () => {
                 expect(s.roomId).toEqual(roomId);
                 expect(s.pickled).toBeDefined();
                 expect(s.isCurrent).toBe(true);
-                expect(s.usesLeft).toBe(rotationIntervals);
+                expect(s.usesLeft).toBe(rotationIntervals - 1);
                 expect(s.expiresTs - Date.now()).toBeLessThanOrEqual(rotationMs + 1000);
                 expect(s.expiresTs - Date.now()).toBeGreaterThanOrEqual(rotationMs - 1000);
             });
@@ -1626,7 +1626,7 @@ describe('CryptoClient', () => {
                 expect(s.roomId).toEqual(roomId);
                 expect(s.pickled).toBeDefined();
                 expect(s.isCurrent).toBe(true);
-                expect(s.usesLeft).toBe(rotationIntervals);
+                expect(s.usesLeft).toBe(rotationIntervals - 1);
                 expect(s.expiresTs - Date.now()).toBeLessThanOrEqual(rotationMs + 1000);
                 expect(s.expiresTs - Date.now()).toBeGreaterThanOrEqual(rotationMs - 1000);
             });
