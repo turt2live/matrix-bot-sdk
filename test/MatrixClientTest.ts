@@ -14,7 +14,8 @@ import {
     OTKAlgorithm,
     OTKCounts,
     OTKs,
-    RoomDirectoryLookupResponse, RoomEvent,
+    RoomDirectoryLookupResponse,
+    RoomEvent,
     setRequestFn,
 } from "../src";
 import * as simple from "simple-mock";

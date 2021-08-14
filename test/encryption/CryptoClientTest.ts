@@ -2,7 +2,8 @@ import * as expect from "expect";
 import * as simple from "simple-mock";
 import {
     ConsoleLogger,
-    DeviceKeyAlgorithm, EncryptedRoomEvent,
+    DeviceKeyAlgorithm,
+    EncryptedRoomEvent,
     EncryptionAlgorithm,
     ILogger,
     IMRoomKey,
@@ -24,7 +25,7 @@ import {
     prepareOlm,
     RECEIVER_DEVICE,
     RECEIVER_OLM_SESSION,
-    STATIC_OUTBOUND_SESSION, STATIC_PICKLE_KEY
+    STATIC_OUTBOUND_SESSION,
 } from "../TestUtils";
 import { DeviceTracker } from "../../src/e2ee/DeviceTracker";
 import { STATIC_TEST_DEVICES } from "./DeviceTrackerTest";

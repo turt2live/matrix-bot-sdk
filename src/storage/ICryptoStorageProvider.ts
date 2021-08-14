@@ -1,10 +1,5 @@
 import { EncryptionEventContent } from "../models/events/EncryptionEvent";
-import {
-    IInboundGroupSession,
-    IOlmSession,
-    IOutboundGroupSession,
-    UserDevice,
-} from "../models/Crypto";
+import { IInboundGroupSession, IOlmSession, IOutboundGroupSession, UserDevice } from "../models/Crypto";
 
 /**
  * A storage provider capable of only providing crypto-related storage.
