@@ -34,7 +34,6 @@ export class CryptoClient {
     private ready = false;
     private deviceId: string;
     private pickleKey: string;
-    private pickledAccount: string;
     private deviceEd25519: string;
     private deviceCurve25519: string;
     private maxOTKs: number;
@@ -63,7 +62,7 @@ export class CryptoClient {
 
     private async getOlmAccount(): Promise<Olm.Account> {
         const account = new Olm.Account();
-        account.unpickle(this.pickleKey, this.pickledAccount);
+        account.unpickle(this.pickleKey, await this.client.cryptoStore.getPickledAccount());
         return account;
     }
 
@@ -101,6 +100,17 @@ export class CryptoClient {
         let pickleKey = await this.client.cryptoStore.getPickleKey();
 
         const account = new Olm.Account();
+
+        const makeReady = () => {
+            const keys = JSON.parse(account.identity_keys());
+            this.deviceCurve25519 = keys['curve25519'];
+            this.deviceEd25519 = keys['ed25519'];
+
+            this.pickleKey = pickleKey;
+            this.maxOTKs = account.max_number_of_one_time_keys();
+            this.ready = true;
+        };
+
         try {
             if (!pickled || !pickleKey) {
                 LogService.debug("CryptoClient", "Creating new Olm account: previous session lost or not set up");
@@ -111,36 +121,19 @@ export class CryptoClient {
                 await this.client.cryptoStore.setPickleKey(pickleKey);
                 await this.client.cryptoStore.setPickledAccount(pickled);
 
-                this.pickleKey = pickleKey;
-                this.pickledAccount = pickled;
-
-                this.maxOTKs = account.max_number_of_one_time_keys();
-
-                const keys = JSON.parse(account.identity_keys());
-                this.deviceCurve25519 = keys['curve25519'];
-                this.deviceEd25519 = keys['ed25519'];
-
-                this.ready = true;
+                makeReady();
 
                 const counts = await this.client.uploadDeviceKeys([
                     EncryptionAlgorithm.MegolmV1AesSha2,
                     EncryptionAlgorithm.OlmV1Curve25519AesSha2,
                 ], {
-                    [`${DeviceKeyAlgorithm.Ed25119}:${this.deviceId}`]: this.deviceEd25519,
+                    [`${DeviceKeyAlgorithm.Ed25519}:${this.deviceId}`]: this.deviceEd25519,
                     [`${DeviceKeyAlgorithm.Curve25519}:${this.deviceId}`]: this.deviceCurve25519,
                 });
                 await this.updateCounts(counts);
             } else {
                 account.unpickle(pickleKey, pickled);
-                this.pickleKey = pickleKey;
-                this.pickledAccount = pickled;
-                this.maxOTKs = account.max_number_of_one_time_keys();
-
-                const keys = JSON.parse(account.identity_keys());
-                this.deviceCurve25519 = keys['curve25519'];
-                this.deviceEd25519 = keys['ed25519'];
-
-                this.ready = true;
+                makeReady();
                 await this.updateCounts(await this.client.checkOneTimeKeyCounts());
             }
         } finally {
@@ -209,7 +202,7 @@ export class CryptoClient {
             const sig = account.sign(anotherJson.stringify(obj));
             return {
                 [await this.client.getUserId()]: {
-                    [`${DeviceKeyAlgorithm.Ed25119}:${this.deviceId}`]: sig,
+                    [`${DeviceKeyAlgorithm.Ed25519}:${this.deviceId}`]: sig,
                 },
                 ...existingSignatures,
             };
@@ -313,7 +306,7 @@ export class CryptoClient {
                             continue;
                         }
 
-                        const deviceKeyLabel = `${DeviceKeyAlgorithm.Ed25119}:${deviceId}`;
+                        const deviceKeyLabel = `${DeviceKeyAlgorithm.Ed25519}:${deviceId}`;
 
                         const keyId = Object.keys(claimed.one_time_keys[userId][deviceId])[0];
                         const signedKey = claimed.one_time_keys[userId][deviceId][keyId];
@@ -375,7 +368,7 @@ export class CryptoClient {
                     ed25519: this.deviceEd25519,
                 },
                 recipient_keys: {
-                    ed25519: device.keys[`${DeviceKeyAlgorithm.Ed25119}:${device.device_id}`],
+                    ed25519: device.keys[`${DeviceKeyAlgorithm.Ed25519}:${device.device_id}`],
                 },
                 recipient: device.user_id,
                 sender: await this.client.getUserId(),
@@ -534,6 +527,7 @@ export class CryptoClient {
      * @returns {Promise<RoomEvent<unknown>>} Resolves to a decrypted room event, or rejects/throws with
      * an error if the event is undecryptable.
      */
+    @requiresReady()
     public async decryptRoomEvent(event: EncryptedRoomEvent, roomId: string): Promise<RoomEvent<unknown>> {
         if (event.algorithm !== EncryptionAlgorithm.MegolmV1AesSha2) {
             throw new Error("Unable to decrypt: Unknown algorithm");
@@ -587,19 +581,16 @@ export class CryptoClient {
      * @param {IToDeviceMessage<IOlmEncrypted>} message The message to process.
      * @returns {Promise<void>} Resolves when complete. Should never fail.
      */
+    @requiresReady()
     public async processInboundDeviceMessage(message: IToDeviceMessage<IOlmEncrypted>): Promise<void> {
-        if (!message.content || !message.sender || !message.type) return;
+        if (!message?.content || !message?.sender || !message?.type) {
+            LogService.warn("CryptoClient", "Received invalid encrypted message");
+            return;
+        }
         try {
             if (message.type === "m.room.encrypted") {
                 if (message.content?.['algorithm'] !== EncryptionAlgorithm.OlmV1Curve25519AesSha2) {
                     LogService.warn("CryptoClient", "Received encrypted message with unknown encryption algorithm");
-                    return;
-                }
-
-                const userDevices = await this.client.cryptoStore.getUserDevices(message.sender);
-                const senderDevice = userDevices.find(d => d.keys[`${DeviceKeyAlgorithm.Curve25519}:${d.device_id}`] === message.content.sender_key);
-                if (!senderDevice) {
-                    LogService.warn("CryptoClient", "Received encrypted message from unknown identity key (ignoring message):", message.content.sender_key);
                     return;
                 }
 
@@ -611,6 +602,13 @@ export class CryptoClient {
 
                 if (!Number.isFinite(myMessage.type) || !myMessage.body) {
                     LogService.warn("CryptoClient", "Received invalid encrypted message (ignoring message)");
+                    return;
+                }
+
+                const userDevices = await this.client.cryptoStore.getUserDevices(message.sender);
+                const senderDevice = userDevices.find(d => d.keys[`${DeviceKeyAlgorithm.Curve25519}:${d.device_id}`] === message.content.sender_key);
+                if (!senderDevice) {
+                    LogService.warn("CryptoClient", "Received encrypted message from unknown identity key (ignoring message):", message.content.sender_key);
                     return;
                 }
 
@@ -661,7 +659,7 @@ export class CryptoClient {
                     session.unpickle(this.pickleKey, trySession.pickled);
                     decrypted = JSON.parse(session.decrypt(myMessage.type, myMessage.body));
                 } catch (e) {
-                    LogService.warn("CryptoClient", "Decryption error with to-device message, assuming corrupted session and re-establishing.");
+                    LogService.warn("CryptoClient", "Decryption error with to-device message, assuming corrupted session and re-establishing.", e);
                     await this.establishNewOlmSession(senderDevice);
                     return;
                 } finally {
@@ -671,11 +669,18 @@ export class CryptoClient {
                 const wasForUs = decrypted.recipient === (await this.client.getUserId());
                 const wasFromThem = decrypted.sender === message.sender;
                 const hasType = typeof(decrypted.type) === 'string';
-                const hasContent = typeof(decrypted.content) === 'object';
+                const hasContent = !!decrypted.content && typeof(decrypted.content) === 'object';
                 const ourKeyMatches = decrypted.recipient_keys?.ed25519 === this.deviceEd25519;
-                const theirKeyMatches = decrypted.keys?.ed25519 === senderDevice.keys[`${DeviceKeyAlgorithm.Ed25119}:${senderDevice.device_id}`];
+                const theirKeyMatches = decrypted.keys?.ed25519 === senderDevice.keys[`${DeviceKeyAlgorithm.Ed25519}:${senderDevice.device_id}`];
                 if (!wasForUs || !wasFromThem || !hasType || !hasContent || !ourKeyMatches || !theirKeyMatches) {
-                    LogService.warn("CryptoClient", "Successfully decrypted to-device message, but it failed validation. Ignoring message.");
+                    LogService.warn("CryptoClient", "Successfully decrypted to-device message, but it failed validation. Ignoring message.", {
+                        wasForUs,
+                        wasFromThem,
+                        hasType,
+                        hasContent,
+                        ourKeyMatches,
+                        theirKeyMatches,
+                    });
                     return;
                 }
 

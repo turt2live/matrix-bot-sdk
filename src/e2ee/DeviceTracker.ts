@@ -80,7 +80,7 @@ export class DeviceTracker {
                             continue;
                         }
 
-                        const ed25519 = device.keys[`${DeviceKeyAlgorithm.Ed25119}:${deviceId}`];
+                        const ed25519 = device.keys[`${DeviceKeyAlgorithm.Ed25519}:${deviceId}`];
                         const curve25519 = device.keys[`${DeviceKeyAlgorithm.Curve25519}:${deviceId}`];
 
                         if (!ed25519 || !curve25519) {
@@ -92,14 +92,14 @@ export class DeviceTracker {
                         const existingDevice = currentDevices.find(d => d.device_id === deviceId);
 
                         if (existingDevice) {
-                            const existingEd25519 = existingDevice.keys[`${DeviceKeyAlgorithm.Ed25119}:${deviceId}`];
+                            const existingEd25519 = existingDevice.keys[`${DeviceKeyAlgorithm.Ed25519}:${deviceId}`];
                             if (existingEd25519 !== ed25519) {
                                 LogService.warn("DeviceTracker", `Device ${userId} ${deviceId} appears compromised: Ed25519 key changed - ignoring device`);
                                 continue;
                             }
                         }
 
-                        const signature = device.signatures?.[userId]?.[`${DeviceKeyAlgorithm.Ed25119}:${deviceId}`];
+                        const signature = device.signatures?.[userId]?.[`${DeviceKeyAlgorithm.Ed25519}:${deviceId}`];
                         if (!signature) {
                             LogService.warn("DeviceTracker", `Device ${userId} ${deviceId} is missing a signature - ignoring device`);
                             continue;

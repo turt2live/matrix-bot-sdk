@@ -63,7 +63,7 @@ export enum EncryptionAlgorithm {
  * @category Models
  */
 export enum DeviceKeyAlgorithm {
-    Ed25119 = "ed25519",
+    Ed25519 = "ed25519",
     Curve25519 = "curve25519",
 }
 

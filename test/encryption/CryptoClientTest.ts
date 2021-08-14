@@ -1,23 +1,33 @@
 import * as expect from "expect";
 import * as simple from "simple-mock";
 import {
-    DeviceKeyAlgorithm,
+    ConsoleLogger,
+    DeviceKeyAlgorithm, EncryptedRoomEvent,
     EncryptionAlgorithm,
+    ILogger,
+    IMRoomKey,
+    IOlmEncrypted,
+    IOlmPayload,
     IOlmSession,
+    IToDeviceMessage,
+    LogService,
     MatrixClient,
     OTKAlgorithm,
     OTKCounts,
     RoomEncryptionAlgorithm,
+    UserDevice,
 } from "../../src";
 import { createTestClient, TEST_DEVICE_ID } from "../MatrixClientTest";
 import {
     feedOlmAccount,
     feedStaticOlmAccount,
+    prepareOlm,
     RECEIVER_DEVICE,
     RECEIVER_OLM_SESSION,
-    STATIC_OUTBOUND_SESSION
+    STATIC_OUTBOUND_SESSION, STATIC_PICKLE_KEY
 } from "../TestUtils";
 import { DeviceTracker } from "../../src/e2ee/DeviceTracker";
+import { STATIC_TEST_DEVICES } from "./DeviceTrackerTest";
 
 describe('CryptoClient', () => {
     it('should not have a device ID or be ready until prepared', async () => {
@@ -386,7 +396,7 @@ describe('CryptoClient', () => {
 
         it('should fail when the crypto has not been prepared', async () => {
             try {
-                await client.crypto.sign({doesnt: "matter"});
+                await client.crypto.sign({ doesnt: "matter" });
 
                 // noinspection ExceptionCaughtLocallyJS
                 throw new Error("Failed to fail");
@@ -488,7 +498,7 @@ describe('CryptoClient', () => {
             expect(result).toBe(false);
             result = await client.crypto.verifySignature(signed, key, "wrong signature");
             expect(result).toBe(false);
-            result = await client.crypto.verifySignature({wrong: "object"}, key, signature);
+            result = await client.crypto.verifySignature({ wrong: "object" }, key, signature);
             expect(result).toBe(false);
         });
 
@@ -612,7 +622,7 @@ describe('CryptoClient', () => {
 
             const claimSpy = simple.stub().callFn(async (req) => {
                 expect(Object.keys(req).length).toBe(0);
-                return {one_time_keys: {}, failures: {}};
+                return { one_time_keys: {}, failures: {} };
             });
             client.claimOneTimeKeys = claimSpy;
 
@@ -637,7 +647,7 @@ describe('CryptoClient', () => {
 
             const claimSpy = simple.stub().callFn(async (req) => {
                 expect(Object.keys(req).length).toBe(0);
-                return {one_time_keys: {}, failures: {}};
+                return { one_time_keys: {}, failures: {} };
             });
             client.claimOneTimeKeys = claimSpy;
 
@@ -656,6 +666,83 @@ describe('CryptoClient', () => {
                 },
             });
             expect(claimSpy.callCount).toBe(0); // no reason it should be called
+        });
+
+        it('should not use existing sessions if asked to force new sessions', async () => {
+            await client.crypto.prepare([]);
+
+            const targetUserId = "@target:example.org";
+            const targetDeviceId = "TARGET";
+
+            const session: IOlmSession = {
+                sessionId: "test_session",
+                lastDecryptionTs: Date.now(),
+                pickled: "pickled",
+            };
+
+            const claimSpy = simple.stub().callFn(async (req) => {
+                expect(req).toMatchObject({
+                    [targetUserId]: {
+                        [targetDeviceId]: OTKAlgorithm.Signed,
+                    },
+                });
+                return {
+                    one_time_keys: {
+                        [targetUserId]: {
+                            [targetDeviceId]: {
+                                [`${OTKAlgorithm.Signed}:${targetDeviceId}`]: {
+                                    key: "zKbLg+NrIjpnagy+pIY6uPL4ZwEG2v+8F9lmgsnlZzs",
+                                    signatures: {
+                                        [targetUserId]: {
+                                            [`${DeviceKeyAlgorithm.Ed25519}:${targetDeviceId}`]: "Definitely real",
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                    failures: {},
+                };
+            });
+            client.claimOneTimeKeys = claimSpy;
+
+            client.cryptoStore.getCurrentOlmSession = async (uid, did) => {
+                throw new Error("Not called appropriately");
+            };
+
+            client.cryptoStore.getUserDevices = async (uid) => {
+                expect(uid).toEqual(targetUserId);
+                return [{
+                    user_id: targetUserId,
+                    device_id: targetDeviceId,
+                    keys: {
+                        [`${DeviceKeyAlgorithm.Curve25519}:${targetDeviceId}`]: "zPsrUlEM3DKRcBYKMHgZTLmYJU1FJDzBRnH6DsTxHH8",
+                    },
+
+                    // We don't end up using a lot of this in this test
+                    unsigned: {},
+                    signatures: {},
+                    algorithms: [],
+                }];
+            };
+
+            // Skip signature verification for this test
+            client.crypto.verifySignature = () => Promise.resolve(true);
+
+            const result = await client.crypto.getOrCreateOlmSessions({
+                [targetUserId]: [targetDeviceId],
+            }, true); // FORCE!!
+            expect(result).toMatchObject({
+                [targetUserId]: {
+                    [targetDeviceId]: {
+                        sessionId: expect.any(String),
+                        lastDecryptionTs: expect.any(Number),
+                        pickled: expect.any(String),
+                    },
+                },
+            });
+            expect(result[targetUserId][targetDeviceId].sessionId).not.toEqual(session.sessionId);
+            expect(claimSpy.callCount).toBe(1);
         });
 
         it('should support mixing of OTK claims and existing sessions', async () => {
@@ -687,7 +774,7 @@ describe('CryptoClient', () => {
                                     key: "zKbLg+NrIjpnagy+pIY6uPL4ZwEG2v+8F9lmgsnlZzs",
                                     signatures: {
                                         [claimUserId]: {
-                                            [`${DeviceKeyAlgorithm.Ed25119}:${claimDeviceId}`]: "Definitely real",
+                                            [`${DeviceKeyAlgorithm.Ed25519}:${claimDeviceId}`]: "Definitely real",
                                         },
                                     },
                                 },
@@ -773,7 +860,7 @@ describe('CryptoClient', () => {
                                     key: "zKbLg+NrIjpnagy+pIY6uPL4ZwEG2v+8F9lmgsnlZzs",
                                     signatures: {
                                         [targetUserId]: {
-                                            [`${DeviceKeyAlgorithm.Ed25119}:${targetDeviceId}`]: "Definitely real",
+                                            [`${DeviceKeyAlgorithm.Ed25519}:${targetDeviceId}`]: "Definitely real",
                                         },
                                     },
                                 },
@@ -785,7 +872,7 @@ describe('CryptoClient', () => {
                                     key: "zKbLg+NrIjpnagy+pIY6uPL4ZwEG2v+8F9lmgsnlZzs",
                                     signatures: {
                                         [claimUserId]: {
-                                            [`${DeviceKeyAlgorithm.Ed25119}:${claimDeviceId}`]: "Definitely real",
+                                            [`${DeviceKeyAlgorithm.Ed25519}:${claimDeviceId}`]: "Definitely real",
                                         },
                                     },
                                 },
@@ -861,7 +948,7 @@ describe('CryptoClient', () => {
                                     key: "zKbLg+NrIjpnagy+pIY6uPL4ZwEG2v+8F9lmgsnlZzs",
                                     signatures: {
                                         [targetUserId]: {
-                                            [`${DeviceKeyAlgorithm.Ed25119}:${targetDeviceId}`]: "Definitely real",
+                                            [`${DeviceKeyAlgorithm.Ed25519}:${targetDeviceId}`]: "Definitely real",
                                         },
                                     },
                                 },
@@ -871,7 +958,7 @@ describe('CryptoClient', () => {
                                     key: "zKbLg+NrIjpnagy+pIY6uPL4ZwEG2v+8F9lmgsnlZzs",
                                     signatures: {
                                         [claimUserId]: {
-                                            [`${DeviceKeyAlgorithm.Ed25119}:${claimDeviceId}`]: "Definitely real",
+                                            [`${DeviceKeyAlgorithm.Ed25519}:${claimDeviceId}`]: "Definitely real",
                                         },
                                     },
                                 },
@@ -946,7 +1033,7 @@ describe('CryptoClient', () => {
                                     key: "zKbLg+NrIjpnagy+pIY6uPL4ZwEG2v+8F9lmgsnlZzs",
                                     signatures: {
                                         [targetUserId]: {
-                                            [`${DeviceKeyAlgorithm.Ed25119}:${targetDeviceId}`]: "Definitely real",
+                                            [`${DeviceKeyAlgorithm.Ed25519}:${targetDeviceId}`]: "Definitely real",
                                         },
                                     },
                                 },
@@ -956,7 +1043,7 @@ describe('CryptoClient', () => {
                                     key: "zKbLg+NrIjpnagy+pIY6uPL4ZwEG2v+8F9lmgsnlZzs",
                                     signatures: {
                                         [claimUserId]: {
-                                            [`${DeviceKeyAlgorithm.Ed25119}:${claimDeviceId}`]: "Definitely real",
+                                            [`${DeviceKeyAlgorithm.Ed25519}:${claimDeviceId}`]: "Definitely real",
                                         },
                                     },
                                 },
@@ -1028,7 +1115,7 @@ describe('CryptoClient', () => {
                                     key: "zKbLg+NrIjpnagy+pIY6uPL4ZwEG2v+8F9lmgsnlZzs",
                                     signatures_MISSING: {
                                         [claimUserId]: {
-                                            [`${DeviceKeyAlgorithm.Ed25119}:${claimDeviceId}`]: "Definitely real",
+                                            [`${DeviceKeyAlgorithm.Ed25519}:${claimDeviceId}`]: "Definitely real",
                                         },
                                     },
                                 },
@@ -1092,7 +1179,7 @@ describe('CryptoClient', () => {
                                     key: "zKbLg+NrIjpnagy+pIY6uPL4ZwEG2v+8F9lmgsnlZzs",
                                     signatures: {
                                         [claimUserId]: {
-                                            [`${DeviceKeyAlgorithm.Ed25119}:${claimDeviceId}`]: "Definitely real",
+                                            [`${DeviceKeyAlgorithm.Ed25519}:${claimDeviceId}`]: "Definitely real",
                                         },
                                     },
                                 },
@@ -1117,7 +1204,7 @@ describe('CryptoClient', () => {
                     device_id: claimDeviceId,
                     keys: {
                         [`${DeviceKeyAlgorithm.Curve25519}:${claimDeviceId}`]: "zPsrUlEM3DKRcBYKMHgZTLmYJU1FJDzBRnH6DsTxHH8",
-                        [`${DeviceKeyAlgorithm.Ed25119}:${claimDeviceId}`]: "ED25519 KEY GOES HERE",
+                        [`${DeviceKeyAlgorithm.Ed25519}:${claimDeviceId}`]: "ED25519 KEY GOES HERE",
                     },
 
                     // We don't end up using a lot of this in this test
@@ -1132,7 +1219,7 @@ describe('CryptoClient', () => {
                     key: "zKbLg+NrIjpnagy+pIY6uPL4ZwEG2v+8F9lmgsnlZzs",
                     signatures: {
                         [claimUserId]: {
-                            [`${DeviceKeyAlgorithm.Ed25119}:${claimDeviceId}`]: "Definitely real",
+                            [`${DeviceKeyAlgorithm.Ed25519}:${claimDeviceId}`]: "Definitely real",
                         },
                     },
                 });
@@ -1178,7 +1265,7 @@ describe('CryptoClient', () => {
                                     key: "zKbLg+NrIjpnagy+pIY6uPL4ZwEG2v+8F9lmgsnlZzs",
                                     signatures: {
                                         [claimUserId]: {
-                                            [`${DeviceKeyAlgorithm.Ed25119}:${claimDeviceId}`]: "Definitely real",
+                                            [`${DeviceKeyAlgorithm.Ed25519}:${claimDeviceId}`]: "Definitely real",
                                         },
                                     },
                                 },
@@ -1197,7 +1284,7 @@ describe('CryptoClient', () => {
                     device_id: claimDeviceId,
                     keys: {
                         [`${DeviceKeyAlgorithm.Curve25519}:${claimDeviceId}`]: "zPsrUlEM3DKRcBYKMHgZTLmYJU1FJDzBRnH6DsTxHH8",
-                        [`${DeviceKeyAlgorithm.Ed25119}:${claimDeviceId}`]: "ED25519 KEY GOES HERE",
+                        [`${DeviceKeyAlgorithm.Ed25519}:${claimDeviceId}`]: "ED25519 KEY GOES HERE",
                     },
 
                     // We don't end up using a lot of this in this test
@@ -1689,6 +1776,1288 @@ describe('CryptoClient', () => {
 
         it.skip('should get devices for invited members', async () => {
             // TODO: Support invited members, if history visibility would allow.
+        });
+
+        it('should preserve m.relates_to', async () => {
+            await client.crypto.prepare([]);
+
+            const deviceMap = {
+                [RECEIVER_DEVICE.user_id]: [RECEIVER_DEVICE],
+            };
+            const roomId = "!test:example.org";
+
+            // For this test, force all rooms to be encrypted
+            client.crypto.isRoomEncrypted = async () => true;
+
+            await client.cryptoStore.storeOlmSession(RECEIVER_DEVICE.user_id, RECEIVER_DEVICE.device_id, RECEIVER_OLM_SESSION);
+
+            const getSpy = simple.stub().callFn(async (rid) => {
+                expect(rid).toEqual(roomId);
+                return STATIC_OUTBOUND_SESSION;
+            });
+            client.cryptoStore.getCurrentOutboundGroupSession = getSpy;
+
+            const joinedSpy = simple.stub().callFn(async (rid) => {
+                expect(rid).toEqual(roomId);
+                return Object.keys(deviceMap);
+            });
+            client.getJoinedRoomMembers = joinedSpy;
+
+            const devicesSpy = simple.stub().callFn(async (uids) => {
+                expect(uids).toMatchObject(Object.keys(deviceMap));
+                return deviceMap;
+            });
+            (<any>client.crypto).deviceTracker.getDevicesFor = devicesSpy;
+
+            // We watch for the to-device messages to make sure we pass through the internal functions correctly
+            const toDeviceSpy = simple.stub().callFn(async (t, m) => {
+                expect(t).toEqual("m.room.encrypted");
+                expect(m).toMatchObject({
+                    [RECEIVER_DEVICE.user_id]: {
+                        [RECEIVER_DEVICE.device_id]: {
+                            algorithm: "m.olm.v1.curve25519-aes-sha2",
+                            ciphertext: {
+                                "30KcbZc4ZmLxnLu3MraQ9vIrAjwtjR8uYmwCU/sViDE": {
+                                    type: 0,
+                                    body: expect.any(String),
+                                },
+                            },
+                            sender_key: "BZ2AhgUQPramkd0qQ6m6rcIM9cMwNE1fjI784sW3dSM",
+                        },
+                    },
+                });
+            });
+            client.sendToDevices = toDeviceSpy;
+
+            const result = await client.crypto.encryptRoomEvent(roomId, "org.example.test", {
+                "m.relates_to": {
+                    test: true,
+                },
+                isTest: true,
+                hello: "world",
+                n: 42,
+            });
+            expect(getSpy.callCount).toBe(1);
+            expect(joinedSpy.callCount).toBe(1);
+            expect(devicesSpy.callCount).toBe(1);
+            expect(toDeviceSpy.callCount).toBe(1);
+            expect(result).toMatchObject({
+                "m.relates_to": {
+                    test: true,
+                },
+                algorithm: "m.megolm.v1.aes-sha2",
+                sender_key: "BZ2AhgUQPramkd0qQ6m6rcIM9cMwNE1fjI784sW3dSM",
+                ciphertext: expect.any(String),
+                session_id: STATIC_OUTBOUND_SESSION.sessionId,
+                device_id: TEST_DEVICE_ID,
+            });
+        });
+    });
+
+    describe('processInboundDeviceMessage', () => {
+        const userId = "@alice:example.org";
+        let client: MatrixClient;
+
+        beforeEach(async () => {
+            const { client: mclient } = createTestClient(null, userId, true);
+            client = mclient;
+
+            await client.cryptoStore.setDeviceId(TEST_DEVICE_ID);
+            await feedStaticOlmAccount(client);
+            client.uploadDeviceKeys = () => Promise.resolve({});
+            client.uploadDeviceOneTimeKeys = () => Promise.resolve({});
+            client.checkOneTimeKeyCounts = () => Promise.resolve({});
+
+            // client crypto not prepared for the one test which wants that state
+        });
+
+        afterEach(async () => {
+            LogService.setLogger(new ConsoleLogger());
+        });
+
+        it('should fail when the crypto has not been prepared', async () => {
+            try {
+                await client.crypto.processInboundDeviceMessage(null);
+
+                // noinspection ExceptionCaughtLocallyJS
+                throw new Error("Failed to fail");
+            } catch (e) {
+                expect(e.message).toEqual("End-to-end encryption has not initialized");
+            }
+        });
+
+        it('should ignore invalid formats', async () => {
+            await client.crypto.prepare([]);
+
+            const logSpy = simple.stub().callFn((mod, msg) => {
+                expect(mod).toEqual("CryptoClient");
+                expect(msg).toEqual("Received invalid encrypted message");
+            });
+            LogService.setLogger({ warn: logSpy } as any as ILogger);
+
+            await client.crypto.processInboundDeviceMessage(null);
+            await client.crypto.processInboundDeviceMessage(undefined);
+            await client.crypto.processInboundDeviceMessage({
+                content: null,
+                type: "m.room.encrypted",
+                sender: "@bob:example.org"
+            });
+            await client.crypto.processInboundDeviceMessage({
+                type: "m.room.encrypted",
+                sender: "@bob:example.org"
+            } as any);
+            await client.crypto.processInboundDeviceMessage({
+                content: <any>{ msg: true },
+                type: null,
+                sender: "@bob:example.org"
+            });
+            await client.crypto.processInboundDeviceMessage({
+                content: <any>{ msg: true },
+                sender: "@bob:example.org"
+            } as any);
+            await client.crypto.processInboundDeviceMessage({
+                content: <any>{ msg: true },
+                type: "m.room.encrypted",
+                sender: null
+            });
+            await client.crypto.processInboundDeviceMessage({
+                content: <any>{ msg: true },
+                type: "m.room.encrypted"
+            } as any);
+            expect(logSpy.callCount).toBe(8);
+        });
+
+        it('should ignore invalid message types', async () => {
+            await client.crypto.prepare([]);
+
+            const logSpy = simple.stub().callFn((mod, msg) => {
+                expect(mod).toEqual("CryptoClient");
+                expect(msg).toEqual("Unknown to-device message type: org.example");
+            });
+            LogService.setLogger({ warn: logSpy } as any as ILogger);
+
+            await client.crypto.processInboundDeviceMessage({
+                content: <any>{ test: true },
+                type: "org.example",
+                sender: "@bob:example.org"
+            });
+            expect(logSpy.callCount).toBe(1);
+        });
+
+        it('should ignore unknown algorithms', async () => {
+            await client.crypto.prepare([]);
+
+            const logSpy = simple.stub().callFn((mod, msg) => {
+                expect(mod).toEqual("CryptoClient");
+                expect(msg).toEqual("Received encrypted message with unknown encryption algorithm");
+            });
+            LogService.setLogger({ warn: logSpy } as any as ILogger);
+
+            await client.crypto.processInboundDeviceMessage({
+                content: <any>{
+                    algorithm: "wrong",
+                    ciphertext: {
+                        "recv_key": {
+                            type: 0,
+                            body: "encrypted",
+                        },
+                    },
+                    sender_key: "missing",
+                },
+                type: "m.room.encrypted",
+                sender: "@bob:example.org",
+            });
+            expect(logSpy.callCount).toBe(1);
+        });
+
+        it('should ignore messages not intended for us', async () => {
+            await client.crypto.prepare([]);
+
+            const logSpy = simple.stub().callFn((mod, msg) => {
+                expect(mod).toEqual("CryptoClient");
+                expect(msg).toEqual("Received encrypted message not intended for us (ignoring message)");
+            });
+            LogService.setLogger({ warn: logSpy } as any as ILogger);
+
+            await client.crypto.processInboundDeviceMessage({
+                content: <any>{
+                    algorithm: EncryptionAlgorithm.OlmV1Curve25519AesSha2,
+                    ciphertext: {
+                        "wrong_receive_key": {
+                            type: 0,
+                            body: "encrypted",
+                        },
+                    },
+                    sender_key: "missing",
+                },
+                type: "m.room.encrypted",
+                sender: "@bob:example.org",
+            });
+            expect(logSpy.callCount).toBe(1);
+        });
+
+        it('should ignore messages with invalid ciphertext', async () => {
+            await client.crypto.prepare([]);
+
+            const logSpy = simple.stub().callFn((mod, msg) => {
+                expect(mod).toEqual("CryptoClient");
+                expect(msg).toEqual("Received invalid encrypted message (ignoring message)");
+            });
+            LogService.setLogger({ warn: logSpy } as any as ILogger);
+
+            await client.crypto.processInboundDeviceMessage({
+                content: <any>{
+                    algorithm: EncryptionAlgorithm.OlmV1Curve25519AesSha2,
+                    ciphertext: {
+                        [(<any>client.crypto).deviceCurve25519]: {
+                            type: "test", // !!
+                            body: "encrypted",
+                        },
+                    },
+                    sender_key: "missing",
+                },
+                type: "m.room.encrypted",
+                sender: "@bob:example.org",
+            });
+            await client.crypto.processInboundDeviceMessage({
+                content: <any>{
+                    algorithm: EncryptionAlgorithm.OlmV1Curve25519AesSha2,
+                    ciphertext: {
+                        [(<any>client.crypto).deviceCurve25519]: {
+                            type: 0,
+                            body: null, // !!
+                        },
+                    },
+                    sender_key: "missing",
+                },
+                type: "m.room.encrypted",
+                sender: "@bob:example.org",
+            });
+            expect(logSpy.callCount).toBe(2);
+        });
+
+        it('should ignore messages from unknown devices', async () => {
+            await client.crypto.prepare([]);
+
+            const logSpy = simple.stub().callFn((mod, msg) => {
+                expect(mod).toEqual("CryptoClient");
+                expect(msg).toEqual("Received encrypted message from unknown identity key (ignoring message):");
+            });
+            LogService.setLogger({ warn: logSpy } as any as ILogger);
+
+            const sender = "@bob:example.org";
+            client.cryptoStore.getUserDevices = async (uid) => {
+                expect(uid).toEqual(sender);
+                return [STATIC_TEST_DEVICES["NTTFKSVBSI"]];
+            };
+
+            await client.crypto.processInboundDeviceMessage({
+                content: <any>{
+                    algorithm: EncryptionAlgorithm.OlmV1Curve25519AesSha2,
+                    ciphertext: {
+                        [(<any>client.crypto).deviceCurve25519]: {
+                            type: 0,
+                            body: "encrypted",
+                        },
+                    },
+                    sender_key: "missing",
+                },
+                type: "m.room.encrypted",
+                sender: sender,
+            });
+            expect(logSpy.callCount).toBe(1);
+        });
+
+        describe('decryption', () => {
+            const senderDevice: UserDevice = {
+                user_id: "@bob:example.org",
+                device_id: "TEST_DEVICE_FOR_SENDER",
+                keys: {},
+                signatures: {},
+                algorithms: [EncryptionAlgorithm.MegolmV1AesSha2, EncryptionAlgorithm.OlmV1Curve25519AesSha2],
+                unsigned: {},
+            };
+            const session: IOlmSession = {
+                sessionId: "",
+                pickled: "",
+                lastDecryptionTs: Date.now(),
+            };
+            const altSession: IOlmSession = { // not used in encryption
+                sessionId: "",
+                pickled: "",
+                lastDecryptionTs: Date.now(),
+            };
+
+            async function makeMessage(payload: IOlmPayload, inbounds = true): Promise<IToDeviceMessage<IOlmEncrypted>> {
+                const senderAccount = new (await prepareOlm()).Account();
+                const receiverAccount = await (<any>client.crypto).getOlmAccount();
+                const session1 = new (await prepareOlm()).Session();
+                const session2 = new (await prepareOlm()).Session();
+                const session3 = new (await prepareOlm()).Session();
+                const session4 = new (await prepareOlm()).Session();
+                try {
+                    senderAccount.create();
+
+                    const keys = JSON.parse(senderAccount.identity_keys());
+                    senderDevice.keys[`${DeviceKeyAlgorithm.Curve25519}:${senderDevice.device_id}`] = keys['curve25519'];
+                    senderDevice.keys[`${DeviceKeyAlgorithm.Ed25519}:${senderDevice.device_id}`] = keys['ed25519'];
+
+                    receiverAccount.generate_one_time_keys(2);
+                    const { curve25519: otks } = JSON.parse(receiverAccount.one_time_keys());
+                    const keyIds = Object.keys(otks);
+                    const key1 = otks[keyIds[keyIds.length - 2]];
+                    const key2 = otks[keyIds[keyIds.length - 1]];
+                    receiverAccount.mark_keys_as_published();
+
+                    session1.create_outbound(senderAccount, JSON.parse(receiverAccount.identity_keys())['curve25519'], key1);
+                    session2.create_outbound(senderAccount, JSON.parse(receiverAccount.identity_keys())['curve25519'], key2);
+
+                    if (payload.keys?.ed25519 === "populated") {
+                        payload.keys.ed25519 = keys['ed25519'];
+                    }
+
+                    const encrypted1 = session1.encrypt(JSON.stringify(payload));
+                    const encrypted2 = session2.encrypt(JSON.stringify(payload));
+
+                    if (inbounds) {
+                        session3.create_inbound_from(receiverAccount, keys['curve25519'], encrypted1.body);
+                        session4.create_inbound_from(receiverAccount, keys['curve25519'], encrypted2.body);
+
+                        session.sessionId = session3.session_id();
+                        session.pickled = session3.pickle((<any>client.crypto).pickleKey);
+                        altSession.sessionId = session4.session_id();
+                        altSession.pickled = session4.pickle((<any>client.crypto).pickleKey);
+
+                        receiverAccount.remove_one_time_keys(session3);
+                        receiverAccount.remove_one_time_keys(session4);
+                    }
+
+                    return {
+                        type: "m.room.encrypted",
+                        content: {
+                            algorithm: EncryptionAlgorithm.OlmV1Curve25519AesSha2,
+                            sender_key: keys['curve25519'],
+                            ciphertext: {
+                                [JSON.parse(receiverAccount.identity_keys())['curve25519']]: encrypted1,
+                            },
+                        },
+                        sender: senderDevice.user_id,
+                    };
+                } finally {
+                    senderAccount.free();
+                    session1.free();
+                    session2.free();
+                    session3.free();
+                    session4.free();
+                    await (<any>client.crypto).storeAndFreeOlmAccount(receiverAccount);
+                }
+            }
+
+            beforeEach(async () => {
+                await client.crypto.prepare([]);
+                client.cryptoStore.getUserDevices = async (uid) => {
+                    expect(uid).toEqual(senderDevice.user_id);
+                    return [senderDevice];
+                };
+                client.cryptoStore.getOlmSessions = async (uid, did) => {
+                    expect(uid).toEqual(senderDevice.user_id);
+                    expect(did).toEqual(senderDevice.device_id);
+                    return [altSession, session];
+                };
+
+                session.pickled = "";
+                session.sessionId = "";
+                altSession.pickled = "";
+                altSession.sessionId = "";
+
+                LogService.setLogger({
+                    error: (mod, msg, ...rest) => {
+                        console.error(mod, msg, ...rest);
+                        expect(mod).toEqual("CryptoClient");
+                        expect(msg).not.toEqual("Non-fatal error while processing to-device message:");
+                    },
+                    warn: (...rest) => console.warn(...rest),
+                } as any as ILogger);
+            });
+
+            afterEach(async () => {
+                LogService.setLogger(new ConsoleLogger());
+            });
+
+            it('should decrypt with a known Olm session', async () => {
+                const plaintext = {
+                    keys: {
+                        ed25519: "populated",
+                    },
+                    recipient_keys: {
+                        ed25519: (<any>client.crypto).deviceEd25519,
+                    },
+                    recipient: await client.getUserId(),
+                    sender: senderDevice.user_id,
+                    content: {
+                        tests: true,
+                    },
+                    type: "m.room_key",
+                };
+                const deviceMessage = await makeMessage(plaintext);
+
+                const handleSpy = simple.stub().callFn(async (d, dev, m) => {
+                    expect(d).toMatchObject(plaintext);
+                    expect(dev).toMatchObject(senderDevice as any);
+                    expect(m).toMatchObject(deviceMessage as any);
+                });
+                (<any>client.crypto).handleInboundRoomKey = handleSpy;
+
+                await client.crypto.processInboundDeviceMessage(deviceMessage);
+                expect(handleSpy.callCount).toBe(1);
+            });
+
+            it('should decrypt with an unknown but storable Olm session', async () => {
+                const plaintext = {
+                    keys: {
+                        ed25519: "populated",
+                    },
+                    recipient_keys: {
+                        ed25519: (<any>client.crypto).deviceEd25519,
+                    },
+                    recipient: await client.getUserId(),
+                    sender: senderDevice.user_id,
+                    content: {
+                        tests: true,
+                    },
+                    type: "m.room_key",
+                };
+                const deviceMessage = await makeMessage(plaintext, false);
+
+                const handleSpy = simple.stub().callFn(async (d, dev, m) => {
+                    expect(d).toMatchObject(plaintext);
+                    expect(dev).toMatchObject(senderDevice as any);
+                    expect(m).toMatchObject(deviceMessage as any);
+                });
+                (<any>client.crypto).handleInboundRoomKey = handleSpy;
+
+                const storeSpy = simple.stub().callFn(async (uid, did, s) => {
+                    expect(uid).toEqual(senderDevice.user_id);
+                    expect(did).toEqual(senderDevice.device_id);
+                    expect(s).toMatchObject({
+                        pickled: expect.any(String),
+                        sessionId: expect.any(String),
+                        lastDecryptionTs: expect.any(Number),
+                    });
+                });
+                client.cryptoStore.storeOlmSession = storeSpy;
+
+                client.cryptoStore.getOlmSessions = async (uid, did) => {
+                    expect(uid).toEqual(senderDevice.user_id);
+                    expect(did).toEqual(senderDevice.device_id);
+                    return [];
+                };
+
+                await client.crypto.processInboundDeviceMessage(deviceMessage);
+                expect(handleSpy.callCount).toBe(1);
+                expect(storeSpy.callCount).toBe(2); // once for the inbound session, once after decrypt
+            });
+
+            it('should try to create a new Olm session with an unknown type 1 message', async () => {
+                const plaintext = {
+                    keys: {
+                        ed25519: "populated",
+                    },
+                    recipient_keys: {
+                        ed25519: (<any>client.crypto).deviceEd25519,
+                    },
+                    recipient: await client.getUserId(),
+                    sender: senderDevice.user_id,
+                    content: {
+                        tests: true,
+                    },
+                    type: "m.room_key",
+                };
+                const deviceMessage = await makeMessage(plaintext, false);
+                const ciphertext = deviceMessage['content']['ciphertext'];
+                ciphertext[Object.keys(ciphertext)[0]]['type'] = 1;
+
+                const handleSpy = simple.stub().callFn(async (d, dev, m) => {
+                    expect(d).toMatchObject(plaintext);
+                    expect(dev).toMatchObject(senderDevice as any);
+                    expect(m).toMatchObject(deviceMessage as any);
+                });
+                (<any>client.crypto).handleInboundRoomKey = handleSpy;
+
+                const storeSpy = simple.stub().callFn(async (uid, did, s) => {
+                    expect(uid).toEqual(senderDevice.user_id);
+                    expect(did).toEqual(senderDevice.device_id);
+                    expect(s).toMatchObject({
+                        pickled: expect.any(String),
+                        sessionId: expect.any(String),
+                        lastDecryptionTs: expect.any(Number),
+                    });
+                });
+                client.cryptoStore.storeOlmSession = storeSpy;
+
+                const establishSpy = simple.stub().callFn(async (d) => {
+                    expect(d).toMatchObject(senderDevice as any);
+                });
+                (<any>client.crypto).establishNewOlmSession = establishSpy;
+
+                client.cryptoStore.getOlmSessions = async (uid, did) => {
+                    expect(uid).toEqual(senderDevice.user_id);
+                    expect(did).toEqual(senderDevice.device_id);
+                    return [];
+                };
+
+                await client.crypto.processInboundDeviceMessage(deviceMessage);
+                expect(handleSpy.callCount).toBe(0);
+                expect(storeSpy.callCount).toBe(0);
+                expect(establishSpy.callCount).toBe(1);
+            });
+
+            it('should fail decryption if the message validation failed', async () => {
+                let expectedAddl: any;
+                let warnCalled = false;
+                LogService.setLogger({
+                    error: (mod, msg, ...rest) => {
+                        console.error(mod, msg, ...rest);
+                        expect(mod).toEqual("CryptoClient");
+                        expect(msg).not.toEqual("Non-fatal error while processing to-device message:");
+                    },
+                    warn: (mod, msg, addl, ...rest) => {
+                        console.warn(mod, msg, addl, ...rest);
+                        warnCalled = true;
+                        expect(mod).toEqual("CryptoClient");
+                        expect(msg).toEqual("Successfully decrypted to-device message, but it failed validation. Ignoring message.");
+                        expect(addl).toMatchObject(expectedAddl);
+                    },
+                } as any as ILogger);
+
+                const plainTemplate = {
+                    keys: {
+                        ed25519: "populated",
+                    },
+                    recipient_keys: {
+                        ed25519: (<any>client.crypto).deviceEd25519,
+                    },
+                    recipient: await client.getUserId(),
+                    sender: senderDevice.user_id,
+                    content: {
+                        tests: true,
+                    },
+                    type: "m.room_key",
+                };
+                const addlTemplate = {
+                    wasForUs: true,
+                    wasFromThem: true,
+                    hasType: true,
+                    hasContent: true,
+                    ourKeyMatches: true,
+                    theirKeyMatches: true,
+                };
+
+                const makeTestCase = (p: Partial<typeof plainTemplate>, a: Partial<typeof addlTemplate>) => {
+                    return [
+                        JSON.parse(JSON.stringify({ ...plainTemplate, ...p })),
+                        JSON.parse(JSON.stringify({ ...addlTemplate, ...a })),
+                    ];
+                };
+
+                const cases = [
+                    makeTestCase({ recipient: "@wrong:example.org" }, { wasForUs: false }),
+                    makeTestCase({ sender: "@wrong:example.org" }, { wasFromThem: false }),
+                    makeTestCase({ type: 12 } as any, { hasType: false }),
+                    makeTestCase({ type: null } as any, { hasType: false }),
+                    makeTestCase({ content: 12 } as any, { hasContent: false }),
+                    makeTestCase({ content: null } as any, { hasContent: false }),
+                    makeTestCase({ content: "wrong" } as any, { hasContent: false }),
+                    makeTestCase({ recipient_keys: null }, { ourKeyMatches: false }),
+                    makeTestCase({ recipient_keys: {} } as any, { ourKeyMatches: false }),
+                    makeTestCase({ recipient_keys: { ed25519: "wrong" } }, { ourKeyMatches: false }),
+                    makeTestCase({ keys: null }, { theirKeyMatches: false }),
+                    makeTestCase({ keys: {} } as any, { theirKeyMatches: false }),
+                    makeTestCase({ keys: { ed25519: "wrong" } }, { theirKeyMatches: false }),
+                ];
+                for (let i = 0; i < cases.length; i++) {
+                    const testCase = cases[i];
+                    const plaintext = testCase[0];
+                    expectedAddl = testCase[1];
+                    warnCalled = false;
+
+                    console.log(JSON.stringify({ i, testCase }, null, 2));
+
+                    const deviceMessage = await makeMessage(plaintext as any);
+
+                    const handleSpy = simple.stub().callFn(async (d, dev, m) => {
+                        expect(d).toMatchObject(plaintext);
+                        expect(dev).toMatchObject(senderDevice as any);
+                        expect(m).toMatchObject(deviceMessage as any);
+                    });
+                    (<any>client.crypto).handleInboundRoomKey = handleSpy;
+
+                    await client.crypto.processInboundDeviceMessage(deviceMessage);
+                    expect(handleSpy.callCount).toBe(0);
+                    expect(warnCalled).toBe(true);
+                }
+            });
+        });
+    });
+
+    describe('handleInboundRoomKey', () => {
+        const userId = "@alice:example.org";
+        let client: MatrixClient;
+
+        beforeEach(async () => {
+            const { client: mclient } = createTestClient(null, userId, true);
+            client = mclient;
+
+            await client.cryptoStore.setDeviceId(TEST_DEVICE_ID);
+            await feedStaticOlmAccount(client);
+            client.uploadDeviceKeys = () => Promise.resolve({});
+            client.uploadDeviceOneTimeKeys = () => Promise.resolve({});
+            client.checkOneTimeKeyCounts = () => Promise.resolve({});
+
+            await client.crypto.prepare([]);
+        });
+
+        afterEach(async () => {
+            LogService.setLogger(new ConsoleLogger());
+        });
+
+        it('should validate the incoming key', async () => {
+            let expectedMessage = "";
+            const logSpy = simple.stub().callFn((mod, msg) => {
+                expect(mod).toEqual("CryptoClient");
+                expect(msg).toEqual(expectedMessage);
+            });
+            LogService.setLogger({ warn: logSpy } as any as ILogger);
+
+            const expectLogCall = () => {
+                expect(logSpy.callCount).toBe(1);
+                logSpy.reset();
+            };
+
+            expectedMessage = "Ignoring m.room_key for unknown encryption algorithm";
+            await (<any>client.crypto).handleInboundRoomKey({ content: { algorithm: "wrong" } }, null, null);
+            expectLogCall();
+            await (<any>client.crypto).handleInboundRoomKey({ content: null }, null, null);
+            expectLogCall();
+
+            expectedMessage = "Ignoring invalid m.room_key";
+            await (<any>client.crypto).handleInboundRoomKey({ content: { algorithm: EncryptionAlgorithm.MegolmV1AesSha2 } }, null, null);
+            expectLogCall();
+            await (<any>client.crypto).handleInboundRoomKey({
+                content: {
+                    algorithm: EncryptionAlgorithm.MegolmV1AesSha2,
+                    room_id: "test"
+                }
+            }, null, null);
+            expectLogCall();
+            await (<any>client.crypto).handleInboundRoomKey({
+                content: {
+                    algorithm: EncryptionAlgorithm.MegolmV1AesSha2,
+                    room_id: "test",
+                    session_id: "test"
+                }
+            }, null, null);
+            expectLogCall();
+
+            expectedMessage = "Ignoring m.room_key message from unexpected sender";
+            await (<any>client.crypto).handleInboundRoomKey({
+                content: {
+                    algorithm: EncryptionAlgorithm.MegolmV1AesSha2,
+                    room_id: "test",
+                    session_id: "test",
+                    session_key: "test"
+                }
+            }, {
+                device_id: "DEVICE",
+                keys: {
+                    "curve25519:DEVICE": "key_goes_here",
+                },
+            }, {
+                content: {
+                    sender_key: "wrong",
+                },
+            });
+            expectLogCall();
+        });
+
+        it('should not store known inbound sessions', async () => {
+            const storeSpy = simple.stub().callFn(async () => {
+                throw new Error("Called wrongly");
+            });
+            (<any>client.crypto).storeInboundGroupSession = storeSpy;
+
+            const readSpy = simple.stub().callFn(async (uid, did, rid, sid) => {
+                expect(uid).toEqual("@user:example.org");
+                expect(did).toEqual("DEVICE");
+                expect(rid).toEqual("!test:example.org");
+                expect(sid).toEqual("test_session");
+                return { testing: true } as any; // return value not important
+            });
+            client.cryptoStore.getInboundGroupSession = readSpy;
+
+            await (<any>client.crypto).handleInboundRoomKey({
+                content: {
+                    algorithm: EncryptionAlgorithm.MegolmV1AesSha2,
+                    room_id: "!test:example.org",
+                    session_id: "test_session",
+                    session_key: "session_key_goes_here",
+                },
+            }, {
+                device_id: "DEVICE",
+                user_id: "@user:example.org",
+                keys: {
+                    "curve25519:DEVICE": "key_goes_here",
+                },
+            }, {
+                content: {
+                    sender_key: "key_goes_here",
+                },
+            });
+            expect(storeSpy.callCount).toBe(0);
+            expect(readSpy.callCount).toBe(1);
+        });
+
+        it('should store unknown inbound sessions', async () => {
+            const content = {
+                algorithm: EncryptionAlgorithm.MegolmV1AesSha2,
+                room_id: "!test:example.org",
+                session_id: "test_session",
+                session_key: "session_key_goes_here",
+            };
+            const storeSpy = simple.stub().callFn(async (c, uid, did) => {
+                expect(uid).toEqual("@user:example.org");
+                expect(did).toEqual("DEVICE");
+                expect(c).toMatchObject(content);
+            });
+            (<any>client.crypto).storeInboundGroupSession = storeSpy;
+
+            const readSpy = simple.stub().callFn(async (uid, did, rid, sid) => {
+                expect(uid).toEqual("@user:example.org");
+                expect(did).toEqual("DEVICE");
+                expect(rid).toEqual("!test:example.org");
+                expect(sid).toEqual("test_session");
+                return null; // assume not known
+            });
+            client.cryptoStore.getInboundGroupSession = readSpy;
+
+            await (<any>client.crypto).handleInboundRoomKey({
+                content: content,
+            }, {
+                device_id: "DEVICE",
+                user_id: "@user:example.org",
+                keys: {
+                    "curve25519:DEVICE": "key_goes_here",
+                },
+            }, {
+                content: {
+                    sender_key: "key_goes_here",
+                },
+            });
+            expect(storeSpy.callCount).toBe(1);
+            expect(readSpy.callCount).toBe(1);
+        });
+    });
+
+    describe('storeInboundGroupSession', () => {
+        const userId = "@alice:example.org";
+        let client: MatrixClient;
+
+        beforeEach(async () => {
+            const { client: mclient } = createTestClient(null, userId, true);
+            client = mclient;
+
+            await client.cryptoStore.setDeviceId(TEST_DEVICE_ID);
+            await feedStaticOlmAccount(client);
+            client.uploadDeviceKeys = () => Promise.resolve({});
+            client.uploadDeviceOneTimeKeys = () => Promise.resolve({});
+            client.checkOneTimeKeyCounts = () => Promise.resolve({});
+
+            await client.crypto.prepare([]);
+        });
+
+        afterEach(async () => {
+            LogService.setLogger(new ConsoleLogger());
+        });
+
+        it('should ignore mismatched session IDs', async () => {
+            const session = new (await prepareOlm()).OutboundGroupSession();
+            try {
+                session.create();
+
+                const key: IMRoomKey = {
+                    session_key: session.session_key(),
+                    session_id: "wrong",
+                    algorithm: EncryptionAlgorithm.MegolmV1AesSha2,
+                    room_id: "!room:example.org",
+                };
+
+                const storeSpy = simple.stub().callFn(async (s) => {
+                    expect(s).toMatchObject({
+                        roomId: key.room_id,
+                        sessionId: key.session_id,
+                        senderDeviceId: TEST_DEVICE_ID,
+                        senderUserId: userId,
+                        pickled: expect.any(String),
+                    });
+                });
+                client.cryptoStore.storeInboundGroupSession = storeSpy;
+
+                const logSpy = simple.stub().callFn((mod, msg) => {
+                    expect(mod).toEqual("CryptoClient");
+                    expect(msg).toEqual("Ignoring m.room_key with mismatched session_id");
+                });
+                LogService.setLogger({ warn: logSpy } as any as ILogger);
+
+                await (<any>client.crypto).storeInboundGroupSession(key, userId, TEST_DEVICE_ID);
+                expect(logSpy.callCount).toBe(1);
+                expect(storeSpy.callCount).toBe(0);
+            } finally {
+                session.free();
+            }
+        });
+
+        it('should store sessions', async () => {
+            const session = new (await prepareOlm()).OutboundGroupSession();
+            try {
+                session.create();
+
+                const key: IMRoomKey = {
+                    session_key: session.session_key(),
+                    session_id: session.session_id(),
+                    algorithm: EncryptionAlgorithm.MegolmV1AesSha2,
+                    room_id: "!room:example.org",
+                };
+
+                const storeSpy = simple.stub().callFn(async (s) => {
+                    expect(s).toMatchObject({
+                        roomId: key.room_id,
+                        sessionId: key.session_id,
+                        senderDeviceId: TEST_DEVICE_ID,
+                        senderUserId: userId,
+                        pickled: expect.any(String),
+                    });
+                });
+                client.cryptoStore.storeInboundGroupSession = storeSpy;
+
+                await (<any>client.crypto).storeInboundGroupSession(key, userId, TEST_DEVICE_ID);
+                expect(storeSpy.callCount).toBe(1);
+            } finally {
+                session.free();
+            }
+        });
+    });
+
+    describe('establishNewOlmSession', () => {
+        const userId = "@alice:example.org";
+        let client: MatrixClient;
+
+        beforeEach(async () => {
+            const { client: mclient } = createTestClient(null, userId, true);
+            client = mclient;
+
+            await client.cryptoStore.setDeviceId(TEST_DEVICE_ID);
+            await feedStaticOlmAccount(client);
+            client.uploadDeviceKeys = () => Promise.resolve({});
+            client.uploadDeviceOneTimeKeys = () => Promise.resolve({});
+            client.checkOneTimeKeyCounts = () => Promise.resolve({});
+
+            await client.crypto.prepare([]);
+        });
+
+        it('should force new session creation', async () => {
+            const session = {
+                test: true,
+            };
+
+            const device = {
+                user_id: userId,
+                device_id: TEST_DEVICE_ID,
+                // rest don't matter
+            };
+
+            const genSpy = simple.stub().callFn(async (m, f) => {
+                expect(m).toMatchObject({[userId]: [TEST_DEVICE_ID]});
+                expect(f).toBe(true);
+                return {
+                    [userId]: {
+                        [TEST_DEVICE_ID]: session,
+                    },
+                };
+            });
+            (<any>client.crypto).getOrCreateOlmSessions = genSpy;
+
+            const sendSpy = simple.stub().callFn(async (d, s, t, c) => {
+                expect(d).toMatchObject(device);
+                expect(s).toMatchObject(session);
+                expect(t).toEqual("m.dummy");
+                expect(JSON.stringify(c)).toEqual("{}");
+            });
+            (<any>client.crypto).encryptAndSendOlmMessage = sendSpy;
+
+            await (<any>client.crypto).establishNewOlmSession(device);
+            expect(genSpy.callCount).toBe(1);
+            expect(sendSpy.callCount).toBe(1);
+        });
+    });
+
+    describe('decryptRoomEvent', () => {
+        const userId = "@alice:example.org";
+        let client: MatrixClient;
+
+        beforeEach(async () => {
+            const { client: mclient } = createTestClient(null, userId, true);
+            client = mclient;
+
+            await client.cryptoStore.setDeviceId(TEST_DEVICE_ID);
+            await feedStaticOlmAccount(client);
+            client.uploadDeviceKeys = () => Promise.resolve({});
+            client.uploadDeviceOneTimeKeys = () => Promise.resolve({});
+            client.checkOneTimeKeyCounts = () => Promise.resolve({});
+
+            // client crypto not prepared for the one test which wants that state
+        });
+
+        afterEach(async () => {
+            LogService.setLogger(new ConsoleLogger());
+        });
+
+        it('should fail when the crypto has not been prepared', async () => {
+            try {
+                await client.crypto.decryptRoomEvent(null, null);
+
+                // noinspection ExceptionCaughtLocallyJS
+                throw new Error("Failed to fail");
+            } catch (e) {
+                expect(e.message).toEqual("End-to-end encryption has not initialized");
+            }
+        });
+
+        it('should fail if the algorithm is not known', async () => {
+            await client.crypto.prepare([]);
+
+            const event = new EncryptedRoomEvent({
+                content: {
+                    algorithm: "wrong",
+                },
+            });
+            const roomId = "!room:example.org";
+
+            try {
+                await client.crypto.decryptRoomEvent(event, roomId);
+
+                // noinspection ExceptionCaughtLocallyJS
+                throw new Error("Failed to fail");
+            } catch (e) {
+                expect(e.message).toEqual("Unable to decrypt: Unknown algorithm");
+            }
+        });
+
+        it('should fail if the sending device is unknown', async () => {
+            await client.crypto.prepare([]);
+
+            const event = new EncryptedRoomEvent({
+                content: {
+                    algorithm: EncryptionAlgorithm.MegolmV1AesSha2,
+                    sender_key: "sender",
+                    ciphertext: "cipher",
+                    session_id: "session",
+                    device_id: TEST_DEVICE_ID,
+                },
+                sender: userId,
+            });
+            const roomId = "!room:example.org";
+
+            const getSpy = simple.stub().callFn(async (uid, did) => {
+                expect(uid).toEqual(userId);
+                expect(did).toEqual(event.content.device_id);
+                return null;
+            });
+            client.cryptoStore.getUserDevice = getSpy;
+
+            try {
+                await client.crypto.decryptRoomEvent(event, roomId);
+
+                // noinspection ExceptionCaughtLocallyJS
+                throw new Error("Failed to fail");
+            } catch (e) {
+                expect(e.message).toEqual("Unable to decrypt: Unknown device for sender");
+            }
+
+            expect(getSpy.callCount).toBe(1);
+        });
+
+        it('should fail if the sending device has a key mismatch', async () => {
+            await client.crypto.prepare([]);
+
+            const event = new EncryptedRoomEvent({
+                content: {
+                    algorithm: EncryptionAlgorithm.MegolmV1AesSha2,
+                    sender_key: "wrong",
+                    ciphertext: "cipher",
+                    session_id: "session",
+                    device_id: TEST_DEVICE_ID,
+                },
+                sender: userId,
+            });
+            const roomId = "!room:example.org";
+
+            const getSpy = simple.stub().callFn(async (uid, did) => {
+                expect(uid).toEqual(userId);
+                expect(did).toEqual(event.content.device_id);
+                return RECEIVER_DEVICE;
+            });
+            client.cryptoStore.getUserDevice = getSpy;
+
+            try {
+                await client.crypto.decryptRoomEvent(event, roomId);
+
+                // noinspection ExceptionCaughtLocallyJS
+                throw new Error("Failed to fail");
+            } catch (e) {
+                expect(e.message).toEqual("Unable to decrypt: Device key mismatch");
+            }
+
+            expect(getSpy.callCount).toBe(1);
+        });
+
+        it('should fail if the session is unknown', async () => {
+            await client.crypto.prepare([]);
+
+            const event = new EncryptedRoomEvent({
+                content: {
+                    algorithm: EncryptionAlgorithm.MegolmV1AesSha2,
+                    sender_key: RECEIVER_DEVICE.keys[`${DeviceKeyAlgorithm.Curve25519}:${RECEIVER_DEVICE.device_id}`],
+                    ciphertext: "cipher",
+                    session_id: "test",
+                    device_id: TEST_DEVICE_ID,
+                },
+                sender: userId,
+            });
+            const roomId = "!room:example.org";
+
+            const getDeviceSpy = simple.stub().callFn(async (uid, did) => {
+                expect(uid).toEqual(userId);
+                expect(did).toEqual(event.content.device_id);
+                return RECEIVER_DEVICE;
+            });
+            client.cryptoStore.getUserDevice = getDeviceSpy;
+
+            const getSessionSpy = simple.stub().callFn(async (uid, did, rid, sid) => {
+                expect(uid).toEqual(userId);
+                expect(did).toEqual(event.content.device_id);
+                expect(rid).toEqual(roomId);
+                expect(sid).toEqual(event.content.session_id);
+                return null;
+            });
+            client.cryptoStore.getInboundGroupSession = getSessionSpy;
+
+            try {
+                await client.crypto.decryptRoomEvent(event, roomId);
+
+                // noinspection ExceptionCaughtLocallyJS
+                throw new Error("Failed to fail");
+            } catch (e) {
+                expect(e.message).toEqual("Unable to decrypt: Unknown inbound session ID");
+            }
+
+            expect(getDeviceSpy.callCount).toBe(1);
+            expect(getSessionSpy.callCount).toBe(1);
+        });
+
+        it('should fail the decryption looks like a replay attack', async () => {
+            await client.crypto.prepare([]);
+
+            await client.cryptoStore.setUserDevices(RECEIVER_DEVICE.user_id, [RECEIVER_DEVICE]);
+
+            // Make an encrypted event, and store the outbound keys as inbound
+            const plainType = "org.example.plain";
+            const plainContent = {
+                tests: true,
+                hello: "world",
+            };
+            let event: EncryptedRoomEvent;
+            const roomId = "!room:example.org";
+            const outboundSession = new (await prepareOlm()).OutboundGroupSession();
+            try {
+                outboundSession.create();
+                await (<any>client.crypto).storeInboundGroupSession({
+                    room_id: roomId,
+                    session_id: outboundSession.session_id(),
+                    session_key: outboundSession.session_key(),
+                    algorithm: EncryptionAlgorithm.MegolmV1AesSha2,
+                }, RECEIVER_DEVICE.user_id, RECEIVER_DEVICE.device_id);
+                event = new EncryptedRoomEvent({
+                    sender: RECEIVER_DEVICE.user_id,
+                    type: "m.room.encrypted",
+                    event_id: "$sent",
+                    content: {
+                        algorithm: EncryptionAlgorithm.MegolmV1AesSha2,
+                        sender_key: RECEIVER_DEVICE.keys[`${DeviceKeyAlgorithm.Curve25519}:${RECEIVER_DEVICE.device_id}`],
+                        ciphertext: outboundSession.encrypt(JSON.stringify({
+                            type: plainType,
+                            content: plainContent,
+                            room_id: roomId,
+                        })),
+                        session_id: outboundSession.session_id(),
+                        device_id: RECEIVER_DEVICE.device_id,
+                    },
+                });
+            } finally {
+                outboundSession.free();
+            }
+
+            const getIndexSpy = simple.stub().callFn(async (rid, sid, idx) => {
+                expect(rid).toEqual(roomId);
+                expect(sid).toEqual(event.content.session_id);
+                expect(idx).toBe(0);
+                return "$wrong";
+            });
+            client.cryptoStore.getEventForMessageIndex = getIndexSpy;
+
+            try {
+                await client.crypto.decryptRoomEvent(event, roomId);
+
+                // noinspection ExceptionCaughtLocallyJS
+                throw new Error("Failed to fail");
+            } catch (e) {
+                expect(e.message).toEqual("Unable to decrypt: Message replay attack");
+            }
+
+            expect(getIndexSpy.callCount).toBe(1);
+        });
+
+        it('should succeed at re-decryption (valid replay)', async () => {
+            await client.crypto.prepare([]);
+
+            await client.cryptoStore.setUserDevices(RECEIVER_DEVICE.user_id, [RECEIVER_DEVICE]);
+
+            // Make an encrypted event, and store the outbound keys as inbound
+            const plainType = "org.example.plain";
+            const plainContent = {
+                tests: true,
+                hello: "world",
+            };
+            let event: EncryptedRoomEvent;
+            const roomId = "!room:example.org";
+            const outboundSession = new (await prepareOlm()).OutboundGroupSession();
+            try {
+                outboundSession.create();
+                await (<any>client.crypto).storeInboundGroupSession({
+                    room_id: roomId,
+                    session_id: outboundSession.session_id(),
+                    session_key: outboundSession.session_key(),
+                    algorithm: EncryptionAlgorithm.MegolmV1AesSha2,
+                }, RECEIVER_DEVICE.user_id, RECEIVER_DEVICE.device_id);
+                event = new EncryptedRoomEvent({
+                    sender: RECEIVER_DEVICE.user_id,
+                    type: "m.room.encrypted",
+                    event_id: "$sent",
+                    content: {
+                        algorithm: EncryptionAlgorithm.MegolmV1AesSha2,
+                        sender_key: RECEIVER_DEVICE.keys[`${DeviceKeyAlgorithm.Curve25519}:${RECEIVER_DEVICE.device_id}`],
+                        ciphertext: outboundSession.encrypt(JSON.stringify({
+                            type: plainType,
+                            content: plainContent,
+                            room_id: roomId,
+                        })),
+                        session_id: outboundSession.session_id(),
+                        device_id: RECEIVER_DEVICE.device_id,
+                    },
+                });
+            } finally {
+                outboundSession.free();
+            }
+
+            const getIndexSpy = simple.stub().callFn(async (rid, sid, idx) => {
+                expect(rid).toEqual(roomId);
+                expect(sid).toEqual(event.content.session_id);
+                expect(idx).toBe(0);
+                return event.eventId;
+            });
+            client.cryptoStore.getEventForMessageIndex = getIndexSpy;
+
+            const setIndexSpy = simple.stub().callFn(async (rid, eid, sid, idx) => {
+                expect(rid).toEqual(roomId);
+                expect(eid).toEqual(event.eventId);
+                expect(sid).toEqual(event.content.session_id);
+                expect(idx).toBe(0);
+            });
+            client.cryptoStore.setMessageIndexForEvent = setIndexSpy;
+
+            const result = await client.crypto.decryptRoomEvent(event, roomId);
+            expect(result).toBeDefined();
+            expect(result.type).toEqual(plainType);
+            expect(result.content).toMatchObject(plainContent);
+            expect(result.raw).toMatchObject(Object.assign({}, event.raw, {type: plainType, content: plainContent}));
+            expect(getIndexSpy.callCount).toBe(1);
+            expect(setIndexSpy.callCount).toBe(1);
+        });
+
+        it('should succeed at decryption', async () => {
+            await client.crypto.prepare([]);
+
+            await client.cryptoStore.setUserDevices(RECEIVER_DEVICE.user_id, [RECEIVER_DEVICE]);
+
+            // Make an encrypted event, and store the outbound keys as inbound
+            const plainType = "org.example.plain";
+            const plainContent = {
+                tests: true,
+                hello: "world",
+            };
+            const roomId = "!room:example.org";
+            let event: EncryptedRoomEvent;
+            const outboundSession = new (await prepareOlm()).OutboundGroupSession();
+            try {
+                outboundSession.create();
+                await (<any>client.crypto).storeInboundGroupSession({
+                    room_id: roomId,
+                    session_id: outboundSession.session_id(),
+                    session_key: outboundSession.session_key(),
+                    algorithm: EncryptionAlgorithm.MegolmV1AesSha2,
+                }, RECEIVER_DEVICE.user_id, RECEIVER_DEVICE.device_id);
+                event = new EncryptedRoomEvent({
+                    sender: RECEIVER_DEVICE.user_id,
+                    type: "m.room.encrypted",
+                    event_id: "$sent",
+                    content: {
+                        algorithm: EncryptionAlgorithm.MegolmV1AesSha2,
+                        sender_key: RECEIVER_DEVICE.keys[`${DeviceKeyAlgorithm.Curve25519}:${RECEIVER_DEVICE.device_id}`],
+                        ciphertext: outboundSession.encrypt(JSON.stringify({
+                            type: plainType,
+                            content: plainContent,
+                            room_id: roomId,
+                        })),
+                        session_id: outboundSession.session_id(),
+                        device_id: RECEIVER_DEVICE.device_id,
+                    },
+                });
+            } finally {
+                outboundSession.free();
+            }
+
+            const getIndexSpy = simple.stub().callFn(async (rid, sid, idx) => {
+                expect(rid).toEqual(roomId);
+                expect(sid).toEqual(event.content.session_id);
+                expect(idx).toBe(0);
+                return null; // assume not known
+            });
+            client.cryptoStore.getEventForMessageIndex = getIndexSpy;
+
+            const setIndexSpy = simple.stub().callFn(async (rid, eid, sid, idx) => {
+                expect(rid).toEqual(roomId);
+                expect(eid).toEqual(event.eventId);
+                expect(sid).toEqual(event.content.session_id);
+                expect(idx).toBe(0);
+            });
+            client.cryptoStore.setMessageIndexForEvent = setIndexSpy;
+
+            const result = await client.crypto.decryptRoomEvent(event, roomId);
+            expect(result).toBeDefined();
+            expect(result.type).toEqual(plainType);
+            expect(result.content).toMatchObject(plainContent);
+            expect(result.raw).toMatchObject(Object.assign({}, event.raw, {type: plainType, content: plainContent}));
+            expect(getIndexSpy.callCount).toBe(1);
+            expect(setIndexSpy.callCount).toBe(1);
         });
     });
 });

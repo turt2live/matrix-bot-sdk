@@ -2,7 +2,7 @@ import * as expect from "expect";
 import * as tmp from "tmp";
 import { SqliteCryptoStorageProvider } from "../../src/storage/SqliteCryptoStorageProvider";
 import { TEST_DEVICE_ID } from "../MatrixClientTest";
-import { EncryptionAlgorithm, IOlmSession } from "../../src";
+import { EncryptionAlgorithm, IInboundGroupSession, IOlmSession } from "../../src";
 
 tmp.setGracefulCleanup();
 
@@ -454,32 +454,87 @@ describe('SqliteCryptoStorageProvider', () => {
         const name = tmp.fileSync().name;
         let store = new SqliteCryptoStorageProvider(name);
 
+        const sessionSortFn = (a, b) => a.sessionId < b.sessionId ? -1 : (a.sessionId === b.sessionId ? 0 : 1);
+
         await store.storeOlmSession(userId1, deviceId1, session1);
         await store.storeOlmSession(userId2, deviceId2, session2);
         expect(await store.getCurrentOlmSession(userId1, deviceId1)).toMatchObject(session1 as any);
         expect(await store.getCurrentOlmSession(userId2, deviceId2)).toMatchObject(session2 as any);
+        expect((await store.getOlmSessions(userId1, deviceId1)).sort(sessionSortFn)).toMatchObject([session1].sort(sessionSortFn));
+        expect((await store.getOlmSessions(userId2, deviceId2)).sort(sessionSortFn)).toMatchObject([session2].sort(sessionSortFn));
         await store.close();
         store = new SqliteCryptoStorageProvider(name);
         expect(await store.getCurrentOlmSession(userId1, deviceId1)).toMatchObject(session1 as any);
         expect(await store.getCurrentOlmSession(userId2, deviceId2)).toMatchObject(session2 as any);
+        expect((await store.getOlmSessions(userId1, deviceId1)).sort(sessionSortFn)).toMatchObject([session1].sort(sessionSortFn));
+        expect((await store.getOlmSessions(userId2, deviceId2)).sort(sessionSortFn)).toMatchObject([session2].sort(sessionSortFn));
 
         // insert an updated session for the first user to ensure the lastDecryptionTs logic works
         await store.storeOlmSession(userId1, deviceId1, session4);
         expect(await store.getCurrentOlmSession(userId1, deviceId1)).toMatchObject(session4 as any);
         expect(await store.getCurrentOlmSession(userId2, deviceId2)).toMatchObject(session2 as any);
+        expect((await store.getOlmSessions(userId1, deviceId1)).sort(sessionSortFn)).toMatchObject([session1, session4].sort(sessionSortFn));
+        expect((await store.getOlmSessions(userId2, deviceId2)).sort(sessionSortFn)).toMatchObject([session2].sort(sessionSortFn));
         await store.close();
         store = new SqliteCryptoStorageProvider(name);
         expect(await store.getCurrentOlmSession(userId1, deviceId1)).toMatchObject(session4 as any);
         expect(await store.getCurrentOlmSession(userId2, deviceId2)).toMatchObject(session2 as any);
+        expect((await store.getOlmSessions(userId1, deviceId1)).sort(sessionSortFn)).toMatchObject([session1, session4].sort(sessionSortFn));
+        expect((await store.getOlmSessions(userId2, deviceId2)).sort(sessionSortFn)).toMatchObject([session2].sort(sessionSortFn));
 
         // now test that we'll keep session 4 even after inserting session 3 (an older session)
         await store.storeOlmSession(userId1, deviceId1, session3);
         expect(await store.getCurrentOlmSession(userId1, deviceId1)).toMatchObject(session4 as any);
         expect(await store.getCurrentOlmSession(userId2, deviceId2)).toMatchObject(session2 as any);
+        expect((await store.getOlmSessions(userId1, deviceId1)).sort(sessionSortFn)).toMatchObject([session1, session4, session3].sort(sessionSortFn));
+        expect((await store.getOlmSessions(userId2, deviceId2)).sort(sessionSortFn)).toMatchObject([session2].sort(sessionSortFn));
         await store.close();
         store = new SqliteCryptoStorageProvider(name);
         expect(await store.getCurrentOlmSession(userId1, deviceId1)).toMatchObject(session4 as any);
         expect(await store.getCurrentOlmSession(userId2, deviceId2)).toMatchObject(session2 as any);
+        expect((await store.getOlmSessions(userId1, deviceId1)).sort(sessionSortFn)).toMatchObject([session1, session4, session3].sort(sessionSortFn));
+        expect((await store.getOlmSessions(userId2, deviceId2)).sort(sessionSortFn)).toMatchObject([session2].sort(sessionSortFn));
+
+        await store.close();
+    });
+
+    it('should store inbound group sessions', async () => {
+        const session: IInboundGroupSession = {
+            sessionId: "ID",
+            roomId: "!room:example.org",
+            pickled: "pickled_text",
+            senderDeviceId: "SENDER",
+            senderUserId: "@sender:example.org",
+        };
+
+        const name = tmp.fileSync().name;
+        let store = new SqliteCryptoStorageProvider(name);
+
+        expect(await store.getInboundGroupSession(session.senderUserId, session.senderDeviceId, session.roomId, session.sessionId)).toBeFalsy();
+        await store.storeInboundGroupSession(session);
+        expect(await store.getInboundGroupSession(session.senderUserId, session.senderDeviceId, session.roomId, session.sessionId)).toMatchObject(session as any);
+        await store.close();
+        store = new SqliteCryptoStorageProvider(name);
+        expect(await store.getInboundGroupSession(session.senderUserId, session.senderDeviceId, session.roomId, session.sessionId)).toMatchObject(session as any);
+
+        await store.close();
+    });
+
+    it('should store message indices', async () => {
+        const roomId = "!room:example.org";
+        const eventId = "$event";
+        const sessionId = "session_id_here";
+        const messageIndex = 12;
+
+        const name = tmp.fileSync().name;
+        let store = new SqliteCryptoStorageProvider(name);
+
+        expect(await store.getEventForMessageIndex(roomId, sessionId, messageIndex)).toBeFalsy();
+        await store.setMessageIndexForEvent(roomId, eventId, sessionId, messageIndex);
+        expect(await store.getEventForMessageIndex(roomId, sessionId, messageIndex)).toEqual(eventId);
+        await store.close();
+        store = new SqliteCryptoStorageProvider(name);
+        expect(await store.getEventForMessageIndex(roomId, sessionId, messageIndex)).toEqual(eventId);
 
         await store.close();
     });

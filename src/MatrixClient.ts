@@ -808,7 +808,7 @@ export class MatrixClient extends EventEmitter {
                         await emitFn("room.decrypted_event", roomId, event);
                     } catch (e) {
                         LogService.error("MatrixClientLite", `Decryption error on ${roomId} ${event['event_id']}`, e);
-                        await emitFn("room.failed_decryption", roomId, event);
+                        await emitFn("room.failed_decryption", roomId, event, e);
                     }
                 }
                 if (event['type'] === 'm.room.message') {
