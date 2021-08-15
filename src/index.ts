@@ -100,3 +100,4 @@ export * from "./PantalaimonClient";
 export * from "./SynchronousMatrixClient";
 export * from "./SynapseAdminApis";
 export * from "./simple-validation";
+export * from "./b64";

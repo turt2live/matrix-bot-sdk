@@ -24,6 +24,14 @@ import { DeviceTracker } from "./DeviceTracker";
 import { EncryptionEvent } from "../models/events/EncryptionEvent";
 import { EncryptedRoomEvent } from "../models/events/EncryptedRoomEvent";
 import { RoomEvent } from "../models/events/RoomEvent";
+import { EncryptedFile } from "../models/events/MessageEvent";
+import {
+    decodeUnpaddedBase64,
+    decodeUnpaddedUrlSafeBase64,
+    encodeUnpaddedBase64,
+    encodeUnpaddedUrlSafeBase64,
+} from "../b64";
+import { PassThrough } from "stream";
 
 /**
  * Manages encryption for a MatrixClient. Get an instance from a MatrixClient directly
@@ -754,5 +762,119 @@ export class CryptoClient {
 
         // Share the session immediately
         await this.encryptAndSendOlmMessage(device, olmSessions[device.user_id][device.device_id], "m.dummy", {});
+    }
+
+    /**
+     * Encrypts a file for uploading in a room, returning the encrypted data and information
+     * to include in a message event (except media URL) for sending.
+     * @param {Buffer} file The file to encrypt.
+     * @returns {{buffer: Buffer, file: Omit<EncryptedFile, "url">}} Resolves to the encrypted
+     * contents and file information.
+     */
+    @requiresReady()
+    public async encryptMedia(file: Buffer): Promise<{buffer: Buffer, file: Omit<EncryptedFile, "url">}> {
+        const key = crypto.randomBytes(32);
+        const iv = new Uint8Array(16);
+        crypto.randomBytes(8).forEach((v, i) => iv[i] = v); // only fill high side to avoid 64bit overflow
+
+        const cipher = crypto.createCipheriv("aes-256-ctr", key, iv);
+
+        const buffers: Buffer[] = [];
+        cipher.on('data', b => {
+            buffers.push(b);
+        });
+
+        const stream = new PassThrough();
+        stream.pipe(cipher);
+        stream.end(file);
+
+        const finishPromise = new Promise<Buffer>(resolve => {
+            cipher.end(() => {
+                resolve(Buffer.concat(buffers));
+            });
+        });
+
+        const cipheredContent = await finishPromise;
+
+        let sha256: string;
+        const util = new Olm.Utility();
+        try {
+            const arr = new Uint8Array(cipheredContent);
+            sha256 = util.sha256(arr);
+        } finally {
+            util.free();
+        }
+
+        return {
+            buffer: Buffer.from(cipheredContent),
+            file: {
+                hashes: {
+                    sha256: sha256,
+                },
+                key: {
+                    alg: "A256CTR",
+                    ext: true,
+                    key_ops: ['encrypt', 'decrypt'],
+                    kty: "oct",
+                    k: encodeUnpaddedUrlSafeBase64(key),
+                },
+                iv: encodeUnpaddedBase64(iv),
+                v: 'v2',
+            },
+        };
+    }
+
+    /**
+     * Decrypts a previously-uploaded encrypted file, validating the fields along the way.
+     * @param {EncryptedFile} file The file to decrypt.
+     * @returns {Promise<Buffer>} Resolves to the decrypted file contents.
+     */
+    public async decryptMedia(file: EncryptedFile): Promise<Buffer> {
+        if (file.v !== "v2") {
+            throw new Error("Unknown encrypted file version");
+        }
+        if (file.key?.kty !== "oct" || file.key?.alg !== "A256CTR" || file.key?.ext !== true) {
+            throw new Error("Improper JWT: Missing or invalid fields");
+        }
+        if (!file.key.key_ops.includes("encrypt") || !file.key.key_ops.includes("decrypt")) {
+            throw new Error("Missing required key_ops");
+        }
+        if (!file.hashes?.sha256) {
+            throw new Error("Missing SHA256 hash");
+        }
+
+        const key = decodeUnpaddedUrlSafeBase64(file.key.k);
+        const iv = decodeUnpaddedBase64(file.iv);
+        const ciphered = (await this.client.downloadContent(file.url)).data;
+
+        let sha256: string;
+        const util = new Olm.Utility();
+        try {
+            const arr = new Uint8Array(ciphered);
+            sha256 = util.sha256(arr);
+        } finally {
+            util.free();
+        }
+
+        if (sha256 !== file.hashes.sha256) {
+            throw new Error("SHA256 mismatch");
+        }
+
+        const decipher = crypto.createDecipheriv("aes-256-ctr", key, iv);
+
+        const buffers: Buffer[] = [];
+        decipher.on('data', b => {
+            buffers.push(b);
+        });
+
+        const stream = new PassThrough();
+        stream.pipe(decipher);
+        stream.end(ciphered);
+
+        return new Promise<Buffer>(resolve => {
+            decipher.end(() => {
+                resolve(Buffer.concat(buffers));
+            });
+        });
     }
 }

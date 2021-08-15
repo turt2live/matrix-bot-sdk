@@ -3,6 +3,7 @@ import * as simple from "simple-mock";
 import {
     ConsoleLogger,
     DeviceKeyAlgorithm,
+    EncryptedFile,
     EncryptedRoomEvent,
     EncryptionAlgorithm,
     ILogger,
@@ -3059,6 +3060,262 @@ describe('CryptoClient', () => {
             expect(result.raw).toMatchObject(Object.assign({}, event.raw, {type: plainType, content: plainContent}));
             expect(getIndexSpy.callCount).toBe(1);
             expect(setIndexSpy.callCount).toBe(1);
+        });
+    });
+
+    describe('encryptMedia', () => {
+        const userId = "@alice:example.org";
+        let client: MatrixClient;
+
+        beforeEach(async () => {
+            const { client: mclient } = createTestClient(null, userId, true);
+            client = mclient;
+
+            await client.cryptoStore.setDeviceId(TEST_DEVICE_ID);
+            await feedStaticOlmAccount(client);
+            client.uploadDeviceKeys = () => Promise.resolve({});
+            client.uploadDeviceOneTimeKeys = () => Promise.resolve({});
+            client.checkOneTimeKeyCounts = () => Promise.resolve({});
+
+            // client crypto not prepared for the one test which wants that state
+        });
+
+        afterEach(async () => {
+            LogService.setLogger(new ConsoleLogger());
+        });
+
+        it('should fail when the crypto has not been prepared', async () => {
+            try {
+                await client.crypto.encryptMedia(null);
+
+                // noinspection ExceptionCaughtLocallyJS
+                throw new Error("Failed to fail");
+            } catch (e) {
+                expect(e.message).toEqual("End-to-end encryption has not initialized");
+            }
+        });
+
+        it('should encrypt media', async () => {
+            await client.crypto.prepare([]);
+
+            const inputBuffer = Buffer.from("test");
+            const inputStr = inputBuffer.join('');
+
+            const result = await client.crypto.encryptMedia(inputBuffer);
+            expect(result).toBeDefined();
+            expect(result.buffer).toBeDefined();
+            expect(result.buffer.join('')).not.toEqual(inputStr);
+            expect(result.file).toBeDefined();
+            expect(result.file.hashes).toBeDefined();
+            expect(result.file.hashes.sha256).not.toEqual("n4bQgYhMfWWaL+qgxVrQFaO/TxsrC4Is0V1sFbDwCgg");
+            expect(result.file).toMatchObject({
+                hashes: {
+                    sha256: expect.any(String),
+                },
+                key: {
+                    alg: "A256CTR",
+                    ext: true,
+                    key_ops: ['encrypt', 'decrypt'],
+                    kty: "oct",
+                    k: expect.any(String),
+                },
+                iv: expect.any(String),
+                v: "v2",
+            });
+        });
+    });
+
+    describe('decryptMedia', () => {
+        const userId = "@alice:example.org";
+        let client: MatrixClient;
+
+        // Created from Element Web
+        const testFileContents = "THIS IS A TEST FILE.";
+        const mediaFileContents = Buffer.from("eB15hJlkw8WwgYxwY2mu8vS250s=", "base64");
+        const testFile: EncryptedFile = {
+            v: "v2",
+            key: {
+                alg: "A256CTR",
+                ext: true,
+                k: "l3OtQ3IJzfJa85j2WMsqNu7J--C-I1hzPxFvinR48mM",
+                key_ops: [
+                    "encrypt",
+                    "decrypt"
+                ],
+                kty: "oct"
+            },
+            iv: "KJQOebQS1wwAAAAAAAAAAA",
+            hashes: {
+                sha256: "Qe4YzmVoPaEcLQeZwFZ4iMp/dlgeFph6mi5DmCaCOzg"
+            },
+            url: "mxc://localhost/uiWuISEVWixompuiiYyUoGrx",
+        };
+
+        function copyOfTestFile(): EncryptedFile {
+            return JSON.parse(JSON.stringify(testFile));
+        }
+
+        beforeEach(async () => {
+            const { client: mclient } = createTestClient(null, userId, true);
+            client = mclient;
+
+            await client.cryptoStore.setDeviceId(TEST_DEVICE_ID);
+            await feedStaticOlmAccount(client);
+            client.uploadDeviceKeys = () => Promise.resolve({});
+            client.uploadDeviceOneTimeKeys = () => Promise.resolve({});
+            client.checkOneTimeKeyCounts = () => Promise.resolve({});
+
+            // client crypto not prepared for the one test which wants that state
+        });
+
+        afterEach(async () => {
+            LogService.setLogger(new ConsoleLogger());
+        });
+
+        it('should fail when the crypto has not been prepared', async () => {
+            try {
+                await client.crypto.encryptMedia(null);
+
+                // noinspection ExceptionCaughtLocallyJS
+                throw new Error("Failed to fail");
+            } catch (e) {
+                expect(e.message).toEqual("End-to-end encryption has not initialized");
+            }
+        });
+
+        it('should be symmetrical', async () => {
+            await client.crypto.prepare([]);
+
+            const mxc = "mxc://example.org/test";
+            const inputBuffer = Buffer.from("test");
+            const encrypted = await client.crypto.encryptMedia(inputBuffer);
+
+            const downloadSpy = simple.stub().callFn(async (u) => {
+                expect(u).toEqual(mxc);
+                return {data: encrypted.buffer, contentType: "application/octet-stream"};
+            });
+            client.downloadContent = downloadSpy;
+
+            const result = await client.crypto.decryptMedia({
+                url: mxc,
+                ...encrypted.file,
+            });
+            expect(result.join('')).toEqual(inputBuffer.join(''));
+            expect(downloadSpy.callCount).toBe(1);
+        });
+
+        it('should fail on unknown or invalid fields', async () => {
+            await client.crypto.prepare([]);
+
+            try {
+                const f = copyOfTestFile();
+                // @ts-ignore
+                f.v = "wrong";
+                await client.crypto.decryptMedia(f);
+
+                // noinspection ExceptionCaughtLocallyJS
+                throw new Error("Failed to fail");
+            } catch (e) {
+                expect(e.message).toEqual("Unknown encrypted file version");
+            }
+
+            try {
+                const f = copyOfTestFile();
+                // @ts-ignore
+                f.key.kty = "wrong";
+                await client.crypto.decryptMedia(f);
+
+                // noinspection ExceptionCaughtLocallyJS
+                throw new Error("Failed to fail");
+            } catch (e) {
+                expect(e.message).toEqual("Improper JWT: Missing or invalid fields");
+            }
+
+            try {
+                const f = copyOfTestFile();
+                // @ts-ignore
+                f.key.alg = "wrong";
+                await client.crypto.decryptMedia(f);
+
+                // noinspection ExceptionCaughtLocallyJS
+                throw new Error("Failed to fail");
+            } catch (e) {
+                expect(e.message).toEqual("Improper JWT: Missing or invalid fields");
+            }
+
+            try {
+                const f = copyOfTestFile();
+                // @ts-ignore
+                f.key.ext = "wrong";
+                await client.crypto.decryptMedia(f);
+
+                // noinspection ExceptionCaughtLocallyJS
+                throw new Error("Failed to fail");
+            } catch (e) {
+                expect(e.message).toEqual("Improper JWT: Missing or invalid fields");
+            }
+
+            try {
+                const f = copyOfTestFile();
+                // @ts-ignore
+                f.key.key_ops = ["wrong"];
+                await client.crypto.decryptMedia(f);
+
+                // noinspection ExceptionCaughtLocallyJS
+                throw new Error("Failed to fail");
+            } catch (e) {
+                expect(e.message).toEqual("Missing required key_ops");
+            }
+
+            try {
+                const f = copyOfTestFile();
+                // @ts-ignore
+                f.hashes = {};
+                await client.crypto.decryptMedia(f);
+
+                // noinspection ExceptionCaughtLocallyJS
+                throw new Error("Failed to fail");
+            } catch (e) {
+                expect(e.message).toEqual("Missing SHA256 hash");
+            }
+        });
+
+        it('should fail on mismatched SHA256 hashes', async () => {
+            await client.crypto.prepare([]);
+
+            const downloadSpy = simple.stub().callFn(async (u) => {
+                expect(u).toEqual(testFile.url);
+                return {data: Buffer.from(mediaFileContents), contentType: "application/octet-stream"};
+            });
+            client.downloadContent = downloadSpy;
+
+            try {
+                const f = copyOfTestFile();
+                f.hashes.sha256 = "wrong";
+                await client.crypto.decryptMedia(f);
+
+                // noinspection ExceptionCaughtLocallyJS
+                throw new Error("Failed to fail");
+            } catch (e) {
+                expect(e.message).toEqual("SHA256 mismatch");
+            }
+
+            expect(downloadSpy.callCount).toBe(1);
+        });
+
+        it('should decrypt', async () => {
+            await client.crypto.prepare([]);
+
+            const downloadSpy = simple.stub().callFn(async (u) => {
+                expect(u).toEqual(testFile.url);
+                return {data: Buffer.from(mediaFileContents), contentType: "application/octet-stream"};
+            });
+            client.downloadContent = downloadSpy;
+
+            const f = copyOfTestFile();
+            const result = await client.crypto.decryptMedia(f);
+            expect(result.toString()).toEqual(testFileContents);
+            expect(downloadSpy.callCount).toBe(1);
         });
     });
 });

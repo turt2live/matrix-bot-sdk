@@ -1428,7 +1428,8 @@ export class MatrixClient extends EventEmitter {
     }
 
     /**
-     * Uploads data to the homeserver's media repository.
+     * Uploads data to the homeserver's media repository. Note that this will <b>not</b> automatically encrypt
+     * media as it cannot determine if the media should be encrypted.
      * @param {Buffer} data the content to upload.
      * @param {string} contentType the content type of the file. Defaults to application/octet-stream
      * @param {string} filename the name of the file. Optional.
@@ -1442,7 +1443,8 @@ export class MatrixClient extends EventEmitter {
     }
 
     /**
-     * Download content from the homeserver's media repository.
+     * Download content from the homeserver's media repository. Note that this will <b>not</b> automatically decrypt
+     * media as it cannot determine if the media is encrypted.
      * @param {string} mxcUrl The MXC URI for the content.
      * @param {string} allowRemote Indicates to the server that it should not attempt to fetch the
      * media if it is deemed remote. This is to prevent routing loops where the server contacts itself.
