@@ -478,16 +478,6 @@ export class CryptoClient {
         try {
             session.unpickle(this.pickleKey, currentSession.pickled);
 
-            const encrypted = session.encrypt(JSON.stringify({
-                type: eventType,
-                content: content,
-                room_id: roomId,
-            }));
-
-            currentSession.pickled = session.pickle(this.pickleKey);
-            currentSession.usesLeft--;
-            await this.client.cryptoStore.storeOutboundGroupSession(currentSession);
-
             const neededSessions: Record<string, string[]> = {};
             for (const userId of Object.keys(devices)) {
                 neededSessions[userId] = devices[userId].map(d => d.device_id);
@@ -502,7 +492,7 @@ export class CryptoClient {
                         continue;
                     }
                     const lastSession = await this.client.cryptoStore.getLastSentOutboundGroupSession(userId, device.device_id, roomId);
-                    if (lastSession?.sessionId !== session.session_id() || session.message_index() <= (lastSession?.index ?? Number.MAX_SAFE_INTEGER)) {
+                    if (lastSession?.sessionId !== session.session_id() || session.message_index() < (lastSession?.index ?? Number.MAX_SAFE_INTEGER)) {
                         await this.encryptAndSendOlmMessage(device, olmSession, "m.room_key", <IMRoomKey>{
                             algorithm: EncryptionAlgorithm.MegolmV1AesSha2,
                             room_id: roomId,
@@ -513,6 +503,17 @@ export class CryptoClient {
                     }
                 }
             }
+
+            // Encrypt after to avoid UNKNOWN_MESSAGE_INDEX errors on remote end
+            const encrypted = session.encrypt(JSON.stringify({
+                type: eventType,
+                content: content,
+                room_id: roomId,
+            }));
+
+            currentSession.pickled = session.pickle(this.pickleKey);
+            currentSession.usesLeft--;
+            await this.client.cryptoStore.storeOutboundGroupSession(currentSession);
 
             const body = {
                 sender_key: this.deviceCurve25519,
