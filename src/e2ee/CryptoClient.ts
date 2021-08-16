@@ -486,6 +486,7 @@ export class CryptoClient {
 
             currentSession.pickled = session.pickle(this.pickleKey);
             currentSession.usesLeft--;
+            await this.client.cryptoStore.storeOutboundGroupSession(currentSession);
 
             const neededSessions: Record<string, string[]> = {};
             for (const userId of Object.keys(devices)) {
@@ -512,8 +513,6 @@ export class CryptoClient {
                     }
                 }
             }
-
-            await this.client.cryptoStore.storeOutboundGroupSession(currentSession);
 
             const body = {
                 sender_key: this.deviceCurve25519,
