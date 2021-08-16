@@ -478,6 +478,15 @@ export class CryptoClient {
         try {
             session.unpickle(this.pickleKey, currentSession.pickled);
 
+            const encrypted = session.encrypt(JSON.stringify({
+                type: eventType,
+                content: content,
+                room_id: roomId,
+            }));
+
+            currentSession.pickled = session.pickle(this.pickleKey);
+            currentSession.usesLeft--;
+
             const neededSessions: Record<string, string[]> = {};
             for (const userId of Object.keys(devices)) {
                 neededSessions[userId] = devices[userId].map(d => d.device_id);
@@ -491,23 +500,19 @@ export class CryptoClient {
                         LogService.warn("CryptoClient", `Unable to send Megolm session to ${userId} ${device.device_id}: No Olm session`);
                         continue;
                     }
-                    await this.encryptAndSendOlmMessage(device, olmSession, "m.room_key", <IMRoomKey>{
-                        algorithm: EncryptionAlgorithm.MegolmV1AesSha2,
-                        room_id: roomId,
-                        session_id: session.session_id(),
-                        session_key: session.session_key(),
-                    });
+                    const lastSession = await this.client.cryptoStore.getLastSentOutboundGroupSession(userId, device.device_id, roomId);
+                    if (lastSession?.sessionId !== session.session_id() || session.message_index() <= (lastSession?.index ?? Number.MAX_SAFE_INTEGER)) {
+                        await this.encryptAndSendOlmMessage(device, olmSession, "m.room_key", <IMRoomKey>{
+                            algorithm: EncryptionAlgorithm.MegolmV1AesSha2,
+                            room_id: roomId,
+                            session_id: session.session_id(),
+                            session_key: session.session_key(),
+                        });
+                        await this.client.cryptoStore.storeSentOutboundGroupSession(currentSession, session.message_index(), device);
+                    }
                 }
             }
 
-            const encrypted = session.encrypt(JSON.stringify({
-                type: eventType,
-                content: content,
-                room_id: roomId,
-            }));
-
-            currentSession.pickled = session.pickle(this.pickleKey);
-            currentSession.usesLeft--;
             await this.client.cryptoStore.storeOutboundGroupSession(currentSession);
 
             const body = {

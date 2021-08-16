@@ -1479,7 +1479,7 @@ describe('CryptoClient', () => {
                             ciphertext: {
                                 "30KcbZc4ZmLxnLu3MraQ9vIrAjwtjR8uYmwCU/sViDE": {
                                     type: 0,
-                                    body: "Awog+jA+wNz5Wnpw5isETy9LFDw0hoao06f7ewAhY0+yRGsSIJS/3l725T7pqoV3FKZY/cPH/2dV8W8yZeIWl1DKpaQlGiAFnYCGBRA+tqaR3SpDqbqtwgz1wzA0TV+Mjvzixbd1IyLgBQMKIAIldXBMsoIngiQkuLAvUYrz6QCFAwPeFb6hKlRKcBlTEAAisAWgrDGnYPaJv4asMwVsbNSXQOxRCE/sB0VZrYKH9OKwbZuP+jqHUPa6mtVBu3Sll2ROWJ94YtPycZXX45B4pT8XMvLL/jE6fH4gXZuheb6Q5iYV0XrHMNuIzyODjzbOzpvi7GXTFvb7YMFRskb2k965vfd9NRTpuUT9eb7vkLoIgCb9gK5WApEuS5/4lOIWHKdhqB1m4ViZ4W+eEo9TzniRvAMCfeX0G+OpCv5X9h1UomZl87Kh/q5ZSluuocWFOgG8sGvyLttl3AR3Vc500+9xc0u7GT6lNvJo9Z1kH1xPcCce4oHWByFgGvdIMHYrB7SFZ/AtbiQDt/BUTgxsLd8gysHqjiiOKblz3iN3kx//f2MCTrjKgWDtmCeTRnb1Z8Rn9hdPbkpX2+yvkrmdMYYXKfQXB6PAY+6gRFqGREFXaKq8n0NPN7mN//sp7CJGmMU+DIyq7cPWcmW7zLTBdyoafn8YkJRqjIVbA271imw77cFvDdU1uWFT14275u7Z0qtOrXZiuDLPQyaARbitv8Cc4VfFB1XwWG0V8+fR3oJvIcCba4Q7ALO6TJqpurETU6eT4BAZBmugWObL2kDxdmuJYWpKvKbPdGhLTfbFFn0Sl1lgNaMrGjDoF+LVx/1Oiq9s0DnKPf9gamGIYr2voiSQvibC5m4UgMKLkiZVbAVs20fSV3TD5XMJYman6Rk8mNHBd+6fXW+C2buXd8WStiZ2/hVNalvV/MJPqdzJDHRz3avjwJryunbO48syLMud0y+6K2e8RJV/974lyfQ6BvJ/C7pN/rY3Rh5F4NtG0pSL9ghBzKuQQvKuVGf7U8L9w52iRQrPso+UhUkn8kpLD6AWklU7o9NenWO7eQLhz33i/A0DnM3ILw0c5XyQrX7/UgIRHkLAeVMHLmYC4IBaY1Y24ToFuVKXdb0",
+                                    body: "Awog+jA+wNz5Wnpw5isETy9LFDw0hoao06f7ewAhY0+yRGsSIJS/3l725T7pqoV3FKZY/cPH/2dV8W8yZeIWl1DKpaQlGiAFnYCGBRA+tqaR3SpDqbqtwgz1wzA0TV+Mjvzixbd1IyLgBQMKIAIldXBMsoIngiQkuLAvUYrz6QCFAwPeFb6hKlRKcBlTEAAisAWgrDGnYPaJv4asMwVsbNSXQOxRCE/sB0VZrYKH9OKwbZuP+jqHUPa6mtVBu3Sll2ROWJ94YtPycZXX45B4pT8XMvLL/jE6fH4gXZuheb6Q5iYV0XrHMNuIzyODjzbOzpvi7GXTFvb7YMFRskb2k965vfd9NRTpuUT9eb7vkLoIgCb9gK5WApEuS5/4lOIWHKdhqB1m4ViZ4W+eEo9TzniRvAMCfeX0G+OpCv5X9h1UomZl87Kh/q5ZSluuocWFOgG8sGvyLttl3AR3Vc500+9xc0u7GT6lNvJo9Z1kH1xPcCce4oHWByFgGvdIMHYrB7SFZ/AtbiQDt/BUTgxsLd8gysHqjiiOKblz3iN3kx//f2MCTrjKgWDtmCeTRnb1Z8Rn9hdPbkpX2+yvkrmdMYYXKfQXB6PAY+6gRFqGREFXaKq8n0NPN7mN//sp7CJGmMU+DIyq7cPWcmW7zLTBdyoak0/EBQdCIXabvl9B3kfK32xEvn6BH7kFt1ayXUAGl6W/e8uzdKnkRvmnAT7yG147iKOT4DgW6a+msibvSZ2bOzzUxoMbYrdrX7OCBjS92e6IKDJ9mD8yi5apvcMnwS4AGw2U64hkG83U7lpp55tN2kPxLHpAmauQ51cNOZAt5bVPKOgUHCQD02Z1XgptdBjPOCCLaKDyoUawLDLKb8mWojiPZ+2/c6+ODeybYzCrDA2b681wo0WpvcROL0DuOb+1r1Po7AKy/tKUz2VJXTFGGergopp1XJwf7hMeur95J4hBdaCaMTSqWHvkNaIWrj/AZVFeVEZREKgl5x5DycMP6tzv5dX9M3gAcJcfvcU+ws4kqMyM+RsqI7ztB7tKu1CmQYNemHXH53ExuRz1FhBpgS6T/j2RQswLYLxVRGAgGrvi0FWTI8aBrAjUd6FyzDcanHUP2utinWs",
                                 },
                             },
                             sender_key: "BZ2AhgUQPramkd0qQ6m6rcIM9cMwNE1fjI784sW3dSM",
@@ -1853,6 +1853,105 @@ describe('CryptoClient', () => {
                 session_id: STATIC_OUTBOUND_SESSION.sessionId,
                 device_id: TEST_DEVICE_ID,
             });
+        });
+
+        it('should not spam room keys for multiple calls', async () => {
+            await client.crypto.prepare([]);
+
+            const deviceMap = {
+                [RECEIVER_DEVICE.user_id]: [RECEIVER_DEVICE],
+            };
+            const roomId = "!test:example.org";
+
+            // For this test, force all rooms to be encrypted
+            client.crypto.isRoomEncrypted = async () => true;
+
+            await client.cryptoStore.storeOlmSession(RECEIVER_DEVICE.user_id, RECEIVER_DEVICE.device_id, RECEIVER_OLM_SESSION);
+
+            const getSpy = simple.stub().callFn(async (rid) => {
+                expect(rid).toEqual(roomId);
+                return STATIC_OUTBOUND_SESSION;
+            });
+            client.cryptoStore.getCurrentOutboundGroupSession = getSpy;
+
+            const joinedSpy = simple.stub().callFn(async (rid) => {
+                expect(rid).toEqual(roomId);
+                return Object.keys(deviceMap);
+            });
+            client.getJoinedRoomMembers = joinedSpy;
+
+            const devicesSpy = simple.stub().callFn(async (uids) => {
+                expect(uids).toMatchObject(Object.keys(deviceMap));
+                return deviceMap;
+            });
+            (<any>client.crypto).deviceTracker.getDevicesFor = devicesSpy;
+
+            // We watch for the to-device messages to make sure we pass through the internal functions correctly
+            const toDeviceSpy = simple.stub().callFn(async (t, m) => {
+                expect(t).toEqual("m.room.encrypted");
+                expect(m).toMatchObject({
+                    [RECEIVER_DEVICE.user_id]: {
+                        [RECEIVER_DEVICE.device_id]: {
+                            algorithm: "m.olm.v1.curve25519-aes-sha2",
+                            ciphertext: {
+                                "30KcbZc4ZmLxnLu3MraQ9vIrAjwtjR8uYmwCU/sViDE": {
+                                    type: 0,
+                                    body: expect.any(String),
+                                },
+                            },
+                            sender_key: "BZ2AhgUQPramkd0qQ6m6rcIM9cMwNE1fjI784sW3dSM",
+                        },
+                    },
+                });
+            });
+            client.sendToDevices = toDeviceSpy;
+
+            const result = await client.crypto.encryptRoomEvent(roomId, "org.example.test", {
+                isTest: true,
+                hello: "world",
+                n: 42,
+            });
+            expect(getSpy.callCount).toBe(1);
+            expect(joinedSpy.callCount).toBe(1);
+            expect(devicesSpy.callCount).toBe(1);
+            expect(toDeviceSpy.callCount).toBe(1);
+            expect(result).toMatchObject({
+                algorithm: "m.megolm.v1.aes-sha2",
+                sender_key: "BZ2AhgUQPramkd0qQ6m6rcIM9cMwNE1fjI784sW3dSM",
+                ciphertext: expect.any(String),
+                session_id: STATIC_OUTBOUND_SESSION.sessionId,
+                device_id: TEST_DEVICE_ID,
+            });
+
+            const lastSent = await client.cryptoStore.getLastSentOutboundGroupSession(RECEIVER_DEVICE.user_id, RECEIVER_DEVICE.device_id, roomId);
+            expect(lastSent).toMatchObject({
+                sessionId: STATIC_OUTBOUND_SESSION.sessionId,
+                index: expect.any(Number),
+            });
+
+            const result2 = await client.crypto.encryptRoomEvent(roomId, "org.example.test", {
+                isTest: true,
+                hello: "world",
+                n: 42,
+            });
+            expect(getSpy.callCount).toBe(2);
+            expect(joinedSpy.callCount).toBe(2);
+            expect(devicesSpy.callCount).toBe(2);
+            expect(toDeviceSpy.callCount).toBe(1);
+            expect(result2).toMatchObject({
+                algorithm: "m.megolm.v1.aes-sha2",
+                sender_key: "BZ2AhgUQPramkd0qQ6m6rcIM9cMwNE1fjI784sW3dSM",
+                ciphertext: expect.any(String),
+                session_id: STATIC_OUTBOUND_SESSION.sessionId,
+                device_id: TEST_DEVICE_ID,
+            });
+
+            const lastSent2 = await client.cryptoStore.getLastSentOutboundGroupSession(RECEIVER_DEVICE.user_id, RECEIVER_DEVICE.device_id, roomId);
+            expect(lastSent2).toMatchObject({
+                sessionId: STATIC_OUTBOUND_SESSION.sessionId,
+                index: expect.any(Number),
+            });
+            expect(lastSent2.index).toEqual(lastSent.index);
         });
     });
 
