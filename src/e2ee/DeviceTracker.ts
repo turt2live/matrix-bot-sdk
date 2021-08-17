@@ -30,7 +30,7 @@ export class DeviceTracker {
 
         const userDeviceMap: Record<string, UserDevice[]> = {};
         for (const userId of userIds) {
-            userDeviceMap[userId] = await this.client.cryptoStore.getUserDevices(userId);
+            userDeviceMap[userId] = await this.client.cryptoStore.getActiveUserDevices(userId);
         }
         return userDeviceMap;
     }
@@ -88,7 +88,7 @@ export class DeviceTracker {
                             continue;
                         }
 
-                        const currentDevices = await this.client.cryptoStore.getUserDevices(userId);
+                        const currentDevices = await this.client.cryptoStore.getAllUserDevices(userId);
                         const existingDevice = currentDevices.find(d => d.device_id === deviceId);
 
                         if (existingDevice) {
@@ -114,7 +114,7 @@ export class DeviceTracker {
                         validated.push(device);
                     }
 
-                    await this.client.cryptoStore.setUserDevices(userId, validated);
+                    await this.client.cryptoStore.setActiveUserDevices(userId, validated);
                 }
             } catch (e) {
                 LogService.error("DeviceTracker", "Error updating device lists:", e);

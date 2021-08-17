@@ -86,7 +86,7 @@ describe('SqliteCryptoStorageProvider', () => {
         await store.close();
         store = new SqliteCryptoStorageProvider(name);
         expect(await store.isUserOutdated(userId)).toEqual(true);
-        await store.setUserDevices(userId, []);
+        await store.setActiveUserDevices(userId, []);
         expect(await store.isUserOutdated(userId)).toEqual(false);
         await store.close();
         store = new SqliteCryptoStorageProvider(name);
@@ -109,29 +109,29 @@ describe('SqliteCryptoStorageProvider', () => {
 
         expect(await store.isUserOutdated(userId1)).toEqual(true);
         expect(await store.isUserOutdated(userId2)).toEqual(true);
-        await store.setUserDevices(userId1, devices1);
-        await store.setUserDevices(userId2, devices2);
+        await store.setActiveUserDevices(userId1, devices1);
+        await store.setActiveUserDevices(userId2, devices2);
         expect(await store.isUserOutdated(userId1)).toEqual(false);
         expect(await store.isUserOutdated(userId2)).toEqual(false);
-        expect((await store.getUserDevices(userId1)).sort(deviceSortFn)).toEqual(devices1.sort(deviceSortFn));
-        expect((await store.getUserDevices(userId2)).sort(deviceSortFn)).toEqual(devices2.sort(deviceSortFn));
+        expect((await store.getActiveUserDevices(userId1)).sort(deviceSortFn)).toEqual(devices1.sort(deviceSortFn));
+        expect((await store.getActiveUserDevices(userId2)).sort(deviceSortFn)).toEqual(devices2.sort(deviceSortFn));
         await store.close();
         store = new SqliteCryptoStorageProvider(name);
         expect(await store.isUserOutdated(userId1)).toEqual(false);
         expect(await store.isUserOutdated(userId2)).toEqual(false);
-        expect((await store.getUserDevices(userId1)).sort(deviceSortFn)).toEqual(devices1.sort(deviceSortFn));
-        expect((await store.getUserDevices(userId2)).sort(deviceSortFn)).toEqual(devices2.sort(deviceSortFn));
+        expect((await store.getActiveUserDevices(userId1)).sort(deviceSortFn)).toEqual(devices1.sort(deviceSortFn));
+        expect((await store.getActiveUserDevices(userId2)).sort(deviceSortFn)).toEqual(devices2.sort(deviceSortFn));
         await store.flagUsersOutdated([userId1, userId2]);
         expect(await store.isUserOutdated(userId1)).toEqual(true);
         expect(await store.isUserOutdated(userId2)).toEqual(true);
-        expect((await store.getUserDevices(userId1)).sort(deviceSortFn)).toEqual(devices1.sort(deviceSortFn));
-        expect((await store.getUserDevices(userId2)).sort(deviceSortFn)).toEqual(devices2.sort(deviceSortFn));
+        expect((await store.getActiveUserDevices(userId1)).sort(deviceSortFn)).toEqual(devices1.sort(deviceSortFn));
+        expect((await store.getActiveUserDevices(userId2)).sort(deviceSortFn)).toEqual(devices2.sort(deviceSortFn));
         await store.close();
         store = new SqliteCryptoStorageProvider(name);
         expect(await store.isUserOutdated(userId1)).toEqual(true);
         expect(await store.isUserOutdated(userId2)).toEqual(true);
-        expect((await store.getUserDevices(userId1)).sort(deviceSortFn)).toEqual(devices1.sort(deviceSortFn));
-        expect((await store.getUserDevices(userId2)).sort(deviceSortFn)).toEqual(devices2.sort(deviceSortFn));
+        expect((await store.getActiveUserDevices(userId1)).sort(deviceSortFn)).toEqual(devices1.sort(deviceSortFn));
+        expect((await store.getActiveUserDevices(userId2)).sort(deviceSortFn)).toEqual(devices2.sort(deviceSortFn));
         await store.close();
     });
 
@@ -408,18 +408,53 @@ describe('SqliteCryptoStorageProvider', () => {
         const name = tmp.fileSync().name;
         let store = new SqliteCryptoStorageProvider(name);
 
-        await store.setUserDevices(userId1, devices1);
-        await store.setUserDevices(userId2, devices2);
-        expect(await store.getUserDevice(userId1, devices1[0].device_id)).toMatchObject(devices1[0]);
-        expect(await store.getUserDevice(userId1, devices1[1].device_id)).toMatchObject(devices1[1]);
-        expect(await store.getUserDevice(userId2, devices2[0].device_id)).toMatchObject(devices2[0]);
-        expect(await store.getUserDevice(userId2, devices2[1].device_id)).toMatchObject(devices2[1]);
+        await store.setActiveUserDevices(userId1, devices1);
+        await store.setActiveUserDevices(userId2, devices2);
+        expect(await store.getActiveUserDevice(userId1, devices1[0].device_id)).toMatchObject(devices1[0]);
+        expect(await store.getActiveUserDevice(userId1, devices1[1].device_id)).toMatchObject(devices1[1]);
+        expect(await store.getActiveUserDevice(userId2, devices2[0].device_id)).toMatchObject(devices2[0]);
+        expect(await store.getActiveUserDevice(userId2, devices2[1].device_id)).toMatchObject(devices2[1]);
         await store.close();
         store = new SqliteCryptoStorageProvider(name);
-        expect(await store.getUserDevice(userId1, devices1[0].device_id)).toMatchObject(devices1[0]);
-        expect(await store.getUserDevice(userId1, devices1[1].device_id)).toMatchObject(devices1[1]);
-        expect(await store.getUserDevice(userId2, devices2[0].device_id)).toMatchObject(devices2[0]);
-        expect(await store.getUserDevice(userId2, devices2[1].device_id)).toMatchObject(devices2[1]);
+        expect(await store.getActiveUserDevice(userId1, devices1[0].device_id)).toMatchObject(devices1[0]);
+        expect(await store.getActiveUserDevice(userId1, devices1[1].device_id)).toMatchObject(devices1[1]);
+        expect(await store.getActiveUserDevice(userId2, devices2[0].device_id)).toMatchObject(devices2[0]);
+        expect(await store.getActiveUserDevice(userId2, devices2[1].device_id)).toMatchObject(devices2[1]);
+        await store.close();
+    });
+
+    it('should track user devices as inactive when considered removed', async () => {
+        const userId = "@user:example.org";
+        // Not real UserDevices, but this is a test.
+        const devices: any = [{device_id: "one"}, {device_id: "two"}];
+
+        const name = tmp.fileSync().name;
+        let store = new SqliteCryptoStorageProvider(name);
+
+        expect((await store.getAllUserDevices(userId)).length).toBe(0);
+        await store.setActiveUserDevices(userId, [devices[0]]);
+        expect(await store.getAllUserDevices(userId)).toMatchObject([
+            Object.assign({}, devices[0], {unsigned: {bsdkIsActive: true}}),
+        ]);
+        expect(await store.getActiveUserDevices(userId)).toMatchObject([devices[0]]);
+        await store.close();
+        store = new SqliteCryptoStorageProvider(name);
+        expect(await store.getAllUserDevices(userId)).toMatchObject([
+            Object.assign({}, devices[0], {unsigned: {bsdkIsActive: true}}),
+        ]);
+        await store.setActiveUserDevices(userId, [devices[1]]);
+        expect(await store.getAllUserDevices(userId)).toMatchObject([
+            Object.assign({}, devices[0], {unsigned: {bsdkIsActive: false}}),
+            Object.assign({}, devices[1], {unsigned: {bsdkIsActive: true}}),
+        ]);
+        expect(await store.getActiveUserDevices(userId)).toMatchObject([devices[1]]);
+        await store.close();
+        store = new SqliteCryptoStorageProvider(name);
+        expect(await store.getAllUserDevices(userId)).toMatchObject([
+            Object.assign({}, devices[0], {unsigned: {bsdkIsActive: false}}),
+            Object.assign({}, devices[1], {unsigned: {bsdkIsActive: true}}),
+        ]);
+        expect(await store.getActiveUserDevices(userId)).toMatchObject([devices[1]]);
         await store.close();
     });
 

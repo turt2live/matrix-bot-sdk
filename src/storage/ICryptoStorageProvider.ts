@@ -1,5 +1,11 @@
 import { EncryptionEventContent } from "../models/events/EncryptionEvent";
-import { IInboundGroupSession, IOlmSession, IOutboundGroupSession, UserDevice } from "../models/Crypto";
+import {
+    IInboundGroupSession,
+    IOlmSession,
+    IOutboundGroupSession,
+    StoredUserDevice,
+    UserDevice,
+} from "../models/Crypto";
 
 /**
  * A storage provider capable of only providing crypto-related storage.
@@ -70,23 +76,32 @@ export interface ICryptoStorageProvider {
      * @param {UserDevice[]} devices The devices to set for the user.
      * @returns {Promise<void>} Resolves when complete.
      */
-    setUserDevices(userId: string, devices: UserDevice[]): Promise<void>;
+    setActiveUserDevices(userId: string, devices: UserDevice[]): Promise<void>;
 
     /**
-     * Gets the user's stored devices. If no devices are stored, an empty array is returned.
+     * Gets the user's active stored devices. If no devices are stored, an empty array is returned.
      * @param {string} userId The user ID to get devices for.
      * @returns {Promise<UserDevice[]>} Resolves to the array of devices for the user. If no
      * devices are known, the array will be empty.
      */
-    getUserDevices(userId: string): Promise<UserDevice[]>;
+    getActiveUserDevices(userId: string): Promise<UserDevice[]>;
 
     /**
-     * Gets a user's stored device. If the device is not known or active, falsy is returned.
+     * Gets a user's active stored device. If the device is not known or active, falsy is returned.
      * @param {string} userId The user ID.
      * @param {string} deviceId The device ID.
      * @returns {Promise<UserDevice>} Resolves to the user's device, or falsy if not known.
      */
-    getUserDevice(userId: string, deviceId: string): Promise<UserDevice>;
+    getActiveUserDevice(userId: string, deviceId: string): Promise<UserDevice>;
+
+    /**
+     * Gets all of the user's devices, regardless of whether or not they are active. The active flag
+     * will be stored in the unsigned portion of the returned device.
+     * @param {string} userId The user ID to get devices for.
+     * @returns {Promise<StoredUserDevice[]>} Resolves to the array of devices for the user, or empty
+     * if no devices are known.
+     */
+    getAllUserDevices(userId: string): Promise<StoredUserDevice[]>;
 
     /**
      * Flags multiple user's device lists as outdated.

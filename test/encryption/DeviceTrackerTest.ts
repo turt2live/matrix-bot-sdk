@@ -61,7 +61,7 @@ describe('DeviceTracker', () => {
                 };
             };
 
-            client.cryptoStore.getUserDevices = async (uid) => {
+            client.cryptoStore.getActiveUserDevices = async (uid) => {
                 expect(uid).toEqual(STATIC_TEST_USER);
                 return [];
             };
@@ -74,7 +74,7 @@ describe('DeviceTracker', () => {
                 ]);
                 expect(validated.length).toBe(2);
             });
-            client.cryptoStore.setUserDevices = storeSpy;
+            client.cryptoStore.setActiveUserDevices = storeSpy;
 
             const tracker = new DeviceTracker(client);
             await tracker.updateUsersDeviceLists([STATIC_TEST_USER]);
@@ -104,7 +104,7 @@ describe('DeviceTracker', () => {
                 };
             };
 
-            client.cryptoStore.getUserDevices = async (uid) => {
+            client.cryptoStore.getActiveUserDevices = async (uid) => {
                 expect(uid).toEqual(STATIC_TEST_USER);
                 return [];
             };
@@ -117,7 +117,7 @@ describe('DeviceTracker', () => {
                 ]);
                 expect(validated.length).toBe(2);
             });
-            client.cryptoStore.setUserDevices = storeSpy;
+            client.cryptoStore.setActiveUserDevices = storeSpy;
 
             const tracker = new DeviceTracker(client);
             tracker.updateUsersDeviceLists([STATIC_TEST_USER, "@other:example.org"]).then(() => fetchedOrder.push("----"));
@@ -158,7 +158,7 @@ describe('DeviceTracker', () => {
                 };
             };
 
-            client.cryptoStore.getUserDevices = async (uid) => {
+            client.cryptoStore.getActiveUserDevices = async (uid) => {
                 expect(uid).toEqual(STATIC_TEST_USER);
                 return [];
             };
@@ -171,7 +171,7 @@ describe('DeviceTracker', () => {
                 ]);
                 expect(validated.length).toBe(1);
             });
-            client.cryptoStore.setUserDevices = storeSpy;
+            client.cryptoStore.setActiveUserDevices = storeSpy;
 
             const tracker = new DeviceTracker(client);
             await tracker.updateUsersDeviceLists([STATIC_TEST_USER]);
@@ -204,7 +204,7 @@ describe('DeviceTracker', () => {
                 };
             };
 
-            client.cryptoStore.getUserDevices = async (uid) => {
+            client.cryptoStore.getActiveUserDevices = async (uid) => {
                 expect(uid).toEqual(STATIC_TEST_USER);
                 return [];
             };
@@ -217,7 +217,7 @@ describe('DeviceTracker', () => {
                 ]);
                 expect(validated.length).toBe(1);
             });
-            client.cryptoStore.setUserDevices = storeSpy;
+            client.cryptoStore.setActiveUserDevices = storeSpy;
 
             const tracker = new DeviceTracker(client);
             await tracker.updateUsersDeviceLists([STATIC_TEST_USER]);
@@ -253,7 +253,7 @@ describe('DeviceTracker', () => {
                 };
             };
 
-            client.cryptoStore.getUserDevices = async (uid) => {
+            client.cryptoStore.getActiveUserDevices = async (uid) => {
                 expect(uid).toEqual(STATIC_TEST_USER);
                 return [];
             };
@@ -266,7 +266,7 @@ describe('DeviceTracker', () => {
                 ]);
                 expect(validated.length).toBe(1);
             });
-            client.cryptoStore.setUserDevices = storeSpy;
+            client.cryptoStore.setActiveUserDevices = storeSpy;
 
             const tracker = new DeviceTracker(client);
             await tracker.updateUsersDeviceLists([STATIC_TEST_USER]);
@@ -302,7 +302,7 @@ describe('DeviceTracker', () => {
                 };
             };
 
-            client.cryptoStore.getUserDevices = async (uid) => {
+            client.cryptoStore.getActiveUserDevices = async (uid) => {
                 expect(uid).toEqual(STATIC_TEST_USER);
                 return [];
             };
@@ -315,7 +315,7 @@ describe('DeviceTracker', () => {
                 ]);
                 expect(validated.length).toBe(1);
             });
-            client.cryptoStore.setUserDevices = storeSpy;
+            client.cryptoStore.setActiveUserDevices = storeSpy;
 
             const tracker = new DeviceTracker(client);
             await tracker.updateUsersDeviceLists([STATIC_TEST_USER]);
@@ -348,7 +348,7 @@ describe('DeviceTracker', () => {
                 };
             };
 
-            client.cryptoStore.getUserDevices = async (uid) => {
+            client.cryptoStore.getActiveUserDevices = async (uid) => {
                 expect(uid).toEqual(STATIC_TEST_USER);
                 return [];
             };
@@ -361,7 +361,7 @@ describe('DeviceTracker', () => {
                 ]);
                 expect(validated.length).toBe(1);
             });
-            client.cryptoStore.setUserDevices = storeSpy;
+            client.cryptoStore.setActiveUserDevices = storeSpy;
 
             const tracker = new DeviceTracker(client);
             await tracker.updateUsersDeviceLists([STATIC_TEST_USER]);
@@ -398,7 +398,7 @@ describe('DeviceTracker', () => {
                 };
             };
 
-            client.cryptoStore.getUserDevices = async (uid) => {
+            client.cryptoStore.getActiveUserDevices = async (uid) => {
                 expect(uid).toEqual(STATIC_TEST_USER);
                 return [];
             };
@@ -411,7 +411,7 @@ describe('DeviceTracker', () => {
                 ]);
                 expect(validated.length).toBe(1);
             });
-            client.cryptoStore.setUserDevices = storeSpy;
+            client.cryptoStore.setActiveUserDevices = storeSpy;
 
             const tracker = new DeviceTracker(client);
             await tracker.updateUsersDeviceLists([STATIC_TEST_USER]);
@@ -448,7 +448,7 @@ describe('DeviceTracker', () => {
                 };
             };
 
-            client.cryptoStore.getUserDevices = async (uid) => {
+            client.cryptoStore.getActiveUserDevices = async (uid) => {
                 expect(uid).toEqual(STATIC_TEST_USER);
                 return [];
             };
@@ -461,7 +461,7 @@ describe('DeviceTracker', () => {
                 ]);
                 expect(validated.length).toBe(1);
             });
-            client.cryptoStore.setUserDevices = storeSpy;
+            client.cryptoStore.setActiveUserDevices = storeSpy;
 
             const tracker = new DeviceTracker(client);
             await tracker.updateUsersDeviceLists([STATIC_TEST_USER]);
@@ -488,7 +488,7 @@ describe('DeviceTracker', () => {
                 };
             };
 
-            client.cryptoStore.getUserDevices = async (uid) => {
+            client.cryptoStore.getAllUserDevices = async (uid) => {
                 expect(uid).toEqual(STATIC_TEST_USER);
                 return [{
                     device_id: "HCDJLDXQHQ",
@@ -505,6 +505,7 @@ describe('DeviceTracker', () => {
                     },
                     unsigned: {
                         device_display_name: "Injected Device",
+                        bsdkIsActive: false, // specifically inactive to test that the code doesn't care
                     },
                 }];
             };
@@ -517,7 +518,7 @@ describe('DeviceTracker', () => {
                 ]);
                 expect(validated.length).toBe(1);
             });
-            client.cryptoStore.setUserDevices = storeSpy;
+            client.cryptoStore.setActiveUserDevices = storeSpy;
 
             const tracker = new DeviceTracker(client);
             await tracker.updateUsersDeviceLists([STATIC_TEST_USER]);
@@ -599,7 +600,7 @@ describe('DeviceTracker', () => {
                 expect(uid).toEqual(targetUserIds[getSpy.callCount - 1]);
                 return deviceMaps[uid];
             });
-            client.cryptoStore.getUserDevices = getSpy;
+            client.cryptoStore.getActiveUserDevices = getSpy;
 
             const deviceTracker = new DeviceTracker(client);
 

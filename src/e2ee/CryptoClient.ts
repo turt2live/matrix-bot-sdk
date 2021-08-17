@@ -332,7 +332,7 @@ export class CryptoClient {
                     LogService.warn("CryptoClient", `Server injected unexpected user: ${userId} - not claiming keys`);
                     continue;
                 }
-                const storedDevices = await this.client.cryptoStore.getUserDevices(userId);
+                const storedDevices = await this.client.cryptoStore.getActiveUserDevices(userId);
                 for (const deviceId of Object.keys(claimed.one_time_keys[userId])) {
                     try {
                         if (!otkClaimRequest[userId][deviceId]) {
@@ -579,7 +579,7 @@ export class CryptoClient {
         }
 
         const encrypted = event.megolmProperties;
-        const senderDevice = await this.client.cryptoStore.getUserDevice(event.sender, encrypted.device_id);
+        const senderDevice = await this.client.cryptoStore.getActiveUserDevice(event.sender, encrypted.device_id);
         if (!senderDevice) {
             throw new Error("Unable to decrypt: Unknown device for sender");
         }
@@ -650,7 +650,7 @@ export class CryptoClient {
                     return;
                 }
 
-                const userDevices = await this.client.cryptoStore.getUserDevices(message.sender);
+                const userDevices = await this.client.cryptoStore.getActiveUserDevices(message.sender);
                 const senderDevice = userDevices.find(d => d.keys[`${DeviceKeyAlgorithm.Curve25519}:${d.device_id}`] === message.content.sender_key);
                 if (!senderDevice) {
                     LogService.warn("CryptoClient", "Received encrypted message from unknown identity key (ignoring message):", message.content.sender_key);

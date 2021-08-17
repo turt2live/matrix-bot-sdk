@@ -100,6 +100,18 @@ export interface UserDevice {
 }
 
 /**
+ * Represents a user's stored device.
+ * @category Models
+ */
+export interface StoredUserDevice extends UserDevice {
+    unsigned: {
+        [k: string]: any;
+        device_display_name?: string;
+        bsdkIsActive: boolean;
+    };
+}
+
+/**
  * Device list response for a multi-user query.
  * @category Models
  */

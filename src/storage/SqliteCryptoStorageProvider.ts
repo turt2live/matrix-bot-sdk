@@ -1,7 +1,13 @@
 import { ICryptoStorageProvider } from "./ICryptoStorageProvider";
 import { EncryptionEventContent } from "../models/events/EncryptionEvent";
 import * as Database from "better-sqlite3";
-import { IInboundGroupSession, IOlmSession, IOutboundGroupSession, UserDevice } from "../models/Crypto";
+import {
+    IInboundGroupSession,
+    IOlmSession,
+    IOutboundGroupSession,
+    StoredUserDevice,
+    UserDevice,
+} from "../models/Crypto";
 
 /**
  * Sqlite crypto storage provider. Requires `better-sqlite3` package to be installed.
@@ -19,7 +25,8 @@ export class SqliteCryptoStorageProvider implements ICryptoStorageProvider {
     private userDeviceUpsert: Database.Statement;
     private userDevicesDelete: Database.Statement;
     private userDevicesSelect: Database.Statement;
-    private userDeviceSelect: Database.Statement;
+    private userActiveDevicesSelect: Database.Statement;
+    private userActiveDeviceSelect: Database.Statement;
     private obGroupSessionUpsert: Database.Statement;
     private obGroupSessionSelect: Database.Statement;
     private obGroupCurrentSessionSelect: Database.Statement;
@@ -45,7 +52,7 @@ export class SqliteCryptoStorageProvider implements ICryptoStorageProvider {
         this.db.exec("CREATE TABLE IF NOT EXISTS kv (name TEXT PRIMARY KEY NOT NULL, value TEXT NOT NULL)");
         this.db.exec("CREATE TABLE IF NOT EXISTS rooms (room_id TEXT PRIMARY KEY NOT NULL, config TEXT NOT NULL)");
         this.db.exec("CREATE TABLE IF NOT EXISTS users (user_id TEXT PRIMARY KEY NOT NULL, outdated TINYINT NOT NULL)");
-        this.db.exec("CREATE TABLE IF NOT EXISTS user_devices (user_id TEXT NOT NULL, device_id TEXT NOT NULL, device TEXT NOT NULL, PRIMARY KEY (user_id, device_id))");
+        this.db.exec("CREATE TABLE IF NOT EXISTS user_devices (user_id TEXT NOT NULL, device_id TEXT NOT NULL, device TEXT NOT NULL, active TINYINT NOT NULL, PRIMARY KEY (user_id, device_id))");
         this.db.exec("CREATE TABLE IF NOT EXISTS outbound_group_sessions (session_id TEXT NOT NULL, room_id TEXT NOT NULL, current TINYINT NOT NULL, pickled TEXT NOT NULL, uses_left NUMBER NOT NULL, expires_ts NUMBER NOT NULL, PRIMARY KEY (session_id, room_id))");
         this.db.exec("CREATE TABLE IF NOT EXISTS sent_outbound_group_sessions (session_id TEXT NOT NULL, room_id TEXT NOT NULL, session_index INT NOT NULL, user_id TEXT NOT NULL, device_id TEXT NOT NULL, PRIMARY KEY (session_id, room_id, user_id, device_id, session_index))");
         this.db.exec("CREATE TABLE IF NOT EXISTS olm_sessions (user_id TEXT NOT NULL, device_id TEXT NOT NULL, session_id TEXT NOT NULL, last_decryption_ts NUMBER NOT NULL, pickled TEXT NOT NULL, PRIMARY KEY (user_id, device_id, session_id))");
@@ -62,10 +69,11 @@ export class SqliteCryptoStorageProvider implements ICryptoStorageProvider {
         this.userUpsert = this.db.prepare("INSERT INTO users (user_id, outdated) VALUES (@userId, @outdated) ON CONFLICT (user_id) DO UPDATE SET outdated = @outdated");
         this.userSelect = this.db.prepare("SELECT user_id, outdated FROM users WHERE user_id = @userId");
 
-        this.userDeviceUpsert = this.db.prepare("INSERT INTO user_devices (user_id, device_id, device) VALUES (@userId, @deviceId, @device) ON CONFLICT (user_id, device_id) DO UPDATE SET device = @device");
-        this.userDevicesDelete = this.db.prepare("DELETE FROM user_devices WHERE user_id = @userId");
-        this.userDevicesSelect = this.db.prepare("SELECT user_id, device_id, device FROM user_devices WHERE user_id = @userId");
-        this.userDeviceSelect = this.db.prepare("SELECT user_id, device_id, device FROM user_devices WHERE user_id = @userId AND device_id = @deviceId");
+        this.userDeviceUpsert = this.db.prepare("INSERT INTO user_devices (user_id, device_id, device, active) VALUES (@userId, @deviceId, @device, @active) ON CONFLICT (user_id, device_id) DO UPDATE SET device = @device, active = @active");
+        this.userDevicesDelete = this.db.prepare("UPDATE user_devices SET active = 0 WHERE user_id = @userId");
+        this.userDevicesSelect = this.db.prepare("SELECT user_id, device_id, device, active FROM user_devices WHERE user_id = @userId");
+        this.userActiveDevicesSelect = this.db.prepare("SELECT user_id, device_id, device, active FROM user_devices WHERE user_id = @userId AND active = 1");
+        this.userActiveDeviceSelect = this.db.prepare("SELECT user_id, device_id, device, active FROM user_devices WHERE user_id = @userId AND device_id = @deviceId AND active = 1");
 
         this.obGroupSessionUpsert = this.db.prepare("INSERT INTO outbound_group_sessions (session_id, room_id, current, pickled, uses_left, expires_ts) VALUES (@sessionId, @roomId, @current, @pickled, @usesLeft, @expiresTs) ON CONFLICT (session_id, room_id) DO UPDATE SET pickled = @pickled, current = @current, uses_left = @usesLeft, expires_ts = @expiresTs");
         this.obGroupSessionSelect = this.db.prepare("SELECT session_id, room_id, current, pickled, uses_left, expires_ts FROM outbound_group_sessions WHERE session_id = @sessionId AND room_id = @roomId");
@@ -135,26 +143,32 @@ export class SqliteCryptoStorageProvider implements ICryptoStorageProvider {
         return val ? JSON.parse(val) : null;
     }
 
-    public async setUserDevices(userId: string, devices: UserDevice[]): Promise<void> {
+    public async setActiveUserDevices(userId: string, devices: UserDevice[]): Promise<void> {
         this.db.transaction(() => {
             this.userUpsert.run({userId: userId, outdated: 0});
             this.userDevicesDelete.run({userId: userId});
             for (const device of devices) {
-                this.userDeviceUpsert.run({userId: userId, deviceId: device.device_id, device: JSON.stringify(device)});
+                this.userDeviceUpsert.run({userId: userId, deviceId: device.device_id, device: JSON.stringify(device), active: 1});
             }
         })();
     }
 
-    public async getUserDevices(userId: string): Promise<UserDevice[]> {
-        const results = this.userDevicesSelect.all({userId: userId})
+    public async getActiveUserDevices(userId: string): Promise<UserDevice[]> {
+        const results = this.userActiveDevicesSelect.all({userId: userId})
         if (!results) return [];
         return results.map(d => JSON.parse(d.device));
     }
 
-    public async getUserDevice(userId: string, deviceId: string): Promise<UserDevice> {
-        const result = this.userDeviceSelect.get({userId: userId, deviceId: deviceId});
+    public async getActiveUserDevice(userId: string, deviceId: string): Promise<UserDevice> {
+        const result = this.userActiveDeviceSelect.get({userId: userId, deviceId: deviceId});
         if (!result) return null;
         return JSON.parse(result.device);
+    }
+
+    public async getAllUserDevices(userId: string): Promise<StoredUserDevice[]> {
+        const results = this.userDevicesSelect.all({userId: userId})
+        if (!results) return [];
+        return results.map(d => Object.assign({}, JSON.parse(d.device), {unsigned: {bsdkIsActive: d.active === 1}}));
     }
 
     public async flagUsersOutdated(userIds: string[]): Promise<void> {

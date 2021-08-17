@@ -712,7 +712,7 @@ describe('CryptoClient', () => {
                 throw new Error("Not called appropriately");
             };
 
-            client.cryptoStore.getUserDevices = async (uid) => {
+            client.cryptoStore.getActiveUserDevices = async (uid) => {
                 expect(uid).toEqual(targetUserId);
                 return [{
                     user_id: targetUserId,
@@ -800,7 +800,7 @@ describe('CryptoClient', () => {
                 return session;
             };
 
-            client.cryptoStore.getUserDevices = async (uid) => {
+            client.cryptoStore.getActiveUserDevices = async (uid) => {
                 expect(uid).toEqual(claimUserId);
                 return [{
                     user_id: claimUserId,
@@ -892,7 +892,7 @@ describe('CryptoClient', () => {
                 return null;
             };
 
-            client.cryptoStore.getUserDevices = async (uid) => {
+            client.cryptoStore.getActiveUserDevices = async (uid) => {
                 expect(uid).toEqual(claimUserId);
                 return [{
                     user_id: claimUserId,
@@ -978,7 +978,7 @@ describe('CryptoClient', () => {
                 return null;
             };
 
-            client.cryptoStore.getUserDevices = async (uid) => {
+            client.cryptoStore.getActiveUserDevices = async (uid) => {
                 expect(uid).toEqual(claimUserId);
                 return [{
                     user_id: claimUserId,
@@ -1063,7 +1063,7 @@ describe('CryptoClient', () => {
                 return null;
             };
 
-            client.cryptoStore.getUserDevices = async (uid) => {
+            client.cryptoStore.getActiveUserDevices = async (uid) => {
                 expect(uid).toEqual(claimUserId);
                 return [{
                     user_id: claimUserId,
@@ -1135,7 +1135,7 @@ describe('CryptoClient', () => {
                 return null;
             };
 
-            client.cryptoStore.getUserDevices = async (uid) => {
+            client.cryptoStore.getActiveUserDevices = async (uid) => {
                 expect(uid).toEqual(claimUserId);
                 return [{
                     user_id: claimUserId,
@@ -1199,7 +1199,7 @@ describe('CryptoClient', () => {
                 return null;
             };
 
-            client.cryptoStore.getUserDevices = async (uid) => {
+            client.cryptoStore.getActiveUserDevices = async (uid) => {
                 expect(uid).toEqual(claimUserId);
                 return [{
                     user_id: claimUserId,
@@ -1279,7 +1279,7 @@ describe('CryptoClient', () => {
             });
             client.claimOneTimeKeys = claimSpy;
 
-            client.cryptoStore.getUserDevices = async (uid) => {
+            client.cryptoStore.getActiveUserDevices = async (uid) => {
                 expect(uid).toEqual(claimUserId);
                 return [{
                     user_id: claimUserId,
@@ -2147,7 +2147,7 @@ describe('CryptoClient', () => {
             LogService.setLogger({ warn: logSpy } as any as ILogger);
 
             const sender = "@bob:example.org";
-            client.cryptoStore.getUserDevices = async (uid) => {
+            client.cryptoStore.getActiveUserDevices = async (uid) => {
                 expect(uid).toEqual(sender);
                 return [STATIC_TEST_DEVICES["NTTFKSVBSI"]];
             };
@@ -2256,7 +2256,7 @@ describe('CryptoClient', () => {
 
             beforeEach(async () => {
                 await client.crypto.prepare([]);
-                client.cryptoStore.getUserDevices = async (uid) => {
+                client.cryptoStore.getActiveUserDevices = async (uid) => {
                     expect(uid).toEqual(senderDevice.user_id);
                     return [senderDevice];
                 };
@@ -2873,7 +2873,7 @@ describe('CryptoClient', () => {
                 expect(did).toEqual(event.content.device_id);
                 return null;
             });
-            client.cryptoStore.getUserDevice = getSpy;
+            client.cryptoStore.getActiveUserDevice = getSpy;
 
             try {
                 await client.crypto.decryptRoomEvent(event, roomId);
@@ -2907,7 +2907,7 @@ describe('CryptoClient', () => {
                 expect(did).toEqual(event.content.device_id);
                 return RECEIVER_DEVICE;
             });
-            client.cryptoStore.getUserDevice = getSpy;
+            client.cryptoStore.getActiveUserDevice = getSpy;
 
             try {
                 await client.crypto.decryptRoomEvent(event, roomId);
@@ -2941,7 +2941,7 @@ describe('CryptoClient', () => {
                 expect(did).toEqual(event.content.device_id);
                 return RECEIVER_DEVICE;
             });
-            client.cryptoStore.getUserDevice = getDeviceSpy;
+            client.cryptoStore.getActiveUserDevice = getDeviceSpy;
 
             const getSessionSpy = simple.stub().callFn(async (uid, did, rid, sid) => {
                 expect(uid).toEqual(userId);
@@ -2968,7 +2968,7 @@ describe('CryptoClient', () => {
         it('should fail the decryption looks like a replay attack', async () => {
             await client.crypto.prepare([]);
 
-            await client.cryptoStore.setUserDevices(RECEIVER_DEVICE.user_id, [RECEIVER_DEVICE]);
+            await client.cryptoStore.setActiveUserDevices(RECEIVER_DEVICE.user_id, [RECEIVER_DEVICE]);
 
             // Make an encrypted event, and store the outbound keys as inbound
             const plainType = "org.example.plain";
@@ -3030,7 +3030,7 @@ describe('CryptoClient', () => {
         it('should succeed at re-decryption (valid replay)', async () => {
             await client.crypto.prepare([]);
 
-            await client.cryptoStore.setUserDevices(RECEIVER_DEVICE.user_id, [RECEIVER_DEVICE]);
+            await client.cryptoStore.setActiveUserDevices(RECEIVER_DEVICE.user_id, [RECEIVER_DEVICE]);
 
             // Make an encrypted event, and store the outbound keys as inbound
             const plainType = "org.example.plain";
@@ -3097,7 +3097,7 @@ describe('CryptoClient', () => {
         it('should succeed at decryption', async () => {
             await client.crypto.prepare([]);
 
-            await client.cryptoStore.setUserDevices(RECEIVER_DEVICE.user_id, [RECEIVER_DEVICE]);
+            await client.cryptoStore.setActiveUserDevices(RECEIVER_DEVICE.user_id, [RECEIVER_DEVICE]);
 
             // Make an encrypted event, and store the outbound keys as inbound
             const plainType = "org.example.plain";
