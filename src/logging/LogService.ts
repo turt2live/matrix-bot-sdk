@@ -62,6 +62,7 @@ export class LogService {
 
     private static logger: ILogger = new ConsoleLogger();
     private static logLevel: LogLevel = LogLevel.INFO;
+    private static mutedModules: string[] = [];
 
     private constructor() {
     }
@@ -90,12 +91,21 @@ export class LogService {
     }
 
     /**
+     * Mutes a module from the logger.
+     * @param {string} name The module name to mute.
+     */
+    public static muteModule(name: string) {
+        LogService.mutedModules.push(name);
+    }
+
+    /**
      * Logs to the TRACE channel
      * @param {string} module The module being logged
      * @param {any[]} messageOrObject The data to log
      */
     public static trace(module: string, ...messageOrObject: any[]) {
         if (!LogService.logLevel.includes(LogLevel.TRACE)) return;
+        if (LogService.mutedModules.includes(module)) return;
         LogService.logger.trace(module, ...messageOrObject);
     }
 
@@ -106,6 +116,7 @@ export class LogService {
      */
     public static debug(module: string, ...messageOrObject: any[]) {
         if (!LogService.logLevel.includes(LogLevel.DEBUG)) return;
+        if (LogService.mutedModules.includes(module)) return;
         LogService.logger.debug(module, ...messageOrObject);
     }
 
@@ -116,6 +127,7 @@ export class LogService {
      */
     public static error(module: string, ...messageOrObject: any[]) {
         if (!LogService.logLevel.includes(LogLevel.ERROR)) return;
+        if (LogService.mutedModules.includes(module)) return;
         LogService.logger.error(module, ...messageOrObject);
     }
 
@@ -126,6 +138,7 @@ export class LogService {
      */
     public static info(module: string, ...messageOrObject: any[]) {
         if (!LogService.logLevel.includes(LogLevel.INFO)) return;
+        if (LogService.mutedModules.includes(module)) return;
         LogService.logger.info(module, ...messageOrObject);
     }
 
@@ -136,6 +149,7 @@ export class LogService {
      */
     public static warn(module: string, ...messageOrObject: any[]) {
         if (!LogService.logLevel.includes(LogLevel.WARN)) return;
+        if (LogService.mutedModules.includes(module)) return;
         LogService.logger.warn(module, ...messageOrObject);
     }
 }

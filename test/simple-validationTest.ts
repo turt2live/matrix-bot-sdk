@@ -1,5 +1,5 @@
 import * as expect from "expect";
-import { getRequestFn, setRequestFn, validateSpaceOrderString } from "../src";
+import { validateSpaceOrderString } from "../src";
 
 describe('validateSpaceOrderString', () => {
     it('should return true with valid identifiers', () => {
