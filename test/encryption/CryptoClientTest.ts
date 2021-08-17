@@ -1721,6 +1721,15 @@ describe('CryptoClient', () => {
             });
             client.cryptoStore.storeOutboundGroupSession = storeSpy;
 
+            const ibStoreSpy = simple.stub().callFn(async (s) => {
+                expect(s.sessionId).toBeDefined();
+                expect(s.roomId).toEqual(roomId);
+                expect(s.senderUserId).toEqual(userId);
+                expect(s.senderDeviceId).toEqual(TEST_DEVICE_ID);
+                expect(s.pickled).toBeDefined();
+            });
+            client.cryptoStore.storeInboundGroupSession = ibStoreSpy;
+
             const joinedSpy = simple.stub().callFn(async (rid) => {
                 expect(rid).toEqual(roomId);
                 return Object.keys(deviceMap);
@@ -1763,6 +1772,7 @@ describe('CryptoClient', () => {
             expect(devicesSpy.callCount).toBe(1);
             expect(toDeviceSpy.callCount).toBe(1);
             expect(storeSpy.callCount).toBe(1);
+            expect(ibStoreSpy.callCount).toBe(1);
             expect(result).toMatchObject({
                 algorithm: "m.megolm.v1.aes-sha2",
                 sender_key: "BZ2AhgUQPramkd0qQ6m6rcIM9cMwNE1fjI784sW3dSM",
@@ -1770,10 +1780,6 @@ describe('CryptoClient', () => {
                 session_id: expect.any(String),
                 device_id: TEST_DEVICE_ID,
             });
-        });
-
-        it.skip('should store created outbound sessions as inbound sessions', async () => {
-            // TODO: Merge into above test when functionality exists.
         });
 
         it.skip('should get devices for invited members', async () => {
