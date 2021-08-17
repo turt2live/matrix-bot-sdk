@@ -2069,6 +2069,9 @@ describe('MatrixClient', () => {
             const { client } = createTestClient(null, "@user:example.org", true);
             const syncClient = <ProcessSyncClient>(<any>client);
 
+            // Override to fix test as we aren't testing this here.
+            client.crypto.updateFallbackKey = async () => null;
+
             const deviceMessage = {
                 type: "m.room.encrypted",
                 content: {
@@ -2103,9 +2106,50 @@ describe('MatrixClient', () => {
             expect(processSpy.callCount).toBe(1);
         });
 
+        it('should handle fallback key updates', async () => {
+            const { client } = createTestClient(null, "@user:example.org", true);
+            const syncClient = <ProcessSyncClient>(<any>client);
+
+            await client.cryptoStore.setDeviceId(TEST_DEVICE_ID);
+            await feedStaticOlmAccount(client);
+            client.uploadDeviceKeys = () => Promise.resolve({});
+            client.uploadDeviceOneTimeKeys = () => Promise.resolve({});
+            client.checkOneTimeKeyCounts = () => Promise.resolve({});
+
+            await client.crypto.prepare([]);
+
+            const updateSpy = simple.stub();
+            client.crypto.updateFallbackKey = updateSpy;
+
+            // Test workaround for https://github.com/matrix-org/synapse/issues/10618
+            await syncClient.processSync({
+                // no content
+            });
+            expect(updateSpy.callCount).toBe(1);
+            updateSpy.reset();
+
+            // Test "no more fallback keys" state
+            await syncClient.processSync({
+                "org.matrix.msc2732.device_unused_fallback_key_types": [],
+                "device_unused_fallback_key_types": [],
+            });
+            expect(updateSpy.callCount).toBe(1);
+            updateSpy.reset();
+
+            // Test "has remaining fallback keys"
+            await syncClient.processSync({
+                "org.matrix.msc2732.device_unused_fallback_key_types": ["signed_curve25519"],
+                "device_unused_fallback_key_types": ["signed_curve25519"],
+            });
+            expect(updateSpy.callCount).toBe(0);
+        });
+
         it('should decrypt timeline events', async () => {
             const {client: realClient} = await createPreparedCryptoTestClient("@alice:example.org");
             const client = <ProcessSyncClient>(<any>realClient);
+
+            // Override to fix test as we aren't testing this here.
+            realClient.crypto.updateFallbackKey = async () => null;
 
             const userId = "@syncing:example.org";
             const roomId = "!testing:example.org";

@@ -29,11 +29,12 @@ import {
     DeviceKeyAlgorithm,
     DeviceKeyLabel,
     EncryptionAlgorithm,
+    FallbackKey,
     MultiUserDeviceListResponse,
     OTKAlgorithm,
     OTKClaimResponse,
     OTKCounts,
-    OTKs
+    OTKs,
 } from "./models/Crypto";
 import { requiresCrypto } from "./e2ee/decorators";
 import { ICryptoStorageProvider } from "./storage/ICryptoStorageProvider";
@@ -664,6 +665,19 @@ export class MatrixClient extends EventEmitter {
 
         if (raw['device_one_time_keys_count']) {
             this.crypto?.updateCounts(raw['device_one_time_keys_count']);
+        }
+
+        let unusedFallbacks: string[] = null;
+        if (raw['org.matrix.msc2732.device_unused_fallback_key_types']) {
+            unusedFallbacks = raw['org.matrix.msc2732.device_unused_fallback_key_types'];
+        } else if (raw['device_unused_fallback_key_types']) {
+            unusedFallbacks = raw['device_unused_fallback_key_types'];
+        }
+
+        // XXX: We should be able to detect the presence of the array, but Synapse doesn't tell us about
+        // feature support if we didn't upload one, so assume we're on a latest version of Synapse at least.
+        if (!unusedFallbacks?.includes(OTKAlgorithm.Signed)) {
+            await this.crypto?.updateFallbackKey();
         }
 
         if (raw['device_lists']) {
@@ -1730,6 +1744,24 @@ export class MatrixClient extends EventEmitter {
     public async checkOneTimeKeyCounts(): Promise<OTKCounts> {
         return this.doRequest("POST", "/_matrix/client/r0/keys/upload", null, {})
             .then(r => r['one_time_key_counts']);
+    }
+
+    /**
+     * Uploads a fallback One Time Key to the server for usage. This will replace the existing fallback
+     * key.
+     * @param {FallbackKey} fallbackKey The fallback key.
+     * @returns {Promise<OTKCounts>} Resolves to the One Time Key counts.
+     */
+    @timedMatrixClientFunctionCall()
+    @requiresCrypto()
+    public async uploadFallbackKey(fallbackKey: FallbackKey): Promise<OTKCounts> {
+        const keyObj = {
+            [`${OTKAlgorithm.Signed}:${fallbackKey.keyId}`]: fallbackKey.key,
+        };
+        return this.doRequest("POST", "/_matrix/client/r0/keys/upload", null, {
+            "org.matrix.msc2732.fallback_keys": keyObj,
+            "fallback_keys": keyObj,
+        }).then(r => r['one_time_key_counts']);
     }
 
     /**

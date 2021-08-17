@@ -30,6 +30,16 @@ export interface Signatures {
 export interface SignedCurve25519OTK {
     key: string;
     signatures: Signatures;
+    fallback?: boolean;
+}
+
+/**
+ * A fallback key.
+ * @category Models
+ */
+export interface FallbackKey {
+    keyId: string;
+    key: SignedCurve25519OTK & {fallback: true};
 }
 
 /**

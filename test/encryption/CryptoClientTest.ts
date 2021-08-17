@@ -3417,4 +3417,57 @@ describe('CryptoClient', () => {
             expect(downloadSpy.callCount).toBe(1);
         });
     });
+
+    describe('updateFallbackKey', () => {
+        const userId = "@alice:example.org";
+        let client: MatrixClient;
+
+        beforeEach(async () => {
+            const { client: mclient } = createTestClient(null, userId, true);
+            client = mclient;
+
+            await client.cryptoStore.setDeviceId(TEST_DEVICE_ID);
+            await feedStaticOlmAccount(client);
+            client.uploadDeviceKeys = () => Promise.resolve({});
+            client.uploadDeviceOneTimeKeys = () => Promise.resolve({});
+            client.checkOneTimeKeyCounts = () => Promise.resolve({});
+
+            // client crypto not prepared for the one test which wants that state
+        });
+
+        it('should fail when the crypto has not been prepared', async () => {
+            try {
+                await client.crypto.updateFallbackKey();
+
+                // noinspection ExceptionCaughtLocallyJS
+                throw new Error("Failed to fail");
+            } catch (e) {
+                expect(e.message).toEqual("End-to-end encryption has not initialized");
+            }
+        });
+
+        it('should create new keys', async () => {
+            await client.crypto.prepare([]);
+
+            const uploadSpy = simple.stub().callFn(async (k) => {
+                expect(k).toMatchObject({
+                    keyId: expect.any(String),
+                    key: {
+                        key: expect.any(String),
+                        fallback: true,
+                        signatures: {
+                            [userId]: {
+                                [`${DeviceKeyAlgorithm.Ed25519}:${TEST_DEVICE_ID}`]: expect.any(String),
+                            },
+                        },
+                    },
+                });
+                return null; // return not used
+            });
+            client.uploadFallbackKey = uploadSpy;
+
+            await client.crypto.updateFallbackKey();
+            expect(uploadSpy.callCount).toBe(1);
+        });
+    });
 });

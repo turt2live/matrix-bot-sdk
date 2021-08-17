@@ -6,6 +6,7 @@ import * as anotherJson from "another-json";
 import {
     DeviceKeyAlgorithm,
     EncryptionAlgorithm,
+    FallbackKey,
     IMegolmEncrypted,
     IMRoomKey,
     IOlmEncrypted,
@@ -16,6 +17,7 @@ import {
     OTKCounts,
     OTKs,
     Signatures,
+    SignedCurve25519OTK,
     UserDevice,
 } from "../models/Crypto";
 import { requiresReady } from "./decorators";
@@ -187,6 +189,36 @@ export class CryptoClient {
             }
             await this.client.uploadDeviceOneTimeKeys(signed);
             account.mark_keys_as_published();
+        } finally {
+            await this.storeAndFreeOlmAccount(account);
+        }
+    }
+
+    /**
+     * Updates the client's fallback key.
+     * @returns {Promise<void>} Resolves when complete.
+     */
+    @requiresReady()
+    public async updateFallbackKey(): Promise<void> {
+        const account = await this.getOlmAccount();
+        try {
+            account.generate_fallback_key();
+
+            const key = JSON.parse(account.fallback_key());
+            const keyId = Object.keys(key[OTKAlgorithm.Unsigned])[0];
+            const obj: Partial<SignedCurve25519OTK> = {
+                key: key[OTKAlgorithm.Unsigned][keyId],
+                fallback: true,
+            };
+            const signatures = await this.sign(obj);
+            const fallback: FallbackKey = {
+                keyId: keyId,
+                key: {
+                    ...obj,
+                    signatures: signatures,
+                } as SignedCurve25519OTK & {fallback: true},
+            };
+            await this.client.uploadFallbackKey(fallback);
         } finally {
             await this.storeAndFreeOlmAccount(account);
         }
