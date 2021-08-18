@@ -3,7 +3,7 @@ export * from "./appservice/Appservice";
 export * from "./appservice/Intent";
 export * from "./appservice/MatrixBridge";
 export * from "./appservice/http_responses";
-export * from "./appservice/UnstableAsApis";
+export * from "./appservice/UnstableAppserviceApis";
 
 // Encryption
 export * from "./e2ee/RoomTracker";
@@ -47,6 +47,7 @@ export * from "./models/Threepid";
 export * from "./models/Spaces";
 export * from "./models/IdentityServerModels";
 export * from "./models/Crypto";
+export * from "./models/MSC2176";
 
 // Event models
 export * from "./models/events/EventKind";

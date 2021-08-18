@@ -21,7 +21,6 @@ import { IdentityClient } from "./identity/IdentityClient";
 import { OpenIDConnectToken } from "./models/OpenIDConnect";
 import { doHttpRequest } from "./http";
 import { htmlToText } from "html-to-text";
-import { MatrixProfileInfo } from "./models/MatrixProfile";
 import { Space, SpaceCreateOptions } from "./models/Spaces";
 import { PowerLevelAction } from "./models/PowerLevelAction";
 import { CryptoClient } from "./e2ee/CryptoClient";
@@ -1014,7 +1013,7 @@ export class MatrixClient extends EventEmitter {
      * @returns {Object} The joined user IDs in the room as an object mapped to a set of profiles.
      */
     @timedMatrixClientFunctionCall()
-    public async getJoinedRoomMembersWithProfiles(roomId: string): Promise<{[userId: string]: {display_name?: string, avatar_url?: string}> {
+    public async getJoinedRoomMembersWithProfiles(roomId: string): Promise<{[userId: string]: {display_name?: string, avatar_url?: string}}> {
         return (await this.doRequest("GET", "/_matrix/client/r0/rooms/" + encodeURIComponent(roomId) + "/joined_members")).joined;
     }
 

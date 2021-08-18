@@ -3,7 +3,7 @@ import { Appservice, IAppserviceOptions } from "./Appservice";
 
 // noinspection TypeScriptPreferShortImport
 import { timedIntentFunctionCall } from "../metrics/decorators";
-import { UnstableAsApis } from "./UnstableAsApis";
+import { UnstableAppserviceApis } from "./UnstableAppserviceApis";
 
 /**
  * An Intent is an intelligent client that tracks things like the user's membership
@@ -23,7 +23,7 @@ export class Intent {
 
     private readonly client: MatrixClient;
     private readonly storage: IAppserviceStorageProvider;
-    private readonly unstableApisInstance: UnstableAsApis;
+    private readonly unstableApisInstance: UnstableAppserviceApis;
 
     private knownJoinedRooms: string[] = [];
 
@@ -37,7 +37,7 @@ export class Intent {
         this.metrics = new Metrics(appservice.metrics);
         this.client = new MatrixClient(options.homeserverUrl, options.registration.as_token);
         this.client.metrics = new Metrics(appservice.metrics); // Metrics only go up by one parent
-        this.unstableApisInstance = new UnstableAsApis(this.client);
+        this.unstableApisInstance = new UnstableAppserviceApis(this.client);
         this.storage = options.storage;
         if (impersonateUserId !== appservice.botUserId) this.client.impersonateUserId(impersonateUserId);
         if (options.joinStrategy) this.client.setJoinStrategy(options.joinStrategy);
@@ -60,9 +60,9 @@ export class Intent {
     /**
      * Gets the unstable API access class. This is generally not recommended to be
      * used by appservices.
-     * @return {UnstableAsApis} The unstable API access class.
+     * @return {UnstableAppserviceApis} The unstable API access class.
      */
-    public get unstableApis(): UnstableAsApis {
+    public get unstableApis(): UnstableAppserviceApis {
         return this.unstableApisInstance;
     }
 
