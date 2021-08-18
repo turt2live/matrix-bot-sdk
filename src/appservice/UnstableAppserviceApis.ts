@@ -6,6 +6,8 @@ import { MSC2716BatchSendResponse } from "../models/MSC2176";
  * @category Unstable APIs
  */
 export class UnstableAppserviceApis {
+    private requestId = 0;
+
     constructor(private client: MatrixClient) {
     }
 
@@ -29,5 +31,33 @@ export class UnstableAppserviceApis {
                 state_events_at_start: stateEventsAtStart,
             }
         );
+    }
+
+    /**
+     * Sends an event to the given room with a given timestamp.
+     * @param {string} roomId the room ID to send the event to
+     * @param {string} eventType the type of event to send
+     * @param {string} content the event body to send
+     * @param {number} ts The origin_server_ts of the new event
+     * @returns {Promise<string>} resolves to the event ID that represents the event
+     */
+    public async sendEventWithTimestamp(roomId: string, eventType: string, content: any, ts: number) {
+        const txnId = `${(new Date().getTime())}__inc_appts${++this.requestId}`;
+        const response = await this.client.doRequest("PUT", `/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/send/${encodeURIComponent(eventType)}/${encodeURIComponent(txnId)}`, {ts}, content);
+        return response.event_id;
+    }
+
+    /**
+     * Sends a state event to the given room with a given timestamp.
+     * @param {string} roomId the room ID to send the event to
+     * @param {string} type the event type to send
+     * @param {string} stateKey the state key to send, should not be null
+     * @param {string} content the event body to send
+     * @param {number} ts The origin_server_ts of the new event
+     * @returns {Promise<string>} resolves to the event ID that represents the message
+     */
+    public async sendStateEventWithTimestamp(roomId: string, type: string, stateKey: string, content: any, ts: number): Promise<string> {
+        const response = await this.client.doRequest("PUT", `/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/state/${encodeURIComponent(type)}/${encodeURIComponent(stateKey)}`, {ts}, content);
+        return response.event_id;
     }
 }

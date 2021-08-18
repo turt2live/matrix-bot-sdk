@@ -49,4 +49,60 @@ describe('UnstableAppserviceApis', () => {
             expect(result).toEqual(expectedResponse);
         });
     });
+
+    describe('sendEventWithTimestamp', () => {
+        it('should call the right endpoint with a timestamp', async () => {
+            const {client, http, hsUrl} = createTestUnstableClient();
+
+            const roomId = "!testing:example.org";
+            const eventId = "$something:example.org";
+            const eventType = "io.t2bot.test";
+            const eventContent = {
+                testing: "hello world",
+                sample: true,
+            };
+            const ts = 5000;
+
+            http.when("PUT", "/_matrix/client/r0/rooms").respond(200, (path, content, {opts}) => {
+                const idx = path.indexOf(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/send/${encodeURIComponent(eventType)}/`);
+                expect(idx).toBe(0);
+                expect(content).toMatchObject(eventContent);
+                expect(opts.qs).toMatchObject({ts});
+                return {event_id: eventId};
+            });
+
+            http.flushAllExpected();
+            const result = await client.sendEventWithTimestamp(roomId, eventType, eventContent, ts);
+            expect(result).toEqual(eventId);
+        });
+    });
+
+    describe('sendStateEvent', () => {
+        it('should call the right endpoint with a timestamp', async () => {
+            const {client, http, hsUrl} = createTestUnstableClient();
+
+            const roomId = "!testing:example.org";
+            const eventId = "$something:example.org";
+            const stateKey = "testing";
+            const eventType = "m.room.message";
+            const eventContent = {
+                body: "Hello World",
+                msgtype: "m.text",
+                sample: true,
+            };
+            const ts = 5000;
+
+            http.when("PUT", "/_matrix/client/r0/rooms").respond(200, (path, content, {opts})  => {
+                const idx = path.indexOf(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/state/${encodeURIComponent(eventType)}/`);
+                expect(idx).toBe(0);
+                expect(content).toMatchObject(eventContent);
+                expect(opts.qs).toMatchObject({ts});
+                return {event_id: eventId};
+            });
+
+            http.flushAllExpected();
+            const result = await client.sendStateEventWithTimestamp(roomId, eventType, stateKey, eventContent, ts);
+            expect(result).toEqual(eventId);
+        });
+    });
 });
