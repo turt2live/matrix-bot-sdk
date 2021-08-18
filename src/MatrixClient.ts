@@ -38,6 +38,7 @@ import {
 import { requiresCrypto } from "./e2ee/decorators";
 import { ICryptoStorageProvider } from "./storage/ICryptoStorageProvider";
 import { EncryptedRoomEvent } from "./models/events/EncryptedRoomEvent";
+import { IWhoAmI } from "./models/Account";
 
 const SYNC_BACKOFF_MIN_MS = 5000;
 const SYNC_BACKOFF_MAX_MS = 15000;
@@ -535,9 +536,9 @@ export class MatrixClient extends EventEmitter {
 
     /**
      * Gets the user's information from the server directly.
-     * @returns {Promise<{user_id: string, device_id?: string}>} The "who am I" response.
+     * @returns {Promise<IWhoAmI>} The "who am I" response.
      */
-    public getWhoAmI(): Promise<{user_id: string, device_id?: string}> {
+    public getWhoAmI(): Promise<IWhoAmI> {
         return this.doRequest("GET", "/_matrix/client/r0/account/whoami");
     }
 

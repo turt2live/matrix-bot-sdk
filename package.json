@@ -1,6 +1,6 @@
 {
   "name": "matrix-bot-sdk",
-  "version": "0.5.19",
+  "version": "develop",
   "description": "TypeScript/JavaScript SDK for Matrix bots and appservices",
   "repository": {
     "type": "git",
@@ -78,11 +78,11 @@
     "@typescript-eslint/eslint-plugin": "^3.8.0",
     "@typescript-eslint/eslint-plugin-tslint": "^3.8.0",
     "@typescript-eslint/parser": "^3.8.0",
-    "better-docs": "^2.3.0",
+    "better-docs": "^2.3.2",
     "eslint": "^7.6.0",
     "expect": "^26.2.0",
     "get-port": "^5.1.1",
-    "jsdoc": "^3.6.5",
+    "jsdoc": "^3.6.7",
     "matrix-mock-request": "^1.2.3",
     "mocha": "^8.1.1",
     "simple-mock": "^0.8.0",

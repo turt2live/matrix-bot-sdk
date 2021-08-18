@@ -74,7 +74,7 @@ export class UnstableApis {
      * Kicks a user from a group.
      * @param {string} groupId The group ID to kick the user from.
      * @param {string} userId The user ID to kick from the group.
-     * @return {Promise<*>} Resolves when completed.
+     * @return {Promise<any>} Resolves when completed.
      */
     public async kickUserFromGroup(groupId: string, userId: string): Promise<any> {
         return this.client.doRequest("PUT", `/_matrix/client/unstable/groups/${encodeURIComponent(groupId)}/admin/users/remove/${encodeURIComponent(userId)}`, null, {});
@@ -84,7 +84,7 @@ export class UnstableApis {
      * Updates a group's profile
      * @param {string} groupId The group ID to update.
      * @param {GroupProfile} profile The profile to update the group with.
-     * @return {Promise<*>} Resolves when completed.
+     * @return {Promise<any>} Resolves when completed.
      */
     public async setGroupProfile(groupId: string, profile: GroupProfile): Promise<any> {
         return this.client.doRequest("POST", `/_matrix/client/unstable/groups/${encodeURIComponent(groupId)}/profile`, null, profile);
@@ -95,7 +95,7 @@ export class UnstableApis {
      * require an invite (invite).
      * @param {string} groupId The group ID to set the policy for.
      * @param {"open" | "invite"} policy The policy to set.
-     * @return {Promise<*>} Resolves when completed.
+     * @return {Promise<any>} Resolves when completed.
      */
     public async setGroupJoinPolicy(groupId: string, policy: "open" | "invite"): Promise<any> {
         return this.client.doRequest("PUT", `/_matrix/client/unstable/groups/${encodeURIComponent(groupId)}/settings/m.join_policy`, null, {
@@ -110,7 +110,7 @@ export class UnstableApis {
      * @param {string} groupId The group ID to add the room to.
      * @param {string} roomId The room ID to add to the group.
      * @param {boolean} isPublic Whether this group-room association is visible to non-members. Optional. Defaults to true.
-     * @return {Promise<*>} Resolves when completed.
+     * @return {Promise<any>} Resolves when completed.
      */
     public async addRoomToGroup(groupId: string, roomId: string, isPublic = true): Promise<any> {
         return this.client.doRequest("PUT", `/_matrix/client/unstable/groups/${encodeURIComponent(groupId)}/admin/rooms/${encodeURIComponent(roomId)}`, null, {
@@ -123,7 +123,7 @@ export class UnstableApis {
      * @param {string} groupId The group ID of the room to update.
      * @param {string} roomId The room ID of the room to update.
      * @param {boolean} isPublic Whether this group-room association is visible to non-members.
-     * @return {Promise<*>} Resolves when completed.
+     * @return {Promise<any>} Resolves when completed.
      */
     public async updateGroupRoomVisibility(groupId: string, roomId: string, isPublic: boolean): Promise<any> {
         return this.client.doRequest("PUT", `/_matrix/client/unstable/groups/${encodeURIComponent(groupId)}/admin/rooms/${encodeURIComponent(roomId)}/config/m.visibility`, null, {
@@ -135,7 +135,7 @@ export class UnstableApis {
      * Removes a room from a group.
      * @param {string} groupId The group ID to remove the room from.
      * @param {string} roomId The room ID to remove from the group.
-     * @return {Promise<*>} Resolves when completed.
+     * @return {Promise<any>} Resolves when completed.
      */
     public async removeRoomFromGroup(groupId: string, roomId: string): Promise<any> {
         return this.client.doRequest("DELETE", `/_matrix/client/unstable/groups/${encodeURIComponent(groupId)}/admin/rooms/${encodeURIComponent(roomId)}`);
@@ -153,7 +153,7 @@ export class UnstableApis {
     /**
      * Gets the users in a group.
      * @param {string} groupId The group ID of which to get the users.
-     * @return {Promise<*[]>} Resolves to an array of all the users in the group.
+     * @return {Promise<any[]>} Resolves to an array of all the users in the group.
      */
     public async getGroupUsers(groupId: string): Promise<any[]> {
         const response = await this.client.doRequest("GET", `/_matrix/client/unstable/groups/${encodeURIComponent(groupId)}/users`);
@@ -163,7 +163,7 @@ export class UnstableApis {
     /**
      * Gets the invited users of a group.
      * @param {string} groupId The group ID of which to get the invited users.
-     * @return {Promise<*[]>} Resolves to an array of all the users invited to the group.
+     * @return {Promise<any[]>} Resolves to an array of all the users invited to the group.
      */
     public async getGroupInvitedUsers(groupId: string): Promise<any[]> {
         const response = await this.client.doRequest("GET", `/_matrix/client/unstable/groups/${encodeURIComponent(groupId)}/invited_users`);
@@ -173,7 +173,7 @@ export class UnstableApis {
     /**
      * Gets the rooms of a group.
      * @param {string} groupId The group ID of which to get all the rooms.
-     * @return {Promise<*[]>} Resolves to an array of all the rooms of the group.
+     * @return {Promise<any[]>} Resolves to an array of all the rooms of the group.
      */
     public async getGroupRooms(groupId: string): Promise<any[]> {
         const response = await this.client.doRequest("GET", `/_matrix/client/unstable/groups/${encodeURIComponent(groupId)}/rooms`);
@@ -183,7 +183,7 @@ export class UnstableApis {
     /**
      * Accepts an invite to a group.
      * @param {string} groupId The group ID of which to accept the invite of.
-     * @return {Promise<*>} Resolves when completed.
+     * @return {Promise<any>} Resolves when completed.
      */
     public async acceptGroupInvite(groupId: string): Promise<any> {
         return this.client.doRequest("PUT", `/_matrix/client/unstable/groups/${encodeURIComponent(groupId)}/self/accept_invite`, null, {});
@@ -192,7 +192,7 @@ export class UnstableApis {
     /**
      * Joins a group.
      * @param {string} groupId The group ID to join.
-     * @return {Promise<*>} Resolves when completed.
+     * @return {Promise<any>} Resolves when completed.
      */
     public async joinGroup(groupId: string): Promise<any> {
         return this.client.doRequest("PUT", `/_matrix/client/unstable/groups/${encodeURIComponent(groupId)}/self/join`, null, {});
@@ -201,7 +201,7 @@ export class UnstableApis {
     /**
      * Leaves a group.
      * @param {string} groupId The group ID of the group to leave.
-     * @return {Promise<*>} Resolves when completed.
+     * @return {Promise<any>} Resolves when completed.
      */
     public async leaveGroup(groupId: string): Promise<any> {
         return this.client.doRequest("PUT", `/_matrix/client/unstable/groups/${encodeURIComponent(groupId)}/self/leave`, null, {});
@@ -211,7 +211,7 @@ export class UnstableApis {
      * Sets the publicity of a group.
      * @param {string} groupId The group ID to set the publicity of.
      * @param {boolean} publicise If the group should be publicised.
-     * @return {Promise<*>} Resolves when completed.
+     * @return {Promise<any>} Resolves when completed.
      */
     public async setGroupPublicity(groupId: string, publicise: boolean): Promise<any> {
         return this.client.doRequest("PUT", `/_matrix/client/unstable/groups/${encodeURIComponent(groupId)}/self/update_publicity`, null, {

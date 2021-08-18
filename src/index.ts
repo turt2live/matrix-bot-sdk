@@ -48,6 +48,7 @@ export * from "./models/Spaces";
 export * from "./models/IdentityServerModels";
 export * from "./models/Crypto";
 export * from "./models/MSC2176";
+export * from "./models/Account";
 
 // Event models
 export * from "./models/events/EventKind";
