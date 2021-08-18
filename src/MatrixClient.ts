@@ -40,6 +40,9 @@ import { requiresCrypto } from "./e2ee/decorators";
 import { ICryptoStorageProvider } from "./storage/ICryptoStorageProvider";
 import { EncryptedRoomEvent } from "./models/events/EncryptedRoomEvent";
 
+const SYNC_BACKOFF_MIN_MS = 5000;
+const SYNC_BACKOFF_MAX_MS = 15000;
+
 /**
  * A client that is capable of interacting with a matrix homeserver.
  */
@@ -632,7 +635,10 @@ export class MatrixClient extends EventEmitter {
                     await Promise.resolve(this.storage.setSyncToken(token));
                 }
             } catch (e) {
-                LogService.error("MatrixClientLite", extractRequestError(e));
+                LogService.error("MatrixClientLite", "Error handling sync " + extractRequestError(e));
+                const backoffTime = SYNC_BACKOFF_MIN_MS + Math.random() * (SYNC_BACKOFF_MAX_MS - SYNC_BACKOFF_MIN_MS);
+                LogService.info("MatrixClientLite", `Backing off for ${backoffTime}ms`);
+                await new Promise((r) => setTimeout(r, backoffTime));
             }
 
             return promiseWhile();
