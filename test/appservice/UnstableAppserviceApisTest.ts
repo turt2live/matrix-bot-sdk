@@ -1,7 +1,6 @@
 import * as expect from "expect";
-import { MatrixClient } from "../../src";
+import { IStorageProvider, MatrixClient, MSC2716BatchSendResponse, UnstableAppserviceApis } from "../../src";
 import * as MockHttpBackend from 'matrix-mock-request';
-import { IStorageProvider, MSC2716BatchSendResponse, UnstableAppserviceApis } from "../../src";
 import { createTestClient } from "../MatrixClientTest";
 
 export function createTestUnstableClient(storage: IStorageProvider = null): { client: UnstableAppserviceApis, mxClient: MatrixClient, http: MockHttpBackend, hsUrl: string, accessToken: string } {
