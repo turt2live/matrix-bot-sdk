@@ -6,6 +6,8 @@ import { MSC2716BatchSendResponse } from "../models/MSC2176";
  * @category Unstable APIs
  */
 export class UnstableAppserviceApis {
+    private requestId = 0;
+
     constructor(private client: MatrixClient) {
     }
 
@@ -40,7 +42,7 @@ export class UnstableAppserviceApis {
      * @returns {Promise<string>} resolves to the event ID that represents the event
      */
     public async sendEventWithTimestamp(roomId: string, eventType: string, content: any, ts: number) {
-        const txnId = `${(new Date().getTime())}__inc${this.client.getNextRequestId()}`;
+        const txnId = `${(new Date().getTime())}__inc_appts${++this.requestId}`;
         const response = await this.client.doRequest("PUT", `/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/send/${encodeURIComponent(eventType)}/${encodeURIComponent(txnId)}`, {ts}, content);
         return response.event_id;
     }

@@ -175,14 +175,6 @@ export class MatrixClient extends EventEmitter {
     }
 
     /**
-     * Used **internally** to get the next requestId for a API call.
-     * @returns number
-     */
-    public getNextRequestId() {
-        return ++this.requestId;
-    }
-
-    /**
      * Acquires an identity server client for communicating with an identity server. Note that
      * this will automatically do the login portion to establish a usable token with the identity
      * server provided, but it will not automatically accept any terms of service.

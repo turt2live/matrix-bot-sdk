@@ -49,6 +49,7 @@ describe('UnstableAppserviceApis', () => {
             expect(result).toEqual(expectedResponse);
         });
     });
+
     describe('sendEventWithTimestamp', () => {
         it('should call the right endpoint with a timestamp', async () => {
             const {client, http, hsUrl} = createTestUnstableClient();
@@ -66,7 +67,7 @@ describe('UnstableAppserviceApis', () => {
                 const idx = path.indexOf(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/send/${encodeURIComponent(eventType)}/`);
                 expect(idx).toBe(0);
                 expect(content).toMatchObject(eventContent);
-                expect(opts.qs).toEqual({ts});
+                expect(opts.qs).toMatchObject({ts});
                 return {event_id: eventId};
             });
 
@@ -75,6 +76,7 @@ describe('UnstableAppserviceApis', () => {
             expect(result).toEqual(eventId);
         });
     });
+
     describe('sendStateEvent', () => {
         it('should call the right endpoint with a timestamp', async () => {
             const {client, http, hsUrl} = createTestUnstableClient();
@@ -94,7 +96,7 @@ describe('UnstableAppserviceApis', () => {
                 const idx = path.indexOf(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/state/${encodeURIComponent(eventType)}/`);
                 expect(idx).toBe(0);
                 expect(content).toMatchObject(eventContent);
-                expect(opts.qs).toEqual({ts});
+                expect(opts.qs).toMatchObject({ts});
                 return {event_id: eventId};
             });
 
