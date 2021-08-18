@@ -61,7 +61,7 @@ export class MatrixClient extends EventEmitter {
      *
      * Has no effect if the client is not syncing. Does not apply until the next sync request.
      */
-    public syncingTimeout = 10000;
+    public syncingTimeout = 30000;
 
     /**
      * The crypto manager instance for this client. Generally speaking, this shouldn't
