@@ -80,13 +80,15 @@ export function doHttpRequest(baseUrl: string, method: "GET"|"POST"|"PUT"|"DELET
                     }
                 }
 
+                const respIsBuffer = (response.body instanceof Buffer);
+
                 // Don't log the body unless we're in debug mode. They can be large.
                 if (LogService.level.includes(LogLevel.TRACE)) {
-                    const redactedBody = redactObjectForLogging(response.body);
+                    const redactedBody = respIsBuffer ? '<Buffer>' : redactObjectForLogging(response.body);
                     LogService.trace("MatrixHttpClient (REQ-" + requestId + " RESP-H" + response.statusCode + ")", redactedBody);
                 }
                 if (response.statusCode < 200 || response.statusCode >= 300) {
-                    const redactedBody = redactObjectForLogging(response.body);
+                    const redactedBody = respIsBuffer ? '<Buffer>' : redactObjectForLogging(response.body);
                     LogService.error("MatrixHttpClient (REQ-" + requestId + ")", redactedBody);
                     reject(response);
                 } else resolve(raw ? response : resBody);

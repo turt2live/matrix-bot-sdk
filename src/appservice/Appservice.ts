@@ -331,7 +331,7 @@ export class Appservice extends EventEmitter {
      * @returns {Promise<any>} resolves when started
      */
     public begin(): Promise<any> {
-        return new Promise((resolve, reject) => {
+        return new Promise<void>((resolve, reject) => {
             this.appServer = this.app.listen(this.options.port, this.options.bindAddress, () => resolve());
         }).then(() => this.botIntent.ensureRegistered());
     }
@@ -613,7 +613,7 @@ export class Appservice extends EventEmitter {
         }
 
         LogService.info("Appservice", "Processing transaction " + txnId);
-        this.pendingTransactions[txnId] = new Promise(async (resolve) => {
+        this.pendingTransactions[txnId] = new Promise<void>(async (resolve) => {
             for (let event of req.body["events"]) {
                 LogService.info("Appservice", `Processing event of type ${event["type"]}`);
                 event = await this.processEvent(event);

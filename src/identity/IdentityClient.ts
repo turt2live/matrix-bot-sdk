@@ -1,7 +1,7 @@
 import { OpenIDConnectToken } from "../models/OpenIDConnect";
 import { doHttpRequest } from "../http";
 import { timedIdentityClientFunctionCall } from "../metrics/decorators";
-import { Policies, Policy, TranslatedPolicy } from "../models/Policies";
+import { Policies, TranslatedPolicy } from "../models/Policies";
 import { Metrics } from "../metrics/Metrics";
 import { Threepid } from "../models/Threepid";
 import * as crypto from "crypto";

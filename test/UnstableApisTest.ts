@@ -2,7 +2,6 @@ import * as expect from "expect";
 import { GroupProfile, IStorageProvider, MatrixClient, UnstableApis } from "../src";
 import * as MockHttpBackend from 'matrix-mock-request';
 import { createTestClient } from "./MatrixClientTest";
-import * as simple from "simple-mock";
 
 export function createTestUnstableClient(storage: IStorageProvider = null): { client: UnstableApis, mxClient: MatrixClient, http: MockHttpBackend, hsUrl: string, accessToken: string } {
     const result = createTestClient(storage);

@@ -68,9 +68,14 @@ export interface ThumbnailInfo {
  */
 export interface ThumbnailedFileInfo {
     /**
-     * A URL to a thumbnail for the file.
+     * A URL to a thumbnail for the file, if unencrypted.
      */
     thumbnail_url?: string;
+
+    /**
+     * The encrypted thumbnail file information, if encrypted.
+     */
+    thumbnail_file?: EncryptedFile;
 
     /**
      * Information about the thumbnail. Optionally included if a thumbnail_url is specified.
@@ -172,9 +177,35 @@ export interface FileMessageEventContent extends MessageEventContent {
     info?: FileWithThumbnailInfo;
 
     /**
-     * URL to the file.
+     * URL to the file, if unencrypted.
      */
     url: string;
+
+    /**
+     * The encrypted file, if encrypted.
+     */
+    file: EncryptedFile;
+}
+
+/**
+ * An encrypted file.
+ * @category Matrix event contents
+ * @see MessageEvent
+ */
+export interface EncryptedFile {
+    url: string;
+    key: {
+        kty: "oct";
+        key_ops: string[];
+        alg: "A256CTR";
+        k: string;
+        ext: true;
+    };
+    iv: string;
+    hashes: {
+        sha256: string;
+    };
+    v: "v2";
 }
 
 /**
