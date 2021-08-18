@@ -22,15 +22,13 @@ export class UnstableAppserviceApis {
      * @returns A set of eventIds and the next chunk ID
      */
     public async sendHistoricalEventBatch(roomId: string, prevEventId: string, events: any[], stateEventsAtStart: any[] = [], chunkId?: string): Promise<MSC2716BatchSendResponse> {
-        return this.client.doRequest("POST", `/_matrix/client/unstable/org.matrix.msc2716/rooms/${encodeURIComponent(roomId)}/batch_send`,
-            {
-                prev_event: prevEventId,
-                chunk_id: chunkId,
-            }, {
-                events,
-                state_events_at_start: stateEventsAtStart,
-            }
-        );
+        return this.client.doRequest("POST", `/_matrix/client/unstable/org.matrix.msc2716/rooms/${encodeURIComponent(roomId)}/batch_send`, {
+            prev_event: prevEventId,
+            chunk_id: chunkId,
+        }, {
+            events,
+            state_events_at_start: stateEventsAtStart,
+        });
     }
 
     /**
