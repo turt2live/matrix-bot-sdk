@@ -182,6 +182,14 @@ export interface IAppserviceOptions {
          */
         maxAgeMs?: number;
     };
+
+    /**
+     * Check whether the users namespace of the appservice contains a regex
+     * which can be used by `*ForSuffix` functions. You can disable this check
+     * if you have multiple user namespaces, a namespace with a regex that does not
+     * end in .+ or .* and do not use user suffix functions
+     */
+    enableUserSuffixCheck?: boolean;
 }
 
 /**
@@ -198,7 +206,7 @@ export class Appservice extends EventEmitter {
      */
     public readonly metrics: Metrics = new Metrics();
 
-    private readonly userPrefix: string;
+    private readonly userPrefix?: string;
     private readonly aliasPrefix: string | null;
     private readonly registration: IAppserviceRegistration;
     private readonly storage: IAppserviceStorageProvider;
@@ -216,6 +224,9 @@ export class Appservice extends EventEmitter {
      */
     constructor(private options: IAppserviceOptions) {
         super();
+
+        // On by default
+        options.enableUserSuffixCheck = options.enableUserSuffixCheck === undefined || options.enableUserSuffixCheck;
 
         options.joinStrategy = new AppserviceJoinRoomStrategy(options.joinStrategy, this);
 
@@ -268,11 +279,14 @@ export class Appservice extends EventEmitter {
             throw new Error("Too many user namespaces registered: expecting exactly one");
         }
 
-        this.userPrefix = (this.registration.namespaces.users[0].regex || "").split(":")[0];
-        if (!this.userPrefix.endsWith(".*") && !this.userPrefix.endsWith(".+")) {
-            throw new Error("Expected user namespace to be a prefix");
+        // Only check if we've enabled
+        if (options.enableUserSuffixCheck) {
+            this.userPrefix = (this.registration.namespaces.users[0].regex || "").split(":")[0];
+            if (!this.userPrefix.endsWith(".*") && !this.userPrefix.endsWith(".+")) {
+                throw new Error("Expected user namespace to be a prefix");
+            }
+            this.userPrefix = this.userPrefix.substring(0, this.userPrefix.length - 2); // trim off the .* part
         }
-        this.userPrefix = this.userPrefix.substring(0, this.userPrefix.length - 2); // trim off the .* part
 
         if (!this.registration.namespaces || !this.registration.namespaces.aliases || this.registration.namespaces.aliases.length === 0 || this.registration.namespaces.aliases.length !== 1) {
             this.aliasPrefix = null;
@@ -328,9 +342,9 @@ export class Appservice extends EventEmitter {
 
     /**
      * Starts the application service, opening the bind address to begin processing requests.
-     * @returns {Promise<any>} resolves when started
+     * @returns {Promise<void>} resolves when started
      */
-    public begin(): Promise<any> {
+    public begin(): Promise<void> {
         return new Promise<void>((resolve, reject) => {
             this.appServer = this.app.listen(this.options.port, this.options.bindAddress, () => resolve());
         }).then(() => this.botIntent.ensureRegistered());
@@ -381,6 +395,9 @@ export class Appservice extends EventEmitter {
      * @returns {string} The user's ID.
      */
     public getUserIdForSuffix(suffix: string): string {
+        if (!this.userPrefix) {
+            throw new Error(`Cannot use getUserIdForSuffix, enableUserSuffixCheck is off`);
+        }
         return `${this.userPrefix}${suffix}:${this.options.homeserverName}`;
     }
 
@@ -405,6 +422,9 @@ export class Appservice extends EventEmitter {
      * @returns {string} The suffix from the user ID.
      */
     public getSuffixForUserId(userId: string): string {
+        if (!this.userPrefix) {
+            throw new Error(`Cannot use getSuffixForUserId, enableUserSuffixCheck is off`);
+        }
         if (!userId || !userId.startsWith(this.userPrefix) || !userId.endsWith(`:${this.options.homeserverName}`)) {
             // Invalid ID
             return null;
@@ -425,7 +445,10 @@ export class Appservice extends EventEmitter {
      * @returns {boolean} true if the user is namespaced, false otherwise
      */
     public isNamespacedUser(userId: string): boolean {
-        return userId === this.botUserId || (userId.startsWith(this.userPrefix) && userId.endsWith(":" + this.options.homeserverName));
+        return userId === this.botUserId ||
+            !!this.registration.namespaces?.users.find(({regex}) =>
+                new RegExp(regex).test(userId)
+            );
     }
 
     /**
