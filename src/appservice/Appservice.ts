@@ -182,14 +182,6 @@ export interface IAppserviceOptions {
          */
         maxAgeMs?: number;
     };
-
-    /**
-     * Check whether the users namespace of the appservice contains a regex
-     * which can be used by `*ForSuffix` functions. You can disable this check
-     * if you have multiple user namespaces, a namespace with a regex that does not
-     * end in .+ or .* and do not use user suffix functions
-     */
-    enableUserSuffixCheck?: boolean;
 }
 
 /**
@@ -206,7 +198,7 @@ export class Appservice extends EventEmitter {
      */
     public readonly metrics: Metrics = new Metrics();
 
-    private readonly userPrefix?: string;
+    private readonly userPrefix: string | null;
     private readonly aliasPrefix: string | null;
     private readonly registration: IAppserviceRegistration;
     private readonly storage: IAppserviceStorageProvider;
@@ -224,9 +216,6 @@ export class Appservice extends EventEmitter {
      */
     constructor(private options: IAppserviceOptions) {
         super();
-
-        // On by default
-        options.enableUserSuffixCheck = options.enableUserSuffixCheck === undefined || options.enableUserSuffixCheck;
 
         options.joinStrategy = new AppserviceJoinRoomStrategy(options.joinStrategy, this);
 
@@ -278,13 +267,13 @@ export class Appservice extends EventEmitter {
         }
 
         // Only check if we've enabled
-        if (options.enableUserSuffixCheck) {
-            this.userPrefix = (this.registration.namespaces.users[0].regex || "").split(":")[0];
-            if (!this.userPrefix.endsWith(".*") && !this.userPrefix.endsWith(".+")) {
-                throw new Error("Expected user namespace to be a prefix");
-            }
-            this.userPrefix = this.userPrefix.substring(0, this.userPrefix.length - 2); // trim off the .* part
+        let userPrefix = (this.registration.namespaces.users[0].regex || "").split(":")[0];
+        if (!userPrefix.endsWith(".*") && !userPrefix.endsWith(".+")) {
+            this.userPrefix = null;
+        } else {
+            this.userPrefix = userPrefix.substring(0, userPrefix.length - 2); // trim off the .* part
         }
+
 
         if (!this.registration.namespaces || !this.registration.namespaces.aliases || this.registration.namespaces.aliases.length === 0 || this.registration.namespaces.aliases.length !== 1) {
             this.aliasPrefix = null;
@@ -394,7 +383,7 @@ export class Appservice extends EventEmitter {
      */
     public getUserIdForSuffix(suffix: string): string {
         if (!this.userPrefix) {
-            throw new Error(`Cannot use getUserIdForSuffix, enableUserSuffixCheck is off`);
+            throw new Error(`Cannot use getUserIdForSuffix, provided namespace did not include a valid suffix`);
         }
         return `${this.userPrefix}${suffix}:${this.options.homeserverName}`;
     }
@@ -421,7 +410,7 @@ export class Appservice extends EventEmitter {
      */
     public getSuffixForUserId(userId: string): string {
         if (!this.userPrefix) {
-            throw new Error(`Cannot use getSuffixForUserId, enableUserSuffixCheck is off`);
+            throw new Error(`Cannot use getUserIdForSuffix, provided namespace did not include a valid suffix`);
         }
         if (!userId || !userId.startsWith(this.userPrefix) || !userId.endsWith(`:${this.options.homeserverName}`)) {
             // Invalid ID
