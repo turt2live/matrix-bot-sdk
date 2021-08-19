@@ -165,6 +165,28 @@ describe('Appservice', () => {
         expect(appservice.getUserIdForSuffix('foo')).toEqual("@prefix_foo:localhost");
     });
 
+    it('should allow disabling the suffix check', async () => {
+        const appservice = new Appservice({
+            port: 0,
+            bindAddress: '127.0.0.1',
+            homeserverName: 'localhost',
+            homeserverUrl: 'https://localhost',
+            registration: {
+                as_token: "",
+                hs_token: "",
+                sender_localpart: "",
+                namespaces: {
+                    users: [{exclusive: true, regex: "@prefix_foo:localhost"}],
+                    rooms: [],
+                    aliases: [],
+                },
+            },
+            enableUserSuffixCheck: false,
+        });
+        expect(() => appservice.getUserIdForSuffix('foo')).toThrowError("Cannot use getUserIdForSuffix, enableUserSuffixCheck is off");
+        expect(appservice.isNamespacedUser('@prefix_foo:localhost')).toEqual(true);
+    });
+
     it('should return the right bot user ID', async () => {
         const appservice = new Appservice({
             port: 0,
