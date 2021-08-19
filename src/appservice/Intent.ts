@@ -180,40 +180,40 @@ export class Intent {
 
     /**
      * Ensures the user is registered
-     * @returns {Promise<void>} Resolves when complete
+     * @returns {Promise<any>} Resolves when complete
      */
     @timedIntentFunctionCall()
-    public async ensureRegistered(): Promise<void> {
-        if ((await Promise.resolve(this.storage.isUserRegistered(this.userId)))) {
-            return;
-        }
-        try {
-            const result = await this.client.doRequest("POST", "/_matrix/client/r0/register", null, {
-                type: "m.login.application_service",
-                username: this.userId.substring(1).split(":")[0],
-            });
+    public async ensureRegistered() {
+        if (!(await Promise.resolve(this.storage.isUserRegistered(this.userId)))) {
+            try {
+                const result = await this.client.doRequest("POST", "/_matrix/client/r0/register", null, {
+                    type: "m.login.application_service",
+                    username: this.userId.substring(1).split(":")[0],
+                });
 
-            // HACK: Workaround for unit tests
-            if (result['errcode']) {
-                // noinspection ExceptionCaughtLocallyJS
-                throw {body: result};
-            }
-        } catch (err) {
-            if (typeof (err.body) === "string") err.body = JSON.parse(err.body);
-            if (err.body && err.body["errcode"] === "M_USER_IN_USE") {
-                await Promise.resolve(this.storage.addRegisteredUser(this.userId));
-                if (this.userId === this.appservice.botUserId) {
-                    return null;
+                // HACK: Workaround for unit tests
+                if (result['errcode']) {
+                    // noinspection ExceptionCaughtLocallyJS
+                    throw {body: result};
+                }
+            } catch (err) {
+                if (typeof (err.body) === "string") err.body = JSON.parse(err.body);
+                if (err.body && err.body["errcode"] === "M_USER_IN_USE") {
+                    await Promise.resolve(this.storage.addRegisteredUser(this.userId));
+                    if (this.userId === this.appservice.botUserId) {
+                        return null;
+                    } else {
+                        LogService.error("Appservice", "Error registering user: User ID is in use");
+                        return null;
+                    }
                 } else {
                     LogService.error("Appservice", "Encountered error registering user: ");
                     LogService.error("Appservice", extractRequestError(err));
                 }
-            } else {
-                LogService.error("Appservice", "Encountered error registering user: ");
-                LogService.error("Appservice", err);
+                throw err;
             }
-            throw err;
+
+            await Promise.resolve(this.storage.addRegisteredUser(this.userId));
         }
-        await Promise.resolve(this.storage.addRegisteredUser(this.userId));
     }
 }
