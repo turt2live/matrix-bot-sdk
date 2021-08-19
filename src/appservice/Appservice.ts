@@ -270,8 +270,6 @@ export class Appservice extends EventEmitter {
 
         // Everything else can 404
 
-        // TODO: Should we permit other user namespaces and instead error when trying to use doSomethingBySuffix()?
-
         if (!this.registration.namespaces || !this.registration.namespaces.users || this.registration.namespaces.users.length === 0) {
             throw new Error("No user namespaces in registration");
         }
