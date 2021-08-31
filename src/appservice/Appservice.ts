@@ -266,7 +266,6 @@ export class Appservice extends EventEmitter {
             throw new Error("Too many user namespaces registered: expecting exactly one");
         }
 
-        // Only check if we've enabled
         let userPrefix = (this.registration.namespaces.users[0].regex || "").split(":")[0];
         if (!userPrefix.endsWith(".*") && !userPrefix.endsWith(".+")) {
             this.userPrefix = null;
