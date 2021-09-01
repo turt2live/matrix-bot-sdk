@@ -99,32 +99,6 @@ describe('Appservice', () => {
         }
     });
 
-    it('should throw when there is no prefix namespace', async () => {
-        try {
-            new Appservice({
-                port: 0,
-                bindAddress: '127.0.0.1',
-                homeserverName: 'localhost',
-                homeserverUrl: 'https://localhost',
-                registration: {
-                    as_token: "",
-                    hs_token: "",
-                    sender_localpart: "",
-                    namespaces: {
-                        users: [{exclusive: true, regex: "@.*_suffix:.+"}],
-                        rooms: [],
-                        aliases: [],
-                    },
-                },
-            });
-
-            // noinspection ExceptionCaughtLocallyJS
-            throw new Error("Did not throw when expecting it");
-        } catch (e) {
-            expect(e.message).toEqual("Expected user namespace to be a prefix");
-        }
-    });
-
     it('should accept a ".+" prefix namespace', async () => {
         const appservice = new Appservice({
             port: 0,
@@ -163,6 +137,28 @@ describe('Appservice', () => {
             },
         });
         expect(appservice.getUserIdForSuffix('foo')).toEqual("@prefix_foo:localhost");
+    });
+
+    it('should allow disabling the suffix check', async () => {
+        const appservice = new Appservice({
+            port: 0,
+            bindAddress: '127.0.0.1',
+            homeserverName: 'localhost',
+            homeserverUrl: 'https://localhost',
+            registration: {
+                as_token: "",
+                hs_token: "",
+                sender_localpart: "",
+                namespaces: {
+                    users: [{exclusive: true, regex: "@prefix_foo:localhost"}],
+                    rooms: [],
+                    aliases: [],
+                },
+            },
+        });
+        expect(() => appservice.getUserIdForSuffix('foo')).toThrowError("Cannot use getUserIdForSuffix, provided namespace did not include a valid suffix");
+        expect(() => appservice.getSuffixForUserId('foo')).toThrowError("Cannot use getUserIdForSuffix, provided namespace did not include a valid suffix");
+        expect(appservice.isNamespacedUser('@prefix_foo:localhost')).toEqual(true);
     });
 
     it('should return the right bot user ID', async () => {

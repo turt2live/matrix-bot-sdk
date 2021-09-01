@@ -198,7 +198,7 @@ export class Appservice extends EventEmitter {
      */
     public readonly metrics: Metrics = new Metrics();
 
-    private readonly userPrefix: string;
+    private readonly userPrefix: string | null;
     private readonly aliasPrefix: string | null;
     private readonly registration: IAppserviceRegistration;
     private readonly storage: IAppserviceStorageProvider;
@@ -259,8 +259,6 @@ export class Appservice extends EventEmitter {
 
         // Everything else can 404
 
-        // TODO: Should we permit other user namespaces and instead error when trying to use doSomethingBySuffix()?
-
         if (!this.registration.namespaces || !this.registration.namespaces.users || this.registration.namespaces.users.length === 0) {
             throw new Error("No user namespaces in registration");
         }
@@ -268,11 +266,13 @@ export class Appservice extends EventEmitter {
             throw new Error("Too many user namespaces registered: expecting exactly one");
         }
 
-        this.userPrefix = (this.registration.namespaces.users[0].regex || "").split(":")[0];
-        if (!this.userPrefix.endsWith(".*") && !this.userPrefix.endsWith(".+")) {
-            throw new Error("Expected user namespace to be a prefix");
+        let userPrefix = (this.registration.namespaces.users[0].regex || "").split(":")[0];
+        if (!userPrefix.endsWith(".*") && !userPrefix.endsWith(".+")) {
+            this.userPrefix = null;
+        } else {
+            this.userPrefix = userPrefix.substring(0, userPrefix.length - 2); // trim off the .* part
         }
-        this.userPrefix = this.userPrefix.substring(0, this.userPrefix.length - 2); // trim off the .* part
+
 
         if (!this.registration.namespaces || !this.registration.namespaces.aliases || this.registration.namespaces.aliases.length === 0 || this.registration.namespaces.aliases.length !== 1) {
             this.aliasPrefix = null;
@@ -328,9 +328,9 @@ export class Appservice extends EventEmitter {
 
     /**
      * Starts the application service, opening the bind address to begin processing requests.
-     * @returns {Promise<any>} resolves when started
+     * @returns {Promise<void>} resolves when started
      */
-    public begin(): Promise<any> {
+    public begin(): Promise<void> {
         return new Promise<void>((resolve, reject) => {
             this.appServer = this.app.listen(this.options.port, this.options.bindAddress, () => resolve());
         }).then(() => this.botIntent.ensureRegistered());
@@ -381,6 +381,9 @@ export class Appservice extends EventEmitter {
      * @returns {string} The user's ID.
      */
     public getUserIdForSuffix(suffix: string): string {
+        if (!this.userPrefix) {
+            throw new Error(`Cannot use getUserIdForSuffix, provided namespace did not include a valid suffix`);
+        }
         return `${this.userPrefix}${suffix}:${this.options.homeserverName}`;
     }
 
@@ -405,6 +408,9 @@ export class Appservice extends EventEmitter {
      * @returns {string} The suffix from the user ID.
      */
     public getSuffixForUserId(userId: string): string {
+        if (!this.userPrefix) {
+            throw new Error(`Cannot use getUserIdForSuffix, provided namespace did not include a valid suffix`);
+        }
         if (!userId || !userId.startsWith(this.userPrefix) || !userId.endsWith(`:${this.options.homeserverName}`)) {
             // Invalid ID
             return null;
@@ -425,7 +431,10 @@ export class Appservice extends EventEmitter {
      * @returns {boolean} true if the user is namespaced, false otherwise
      */
     public isNamespacedUser(userId: string): boolean {
-        return userId === this.botUserId || (userId.startsWith(this.userPrefix) && userId.endsWith(":" + this.options.homeserverName));
+        return userId === this.botUserId ||
+            !!this.registration.namespaces?.users.find(({regex}) =>
+                new RegExp(regex).test(userId)
+            );
     }
 
     /**
