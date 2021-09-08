@@ -705,7 +705,7 @@ export class MatrixClient extends EventEmitter {
             const inbox = raw['to_device']['events'];
             for (const message of inbox) {
                 if (message['type'] === 'm.room.encrypted') {
-                    await this.crypto.processInboundDeviceMessage(message);
+                    await this.crypto?.processInboundDeviceMessage(message);
                 } else {
                     // TODO: Emit or do something with unknown messages?
                 }
