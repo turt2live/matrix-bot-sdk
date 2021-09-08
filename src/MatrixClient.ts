@@ -659,8 +659,8 @@ export class MatrixClient extends EventEmitter {
         if (this.filterId) conf['filter'] = this.filterId;
         if (this.syncingPresence) conf['presence'] = this.syncingPresence;
 
-        // timeout is 30s if we have a token, otherwise 10min
-        return this.doRequest("GET", "/_matrix/client/r0/sync", conf, null, (token ? 30000 : 600000));
+        // timeout is 40s if we have a token, otherwise 10min
+        return this.doRequest("GET", "/_matrix/client/r0/sync", conf, null, (token ? 40000 : 600000));
     }
 
     @timedMatrixClientFunctionCall()
