@@ -29,7 +29,7 @@ export interface RoomEventContent {
  * A Matrix room event.
  * @category Matrix events
  */
-export class RoomEvent<T extends Object> extends MatrixEvent<T> {
+export class RoomEvent<T extends Object | unknown> extends MatrixEvent<T> {
     constructor(protected event: any) {
         super(event);
     }
