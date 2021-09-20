@@ -573,7 +573,7 @@ export class CryptoClient {
      * an error if the event is undecryptable.
      */
     @requiresReady()
-    public async decryptRoomEvent(event: EncryptedRoomEvent, roomId: string): Promise<RoomEvent<unknown>> {
+    public async decryptRoomEvent(event: EncryptedRoomEvent, roomId: string): Promise<RoomEvent<Record<string,unknown>>> {
         if (event.algorithm !== EncryptionAlgorithm.MegolmV1AesSha2) {
             throw new Error("Unable to decrypt: Unknown algorithm");
         }
@@ -610,7 +610,7 @@ export class CryptoClient {
             storedSession.pickled = session.pickle(this.pickleKey);
             await this.client.cryptoStore.storeInboundGroupSession(storedSession);
 
-            return new RoomEvent<unknown>({
+            return new RoomEvent<Record<string,unknown>>({
                 ...event.raw,
                 type: eventBody.type || "io.t2bot.unknown",
                 content: (typeof(eventBody.content) === 'object') ? eventBody.content : {},
