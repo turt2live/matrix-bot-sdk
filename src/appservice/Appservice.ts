@@ -16,6 +16,7 @@ import * as morgan from "morgan";
 import { MatrixBridge } from "./MatrixBridge";
 import * as LRU from "lru-cache";
 import { IApplicationServiceProtocol } from "./http_responses";
+import { MSC3395SyntheticEvent } from "../models/events/AppserviceSyntheticEvent";
 
 /**
  * Represents an application service's registration file. This is expected to be
@@ -72,6 +73,19 @@ export interface IAppserviceRegistration {
              * An optional group ID to enable flair for users in this namespace.
              */
             groupId?: string;
+
+            /**
+             * Should the application service receive synthetic events involving users matching the `regex`.
+             */
+            "uk.half-shot.msc3395.synthetic_events"?: {
+                "events": string[];
+            };
+
+            /**
+             * Should the application service receive room events involving users matching the `regex`.
+             * Defaults to true
+             */
+            "uk.half-shot.msc3395.events"?: boolean;
         }[];
 
         /**
@@ -541,6 +555,18 @@ export class Appservice extends EventEmitter {
         });
     }
 
+    private async processSyntheticEvent(event: any): Promise<any> {
+        const syntheticEvent = event as MSC3395SyntheticEvent<unknown>;
+        if (!event) return event;
+        if (!this.eventProcessors[event["type"]]) return event;
+
+        for (const processor of this.eventProcessors[event["type"]]) {
+            await processor.processEvent(event, this.botIntent.underlyingClient, EventKind.MSC3395SyntheticEvent);
+        }
+
+        return syntheticEvent;
+    }
+
     private async processEphemeralEvent(event: any): Promise<any> {
         if (!event) return event;
         if (!this.eventProcessors[event["type"]]) return event;
@@ -647,6 +673,16 @@ export class Appservice extends EventEmitter {
                     event = await this.processEphemeralEvent(event);
                     // These events aren't tied to rooms, so just emit them generically
                     this.emit("ephemeral.event", event);
+                }
+            }
+
+            const syntheticEvents = req.body["uk.half-shot.msc3395.synthetic_events"];
+
+            if (syntheticEvents) {
+                for (const event of syntheticEvents) {
+                    LogService.info("Appservice", `Processing synthetic event of type ${event["type"]}`);
+                    // These events aren't tied to rooms, so just emit them generically
+                    this.emit("synthetic.event", await this.processSyntheticEvent(event));
                 }
             }
 

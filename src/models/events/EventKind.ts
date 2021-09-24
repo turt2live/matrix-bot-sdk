@@ -13,4 +13,9 @@ export enum EventKind {
      * An ephemeral event, such as typing notifications or presence.
      */
     EphemeralEvent = "ephemeral",
+
+    /**
+     * An synthetic event, such as a user login or logout notification.
+     */
+    MSC3395SyntheticEvent = "synthetic",
 }
