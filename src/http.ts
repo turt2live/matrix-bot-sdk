@@ -84,17 +84,24 @@ export function doHttpRequest(baseUrl: string, method: "GET"|"POST"|"PUT"|"DELET
 
             const respIsBuffer = (response.body instanceof Buffer);
 
+            // Check for errors.
+            const errBody = response.body || resBody;
+            if (errBody && 'errcode' in errBody) {
+                const redactedBody = respIsBuffer ? '<Buffer>' : redactObjectForLogging(errBody);
+                LogService.error("MatrixHttpClient (REQ-" + requestId + ")", redactedBody);
+                reject(new MatrixError(errBody, response.statusCode));
+                return;
+            }
+
             // Don't log the body unless we're in debug mode. They can be large.
             if (LogService.level.includes(LogLevel.TRACE)) {
                 const redactedBody = respIsBuffer ? '<Buffer>' : redactObjectForLogging(response.body);
                 LogService.trace("MatrixHttpClient (REQ-" + requestId + " RESP-H" + response.statusCode + ")", redactedBody);
             }
+
             if (response.statusCode < 200 || response.statusCode >= 300) {
                 const redactedBody = respIsBuffer ? '<Buffer>' : redactObjectForLogging(response.body);
                 LogService.error("MatrixHttpClient (REQ-" + requestId + ")", redactedBody);
-                if ('errcode' in response.body) {
-                    reject(new MatrixError(response.body, response.statusCode));
-                }
                 reject(response);
             } else resolve(raw ? response : resBody);
         });

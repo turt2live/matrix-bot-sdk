@@ -4,6 +4,7 @@ import { Appservice, IAppserviceOptions } from "./Appservice";
 // noinspection TypeScriptPreferShortImport
 import { timedIntentFunctionCall } from "../metrics/decorators";
 import { UnstableAppserviceApis } from "./UnstableAppserviceApis";
+import MatrixError from "../models/MatrixError";
 
 /**
  * An Intent is an intelligent client that tracks things like the user's membership
@@ -197,8 +198,7 @@ export class Intent {
                     throw {body: result};
                 }
             } catch (err) {
-                if (typeof (err.body) === "string") err.body = JSON.parse(err.body);
-                if (err.body && err.body["errcode"] === "M_USER_IN_USE") {
+                if (err instanceof MatrixError && err.errcode === "M_USER_IN_USE") {
                     await Promise.resolve(this.storage.addRegisteredUser(this.userId));
                     if (this.userId === this.appservice.botUserId) {
                         return null;

@@ -1,3 +1,4 @@
+import MatrixError from "../models/MatrixError";
 import { ConsoleLogger } from "./ConsoleLogger";
 import { ILogger } from "./ILogger";
 
@@ -160,9 +161,9 @@ export class LogService {
  * @returns {*} The extracted error, or the given error if unaltered.
  * @category Logging
  */
-export function extractRequestError(err: Error): any {
-    if (err?.['body']) {
-        return err['body'];
+export function extractRequestError(err: Error|MatrixError): any {
+    if (err && 'body' in err) {
+        return err.body;
     }
     return err;
 }
