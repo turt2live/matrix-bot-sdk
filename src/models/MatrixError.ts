@@ -10,6 +10,6 @@ export default class MatrixError extends Error {
     }
 
     get message() {
-        return `Encountered a MatrixAPI error ${this.errcode}: ${this.error}`
+        return `${this.errcode}: ${this.error}`
     }
 }
