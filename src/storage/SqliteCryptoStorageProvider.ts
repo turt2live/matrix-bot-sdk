@@ -12,6 +12,7 @@ import {
 /**
  * Sqlite crypto storage provider. Requires `better-sqlite3` package to be installed.
  * @category Storage providers
+ * @deprecated Use `NamespacingSqliteCryptoStorageProvider` instead
  */
 export class SqliteCryptoStorageProvider implements ICryptoStorageProvider {
     private db: Database.Database;

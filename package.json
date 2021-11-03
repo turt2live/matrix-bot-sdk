@@ -15,7 +15,9 @@
   "scripts": {
     "prepublishOnly": "yarn build",
     "docs": "jsdoc -c jsdoc.json -P package.json",
-    "build": "tsc",
+    "build": "yarn build:ts && yarn build:declaration",
+    "build:ts": "tsc",
+    "build:declaration": "tsc --module system --declaration --out lib/lib.js",
     "lint": "eslint 'src/**/*.ts'",
     "test": "ts-mocha --project ./tsconfig.json test/*Test.ts test/**/*.ts",
     "build:examples": "tsc -p tsconfig-examples.json",
@@ -24,7 +26,7 @@
     "example:encryption_bot": "yarn build:examples && node lib/examples/encryption_bot.js"
   },
   "main": "./lib/index.js",
-  "typings": "./lib/index.d.ts",
+  "typings": "./lib/lib.d.ts",
   "engines": {
     "node": ">=10.0.0"
   },

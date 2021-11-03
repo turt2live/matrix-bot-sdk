@@ -3,6 +3,7 @@ import { Intent } from "./Intent";
 import {
     AppserviceJoinRoomStrategy,
     EventKind,
+    IAppserviceCryptoStorageProvider,
     IAppserviceStorageProvider,
     IJoinRoomStrategy,
     IPreprocessor,
@@ -158,6 +159,12 @@ export interface IAppserviceOptions {
     storage?: IAppserviceStorageProvider;
 
     /**
+     * The storage provider to use for setting up encryption. Encryption will be
+     * disabled for all intents and the appservice if not configured.
+     */
+    cryptoStorage?: IAppserviceCryptoStorageProvider;
+
+    /**
      * The registration for this application service.
      */
     registration: IAppserviceRegistration;
@@ -181,6 +188,17 @@ export interface IAppserviceOptions {
          * the maximum number of intents has been reached. Defaults to 60 minutes.
          */
         maxAgeMs?: number;
+
+        /**
+         * If false (default), crypto will not be automatically set up for all intent
+         * instances - it will need to be manually enabled with
+         * `await intent.enableEncryption()`.
+         *
+         * If true, crypto will be automatically set up.
+         *
+         * Note that the appservice bot account is considered an intent.
+         */
+        encryption?: boolean;
     };
 }
 
@@ -202,6 +220,7 @@ export class Appservice extends EventEmitter {
     private readonly aliasPrefix: string | null;
     private readonly registration: IAppserviceRegistration;
     private readonly storage: IAppserviceStorageProvider;
+    private readonly cryptoStorage: IAppserviceCryptoStorageProvider;
     private readonly bridgeInstance = new MatrixBridge(this);
 
     private app = express();
@@ -237,6 +256,7 @@ export class Appservice extends EventEmitter {
 
         this.storage = options.storage || new MemoryStorageProvider();
         options.storage = this.storage;
+        this.cryptoStorage = options.cryptoStorage;
 
         this.app.use(express.json({limit: Number.MAX_SAFE_INTEGER})); // disable limits, use a reverse proxy
         this.app.use(morgan("combined"));
@@ -393,10 +413,16 @@ export class Appservice extends EventEmitter {
      * @returns {Intent} An Intent for the user.
      */
     public getIntentForUserId(userId: string): Intent {
-        let intent = this.intentsCache.get(userId);
+        let intent: Intent = this.intentsCache.get(userId);
         if (!intent) {
             intent = new Intent(this.options, userId, this);
             this.intentsCache.set(userId, intent);
+            if (this.options.intentOptions.encryption) {
+                intent.enableEncryption().catch(e => {
+                    LogService.error("Appservice", `Failed to set up crypto on intent ${userId}`, e);
+                    throw e; // re-throw to cause unhandled exception
+                });
+            }
         }
         return intent;
     }

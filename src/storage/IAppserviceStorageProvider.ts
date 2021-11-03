@@ -1,3 +1,6 @@
+import { ICryptoStorageProvider } from "./ICryptoStorageProvider";
+import { IStorageProvider } from "./IStorageProvider";
+
 /**
  * A storage provider definition for appservices to use.
  * @category Storage providers
@@ -28,4 +31,24 @@ export interface IAppserviceStorageProvider {
      * @returns {boolean} True if the transaction has been completed. This may be a promise.
      */
     isTransactionCompleted(transactionId: string): boolean | Promise<boolean>;
+
+    /**
+     * GEts a storage provider to use for the given user ID.
+     * @param {string} userId The user ID.
+     * @returns {ICryptoStorageProvider} The storage provider.
+     */
+    storageForUser?(userId: string): IStorageProvider;
+}
+
+/**
+ * A storage provider capable of only providing crypto-related storage to appservices.
+ * @category Storage providers
+ */
+export interface IAppserviceCryptoStorageProvider {
+    /**
+     * Gets a storage provider to use for the given user ID.
+     * @param {string} userId The user ID.
+     * @returns {ICryptoStorageProvider} The storage provider.
+     */
+    storageForUser(userId: string): ICryptoStorageProvider;
 }
