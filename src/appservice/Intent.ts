@@ -105,7 +105,21 @@ export class Intent {
         if (!this.cryptoSetupPromise) {
             this.cryptoSetupPromise = new Promise(async (resolve, reject) => {
                 try {
+                    // Prepare a client first
+                    await this.ensureRegistered();
                     this.makeClient(true);
+
+                    // Populate the crypto store with basic information (to avoid server hit)
+                    const devices = await this.client.getOwnDevices();
+                    const deviceId = devices.find(d => d.device_id)?.device_id;
+                    if (deviceId) {
+                        await this.client.cryptoStore.setDeviceId(deviceId);
+                    } else {
+                        // noinspection ExceptionCaughtLocallyJS
+                        throw new Error("Unable to establish a device ID");
+                    }
+
+                    // Now set up crypto
                     await this.client.crypto.prepare(await this.client.getJoinedRooms());
                     resolve();
                 } catch (e) {

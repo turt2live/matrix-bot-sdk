@@ -34,6 +34,7 @@ import {
     OTKClaimResponse,
     OTKCounts,
     OTKs,
+    OwnUserDevice,
 } from "./models/Crypto";
 import { requiresCrypto } from "./e2ee/decorators";
 import { ICryptoStorageProvider } from "./storage/ICryptoStorageProvider";
@@ -1793,6 +1794,18 @@ export class MatrixClient extends EventEmitter {
         return this.doRequest("POST", "/_matrix/client/r0/keys/query", {}, {
             timeout: federationTimeoutMs,
             device_keys: req,
+        });
+    }
+
+    /**
+     * Gets a device list for the client's own account, with metadata. The devices are not verified
+     * in this response, but should be active on the account.
+     * @returns {Promise<OwnUserDevice[]>} Resolves to the active devices on the account.
+     */
+    @timedMatrixClientFunctionCall()
+    public async getOwnDevices(): Promise<OwnUserDevice[]> {
+        return this.doRequest("GET", "/_matrix/client/r0/devices").then(r => {
+            return r['devices'];
         });
     }
 

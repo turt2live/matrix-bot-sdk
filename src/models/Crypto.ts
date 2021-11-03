@@ -100,6 +100,17 @@ export interface UserDevice {
 }
 
 /**
+ * Represents a user's own device.
+ * @category Models
+ */
+export interface OwnUserDevice {
+    device_id: string;
+    display_name?: string;
+    last_seen_ip?: string;
+    last_seen_ts?: number;
+}
+
+/**
  * Represents a user's stored device.
  * @category Models
  */

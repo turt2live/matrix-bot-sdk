@@ -1,3 +1,4 @@
 * [ ] Namespacing tests for crypto storage
 * [ ] storageForUser functions (x2)
 * [ ] Intent crypto setup
+* [ ] getOwnDevices
