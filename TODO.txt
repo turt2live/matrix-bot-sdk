@@ -2,3 +2,4 @@
 * [ ] storageForUser functions (x2)
 * [ ] Intent crypto setup
 * [ ] getOwnDevices
+* [ ] EDU handling

@@ -1,7 +1,8 @@
 import * as express from "express";
 import { Intent } from "./Intent";
 import {
-    AppserviceJoinRoomStrategy, EncryptedRoomEvent,
+    AppserviceJoinRoomStrategy,
+    EncryptedRoomEvent,
     EventKind,
     IAppserviceCryptoStorageProvider,
     IAppserviceStorageProvider,
