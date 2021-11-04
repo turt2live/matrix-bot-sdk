@@ -1,7 +1,7 @@
 import * as express from "express";
 import { Intent } from "./Intent";
 import {
-    AppserviceJoinRoomStrategy,
+    AppserviceJoinRoomStrategy, EncryptedRoomEvent,
     EventKind,
     IAppserviceCryptoStorageProvider,
     IAppserviceStorageProvider,
@@ -649,9 +649,43 @@ export class Appservice extends EventEmitter {
 
         LogService.info("Appservice", "Processing transaction " + txnId);
         this.pendingTransactions[txnId] = new Promise<void>(async (resolve) => {
+            // Process EDUs first to give the best chance at decryption
+            if (this.registration["de.sorunome.msc2409.push_ephemeral"] && req.body["de.sorunome.msc2409.ephemeral"]) {
+                for (let event of req.body["de.sorunome.msc2409.ephemeral"]) {
+                    LogService.info("Appservice", `Processing ephemeral event of type ${event["type"]}`);
+                    event = await this.processEphemeralEvent(event);
+                    // These events aren't tied to rooms, so just emit them generically
+                    this.emit("ephemeral.event", event);
+
+                    // TODO: Handle encryption EDUs and route to the correct intent
+                }
+            }
+
             for (let event of req.body["events"]) {
                 LogService.info("Appservice", `Processing event of type ${event["type"]}`);
                 event = await this.processEvent(event);
+                if (event['type'] === 'm.room.encrupted' && this.cryptoStorage) {
+                    this.emit("room.encrypted_event", event["room_id"], event);
+                    try {
+                        const encrypted = new EncryptedRoomEvent(event);
+                        const roomId = event['room_id'];
+                        try {
+                            event = (await this.botClient.crypto.decryptRoomEvent(encrypted, roomId)).raw;
+                            event = await this.processEvent(event);
+                            this.emit("room.decrypted_event", roomId, event);
+                        } catch (e1) {
+                            LogService.warn("Appservice", `Bot client was not able to decrypt ${roomId} ${event['event_id']} - trying other intents`);
+
+                            // Try to figure out which clients might be able to decrypt this
+                            // TODO: Consider puppet bridges where the bot won't be in the room
+                            // noinspection ExceptionCaughtLocallyJS
+                            throw e1;
+                        }
+                    } catch (e) {
+                        LogService.error("Appservice", `Decryption error on ${event['room_id']} ${event['event_id']}`, e);
+                        this.emit("room.failed_decryption", event['room_id'], event, e);
+                    }
+                }
                 this.emit("room.event", event["room_id"], event);
                 if (event['type'] === 'm.room.message') {
                     this.emit("room.message", event["room_id"], event);
@@ -664,15 +698,6 @@ export class Appservice extends EventEmitter {
                 }
                 if (event['type'] === 'm.room.create' && event['state_key'] === '' && event['content'] && event['content']['predecessor']) {
                     this.emit("room.upgraded", event['room_id'], event);
-                }
-            }
-
-            if (this.registration["de.sorunome.msc2409.push_ephemeral"] && req.body["de.sorunome.msc2409.ephemeral"]) {
-                for (let event of req.body["de.sorunome.msc2409.ephemeral"]) {
-                    LogService.info("Appservice", `Processing ephemeral event of type ${event["type"]}`);
-                    event = await this.processEphemeralEvent(event);
-                    // These events aren't tied to rooms, so just emit them generically
-                    this.emit("ephemeral.event", event);
                 }
             }
 
