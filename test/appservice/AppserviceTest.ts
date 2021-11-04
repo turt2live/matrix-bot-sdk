@@ -1643,10 +1643,10 @@ describe('Appservice', () => {
             userIntent.ensureRegistered = () => {
                 return null;
             };
-            const nameSpy = simple.stub(userIntent.underlyingClient, "setDisplayName").callFn(() => {
+            const nameSpy = simple.mock(userIntent.underlyingClient, "setDisplayName").callFn(() => {
                 return null;
             });
-            const avatarSpy = simple.stub(userIntent.underlyingClient, "setAvatarUrl").callFn(() => {
+            const avatarSpy = simple.mock(userIntent.underlyingClient, "setAvatarUrl").callFn(() => {
                 return null;
             });
 
@@ -1883,10 +1883,10 @@ describe('Appservice', () => {
             userIntent.ensureRegistered = () => {
                 return null;
             };
-            const nameSpy = simple.stub(userIntent.underlyingClient, "setDisplayName").callFn(() => {
+            const nameSpy = simple.mock(userIntent.underlyingClient, "setDisplayName").callFn(() => {
                 return null;
             });
-            const avatarSpy = simple.stub(userIntent.underlyingClient, "setAvatarUrl").callFn(() => {
+            const avatarSpy = simple.mock(userIntent.underlyingClient, "setAvatarUrl").callFn(() => {
                 return null;
             });
 
@@ -1965,10 +1965,10 @@ describe('Appservice', () => {
             userIntent.ensureRegistered = () => {
                 return null;
             };
-            const nameSpy = simple.stub(userIntent.underlyingClient, "setDisplayName").callFn(() => {
+            const nameSpy = simple.mock(userIntent.underlyingClient, "setDisplayName").callFn(() => {
                 return null;
             });
-            const avatarSpy = simple.stub(userIntent.underlyingClient, "setAvatarUrl").callFn(() => {
+            const avatarSpy = simple.mock(userIntent.underlyingClient, "setAvatarUrl").callFn(() => {
                 return null;
             });
 
