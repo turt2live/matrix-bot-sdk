@@ -354,7 +354,13 @@ export class Appservice extends EventEmitter {
     public begin(): Promise<void> {
         return new Promise<void>((resolve, reject) => {
             this.appServer = this.app.listen(this.options.port, this.options.bindAddress, () => resolve());
-        }).then(() => this.botIntent.ensureRegistered());
+        }).then(async () => {
+            if (this.options.intentOptions?.encryption) {
+                await this.botIntent.enableEncryption();
+            } else {
+                await this.botIntent.ensureRegistered();
+            }
+        });
     }
 
     /**
@@ -658,14 +664,25 @@ export class Appservice extends EventEmitter {
                     // These events aren't tied to rooms, so just emit them generically
                     this.emit("ephemeral.event", event);
 
-                    // TODO: Handle encryption EDUs and route to the correct intent
+                    if (event["type"] === "m.room.encrypted") {
+                        const toUser = event["to_user_id"];
+                        try {
+                            const intent = this.getIntentForUserId(toUser);
+                            if (this.options.intentOptions?.encryption) {
+                                await intent.enableEncryption();
+                            }
+                            await intent.underlyingClient.crypto.processInboundDeviceMessage(event);
+                        } catch (e) {
+                            LogService.error("Appservice", `Error handling encrypted to-device message sent to ${toUser}`, e);
+                        }
+                    }
                 }
             }
 
             for (let event of req.body["events"]) {
                 LogService.info("Appservice", `Processing event of type ${event["type"]}`);
                 event = await this.processEvent(event);
-                if (event['type'] === 'm.room.encrupted' && this.cryptoStorage) {
+                if (event['type'] === 'm.room.encrypted' && this.cryptoStorage) {
                     this.emit("room.encrypted_event", event["room_id"], event);
                     try {
                         const encrypted = new EncryptedRoomEvent(event);
@@ -674,6 +691,9 @@ export class Appservice extends EventEmitter {
                             event = (await this.botClient.crypto.decryptRoomEvent(encrypted, roomId)).raw;
                             event = await this.processEvent(event);
                             this.emit("room.decrypted_event", roomId, event);
+
+                            // For logging purposes: show that the event was decrypted
+                            LogService.info("Appservice", `Processing decrypted event of type ${event["type"]}`);
                         } catch (e1) {
                             LogService.warn("Appservice", `Bot client was not able to decrypt ${roomId} ${event['event_id']} - trying other intents`);
 

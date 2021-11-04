@@ -35,7 +35,7 @@ const worksImage = fs.readFileSync("./examples/static/it-works.png");
 const registration: IAppserviceRegistration = {
     as_token: creds?.['asToken'] ?? "change_me",
     hs_token: creds?.['hsToken'] ?? "change_me",
-    sender_localpart: "cryptotest",
+    sender_localpart: "crypto_appservice",
     namespaces: {
         users: [{
             regex: "@crypto.*:localhost",
@@ -44,6 +44,7 @@ const registration: IAppserviceRegistration = {
         rooms: [],
         aliases: [],
     },
+    "de.sorunome.msc2409.push_ephemeral": true,
 };
 
 const options: IAppserviceOptions = {
@@ -56,6 +57,10 @@ const options: IAppserviceOptions = {
     registration: registration,
     joinStrategy: new SimpleRetryJoinStrategy(),
     cryptoStorage: crypto,
+
+    intentOptions: {
+        encryption: true,
+    },
 };
 
 const appservice = new Appservice(options);
@@ -68,8 +73,11 @@ const bot = appservice.botIntent;
     const joinedRooms = await bot.underlyingClient.getJoinedRooms();
     for (const roomId of joinedRooms) {
         if (await bot.underlyingClient.crypto.isRoomEncrypted(roomId)) {
-            encryptedRoomId = roomId;
-            break;
+            const members = await bot.underlyingClient.getJoinedRoomMembers(roomId);
+            if (members.length >= 2) {
+                encryptedRoomId = roomId;
+                break;
+            }
         }
     }
     if (!encryptedRoomId) {

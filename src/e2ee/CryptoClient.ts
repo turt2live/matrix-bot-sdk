@@ -650,8 +650,16 @@ export class CryptoClient {
                     return;
                 }
 
-                const userDevices = await this.client.cryptoStore.getActiveUserDevices(message.sender);
-                const senderDevice = userDevices.find(d => d.keys[`${DeviceKeyAlgorithm.Curve25519}:${d.device_id}`] === message.content.sender_key);
+                let userDevices = await this.client.cryptoStore.getActiveUserDevices(message.sender);
+                let senderDevice = userDevices.find(d => d.keys[`${DeviceKeyAlgorithm.Curve25519}:${d.device_id}`] === message.content.sender_key);
+                if (!senderDevice) {
+                    LogService.warn("CryptoClient", "Received encrypted message from unknown identity key (trying resync):", message.content.sender_key);
+                    await this.flagUsersDeviceListsOutdated([message.sender], true);
+
+                    // try again
+                    userDevices = await this.client.cryptoStore.getActiveUserDevices(message.sender);
+                    senderDevice = userDevices.find(d => d.keys[`${DeviceKeyAlgorithm.Curve25519}:${d.device_id}`] === message.content.sender_key);
+                }
                 if (!senderDevice) {
                     LogService.warn("CryptoClient", "Received encrypted message from unknown identity key (ignoring message):", message.content.sender_key);
                     return;
