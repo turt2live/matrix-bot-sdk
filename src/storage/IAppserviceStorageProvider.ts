@@ -33,7 +33,7 @@ export interface IAppserviceStorageProvider {
     isTransactionCompleted(transactionId: string): boolean | Promise<boolean>;
 
     /**
-     * GEts a storage provider to use for the given user ID.
+     * Gets a storage provider to use for the given user ID.
      * @param {string} userId The user ID.
      * @returns {ICryptoStorageProvider} The storage provider.
      */
