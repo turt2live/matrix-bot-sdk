@@ -1610,6 +1610,32 @@ describe('Appservice', () => {
         }
     });
 
+    // TODO: Populate once intent tests are stable
+
+    it.skip('should not try decryption if crypto is not possible', async () => {
+
+    });
+
+    it.skip('should decrypt events when enabled', async () => {
+
+    });
+
+    it.skip('should decrypt using non-bot accounts if needed', async () => {
+
+    });
+
+    it.skip('should create intents which are crypto-ready when enabled', async () => {
+
+    });
+
+    it.skip('should not create crypto-ready intents when disabled', async () => {
+
+    });
+
+    it.skip('should prepare the bot intent with encryption at startup if enabled', async () => {
+
+    });
+
     it('should emit while querying users', async () => {
         const port = await getPort();
         const hsToken = "s3cret_token";

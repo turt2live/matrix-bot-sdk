@@ -23,7 +23,7 @@ import * as MockHttpBackend from 'matrix-mock-request';
 import { expectArrayEquals, feedOlmAccount, feedStaticOlmAccount } from "./TestUtils";
 import { redactObjectForLogging } from "../src/http";
 import { PowerLevelAction } from "../src/models/PowerLevelAction";
-import { SqliteCryptoStorageProvider } from "../src/storage/SqliteCryptoStorageProvider";
+import { NamespacingSqliteCryptoStorageProvider } from "../src/storage/NamespacingSqliteCryptoStorageProvider";
 
 export const TEST_DEVICE_ID = "TEST_DEVICE";
 
@@ -31,7 +31,7 @@ export function createTestClient(storage: IStorageProvider = null, userId: strin
     const http = new MockHttpBackend();
     const hsUrl = "https://localhost";
     const accessToken = "s3cret";
-    const client = new MatrixClient(hsUrl, accessToken, storage, crypto ? new SqliteCryptoStorageProvider(":memory:") : null);
+    const client = new MatrixClient(hsUrl, accessToken, storage, crypto ? new NamespacingSqliteCryptoStorageProvider(":memory:") : null);
     (<any>client).userId = userId; // private member access
     setRequestFn(http.requestFn);
 
@@ -78,7 +78,7 @@ describe('MatrixClient', () => {
             const homeserverUrl = "https://example.org";
             const accessToken = "example_token";
 
-            const client = new MatrixClient(homeserverUrl, accessToken, null, new SqliteCryptoStorageProvider(":memory:"));
+            const client = new MatrixClient(homeserverUrl, accessToken, null, new NamespacingSqliteCryptoStorageProvider(":memory:"));
             expect(client.crypto).toBeDefined();
         });
 
