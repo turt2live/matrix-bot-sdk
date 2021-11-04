@@ -6716,6 +6716,22 @@ describe('MatrixClient', () => {
         });
     });
 
+    describe('getOwnDevices', () => {
+        it('should call the right endpoint', async () => {
+            const userId = "@test:example.org";
+            const { client, http } = createTestClient(null, userId, true);
+
+            const devices = ["schema not followed for simplicity"];
+            http.when("GET", "/_matrix/client/r0/devices").respond(200, (path, content) => {
+                return {devices};
+            });
+
+            http.flushAllExpected();
+            const res = await client.getOwnDevices();
+            expect(res).toMatchObject(devices);
+        });
+    });
+
     describe('redactObjectForLogging', () => {
         it('should redact multilevel objects', () => {
             const input = {
