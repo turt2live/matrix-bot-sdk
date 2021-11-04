@@ -2143,20 +2143,31 @@ describe('CryptoClient', () => {
             expect(logSpy.callCount).toBe(2);
         });
 
-        it('should ignore messages from unknown devices', async () => {
+        it('should resync device lists from unknown devices', async () => {
             await client.crypto.prepare([]);
 
+            const messages = [
+                "Received encrypted message from unknown identity key (trying resync):",
+                "Received encrypted message from unknown identity key (ignoring message):"
+            ];
             const logSpy = simple.stub().callFn((mod, msg) => {
                 expect(mod).toEqual("CryptoClient");
-                expect(msg).toEqual("Received encrypted message from unknown identity key (ignoring message):");
+                expect(msg).toEqual(messages[logSpy.callCount - 1]);
             });
             LogService.setLogger({ warn: logSpy } as any as ILogger);
 
             const sender = "@bob:example.org";
-            client.cryptoStore.getActiveUserDevices = async (uid) => {
+            const flagSpy = simple.stub().callFn(async (userIds, resync) => {
+                expect(userIds).toMatchObject([sender]);
+                expect(resync).toBe(true);
+            });
+            client.crypto.flagUsersDeviceListsOutdated = flagSpy;
+
+            const getSpy = simple.stub().callFn(async (uid) => {
                 expect(uid).toEqual(sender);
                 return [STATIC_TEST_DEVICES["NTTFKSVBSI"]];
-            };
+            });
+            client.cryptoStore.getActiveUserDevices = getSpy;
 
             await client.crypto.processInboundDeviceMessage({
                 content: <any>{
@@ -2172,7 +2183,9 @@ describe('CryptoClient', () => {
                 type: "m.room.encrypted",
                 sender: sender,
             });
-            expect(logSpy.callCount).toBe(1);
+            expect(logSpy.callCount).toBe(2);
+            expect(getSpy.callCount).toBe(2);
+            expect(flagSpy.callCount).toBe(1);
         });
 
         describe('decryption', () => {
