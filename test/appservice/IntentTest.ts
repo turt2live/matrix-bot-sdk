@@ -524,7 +524,7 @@ describe('Intent', () => {
             });
             const joinSpy = simple.stub().callFn((rid) => {
                 expect(rid).toEqual(targetRoomId);
-                return {};
+                return Promise.resolve("!joined:example.org");
             });
             intent.underlyingClient.getJoinedRooms = getJoinedSpy;
             intent.underlyingClient.joinRoom = joinSpy;
@@ -558,7 +558,7 @@ describe('Intent', () => {
             });
             const joinSpy = simple.stub().callFn((rid) => {
                 expect(rid).toEqual(targetRoomId);
-                return {};
+                return Promise.resolve("!joined:example.org");
             });
             intent.underlyingClient.getJoinedRooms = getJoinedSpy;
             intent.underlyingClient.joinRoom = joinSpy;
@@ -633,7 +633,7 @@ describe('Intent', () => {
             });
             const joinSpy = simple.stub().callFn((rid) => {
                 expect(rid).toEqual(targetRoomId);
-                return {};
+                return Promise.resolve("!joined:example.org");
             });
             intent.underlyingClient.getJoinedRooms = getJoinedSpy;
             intent.underlyingClient.joinRoom = joinSpy;
@@ -968,8 +968,8 @@ describe('Intent', () => {
                 expect(rid).toEqual(targetRoomId);
                 return {};
             });
-            const refreshJoinedRoomsSpy = simple.mock(intent, "refreshJoinedRooms").callFn(() => {
-                return Promise.resolve();
+            const refreshJoinedRoomsSpy = simple.stub().callFn(() => {
+                return Promise.resolve([]);
             });
 
             const joinRoomSpy = simple.stub().callFn((rid) => {
@@ -1059,8 +1059,8 @@ describe('Intent', () => {
                 expect(rid).toEqual(targetRoomId);
                 return {};
             });
-            const refreshJoinedRoomsSpy = simple.mock(intent, "refreshJoinedRooms").callFn(() => {
-                return Promise.resolve();
+            const refreshJoinedRoomsSpy = simple.stub().callFn(() => {
+                return Promise.resolve([]);
             });
 
             const leaveRoomSpy = simple.stub().callFn((rid) => {
