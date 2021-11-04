@@ -170,14 +170,20 @@ export class MatrixClient extends EventEmitter {
      * is for an application service, and that the userId given is within the reach of the
      * application service. Setting this to null will stop future impersonation. The user ID is
      * assumed to already be valid
-     * @param {string} userId The user ID to masquerade as
+     * @param {string} userId The user ID to masquerade as, or `null` to clear masquerading.
      * @param {string} deviceId Optional device ID to impersonate under the given user, if supported
      * by the server. Check the whoami response after setting.
      */
-    public impersonateUserId(userId: string, deviceId?: string): void {
+    public impersonateUserId(userId: string | null, deviceId?: string): void {
         this.impersonatedUserId = userId;
         this.userId = userId;
-        this.impersonatedDeviceId = deviceId;
+        if (userId) {
+            this.impersonatedDeviceId = deviceId;
+        } else if (deviceId) {
+            throw new Error("Cannot impersonate just a device: need a user ID");
+        } else {
+            this.impersonatedDeviceId = null;
+        }
     }
 
     /**

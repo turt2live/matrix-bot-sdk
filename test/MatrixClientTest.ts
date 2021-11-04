@@ -241,11 +241,54 @@ describe('MatrixClient', () => {
             client.impersonateUserId(userId);
 
             http.when("GET", "/test").respond(200, (path, content, req) => {
-                expect(req.opts.qs.user_id).toBe(userId);
+                expect(req.opts.qs["user_id"]).toBe(userId);
+                expect(req.opts.qs["org.matrix.msc3202.device_id"]).toBe(undefined);
             });
 
             http.flushAllExpected();
             await client.doRequest("GET", "/test");
+        });
+
+        it('should set a device_id param on requests', async () => {
+            const {client, http} = createTestClient();
+
+            const userId = "@testing:example.org";
+            const deviceId = "DEVICE_TEST";
+            client.impersonateUserId(userId, deviceId);
+
+            http.when("GET", "/test").respond(200, (path, content, req) => {
+                expect(req.opts.qs["user_id"]).toBe(userId);
+                expect(req.opts.qs["org.matrix.msc3202.device_id"]).toBe(deviceId);
+            });
+
+            http.flushAllExpected();
+            await client.doRequest("GET", "/test");
+        });
+
+        it('should stop impersonation with a null user_id', async () => {
+            const {client, http} = createTestClient();
+
+            const userId = "@testing:example.org";
+            client.impersonateUserId(userId); // set first
+            client.impersonateUserId(null);
+
+            http.when("GET", "/test").respond(200, (path, content, req) => {
+                expect(req.opts.qs?.["user_id"]).toBe(undefined);
+                expect(req.opts.qs?.["org.matrix.msc3202.device_id"]).toBe(undefined);
+            });
+
+            http.flushAllExpected();
+            await client.doRequest("GET", "/test");
+        });
+
+        it('should not allow impersonation of only a device ID', async () => {
+            const {client} = createTestClient();
+
+            try {
+                client.impersonateUserId(null, "DEVICE");
+            } catch (e) {
+                expect(e.message).toBe("Cannot impersonate just a device: need a user ID");
+            }
         });
     });
 
