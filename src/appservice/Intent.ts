@@ -50,7 +50,7 @@ export class Intent {
         this.makeClient(false);
     }
 
-    private makeClient(withCrypto: boolean) {
+    private makeClient(withCrypto: boolean, accessToken?: string) {
         let cryptoStore: ICryptoStorageProvider;
         const storage = this.storage?.storageForUser?.(this.userId);
         if (withCrypto) {
@@ -62,7 +62,7 @@ export class Intent {
                 throw new Error("Tried to set up client with crypto, but no persistent storage");
             }
         }
-        this.client = new MatrixClient(this.options.homeserverUrl, this.options.registration.as_token, storage, cryptoStore);
+        this.client = new MatrixClient(this.options.homeserverUrl, accessToken ?? this.options.registration.as_token, storage, cryptoStore);
         this.client.metrics = new Metrics(this.appservice.metrics); // Metrics only go up by one parent
         this.unstableApisInstance = new UnstableAppserviceApis(this.client);
         if (this.impersonateUserId !== this.appservice.botUserId) {
@@ -106,18 +106,37 @@ export class Intent {
             this.cryptoSetupPromise = new Promise(async (resolve, reject) => {
                 try {
                     // Prepare a client first
+                    // XXX: We work around servers that don't support device_id impersonation
                     await this.ensureRegistered();
-                    this.makeClient(true);
-
-                    // Populate the crypto store with basic information (to avoid server hit)
-                    const devices = await this.client.getOwnDevices();
-                    const deviceId = devices.find(d => d.device_id)?.device_id;
-                    if (deviceId) {
-                        await this.client.cryptoStore.setDeviceId(deviceId);
+                    const storage = this.storage?.storageForUser?.(this.userId);
+                    // noinspection ES6RedundantAwait
+                    const accessToken = await Promise.resolve(storage?.readValue("accessToken"));
+                    if (!accessToken) {
+                        const loginBody = {
+                            type: "m.login.appservice",
+                            identifier: {
+                                type: "m.id.user",
+                                user: this.userId,
+                            },
+                        };
+                        this.client.impersonateUserId(null); // avoid confusing homeserver
+                        const res = await this.client.doRequest("POST", "/_matrix/client/r0/login", {}, loginBody);
+                        this.makeClient(true, res['access_token']);
+                        storage.storeValue("accessToken", this.client.accessToken);
                     } else {
-                        // noinspection ExceptionCaughtLocallyJS
-                        throw new Error("Unable to establish a device ID");
+                        this.makeClient(true, accessToken);
                     }
+
+                    // // Populate the crypto store with basic information (to avoid server hit)
+                    // const devices = await this.client.getOwnDevices();
+                    // const deviceId = devices.find(d => d.device_id)?.device_id;
+                    // if (deviceId) {
+                    //     this.client.impersonateUserId(this.userId, deviceId);
+                    //     // await this.client.cryptoStore.setDeviceId(deviceId);
+                    // } else {
+                    //     // noinspection ExceptionCaughtLocallyJS
+                    //     throw new Error("Unable to establish a device ID");
+                    // }
 
                     // Now set up crypto
                     await this.client.crypto.prepare(await this.client.getJoinedRooms());

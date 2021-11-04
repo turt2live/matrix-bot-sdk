@@ -77,6 +77,7 @@ export class MatrixClient extends EventEmitter {
     private requestId = 0;
     private lastJoinedRoomIds: string[] = [];
     private impersonatedUserId: string;
+    private impersonatedDeviceId: string;
     private joinStrategy: IJoinRoomStrategy = null;
     private eventProcessors: { [eventType: string]: IPreprocessor[] } = {};
     private filterId = 0;
@@ -170,10 +171,13 @@ export class MatrixClient extends EventEmitter {
      * application service. Setting this to null will stop future impersonation. The user ID is
      * assumed to already be valid
      * @param {string} userId The user ID to masquerade as
+     * @param {string} deviceId Optional device ID to impersonate under the given user, if supported
+     * by the server. Check the whoami response after setting.
      */
-    public impersonateUserId(userId: string): void {
+    public impersonateUserId(userId: string, deviceId?: string): void {
         this.impersonatedUserId = userId;
         this.userId = userId;
+        this.impersonatedDeviceId = deviceId;
     }
 
     /**
@@ -1861,6 +1865,10 @@ export class MatrixClient extends EventEmitter {
         if (this.impersonatedUserId) {
             if (!qs) qs = {"user_id": this.impersonatedUserId};
             else qs["user_id"] = this.impersonatedUserId;
+        }
+        if (this.impersonatedDeviceId) {
+            if (!qs) qs = {"org.matrix.msc3202.device_id": this.impersonatedDeviceId};
+            else qs["org.matrix.msc3202.device_id"] = this.impersonatedDeviceId;
         }
         const headers = {};
         if (this.accessToken) {
