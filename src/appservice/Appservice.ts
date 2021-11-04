@@ -657,10 +657,11 @@ export class Appservice extends EventEmitter {
         LogService.info("Appservice", "Processing transaction " + txnId);
         this.pendingTransactions[txnId] = new Promise<void>(async (resolve) => {
             // Process EDUs first to give the best chance at decryption
-            if (this.registration["de.sorunome.msc2409.push_ephemeral"] && req.body["de.sorunome.msc2409.ephemeral"]) {
+            if (Array.isArray(req.body["de.sorunome.msc2409.ephemeral"])) {
                 for (let event of req.body["de.sorunome.msc2409.ephemeral"]) {
                     LogService.info("Appservice", `Processing ephemeral event of type ${event["type"]}`);
                     event = await this.processEphemeralEvent(event);
+
                     // These events aren't tied to rooms, so just emit them generically
                     this.emit("ephemeral.event", event);
 
@@ -668,10 +669,8 @@ export class Appservice extends EventEmitter {
                         const toUser = event["to_user_id"];
                         try {
                             const intent = this.getIntentForUserId(toUser);
-                            if (this.options.intentOptions?.encryption) {
-                                await intent.enableEncryption();
-                            }
-                            await intent.underlyingClient.crypto.processInboundDeviceMessage(event);
+                            await intent.enableEncryption();
+                            await intent.underlyingClient.crypto?.processInboundDeviceMessage(event);
                         } catch (e) {
                             LogService.error("Appservice", `Error handling encrypted to-device message sent to ${toUser}`, e);
                         }
@@ -699,6 +698,7 @@ export class Appservice extends EventEmitter {
 
                             // Try to figure out which clients might be able to decrypt this
                             // TODO: Consider puppet bridges where the bot won't be in the room
+                            // See https://github.com/turt2live/matrix-bot-sdk/issues/161
                             // noinspection ExceptionCaughtLocallyJS
                             throw e1;
                         }
