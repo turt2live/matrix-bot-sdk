@@ -1,6 +1,5 @@
 Intent - enableEncryption()
 Appservice - CryptoStorage
 Appservice - intentOptions.encryption
-NamespacingSqliteCryptoStorageProvider - Namespacing Works
 Appservice - Decryption
 Appservice - begin#botIntent->enableEncryption automatic

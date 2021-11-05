@@ -9,40 +9,58 @@ tmp.setGracefulCleanup();
 describe('NamespacingSqliteCryptoStorageProvider', () => {
     it('should return the right device ID', async () => {
         const name = tmp.fileSync().name;
+        const namespace = "@user:example.org";
         let store = new NamespacingSqliteCryptoStorageProvider(name);
+        let nsStore = store.storageForUser(namespace);
 
         expect(await store.getDeviceId()).toBeFalsy();
-        await store.setDeviceId(TEST_DEVICE_ID);
-        expect(await store.getDeviceId()).toEqual(TEST_DEVICE_ID);
+        expect(await nsStore.getDeviceId()).toBeFalsy();
+        await nsStore.setDeviceId(TEST_DEVICE_ID);
+        expect(await store.getDeviceId()).toBeFalsy();
+        expect(await nsStore.getDeviceId()).toEqual(TEST_DEVICE_ID);
         await store.close();
         store = new NamespacingSqliteCryptoStorageProvider(name);
-        expect(await store.getDeviceId()).toEqual(TEST_DEVICE_ID);
+        nsStore = store.storageForUser(namespace);
+        expect(await nsStore.getDeviceId()).toEqual(TEST_DEVICE_ID);
+        expect(await store.getDeviceId()).toBeFalsy();
         await store.close();
     });
 
     it('should return the right pickle key', async () => {
         const name = tmp.fileSync().name;
+        const namespace = "@user:example.org";
         let store = new NamespacingSqliteCryptoStorageProvider(name);
+        let nsStore = store.storageForUser(namespace);
 
         expect(await store.getPickleKey()).toBeFalsy();
-        await store.setPickleKey("pickle");
-        expect(await store.getPickleKey()).toEqual("pickle");
+        expect(await nsStore.getPickleKey()).toBeFalsy();
+        await nsStore.setPickleKey("pickle");
+        expect(await store.getPickleKey()).toBeFalsy();
+        expect(await nsStore.getPickleKey()).toEqual("pickle");
         await store.close();
         store = new NamespacingSqliteCryptoStorageProvider(name);
-        expect(await store.getPickleKey()).toEqual("pickle");
+        nsStore = store.storageForUser(namespace);
+        expect(await store.getPickleKey()).toBeFalsy();
+        expect(await nsStore.getPickleKey()).toEqual("pickle");
         await store.close();
     });
 
     it('should return the right pickle account', async () => {
         const name = tmp.fileSync().name;
+        const namespace = "@user:example.org";
         let store = new NamespacingSqliteCryptoStorageProvider(name);
+        let nsStore = store.storageForUser(namespace);
 
         expect(await store.getPickledAccount()).toBeFalsy();
-        await store.setPickledAccount("pickled");
-        expect(await store.getPickledAccount()).toEqual("pickled");
+        expect(await nsStore.getPickledAccount()).toBeFalsy();
+        await nsStore.setPickledAccount("pickled");
+        expect(await store.getPickledAccount()).toBeFalsy();
+        expect(await nsStore.getPickledAccount()).toEqual("pickled");
         await store.close();
         store = new NamespacingSqliteCryptoStorageProvider(name);
-        expect(await store.getPickledAccount()).toEqual("pickled");
+        nsStore = store.storageForUser(namespace);
+        expect(await store.getPickledAccount()).toBeFalsy();
+        expect(await nsStore.getPickledAccount()).toEqual("pickled");
         await store.close();
     });
 
@@ -55,20 +73,35 @@ describe('NamespacingSqliteCryptoStorageProvider', () => {
         const config2 = {algorithm: EncryptionAlgorithm.MegolmV1AesSha2};
 
         const name = tmp.fileSync().name;
+        const namespace = "@user:example.org";
         let store = new NamespacingSqliteCryptoStorageProvider(name);
+        let nsStore = store.storageForUser(namespace);
+        expect(await nsStore.getRoom(roomId1)).toBeFalsy();
+        expect(await nsStore.getRoom(roomId2)).toBeFalsy();
+        expect(await nsStore.getRoom(roomId3)).toBeFalsy();
         expect(await store.getRoom(roomId1)).toBeFalsy();
         expect(await store.getRoom(roomId2)).toBeFalsy();
         expect(await store.getRoom(roomId3)).toBeFalsy();
-        await store.storeRoom(roomId1, config1);
+        await nsStore.storeRoom(roomId1, config1);
+        expect(await nsStore.getRoom(roomId1)).toMatchObject(config1);
+        expect(await nsStore.getRoom(roomId2)).toBeFalsy();
+        expect(await nsStore.getRoom(roomId3)).toBeFalsy();
         expect(await store.getRoom(roomId1)).toMatchObject(config1);
         expect(await store.getRoom(roomId2)).toBeFalsy();
         expect(await store.getRoom(roomId3)).toBeFalsy();
-        await store.storeRoom(roomId2, config2);
+        await nsStore.storeRoom(roomId2, config2);
+        expect(await nsStore.getRoom(roomId1)).toMatchObject(config1);
+        expect(await nsStore.getRoom(roomId2)).toMatchObject(config2);
+        expect(await nsStore.getRoom(roomId3)).toBeFalsy();
         expect(await store.getRoom(roomId1)).toMatchObject(config1);
         expect(await store.getRoom(roomId2)).toMatchObject(config2);
         expect(await store.getRoom(roomId3)).toBeFalsy();
         await store.close();
         store = new NamespacingSqliteCryptoStorageProvider(name);
+        nsStore = store.storageForUser(namespace);
+        expect(await nsStore.getRoom(roomId1)).toMatchObject(config1);
+        expect(await nsStore.getRoom(roomId2)).toMatchObject(config2);
+        expect(await nsStore.getRoom(roomId3)).toBeFalsy();
         expect(await store.getRoom(roomId1)).toMatchObject(config1);
         expect(await store.getRoom(roomId2)).toMatchObject(config2);
         expect(await store.getRoom(roomId3)).toBeFalsy();
@@ -79,18 +112,27 @@ describe('NamespacingSqliteCryptoStorageProvider', () => {
         const userId = "@user:example.org";
 
         const name = tmp.fileSync().name;
+        const namespace = "@user:example.org";
         let store = new NamespacingSqliteCryptoStorageProvider(name);
+        let nsStore = store.storageForUser(namespace);
         expect(await store.isUserOutdated(userId)).toEqual(true);
-        await store.flagUsersOutdated([userId]);
+        expect(await nsStore.isUserOutdated(userId)).toEqual(true);
+        await nsStore.flagUsersOutdated([userId]);
         expect(await store.isUserOutdated(userId)).toEqual(true);
+        expect(await nsStore.isUserOutdated(userId)).toEqual(true);
         await store.close();
         store = new NamespacingSqliteCryptoStorageProvider(name);
+        nsStore = store.storageForUser(namespace);
         expect(await store.isUserOutdated(userId)).toEqual(true);
-        await store.setActiveUserDevices(userId, []);
+        expect(await nsStore.isUserOutdated(userId)).toEqual(true);
+        await nsStore.setActiveUserDevices(userId, []);
         expect(await store.isUserOutdated(userId)).toEqual(false);
+        expect(await nsStore.isUserOutdated(userId)).toEqual(false);
         await store.close();
         store = new NamespacingSqliteCryptoStorageProvider(name);
+        nsStore = store.storageForUser(namespace);
         expect(await store.isUserOutdated(userId)).toEqual(false);
+        expect(await nsStore.isUserOutdated(userId)).toEqual(false);
         await store.close();
     });
 
@@ -105,33 +147,55 @@ describe('NamespacingSqliteCryptoStorageProvider', () => {
         const deviceSortFn = (a, b) => a.device_id < b.device_id ? -1 : (a.device_id === b.device_id ? 0 : 1);
 
         const name = tmp.fileSync().name;
+        const namespace = "@user:example.org";
         let store = new NamespacingSqliteCryptoStorageProvider(name);
+        let nsStore = store.storageForUser(namespace);
 
         expect(await store.isUserOutdated(userId1)).toEqual(true);
         expect(await store.isUserOutdated(userId2)).toEqual(true);
-        await store.setActiveUserDevices(userId1, devices1);
-        await store.setActiveUserDevices(userId2, devices2);
+        expect(await nsStore.isUserOutdated(userId1)).toEqual(true);
+        expect(await nsStore.isUserOutdated(userId2)).toEqual(true);
+        await nsStore.setActiveUserDevices(userId1, devices1);
+        await nsStore.setActiveUserDevices(userId2, devices2);
         expect(await store.isUserOutdated(userId1)).toEqual(false);
         expect(await store.isUserOutdated(userId2)).toEqual(false);
         expect((await store.getActiveUserDevices(userId1)).sort(deviceSortFn)).toEqual(devices1.sort(deviceSortFn));
         expect((await store.getActiveUserDevices(userId2)).sort(deviceSortFn)).toEqual(devices2.sort(deviceSortFn));
+        expect(await nsStore.isUserOutdated(userId1)).toEqual(false);
+        expect(await nsStore.isUserOutdated(userId2)).toEqual(false);
+        expect((await nsStore.getActiveUserDevices(userId1)).sort(deviceSortFn)).toEqual(devices1.sort(deviceSortFn));
+        expect((await nsStore.getActiveUserDevices(userId2)).sort(deviceSortFn)).toEqual(devices2.sort(deviceSortFn));
         await store.close();
         store = new NamespacingSqliteCryptoStorageProvider(name);
+        nsStore = store.storageForUser(namespace);
         expect(await store.isUserOutdated(userId1)).toEqual(false);
         expect(await store.isUserOutdated(userId2)).toEqual(false);
         expect((await store.getActiveUserDevices(userId1)).sort(deviceSortFn)).toEqual(devices1.sort(deviceSortFn));
         expect((await store.getActiveUserDevices(userId2)).sort(deviceSortFn)).toEqual(devices2.sort(deviceSortFn));
-        await store.flagUsersOutdated([userId1, userId2]);
+        expect(await nsStore.isUserOutdated(userId1)).toEqual(false);
+        expect(await nsStore.isUserOutdated(userId2)).toEqual(false);
+        expect((await nsStore.getActiveUserDevices(userId1)).sort(deviceSortFn)).toEqual(devices1.sort(deviceSortFn));
+        expect((await nsStore.getActiveUserDevices(userId2)).sort(deviceSortFn)).toEqual(devices2.sort(deviceSortFn));
+        await nsStore.flagUsersOutdated([userId1, userId2]);
         expect(await store.isUserOutdated(userId1)).toEqual(true);
         expect(await store.isUserOutdated(userId2)).toEqual(true);
         expect((await store.getActiveUserDevices(userId1)).sort(deviceSortFn)).toEqual(devices1.sort(deviceSortFn));
         expect((await store.getActiveUserDevices(userId2)).sort(deviceSortFn)).toEqual(devices2.sort(deviceSortFn));
+        expect(await nsStore.isUserOutdated(userId1)).toEqual(true);
+        expect(await nsStore.isUserOutdated(userId2)).toEqual(true);
+        expect((await nsStore.getActiveUserDevices(userId1)).sort(deviceSortFn)).toEqual(devices1.sort(deviceSortFn));
+        expect((await nsStore.getActiveUserDevices(userId2)).sort(deviceSortFn)).toEqual(devices2.sort(deviceSortFn));
         await store.close();
         store = new NamespacingSqliteCryptoStorageProvider(name);
+        nsStore = store.storageForUser(namespace);
         expect(await store.isUserOutdated(userId1)).toEqual(true);
         expect(await store.isUserOutdated(userId2)).toEqual(true);
         expect((await store.getActiveUserDevices(userId1)).sort(deviceSortFn)).toEqual(devices1.sort(deviceSortFn));
         expect((await store.getActiveUserDevices(userId2)).sort(deviceSortFn)).toEqual(devices2.sort(deviceSortFn));
+        expect(await nsStore.isUserOutdated(userId1)).toEqual(true);
+        expect(await nsStore.isUserOutdated(userId2)).toEqual(true);
+        expect((await nsStore.getActiveUserDevices(userId1)).sort(deviceSortFn)).toEqual(devices1.sort(deviceSortFn));
+        expect((await nsStore.getActiveUserDevices(userId2)).sort(deviceSortFn)).toEqual(devices2.sort(deviceSortFn));
         await store.close();
     });
 
@@ -143,9 +207,11 @@ describe('NamespacingSqliteCryptoStorageProvider', () => {
         const usesLeft = 101;
 
         const name = tmp.fileSync().name;
+        const namespace = "@user:example.org";
         let store = new NamespacingSqliteCryptoStorageProvider(name);
+        let nsStore = store.storageForUser(namespace);
 
-        await store.storeOutboundGroupSession({
+        await nsStore.storeOutboundGroupSession({
             sessionId: sessionIds[0],
             roomId: roomIds[0],
             pickled: pickles[0],
@@ -153,7 +219,7 @@ describe('NamespacingSqliteCryptoStorageProvider', () => {
             usesLeft: usesLeft,
             isCurrent: false,
         });
-        await store.storeOutboundGroupSession({
+        await nsStore.storeOutboundGroupSession({
             sessionId: sessionIds[1],
             roomId: roomIds[1],
             pickled: pickles[1],
@@ -161,7 +227,7 @@ describe('NamespacingSqliteCryptoStorageProvider', () => {
             usesLeft: usesLeft,
             isCurrent: true,
         });
-        await store.storeOutboundGroupSession({
+        await nsStore.storeOutboundGroupSession({
             sessionId: sessionIds[2],
             roomId: roomIds[2],
             pickled: pickles[2],
@@ -169,7 +235,7 @@ describe('NamespacingSqliteCryptoStorageProvider', () => {
             usesLeft: usesLeft,
             isCurrent: false,
         });
-        expect(await store.getOutboundGroupSession(sessionIds[0], roomIds[0])).toMatchObject({
+        expect(await nsStore.getOutboundGroupSession(sessionIds[0], roomIds[0])).toMatchObject({
             sessionId: sessionIds[0],
             roomId: roomIds[0],
             pickled: pickles[0],
@@ -177,7 +243,7 @@ describe('NamespacingSqliteCryptoStorageProvider', () => {
             usesLeft: usesLeft,
             isCurrent: false,
         });
-        expect(await store.getOutboundGroupSession(sessionIds[1], roomIds[1])).toMatchObject({
+        expect(await nsStore.getOutboundGroupSession(sessionIds[1], roomIds[1])).toMatchObject({
             sessionId: sessionIds[1],
             roomId: roomIds[1],
             pickled: pickles[1],
@@ -185,7 +251,7 @@ describe('NamespacingSqliteCryptoStorageProvider', () => {
             usesLeft: usesLeft,
             isCurrent: true,
         });
-        expect(await store.getOutboundGroupSession(sessionIds[2], roomIds[2])).toMatchObject({
+        expect(await nsStore.getOutboundGroupSession(sessionIds[2], roomIds[2])).toMatchObject({
             sessionId: sessionIds[2],
             roomId: roomIds[2],
             pickled: pickles[2],
@@ -193,7 +259,7 @@ describe('NamespacingSqliteCryptoStorageProvider', () => {
             usesLeft: usesLeft,
             isCurrent: false,
         });
-        expect(await store.getCurrentOutboundGroupSession(roomIds[0])).toMatchObject({ // just testing the flag
+        expect(await nsStore.getCurrentOutboundGroupSession(roomIds[0])).toMatchObject({ // just testing the flag
             sessionId: sessionIds[1],
             roomId: roomIds[1],
             pickled: pickles[1],
@@ -201,9 +267,14 @@ describe('NamespacingSqliteCryptoStorageProvider', () => {
             usesLeft: usesLeft,
             isCurrent: true,
         });
+        expect(await store.getOutboundGroupSession(sessionIds[0], roomIds[0])).toBeFalsy();
+        expect(await store.getOutboundGroupSession(sessionIds[1], roomIds[1])).toBeFalsy();
+        expect(await store.getOutboundGroupSession(sessionIds[2], roomIds[2])).toBeFalsy();
+        expect(await store.getCurrentOutboundGroupSession(roomIds[0])).toBeFalsy();
         await store.close();
         store = new NamespacingSqliteCryptoStorageProvider(name);
-        expect(await store.getOutboundGroupSession(sessionIds[0], roomIds[0])).toMatchObject({
+        nsStore = store.storageForUser(namespace);
+        expect(await nsStore.getOutboundGroupSession(sessionIds[0], roomIds[0])).toMatchObject({
             sessionId: sessionIds[0],
             roomId: roomIds[0],
             pickled: pickles[0],
@@ -211,7 +282,7 @@ describe('NamespacingSqliteCryptoStorageProvider', () => {
             usesLeft: usesLeft,
             isCurrent: false,
         });
-        expect(await store.getOutboundGroupSession(sessionIds[1], roomIds[1])).toMatchObject({
+        expect(await nsStore.getOutboundGroupSession(sessionIds[1], roomIds[1])).toMatchObject({
             sessionId: sessionIds[1],
             roomId: roomIds[1],
             pickled: pickles[1],
@@ -219,7 +290,7 @@ describe('NamespacingSqliteCryptoStorageProvider', () => {
             usesLeft: usesLeft,
             isCurrent: true,
         });
-        expect(await store.getOutboundGroupSession(sessionIds[2], roomIds[2])).toMatchObject({
+        expect(await nsStore.getOutboundGroupSession(sessionIds[2], roomIds[2])).toMatchObject({
             sessionId: sessionIds[2],
             roomId: roomIds[2],
             pickled: pickles[2],
@@ -227,7 +298,7 @@ describe('NamespacingSqliteCryptoStorageProvider', () => {
             usesLeft: usesLeft,
             isCurrent: false,
         });
-        expect(await store.getCurrentOutboundGroupSession(roomIds[0])).toMatchObject({ // just testing the flag
+        expect(await nsStore.getCurrentOutboundGroupSession(roomIds[0])).toMatchObject({ // just testing the flag
             sessionId: sessionIds[1],
             roomId: roomIds[1],
             pickled: pickles[1],
@@ -235,6 +306,10 @@ describe('NamespacingSqliteCryptoStorageProvider', () => {
             usesLeft: usesLeft,
             isCurrent: true,
         });
+        expect(await store.getOutboundGroupSession(sessionIds[0], roomIds[0])).toBeFalsy();
+        expect(await store.getOutboundGroupSession(sessionIds[1], roomIds[1])).toBeFalsy();
+        expect(await store.getOutboundGroupSession(sessionIds[2], roomIds[2])).toBeFalsy();
+        expect(await store.getCurrentOutboundGroupSession(roomIds[0])).toBeFalsy();
         await store.close();
     });
 
@@ -246,9 +321,11 @@ describe('NamespacingSqliteCryptoStorageProvider', () => {
         const usesLeft = 101;
 
         const name = tmp.fileSync().name;
+        const namespace = "@user:example.org";
         let store = new NamespacingSqliteCryptoStorageProvider(name);
+        let nsStore = store.storageForUser(namespace);
 
-        await store.storeOutboundGroupSession({
+        await nsStore.storeOutboundGroupSession({
             sessionId: sessionIds[0],
             roomId: roomIds[0],
             pickled: pickles[0],
@@ -256,7 +333,7 @@ describe('NamespacingSqliteCryptoStorageProvider', () => {
             usesLeft: usesLeft,
             isCurrent: true,
         });
-        await store.storeOutboundGroupSession({
+        await nsStore.storeOutboundGroupSession({
             sessionId: sessionIds[1],
             roomId: roomIds[1],
             pickled: pickles[1],
@@ -264,7 +341,7 @@ describe('NamespacingSqliteCryptoStorageProvider', () => {
             usesLeft: usesLeft,
             isCurrent: true,
         });
-        await store.storeOutboundGroupSession({
+        await nsStore.storeOutboundGroupSession({
             sessionId: sessionIds[2],
             roomId: roomIds[2],
             pickled: pickles[2],
@@ -272,7 +349,7 @@ describe('NamespacingSqliteCryptoStorageProvider', () => {
             usesLeft: usesLeft,
             isCurrent: true,
         });
-        expect(await store.getOutboundGroupSession(sessionIds[0], roomIds[0])).toMatchObject({
+        expect(await nsStore.getOutboundGroupSession(sessionIds[0], roomIds[0])).toMatchObject({
             sessionId: sessionIds[0],
             roomId: roomIds[0],
             pickled: pickles[0],
@@ -280,7 +357,7 @@ describe('NamespacingSqliteCryptoStorageProvider', () => {
             usesLeft: usesLeft,
             isCurrent: false,
         });
-        expect(await store.getOutboundGroupSession(sessionIds[1], roomIds[1])).toMatchObject({
+        expect(await nsStore.getOutboundGroupSession(sessionIds[1], roomIds[1])).toMatchObject({
             sessionId: sessionIds[1],
             roomId: roomIds[1],
             pickled: pickles[1],
@@ -288,7 +365,7 @@ describe('NamespacingSqliteCryptoStorageProvider', () => {
             usesLeft: usesLeft,
             isCurrent: false,
         });
-        expect(await store.getOutboundGroupSession(sessionIds[2], roomIds[2])).toMatchObject({
+        expect(await nsStore.getOutboundGroupSession(sessionIds[2], roomIds[2])).toMatchObject({
             sessionId: sessionIds[2],
             roomId: roomIds[2],
             pickled: pickles[2],
@@ -296,7 +373,7 @@ describe('NamespacingSqliteCryptoStorageProvider', () => {
             usesLeft: usesLeft,
             isCurrent: true,
         });
-        expect(await store.getCurrentOutboundGroupSession(roomIds[0])).toMatchObject({ // just testing the flag
+        expect(await nsStore.getCurrentOutboundGroupSession(roomIds[0])).toMatchObject({ // just testing the flag
             sessionId: sessionIds[2],
             roomId: roomIds[2],
             pickled: pickles[2],
@@ -304,9 +381,14 @@ describe('NamespacingSqliteCryptoStorageProvider', () => {
             usesLeft: usesLeft,
             isCurrent: true,
         });
+        expect(await store.getOutboundGroupSession(sessionIds[0], roomIds[0])).toBeFalsy();
+        expect(await store.getOutboundGroupSession(sessionIds[1], roomIds[1])).toBeFalsy();
+        expect(await store.getOutboundGroupSession(sessionIds[2], roomIds[2])).toBeFalsy();
+        expect(await store.getCurrentOutboundGroupSession(roomIds[0])).toBeFalsy();
         await store.close();
         store = new NamespacingSqliteCryptoStorageProvider(name);
-        expect(await store.getOutboundGroupSession(sessionIds[0], roomIds[0])).toMatchObject({
+        nsStore = store.storageForUser(namespace);
+        expect(await nsStore.getOutboundGroupSession(sessionIds[0], roomIds[0])).toMatchObject({
             sessionId: sessionIds[0],
             roomId: roomIds[0],
             pickled: pickles[0],
@@ -314,7 +396,7 @@ describe('NamespacingSqliteCryptoStorageProvider', () => {
             usesLeft: usesLeft,
             isCurrent: false,
         });
-        expect(await store.getOutboundGroupSession(sessionIds[1], roomIds[1])).toMatchObject({
+        expect(await nsStore.getOutboundGroupSession(sessionIds[1], roomIds[1])).toMatchObject({
             sessionId: sessionIds[1],
             roomId: roomIds[1],
             pickled: pickles[1],
@@ -322,7 +404,7 @@ describe('NamespacingSqliteCryptoStorageProvider', () => {
             usesLeft: usesLeft,
             isCurrent: false,
         });
-        expect(await store.getOutboundGroupSession(sessionIds[2], roomIds[2])).toMatchObject({
+        expect(await nsStore.getOutboundGroupSession(sessionIds[2], roomIds[2])).toMatchObject({
             sessionId: sessionIds[2],
             roomId: roomIds[2],
             pickled: pickles[2],
@@ -330,7 +412,7 @@ describe('NamespacingSqliteCryptoStorageProvider', () => {
             usesLeft: usesLeft,
             isCurrent: true,
         });
-        expect(await store.getCurrentOutboundGroupSession(roomIds[0])).toMatchObject({ // just testing the flag
+        expect(await nsStore.getCurrentOutboundGroupSession(roomIds[0])).toMatchObject({ // just testing the flag
             sessionId: sessionIds[2],
             roomId: roomIds[2],
             pickled: pickles[2],
@@ -338,6 +420,10 @@ describe('NamespacingSqliteCryptoStorageProvider', () => {
             usesLeft: usesLeft,
             isCurrent: true,
         });
+        expect(await store.getOutboundGroupSession(sessionIds[0], roomIds[0])).toBeFalsy();
+        expect(await store.getOutboundGroupSession(sessionIds[1], roomIds[1])).toBeFalsy();
+        expect(await store.getOutboundGroupSession(sessionIds[2], roomIds[2])).toBeFalsy();
+        expect(await store.getCurrentOutboundGroupSession(roomIds[0])).toBeFalsy();
         await store.close();
     });
 
@@ -352,9 +438,11 @@ describe('NamespacingSqliteCryptoStorageProvider', () => {
         const deviceId = "DEVICE";
 
         const name = tmp.fileSync().name;
+        const namespace = "@user:example.org";
         let store = new NamespacingSqliteCryptoStorageProvider(name);
+        let nsStore = store.storageForUser(namespace);
 
-        await store.storeSentOutboundGroupSession({
+        await nsStore.storeSentOutboundGroupSession({
             sessionId: sessionId,
             roomId: roomId,
             pickled: pickle,
@@ -369,7 +457,7 @@ describe('NamespacingSqliteCryptoStorageProvider', () => {
             algorithms: [EncryptionAlgorithm.MegolmV1AesSha2],
             unsigned: {},
         });
-        await store.storeSentOutboundGroupSession({
+        await nsStore.storeSentOutboundGroupSession({
             sessionId: sessionId,
             roomId: roomId,
             pickled: pickle,
@@ -384,16 +472,19 @@ describe('NamespacingSqliteCryptoStorageProvider', () => {
             algorithms: [EncryptionAlgorithm.MegolmV1AesSha2],
             unsigned: {},
         });
-        expect(await store.getLastSentOutboundGroupSession(userId, deviceId, roomId)).toMatchObject({
+        expect(await nsStore.getLastSentOutboundGroupSession(userId, deviceId, roomId)).toMatchObject({
             sessionId: sessionId,
             index: index,
         });
+        expect(await store.getLastSentOutboundGroupSession(userId, deviceId, roomId)).toBeFalsy();
         await store.close();
         store = new NamespacingSqliteCryptoStorageProvider(name);
-        expect(await store.getLastSentOutboundGroupSession(userId, deviceId, roomId)).toMatchObject({
+        nsStore = store.storageForUser(namespace);
+        expect(await nsStore.getLastSentOutboundGroupSession(userId, deviceId, roomId)).toMatchObject({
             sessionId: sessionId,
             index: index,
         });
+        expect(await store.getLastSentOutboundGroupSession(userId, deviceId, roomId)).toBeFalsy();
         await store.close();
     });
 
@@ -406,20 +497,31 @@ describe('NamespacingSqliteCryptoStorageProvider', () => {
         const devices2: any = [{device_id: "three"}, {device_id: "four"}];
 
         const name = tmp.fileSync().name;
+        const namespace = "@user:example.org";
         let store = new NamespacingSqliteCryptoStorageProvider(name);
+        let nsStore = store.storageForUser(namespace);
 
-        await store.setActiveUserDevices(userId1, devices1);
-        await store.setActiveUserDevices(userId2, devices2);
+        await nsStore.setActiveUserDevices(userId1, devices1);
+        await nsStore.setActiveUserDevices(userId2, devices2);
         expect(await store.getActiveUserDevice(userId1, devices1[0].device_id)).toMatchObject(devices1[0]);
         expect(await store.getActiveUserDevice(userId1, devices1[1].device_id)).toMatchObject(devices1[1]);
         expect(await store.getActiveUserDevice(userId2, devices2[0].device_id)).toMatchObject(devices2[0]);
         expect(await store.getActiveUserDevice(userId2, devices2[1].device_id)).toMatchObject(devices2[1]);
+        expect(await nsStore.getActiveUserDevice(userId1, devices1[0].device_id)).toMatchObject(devices1[0]);
+        expect(await nsStore.getActiveUserDevice(userId1, devices1[1].device_id)).toMatchObject(devices1[1]);
+        expect(await nsStore.getActiveUserDevice(userId2, devices2[0].device_id)).toMatchObject(devices2[0]);
+        expect(await nsStore.getActiveUserDevice(userId2, devices2[1].device_id)).toMatchObject(devices2[1]);
         await store.close();
         store = new NamespacingSqliteCryptoStorageProvider(name);
+        nsStore = store.storageForUser(namespace);
         expect(await store.getActiveUserDevice(userId1, devices1[0].device_id)).toMatchObject(devices1[0]);
         expect(await store.getActiveUserDevice(userId1, devices1[1].device_id)).toMatchObject(devices1[1]);
         expect(await store.getActiveUserDevice(userId2, devices2[0].device_id)).toMatchObject(devices2[0]);
         expect(await store.getActiveUserDevice(userId2, devices2[1].device_id)).toMatchObject(devices2[1]);
+        expect(await nsStore.getActiveUserDevice(userId1, devices1[0].device_id)).toMatchObject(devices1[0]);
+        expect(await nsStore.getActiveUserDevice(userId1, devices1[1].device_id)).toMatchObject(devices1[1]);
+        expect(await nsStore.getActiveUserDevice(userId2, devices2[0].device_id)).toMatchObject(devices2[0]);
+        expect(await nsStore.getActiveUserDevice(userId2, devices2[1].device_id)).toMatchObject(devices2[1]);
         await store.close();
     });
 
@@ -429,32 +531,54 @@ describe('NamespacingSqliteCryptoStorageProvider', () => {
         const devices: any = [{device_id: "one"}, {device_id: "two"}];
 
         const name = tmp.fileSync().name;
+        const namespace = "@user:example.org";
         let store = new NamespacingSqliteCryptoStorageProvider(name);
+        let nsStore = store.storageForUser(namespace);
 
         expect((await store.getAllUserDevices(userId)).length).toBe(0);
-        await store.setActiveUserDevices(userId, [devices[0]]);
+        expect((await nsStore.getAllUserDevices(userId)).length).toBe(0);
+        await nsStore.setActiveUserDevices(userId, [devices[0]]);
         expect(await store.getAllUserDevices(userId)).toMatchObject([
             Object.assign({}, devices[0], {unsigned: {bsdkIsActive: true}}),
         ]);
         expect(await store.getActiveUserDevices(userId)).toMatchObject([devices[0]]);
+        expect(await nsStore.getAllUserDevices(userId)).toMatchObject([
+            Object.assign({}, devices[0], {unsigned: {bsdkIsActive: true}}),
+        ]);
+        expect(await nsStore.getActiveUserDevices(userId)).toMatchObject([devices[0]]);
         await store.close();
         store = new NamespacingSqliteCryptoStorageProvider(name);
+        nsStore = store.storageForUser(namespace);
         expect(await store.getAllUserDevices(userId)).toMatchObject([
             Object.assign({}, devices[0], {unsigned: {bsdkIsActive: true}}),
         ]);
-        await store.setActiveUserDevices(userId, [devices[1]]);
+        expect(await nsStore.getAllUserDevices(userId)).toMatchObject([
+            Object.assign({}, devices[0], {unsigned: {bsdkIsActive: true}}),
+        ]);
+        await nsStore.setActiveUserDevices(userId, [devices[1]]);
         expect(await store.getAllUserDevices(userId)).toMatchObject([
             Object.assign({}, devices[0], {unsigned: {bsdkIsActive: false}}),
             Object.assign({}, devices[1], {unsigned: {bsdkIsActive: true}}),
         ]);
         expect(await store.getActiveUserDevices(userId)).toMatchObject([devices[1]]);
+        expect(await nsStore.getAllUserDevices(userId)).toMatchObject([
+            Object.assign({}, devices[0], {unsigned: {bsdkIsActive: false}}),
+            Object.assign({}, devices[1], {unsigned: {bsdkIsActive: true}}),
+        ]);
+        expect(await nsStore.getActiveUserDevices(userId)).toMatchObject([devices[1]]);
         await store.close();
         store = new NamespacingSqliteCryptoStorageProvider(name);
+        nsStore = store.storageForUser(namespace);
         expect(await store.getAllUserDevices(userId)).toMatchObject([
             Object.assign({}, devices[0], {unsigned: {bsdkIsActive: false}}),
             Object.assign({}, devices[1], {unsigned: {bsdkIsActive: true}}),
         ]);
         expect(await store.getActiveUserDevices(userId)).toMatchObject([devices[1]]);
+        expect(await nsStore.getAllUserDevices(userId)).toMatchObject([
+            Object.assign({}, devices[0], {unsigned: {bsdkIsActive: false}}),
+            Object.assign({}, devices[1], {unsigned: {bsdkIsActive: true}}),
+        ]);
+        expect(await nsStore.getActiveUserDevices(userId)).toMatchObject([devices[1]]);
         await store.close();
     });
 
@@ -487,48 +611,77 @@ describe('NamespacingSqliteCryptoStorageProvider', () => {
         };
 
         const name = tmp.fileSync().name;
+        const namespace = "@user:example.org";
         let store = new NamespacingSqliteCryptoStorageProvider(name);
+        let nsStore = store.storageForUser(namespace);
 
         const sessionSortFn = (a, b) => a.sessionId < b.sessionId ? -1 : (a.sessionId === b.sessionId ? 0 : 1);
 
-        await store.storeOlmSession(userId1, deviceId1, session1);
-        await store.storeOlmSession(userId2, deviceId2, session2);
-        expect(await store.getCurrentOlmSession(userId1, deviceId1)).toMatchObject(session1 as any);
-        expect(await store.getCurrentOlmSession(userId2, deviceId2)).toMatchObject(session2 as any);
-        expect((await store.getOlmSessions(userId1, deviceId1)).sort(sessionSortFn)).toMatchObject([session1].sort(sessionSortFn));
-        expect((await store.getOlmSessions(userId2, deviceId2)).sort(sessionSortFn)).toMatchObject([session2].sort(sessionSortFn));
+        await nsStore.storeOlmSession(userId1, deviceId1, session1);
+        await nsStore.storeOlmSession(userId2, deviceId2, session2);
+        expect(await nsStore.getCurrentOlmSession(userId1, deviceId1)).toMatchObject(session1 as any);
+        expect(await nsStore.getCurrentOlmSession(userId2, deviceId2)).toMatchObject(session2 as any);
+        expect((await nsStore.getOlmSessions(userId1, deviceId1)).sort(sessionSortFn)).toMatchObject([session1].sort(sessionSortFn));
+        expect((await nsStore.getOlmSessions(userId2, deviceId2)).sort(sessionSortFn)).toMatchObject([session2].sort(sessionSortFn));
+        expect(await store.getCurrentOlmSession(userId1, deviceId1)).toBeFalsy();
+        expect(await store.getCurrentOlmSession(userId2, deviceId2)).toBeFalsy();
+        expect((await store.getOlmSessions(userId1, deviceId1)).sort(sessionSortFn).length).toBe(0);
+        expect((await store.getOlmSessions(userId2, deviceId2)).sort(sessionSortFn).length).toBe(0);
         await store.close();
         store = new NamespacingSqliteCryptoStorageProvider(name);
-        expect(await store.getCurrentOlmSession(userId1, deviceId1)).toMatchObject(session1 as any);
-        expect(await store.getCurrentOlmSession(userId2, deviceId2)).toMatchObject(session2 as any);
-        expect((await store.getOlmSessions(userId1, deviceId1)).sort(sessionSortFn)).toMatchObject([session1].sort(sessionSortFn));
-        expect((await store.getOlmSessions(userId2, deviceId2)).sort(sessionSortFn)).toMatchObject([session2].sort(sessionSortFn));
+        nsStore = store.storageForUser(namespace);
+        expect(await nsStore.getCurrentOlmSession(userId1, deviceId1)).toMatchObject(session1 as any);
+        expect(await nsStore.getCurrentOlmSession(userId2, deviceId2)).toMatchObject(session2 as any);
+        expect((await nsStore.getOlmSessions(userId1, deviceId1)).sort(sessionSortFn)).toMatchObject([session1].sort(sessionSortFn));
+        expect((await nsStore.getOlmSessions(userId2, deviceId2)).sort(sessionSortFn)).toMatchObject([session2].sort(sessionSortFn));
+        expect(await store.getCurrentOlmSession(userId1, deviceId1)).toBeFalsy();
+        expect(await store.getCurrentOlmSession(userId2, deviceId2)).toBeFalsy();
+        expect((await store.getOlmSessions(userId1, deviceId1)).sort(sessionSortFn).length).toBe(0);
+        expect((await store.getOlmSessions(userId2, deviceId2)).sort(sessionSortFn).length).toBe(0);
 
         // insert an updated session for the first user to ensure the lastDecryptionTs logic works
-        await store.storeOlmSession(userId1, deviceId1, session4);
-        expect(await store.getCurrentOlmSession(userId1, deviceId1)).toMatchObject(session4 as any);
-        expect(await store.getCurrentOlmSession(userId2, deviceId2)).toMatchObject(session2 as any);
-        expect((await store.getOlmSessions(userId1, deviceId1)).sort(sessionSortFn)).toMatchObject([session1, session4].sort(sessionSortFn));
-        expect((await store.getOlmSessions(userId2, deviceId2)).sort(sessionSortFn)).toMatchObject([session2].sort(sessionSortFn));
+        await nsStore.storeOlmSession(userId1, deviceId1, session4);
+        expect(await nsStore.getCurrentOlmSession(userId1, deviceId1)).toMatchObject(session4 as any);
+        expect(await nsStore.getCurrentOlmSession(userId2, deviceId2)).toMatchObject(session2 as any);
+        expect((await nsStore.getOlmSessions(userId1, deviceId1)).sort(sessionSortFn)).toMatchObject([session1, session4].sort(sessionSortFn));
+        expect((await nsStore.getOlmSessions(userId2, deviceId2)).sort(sessionSortFn)).toMatchObject([session2].sort(sessionSortFn));
+        expect(await store.getCurrentOlmSession(userId1, deviceId1)).toBeFalsy();
+        expect(await store.getCurrentOlmSession(userId2, deviceId2)).toBeFalsy();
+        expect((await store.getOlmSessions(userId1, deviceId1)).sort(sessionSortFn).length).toBe(0);
+        expect((await store.getOlmSessions(userId2, deviceId2)).sort(sessionSortFn).length).toBe(0);
         await store.close();
         store = new NamespacingSqliteCryptoStorageProvider(name);
-        expect(await store.getCurrentOlmSession(userId1, deviceId1)).toMatchObject(session4 as any);
-        expect(await store.getCurrentOlmSession(userId2, deviceId2)).toMatchObject(session2 as any);
-        expect((await store.getOlmSessions(userId1, deviceId1)).sort(sessionSortFn)).toMatchObject([session1, session4].sort(sessionSortFn));
-        expect((await store.getOlmSessions(userId2, deviceId2)).sort(sessionSortFn)).toMatchObject([session2].sort(sessionSortFn));
+        nsStore = store.storageForUser(namespace);
+        expect(await nsStore.getCurrentOlmSession(userId1, deviceId1)).toMatchObject(session4 as any);
+        expect(await nsStore.getCurrentOlmSession(userId2, deviceId2)).toMatchObject(session2 as any);
+        expect((await nsStore.getOlmSessions(userId1, deviceId1)).sort(sessionSortFn)).toMatchObject([session1, session4].sort(sessionSortFn));
+        expect((await nsStore.getOlmSessions(userId2, deviceId2)).sort(sessionSortFn)).toMatchObject([session2].sort(sessionSortFn));
+        expect(await store.getCurrentOlmSession(userId1, deviceId1)).toBeFalsy();
+        expect(await store.getCurrentOlmSession(userId2, deviceId2)).toBeFalsy();
+        expect((await store.getOlmSessions(userId1, deviceId1)).sort(sessionSortFn).length).toBe(0);
+        expect((await store.getOlmSessions(userId2, deviceId2)).sort(sessionSortFn).length).toBe(0);
 
         // now test that we'll keep session 4 even after inserting session 3 (an older session)
-        await store.storeOlmSession(userId1, deviceId1, session3);
-        expect(await store.getCurrentOlmSession(userId1, deviceId1)).toMatchObject(session4 as any);
-        expect(await store.getCurrentOlmSession(userId2, deviceId2)).toMatchObject(session2 as any);
-        expect((await store.getOlmSessions(userId1, deviceId1)).sort(sessionSortFn)).toMatchObject([session1, session4, session3].sort(sessionSortFn));
-        expect((await store.getOlmSessions(userId2, deviceId2)).sort(sessionSortFn)).toMatchObject([session2].sort(sessionSortFn));
+        await nsStore.storeOlmSession(userId1, deviceId1, session3);
+        expect(await nsStore.getCurrentOlmSession(userId1, deviceId1)).toMatchObject(session4 as any);
+        expect(await nsStore.getCurrentOlmSession(userId2, deviceId2)).toMatchObject(session2 as any);
+        expect((await nsStore.getOlmSessions(userId1, deviceId1)).sort(sessionSortFn)).toMatchObject([session1, session4, session3].sort(sessionSortFn));
+        expect((await nsStore.getOlmSessions(userId2, deviceId2)).sort(sessionSortFn)).toMatchObject([session2].sort(sessionSortFn));
+        expect(await store.getCurrentOlmSession(userId1, deviceId1)).toBeFalsy();
+        expect(await store.getCurrentOlmSession(userId2, deviceId2)).toBeFalsy();
+        expect((await store.getOlmSessions(userId1, deviceId1)).sort(sessionSortFn).length).toBe(0);
+        expect((await store.getOlmSessions(userId2, deviceId2)).sort(sessionSortFn).length).toBe(0);
         await store.close();
         store = new NamespacingSqliteCryptoStorageProvider(name);
-        expect(await store.getCurrentOlmSession(userId1, deviceId1)).toMatchObject(session4 as any);
-        expect(await store.getCurrentOlmSession(userId2, deviceId2)).toMatchObject(session2 as any);
-        expect((await store.getOlmSessions(userId1, deviceId1)).sort(sessionSortFn)).toMatchObject([session1, session4, session3].sort(sessionSortFn));
-        expect((await store.getOlmSessions(userId2, deviceId2)).sort(sessionSortFn)).toMatchObject([session2].sort(sessionSortFn));
+        nsStore = store.storageForUser(namespace);
+        expect(await nsStore.getCurrentOlmSession(userId1, deviceId1)).toMatchObject(session4 as any);
+        expect(await nsStore.getCurrentOlmSession(userId2, deviceId2)).toMatchObject(session2 as any);
+        expect((await nsStore.getOlmSessions(userId1, deviceId1)).sort(sessionSortFn)).toMatchObject([session1, session4, session3].sort(sessionSortFn));
+        expect((await nsStore.getOlmSessions(userId2, deviceId2)).sort(sessionSortFn)).toMatchObject([session2].sort(sessionSortFn));
+        expect(await store.getCurrentOlmSession(userId1, deviceId1)).toBeFalsy();
+        expect(await store.getCurrentOlmSession(userId2, deviceId2)).toBeFalsy();
+        expect((await store.getOlmSessions(userId1, deviceId1)).sort(sessionSortFn).length).toBe(0);
+        expect((await store.getOlmSessions(userId2, deviceId2)).sort(sessionSortFn).length).toBe(0);
 
         await store.close();
     });
@@ -543,14 +696,20 @@ describe('NamespacingSqliteCryptoStorageProvider', () => {
         };
 
         const name = tmp.fileSync().name;
+        const namespace = "@user:example.org";
         let store = new NamespacingSqliteCryptoStorageProvider(name);
+        let nsStore = store.storageForUser(namespace);
 
+        expect(await nsStore.getInboundGroupSession(session.senderUserId, session.senderDeviceId, session.roomId, session.sessionId)).toBeFalsy();
         expect(await store.getInboundGroupSession(session.senderUserId, session.senderDeviceId, session.roomId, session.sessionId)).toBeFalsy();
-        await store.storeInboundGroupSession(session);
-        expect(await store.getInboundGroupSession(session.senderUserId, session.senderDeviceId, session.roomId, session.sessionId)).toMatchObject(session as any);
+        await nsStore.storeInboundGroupSession(session);
+        expect(await nsStore.getInboundGroupSession(session.senderUserId, session.senderDeviceId, session.roomId, session.sessionId)).toMatchObject(session as any);
+        expect(await store.getInboundGroupSession(session.senderUserId, session.senderDeviceId, session.roomId, session.sessionId)).toBeFalsy();
         await store.close();
         store = new NamespacingSqliteCryptoStorageProvider(name);
-        expect(await store.getInboundGroupSession(session.senderUserId, session.senderDeviceId, session.roomId, session.sessionId)).toMatchObject(session as any);
+        nsStore = store.storageForUser(namespace);
+        expect(await nsStore.getInboundGroupSession(session.senderUserId, session.senderDeviceId, session.roomId, session.sessionId)).toMatchObject(session as any);
+        expect(await store.getInboundGroupSession(session.senderUserId, session.senderDeviceId, session.roomId, session.sessionId)).toBeFalsy();
 
         await store.close();
     });
@@ -562,14 +721,20 @@ describe('NamespacingSqliteCryptoStorageProvider', () => {
         const messageIndex = 12;
 
         const name = tmp.fileSync().name;
+        const namespace = "@user:example.org";
         let store = new NamespacingSqliteCryptoStorageProvider(name);
+        let nsStore = store.storageForUser(namespace);
 
+        expect(await nsStore.getEventForMessageIndex(roomId, sessionId, messageIndex)).toBeFalsy();
         expect(await store.getEventForMessageIndex(roomId, sessionId, messageIndex)).toBeFalsy();
-        await store.setMessageIndexForEvent(roomId, eventId, sessionId, messageIndex);
-        expect(await store.getEventForMessageIndex(roomId, sessionId, messageIndex)).toEqual(eventId);
+        await nsStore.setMessageIndexForEvent(roomId, eventId, sessionId, messageIndex);
+        expect(await nsStore.getEventForMessageIndex(roomId, sessionId, messageIndex)).toEqual(eventId);
+        expect(await store.getEventForMessageIndex(roomId, sessionId, messageIndex)).toBeFalsy();
         await store.close();
         store = new NamespacingSqliteCryptoStorageProvider(name);
-        expect(await store.getEventForMessageIndex(roomId, sessionId, messageIndex)).toEqual(eventId);
+        nsStore = store.storageForUser(namespace);
+        expect(await nsStore.getEventForMessageIndex(roomId, sessionId, messageIndex)).toEqual(eventId);
+        expect(await store.getEventForMessageIndex(roomId, sessionId, messageIndex)).toBeFalsy();
 
         await store.close();
     });
