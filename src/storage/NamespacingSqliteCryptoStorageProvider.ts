@@ -101,11 +101,10 @@ export class NamespacingSqliteCryptoStorageProvider implements IAppserviceCrypto
 
         this.db = new Database(pathOrNamespace);
 
-        // TODO: A lot of this could be compressed across namespaces
         this.db.exec("CREATE TABLE IF NOT EXISTS kv (ns TEXT NOT NULL, name TEXT NOT NULL, value TEXT NOT NULL, PRIMARY KEY (ns, name))");
-        this.db.exec("CREATE TABLE IF NOT EXISTS rooms (ns TEXT NOT NULL, room_id TEXT NOT NULL, config TEXT NOT NULL, PRIMARY KEY (ns, room_id))");
-        this.db.exec("CREATE TABLE IF NOT EXISTS users (ns TEXT NOT NULL, user_id TEXT NOT NULL, outdated TINYINT NOT NULL, PRIMARY KEY (ns, user_id))");
-        this.db.exec("CREATE TABLE IF NOT EXISTS user_devices (ns TEXT NOT NULL, user_id TEXT NOT NULL, device_id TEXT NOT NULL, device TEXT NOT NULL, active TINYINT NOT NULL, PRIMARY KEY (ns, user_id, device_id))");
+        this.db.exec("CREATE TABLE IF NOT EXISTS rooms (room_id TEXT PRIMARY KEY NOT NULL, config TEXT NOT NULL)");
+        this.db.exec("CREATE TABLE IF NOT EXISTS users (user_id TEXT PRIMARY KEY NOT NULL, outdated TINYINT NOT NULL)");
+        this.db.exec("CREATE TABLE IF NOT EXISTS user_devices (user_id TEXT NOT NULL, device_id TEXT NOT NULL, device TEXT NOT NULL, active TINYINT NOT NULL, PRIMARY KEY (user_id, device_id))");
         this.db.exec("CREATE TABLE IF NOT EXISTS outbound_group_sessions (ns TEXT NOT NULL, session_id TEXT NOT NULL, room_id TEXT NOT NULL, current TINYINT NOT NULL, pickled TEXT NOT NULL, uses_left NUMBER NOT NULL, expires_ts NUMBER NOT NULL, PRIMARY KEY (ns, session_id, room_id))");
         this.db.exec("CREATE TABLE IF NOT EXISTS sent_outbound_group_sessions (ns TEXT NOT NULL, session_id TEXT NOT NULL, room_id TEXT NOT NULL, session_index INT NOT NULL, user_id TEXT NOT NULL, device_id TEXT NOT NULL, PRIMARY KEY (ns, session_id, room_id, user_id, device_id, session_index))");
         this.db.exec("CREATE TABLE IF NOT EXISTS olm_sessions (ns TEXT NOT NULL, user_id TEXT NOT NULL, device_id TEXT NOT NULL, session_id TEXT NOT NULL, last_decryption_ts NUMBER NOT NULL, pickled TEXT NOT NULL, PRIMARY KEY (ns, user_id, device_id, session_id))");
@@ -116,17 +115,17 @@ export class NamespacingSqliteCryptoStorageProvider implements IAppserviceCrypto
         this.kvUpsert = this.db.prepare("INSERT INTO kv (ns, name, value) VALUES (@ns, @name, @value) ON CONFLICT (ns, name) DO UPDATE SET value = @value");
         this.kvSelect = this.db.prepare("SELECT ns, name, value FROM kv WHERE name = @name AND ns = @ns");
 
-        this.roomUpsert = this.db.prepare("INSERT INTO rooms (ns, room_id, config) VALUES (@ns, @roomId, @config) ON CONFLICT (ns, room_id) DO UPDATE SET config = @config");
-        this.roomSelect = this.db.prepare("SELECT ns, room_id, config FROM rooms WHERE room_id = @roomId AND ns = @ns");
+        this.roomUpsert = this.db.prepare("INSERT INTO rooms (room_id, config) VALUES (@roomId, @config) ON CONFLICT (room_id) DO UPDATE SET config = @config");
+        this.roomSelect = this.db.prepare("SELECT room_id, config FROM rooms WHERE room_id = @roomId");
 
-        this.userUpsert = this.db.prepare("INSERT INTO users (ns, user_id, outdated) VALUES (@ns, @userId, @outdated) ON CONFLICT (ns, user_id) DO UPDATE SET outdated = @outdated");
-        this.userSelect = this.db.prepare("SELECT ns, user_id, outdated FROM users WHERE user_id = @userId AND ns = @ns");
+        this.userUpsert = this.db.prepare("INSERT INTO users (user_id, outdated) VALUES (@userId, @outdated) ON CONFLICT (user_id) DO UPDATE SET outdated = @outdated");
+        this.userSelect = this.db.prepare("SELECT user_id, outdated FROM users WHERE user_id = @userId");
 
-        this.userDeviceUpsert = this.db.prepare("INSERT INTO user_devices (ns, user_id, device_id, device, active) VALUES (@ns, @userId, @deviceId, @device, @active) ON CONFLICT (ns, user_id, device_id) DO UPDATE SET device = @device, active = @active");
-        this.userDevicesDelete = this.db.prepare("UPDATE user_devices SET active = 0 WHERE user_id = @userId AND ns = @ns");
-        this.userDevicesSelect = this.db.prepare("SELECT ns, user_id, device_id, device, active FROM user_devices WHERE user_id = @userId AND ns = @ns");
-        this.userActiveDevicesSelect = this.db.prepare("SELECT ns, user_id, device_id, device, active FROM user_devices WHERE user_id = @userId AND active = 1 AND ns = @ns");
-        this.userActiveDeviceSelect = this.db.prepare("SELECT ns, user_id, device_id, device, active FROM user_devices WHERE user_id = @userId AND device_id = @deviceId AND active = 1 AND ns = @ns");
+        this.userDeviceUpsert = this.db.prepare("INSERT INTO user_devices (user_id, device_id, device, active) VALUES (@userId, @deviceId, @device, @active) ON CONFLICT (user_id, device_id) DO UPDATE SET device = @device, active = @active");
+        this.userDevicesDelete = this.db.prepare("UPDATE user_devices SET active = 0 WHERE user_id = @userId");
+        this.userDevicesSelect = this.db.prepare("SELECT user_id, device_id, device, active FROM user_devices WHERE user_id = @userId");
+        this.userActiveDevicesSelect = this.db.prepare("SELECT user_id, device_id, device, active FROM user_devices WHERE user_id = @userId AND active = 1");
+        this.userActiveDeviceSelect = this.db.prepare("SELECT user_id, device_id, device, active FROM user_devices WHERE user_id = @userId AND device_id = @deviceId AND active = 1");
 
         this.obGroupSessionUpsert = this.db.prepare("INSERT INTO outbound_group_sessions (ns, session_id, room_id, current, pickled, uses_left, expires_ts) VALUES (@ns, @sessionId, @roomId, @current, @pickled, @usesLeft, @expiresTs) ON CONFLICT (ns, session_id, room_id) DO UPDATE SET pickled = @pickled, current = @current, uses_left = @usesLeft, expires_ts = @expiresTs");
         this.obGroupSessionSelect = this.db.prepare("SELECT ns, session_id, room_id, current, pickled, uses_left, expires_ts FROM outbound_group_sessions WHERE session_id = @sessionId AND room_id = @roomId AND ns = @ns");
@@ -197,7 +196,6 @@ export class NamespacingSqliteCryptoStorageProvider implements IAppserviceCrypto
 
     public async storeRoom(roomId: string, config: Partial<EncryptionEventContent>): Promise<void> {
         this.roomUpsert.run({
-            ns: this.namespace,
             roomId: roomId,
             config: JSON.stringify(config),
         });
@@ -205,7 +203,6 @@ export class NamespacingSqliteCryptoStorageProvider implements IAppserviceCrypto
 
     public async getRoom(roomId: string): Promise<Partial<EncryptionEventContent>> {
         const row = this.roomSelect.get({
-            ns: this.namespace,
             roomId: roomId,
         });
         const val = row?.config;
@@ -215,17 +212,14 @@ export class NamespacingSqliteCryptoStorageProvider implements IAppserviceCrypto
     public async setActiveUserDevices(userId: string, devices: UserDevice[]): Promise<void> {
         this.db.transaction(() => {
             this.userUpsert.run({
-                ns: this.namespace,
                 userId: userId,
                 outdated: 0,
             });
             this.userDevicesDelete.run({
-                ns: this.namespace,
                 userId: userId,
             });
             for (const device of devices) {
                 this.userDeviceUpsert.run({
-                    ns: this.namespace,
                     userId: userId,
                     deviceId: device.device_id,
                     device: JSON.stringify(device),
@@ -237,7 +231,6 @@ export class NamespacingSqliteCryptoStorageProvider implements IAppserviceCrypto
 
     public async getActiveUserDevices(userId: string): Promise<UserDevice[]> {
         const results = this.userActiveDevicesSelect.all({
-            ns: this.namespace,
             userId: userId,
         })
         if (!results) return [];
@@ -246,7 +239,6 @@ export class NamespacingSqliteCryptoStorageProvider implements IAppserviceCrypto
 
     public async getActiveUserDevice(userId: string, deviceId: string): Promise<UserDevice> {
         const result = this.userActiveDeviceSelect.get({
-            ns: this.namespace,
             userId: userId,
             deviceId: deviceId,
         });
@@ -256,7 +248,6 @@ export class NamespacingSqliteCryptoStorageProvider implements IAppserviceCrypto
 
     public async getAllUserDevices(userId: string): Promise<StoredUserDevice[]> {
         const results = this.userDevicesSelect.all({
-            ns: this.namespace,
             userId: userId,
         })
         if (!results) return [];
@@ -267,7 +258,6 @@ export class NamespacingSqliteCryptoStorageProvider implements IAppserviceCrypto
         this.db.transaction(() => {
             for (const userId of userIds) {
                 this.userUpsert.run({
-                    ns: this.namespace,
                     userId: userId,
                     outdated: 1,
                 });
@@ -277,7 +267,6 @@ export class NamespacingSqliteCryptoStorageProvider implements IAppserviceCrypto
 
     public async isUserOutdated(userId: string): Promise<boolean> {
         const user = this.userSelect.get({
-            ns: this.namespace,
             userId: userId,
         });
         return user ? Boolean(user.outdated) : true;

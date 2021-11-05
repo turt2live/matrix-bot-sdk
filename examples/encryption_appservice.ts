@@ -35,7 +35,7 @@ const worksImage = fs.readFileSync("./examples/static/it-works.png");
 const registration: IAppserviceRegistration = {
     as_token: creds?.['asToken'] ?? "change_me",
     hs_token: creds?.['hsToken'] ?? "change_me",
-    sender_localpart: "crypto_appservice",
+    sender_localpart: "crypto_bot",
     namespaces: {
         users: [{
             regex: "@crypto.*:localhost",
