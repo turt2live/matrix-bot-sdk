@@ -14,7 +14,7 @@ const DEFAULT_NAMESPACE = "default";
 
 // noinspection DuplicatedCode
 /**
- * Sqlite crypto storage provider for appservices. Requires `better-sqlite3` package to be installed.
+ * Sqlite crypto storage provider for appservices and clients. Requires `better-sqlite3` package to be installed.
  * @category Storage providers
  */
 export class NamespacingSqliteCryptoStorageProvider implements IAppserviceCryptoStorageProvider, ICryptoStorageProvider {

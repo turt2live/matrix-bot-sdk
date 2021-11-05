@@ -52,7 +52,8 @@
     "tsconfig.json"
   ],
   "optionalDependencies": {
-    "better-sqlite3": "^7.4.3"
+    "better-sqlite3": "^7.4.3",
+    "pg-promise": "^10.11.1"
   },
   "dependencies": {
     "@matrix-org/olm": "https://gitlab.matrix.org/api/v4/projects/27/packages/npm/@matrix-org/olm/-/@matrix-org/olm-3.2.4.tgz",

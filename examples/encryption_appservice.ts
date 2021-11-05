@@ -13,6 +13,7 @@ import {
 } from "../src";
 import * as fs from "fs";
 import { NamespacingSqliteCryptoStorageProvider } from "../src/storage/NamespacingSqliteCryptoStorageProvider";
+import { NamespacingPostgresCryptoStorageProvider } from "../src/storage/NamespacingPostgresCryptoStorageProvider";
 
 LogService.setLogger(new RichConsoleLogger());
 LogService.setLevel(LogLevel.TRACE);
@@ -29,13 +30,13 @@ try {
 const dmTarget = creds?.['dmTarget'] ?? "@admin:localhost";
 const homeserverUrl = creds?.['homeserverUrl'] ?? "http://localhost:8008";
 const storage = new SimpleFsStorageProvider("./examples/storage/encryption_appservice.json");
-const crypto = new NamespacingSqliteCryptoStorageProvider("./examples/storage/encryption_appservice.db");
+const crypto = new NamespacingPostgresCryptoStorageProvider(creds?.["psql"] ?? "postgresql://localhost/encrypted_appservice");
 const worksImage = fs.readFileSync("./examples/static/it-works.png");
 
 const registration: IAppserviceRegistration = {
     as_token: creds?.['asToken'] ?? "change_me",
     hs_token: creds?.['hsToken'] ?? "change_me",
-    sender_localpart: "crypto_bot",
+    sender_localpart: "crypto_as_bot",
     namespaces: {
         users: [{
             regex: "@crypto.*:localhost",
