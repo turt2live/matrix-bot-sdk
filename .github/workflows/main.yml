@@ -1,0 +1,69 @@
+name: Main
+on:
+  push:
+jobs:
+  # Global
+  # ================================================
+
+  eslint-14:
+    name: 'ESLint Node 14'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-node@v2
+        with:
+          node-version: '14'
+      - run: yarn install
+      - run: yarn lint
+
+  # Node 12
+  # ================================================
+
+  build-12:
+    name: 'Build Node 12'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-node@v2
+        with:
+          node-version: '12'
+      - run: yarn install
+      - run: yarn build
+      - run: yarn build:examples
+
+  tests-12:
+    name: 'Mocha Tests Node 12'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-node@v2
+        with:
+          node-version: '12'
+      - run: yarn install
+      - run: yarn test
+
+  # Node 14
+  # ================================================
+
+  build-14:
+    name: 'Build Node 14'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-node@v2
+        with:
+          node-version: '14'
+      - run: yarn install
+      - run: yarn build
+      - run: yarn build:examples
+
+  tests-14:
+    name: 'Mocha Tests Node 14'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-node@v2
+        with:
+          node-version: '14'
+      - run: yarn install
+      - run: yarn test
