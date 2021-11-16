@@ -53,6 +53,7 @@
   ],
   "optionalDependencies": {
     "better-sqlite3": "^7.4.3",
+    "cryptex": "^1.0.1",
     "pg-promise": "^10.11.1"
   },
   "dependencies": {
@@ -75,6 +76,7 @@
   },
   "devDependencies": {
     "@types/better-sqlite3": "^5.4.3",
+    "@types/cryptex": "^1.0.1",
     "@types/expect": "^24.3.0",
     "@types/mocha": "^8.0.1",
     "@types/node": "10",

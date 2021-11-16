@@ -27,6 +27,7 @@ import {
     RECEIVER_DEVICE,
     RECEIVER_OLM_SESSION,
     STATIC_OUTBOUND_SESSION,
+    STATIC_PICKLE_KEY,
 } from "../TestUtils";
 import { DeviceTracker } from "../../src/e2ee/DeviceTracker";
 import { STATIC_TEST_DEVICES } from "./DeviceTrackerTest";
@@ -119,6 +120,39 @@ describe('CryptoClient', () => {
             await client.crypto.prepare([]);
             expect(deviceKeySpy.callCount).toEqual(3);
             expect(otkSpy.callCount).toEqual(3);
+        });
+
+        it('should not create or store a pickle key if one is present', async () => {
+            const userId = "@alice:example.org";
+            const { client } = createTestClient(null, userId, true);
+
+            await client.cryptoStore.setDeviceId(TEST_DEVICE_ID);
+
+            const deviceKeySpy = simple.stub().callFn(() => Promise.resolve({}));
+            const otkSpy = simple.stub().callFn(() => Promise.resolve({}));
+            client.uploadDeviceKeys = deviceKeySpy;
+            client.uploadDeviceOneTimeKeys = otkSpy;
+            client.checkOneTimeKeyCounts = () => Promise.resolve({});
+
+            client.cryptoStore.setPickleKey = () => {
+                throw new Error("Should not have been called");
+            };
+            const getSpy = simple.stub().callFn(() => Promise.resolve(STATIC_PICKLE_KEY));
+            const originalSet = client.cryptoStore.setPickledAccount.bind(client.cryptoStore);
+            const setAccSpy = simple.stub().callFn(async (pickled) => {
+                const account = new (await prepareOlm()).Account();
+                account.unpickle(STATIC_PICKLE_KEY, pickled);
+                account.free();
+                originalSet(pickled);
+            });
+            client.cryptoStore.getPickleKey = getSpy;
+            client.cryptoStore.setPickledAccount = setAccSpy;
+
+            await client.crypto.prepare([]);
+            expect(deviceKeySpy.callCount).toEqual(1);
+            expect(otkSpy.callCount).toEqual(1);
+            expect(getSpy.callCount).toEqual(1);
+            expect(setAccSpy.callCount).toEqual(2); // we save it twice
         });
 
         it('should use given values if they are all present', async () => {

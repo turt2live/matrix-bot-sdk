@@ -11,6 +11,7 @@ import { IAppserviceCryptoStorageProvider } from "./IAppserviceStorageProvider";
 import * as pgPromise from "pg-promise";
 import { IDatabase } from "pg-promise";
 import { IClient } from "pg-promise/typescript/pg-subset";
+import { ICryptoSecureStorageProvider } from "./ICryptoSecureStorageProvider";
 
 const DEFAULT_NAMESPACE = "default";
 
@@ -25,6 +26,7 @@ export class NamespacingPostgresCryptoStorageProvider implements IAppserviceCryp
     private db: IDatabase<{}, IClient>;
     private namespace = DEFAULT_NAMESPACE;
     private setup: Promise<void>;
+    private secureStorage: ICryptoSecureStorageProvider;
 
     private kvUpsert = "INSERT INTO kv (ns, name, value) VALUES ($[ns], $[name], $[value]) ON CONFLICT (ns, name) DO UPDATE SET value = $[value]";
     private kvSelect = "SELECT ns, name, value FROM kv WHERE name = $[name] AND ns = $[ns]";
@@ -54,9 +56,10 @@ export class NamespacingPostgresCryptoStorageProvider implements IAppserviceCryp
     /**
      * Creates a new PostgreSQL storage provider.
      * @param {string} connectionString A postgresql connection string to the database.
+     * @param {ICryptoSecureStorageProvider} secureStorage Secure storage for pickle information.
      * @see https://github.com/vitaly-t/pg-promise/wiki/Connection-Syntax
      */
-    public constructor(connectionString: string);
+    public constructor(connectionString: string, secureStorage: ICryptoSecureStorageProvider);
 
     /**
      * Creates a new namespaced storage provider.
@@ -68,15 +71,18 @@ export class NamespacingPostgresCryptoStorageProvider implements IAppserviceCryp
     /**
      * Combined constructor implementation.
      */
-    constructor(cnOrNamespace: string, parent?: NamespacingPostgresCryptoStorageProvider) {
-        if (parent) {
+    constructor(cnOrNamespace: string, parentOrSecureStorage?: NamespacingPostgresCryptoStorageProvider | ICryptoSecureStorageProvider) {
+        if (parentOrSecureStorage instanceof NamespacingPostgresCryptoStorageProvider) {
             this.namespace = cnOrNamespace;
 
-            this.setup = parent.setup;
-            this.db = parent.db;
+            this.setup = parentOrSecureStorage.setup;
+            this.db = parentOrSecureStorage.db;
+            this.secureStorage = parentOrSecureStorage.secureStorage;
 
             return;
         }
+
+        this.secureStorage = parentOrSecureStorage;
 
         this.db = psql(cnOrNamespace);
         this.setup = new Promise<void>(async (resolve, reject) => {
@@ -119,21 +125,12 @@ export class NamespacingPostgresCryptoStorageProvider implements IAppserviceCryp
 
     public async setPickleKey(pickleKey: string): Promise<void> {
         await this.setup;
-        // TODO: Use secure storage
-        return this.db.none(this.kvUpsert, {
-            ns: this.namespace,
-            name: 'pickleKey',
-            value: pickleKey,
-        });
+        return this.secureStorage.setPickleKey(pickleKey);
     }
 
     public async getPickleKey(): Promise<string> {
         await this.setup;
-        const row = await this.db.oneOrNone(this.kvSelect, {
-            ns: this.namespace,
-            name: 'pickleKey',
-        });
-        return row?.value;
+        return this.secureStorage.getPickleKey();
     }
 
     public async setPickledAccount(pickled: string): Promise<void> {

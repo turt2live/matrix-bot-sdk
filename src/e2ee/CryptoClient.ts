@@ -125,10 +125,11 @@ export class CryptoClient {
             if (!pickled || !pickleKey) {
                 LogService.debug("CryptoClient", "Creating new Olm account: previous session lost or not set up");
 
+                const hasPickleKey = !!pickleKey;
                 account.create();
-                pickleKey = crypto.randomBytes(64).toString('hex');
+                pickleKey = pickleKey ?? crypto.randomBytes(64).toString('hex');
                 pickled = account.pickle(pickleKey);
-                await this.client.cryptoStore.setPickleKey(pickleKey);
+                if (!hasPickleKey) await this.client.cryptoStore.setPickleKey(pickleKey);
                 await this.client.cryptoStore.setPickledAccount(pickled);
 
                 makeReady();

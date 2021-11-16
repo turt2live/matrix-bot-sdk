@@ -6,12 +6,13 @@ import {
     StoredUserDevice,
     UserDevice,
 } from "../models/Crypto";
+import { ICryptoSecureStorageProvider } from "./ICryptoSecureStorageProvider";
 
 /**
  * A storage provider capable of only providing crypto-related storage.
  * @category Storage providers
  */
-export interface ICryptoStorageProvider {
+export interface ICryptoStorageProvider extends ICryptoSecureStorageProvider {
     /**
      * Sets the client's device ID.
      * @param {string} deviceId The device ID.
@@ -24,20 +25,6 @@ export interface ICryptoStorageProvider {
      * @returns {Promise<string>} Resolves to the device ID, or falsy if not known.
      */
     getDeviceId(): Promise<string>;
-
-    /**
-     * Sets the pickle key for the client.
-     * @param {string} pickleKey The pickle key to store.
-     * @returns {Promise<void>} Resolves when complete.
-     */
-    setPickleKey(pickleKey: string): Promise<void>;
-
-    /**
-     * Gets the pickle key for the client. If no pickle key is set, this resolves
-     * to falsy.
-     * @returns {Promise<string>} Resolves to the pickle key, or falsy if not set.
-     */
-    getPickleKey(): Promise<string>;
 
     /**
      * Sets the pickled copy of the Olm account. This should be stored securely
