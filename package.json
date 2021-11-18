@@ -14,7 +14,7 @@
   "homepage": "https://github.com/turt2live/matrix-bot-sdk#readme",
   "scripts": {
     "prepublishOnly": "yarn build",
-    "docs": "jsdoc -c jsdoc.json -P package.json",
+    "docs": "jsdoc -c jsdoc.json -P package.json -u docs/tutorials",
     "build": "yarn build:ts && yarn build:declaration",
     "build:ts": "tsc",
     "build:declaration": "tsc --module system --declaration --out lib/lib.js",

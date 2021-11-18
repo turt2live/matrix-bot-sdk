@@ -1,0 +1,24 @@
+{
+  "bot": {
+    "title": "Creating a bot",
+    "order": 1
+  },
+  "appservice": {
+    "title": "Creating an appservice (bridge)",
+    "order": 2
+  },
+  "encryption": {
+    "title": "Encryption",
+    "order": 3,
+    "children": {
+      "encryption-bots": {
+        "title": "Encryption for bots",
+        "order": 1
+      },
+      "encryption-appservices": {
+        "title": "Encryption for appservices",
+        "order": 2
+      }
+    }
+  }
+}
