@@ -7,6 +7,10 @@
     "title": "Creating an appservice (bridge)",
     "order": 2
   },
+  "room-upgrades": {
+    "title": "Room upgrades",
+    "order": 4
+  },
   "encryption": {
     "title": "Encryption",
     "order": 3,
