@@ -7,8 +7,8 @@ import {
     RichConsoleLogger,
     SimpleFsStorageProvider,
 } from "../src";
-import { SqliteCryptoStorageProvider } from "../src/storage/SqliteCryptoStorageProvider";
 import * as fs from "fs";
+import { NamespacingSqliteCryptoStorageProvider } from "../src/storage/NamespacingSqliteCryptoStorageProvider";
 
 LogService.setLogger(new RichConsoleLogger());
 LogService.setLevel(LogLevel.TRACE);
@@ -26,7 +26,7 @@ const dmTarget = creds?.['dmTarget'] ?? "@admin:localhost";
 const homeserverUrl = creds?.['homeserverUrl'] ?? "http://localhost:8008";
 const accessToken = creds?.['accessToken'] ?? 'YOUR_TOKEN';
 const storage = new SimpleFsStorageProvider("./examples/storage/encryption_bot.json");
-const crypto = new SqliteCryptoStorageProvider("./examples/storage/encryption_bot.db");
+const crypto = new NamespacingSqliteCryptoStorageProvider("./examples/storage/encryption_bot.db");
 const worksImage = fs.readFileSync("./examples/static/it-works.png");
 
 const client = new MatrixClient(homeserverUrl, accessToken, storage, crypto);

@@ -2,7 +2,9 @@ import * as express from "express";
 import { Intent } from "./Intent";
 import {
     AppserviceJoinRoomStrategy,
+    EncryptedRoomEvent,
     EventKind,
+    IAppserviceCryptoStorageProvider,
     IAppserviceStorageProvider,
     IJoinRoomStrategy,
     IPreprocessor,
@@ -158,6 +160,12 @@ export interface IAppserviceOptions {
     storage?: IAppserviceStorageProvider;
 
     /**
+     * The storage provider to use for setting up encryption. Encryption will be
+     * disabled for all intents and the appservice if not configured.
+     */
+    cryptoStorage?: IAppserviceCryptoStorageProvider;
+
+    /**
      * The registration for this application service.
      */
     registration: IAppserviceRegistration;
@@ -181,6 +189,17 @@ export interface IAppserviceOptions {
          * the maximum number of intents has been reached. Defaults to 60 minutes.
          */
         maxAgeMs?: number;
+
+        /**
+         * If false (default), crypto will not be automatically set up for all intent
+         * instances - it will need to be manually enabled with
+         * `await intent.enableEncryption()`.
+         *
+         * If true, crypto will be automatically set up.
+         *
+         * Note that the appservice bot account is considered an intent.
+         */
+        encryption?: boolean;
     };
 }
 
@@ -202,6 +221,7 @@ export class Appservice extends EventEmitter {
     private readonly aliasPrefix: string | null;
     private readonly registration: IAppserviceRegistration;
     private readonly storage: IAppserviceStorageProvider;
+    private readonly cryptoStorage: IAppserviceCryptoStorageProvider;
     private readonly bridgeInstance = new MatrixBridge(this);
 
     private app = express();
@@ -237,6 +257,7 @@ export class Appservice extends EventEmitter {
 
         this.storage = options.storage || new MemoryStorageProvider();
         options.storage = this.storage;
+        this.cryptoStorage = options.cryptoStorage;
 
         this.app.use(express.json({limit: Number.MAX_SAFE_INTEGER})); // disable limits, use a reverse proxy
         this.app.use(morgan("combined"));
@@ -333,7 +354,13 @@ export class Appservice extends EventEmitter {
     public begin(): Promise<void> {
         return new Promise<void>((resolve, reject) => {
             this.appServer = this.app.listen(this.options.port, this.options.bindAddress, () => resolve());
-        }).then(() => this.botIntent.ensureRegistered());
+        }).then(async () => {
+            if (this.options.intentOptions?.encryption) {
+                await this.botIntent.enableEncryption();
+            } else {
+                await this.botIntent.ensureRegistered();
+            }
+        });
     }
 
     /**
@@ -393,10 +420,16 @@ export class Appservice extends EventEmitter {
      * @returns {Intent} An Intent for the user.
      */
     public getIntentForUserId(userId: string): Intent {
-        let intent = this.intentsCache.get(userId);
+        let intent: Intent = this.intentsCache.get(userId);
         if (!intent) {
             intent = new Intent(this.options, userId, this);
             this.intentsCache.set(userId, intent);
+            if (this.options.intentOptions.encryption) {
+                intent.enableEncryption().catch(e => {
+                    LogService.error("Appservice", `Failed to set up crypto on intent ${userId}`, e);
+                    throw e; // re-throw to cause unhandled exception
+                });
+            }
         }
         return intent;
     }
@@ -623,9 +656,57 @@ export class Appservice extends EventEmitter {
 
         LogService.info("Appservice", "Processing transaction " + txnId);
         this.pendingTransactions[txnId] = new Promise<void>(async (resolve) => {
+            // Process EDUs first to give the best chance at decryption
+            if (Array.isArray(req.body["de.sorunome.msc2409.ephemeral"])) {
+                for (let event of req.body["de.sorunome.msc2409.ephemeral"]) {
+                    LogService.info("Appservice", `Processing ephemeral event of type ${event["type"]}`);
+                    event = await this.processEphemeralEvent(event);
+
+                    // These events aren't tied to rooms, so just emit them generically
+                    this.emit("ephemeral.event", event);
+
+                    if (event["type"] === "m.room.encrypted") {
+                        const toUser = event["to_user_id"];
+                        try {
+                            const intent = this.getIntentForUserId(toUser);
+                            await intent.enableEncryption();
+                            await intent.underlyingClient.crypto?.processInboundDeviceMessage(event);
+                        } catch (e) {
+                            LogService.error("Appservice", `Error handling encrypted to-device message sent to ${toUser}`, e);
+                        }
+                    }
+                }
+            }
+
             for (let event of req.body["events"]) {
                 LogService.info("Appservice", `Processing event of type ${event["type"]}`);
                 event = await this.processEvent(event);
+                if (event['type'] === 'm.room.encrypted' && this.cryptoStorage) {
+                    this.emit("room.encrypted_event", event["room_id"], event);
+                    try {
+                        const encrypted = new EncryptedRoomEvent(event);
+                        const roomId = event['room_id'];
+                        try {
+                            event = (await this.botClient.crypto.decryptRoomEvent(encrypted, roomId)).raw;
+                            event = await this.processEvent(event);
+                            this.emit("room.decrypted_event", roomId, event);
+
+                            // For logging purposes: show that the event was decrypted
+                            LogService.info("Appservice", `Processing decrypted event of type ${event["type"]}`);
+                        } catch (e1) {
+                            LogService.warn("Appservice", `Bot client was not able to decrypt ${roomId} ${event['event_id']} - trying other intents`);
+
+                            // Try to figure out which clients might be able to decrypt this
+                            // TODO: Consider puppet bridges where the bot won't be in the room
+                            // See https://github.com/turt2live/matrix-bot-sdk/issues/161
+                            // noinspection ExceptionCaughtLocallyJS
+                            throw e1;
+                        }
+                    } catch (e) {
+                        LogService.error("Appservice", `Decryption error on ${event['room_id']} ${event['event_id']}`, e);
+                        this.emit("room.failed_decryption", event['room_id'], event, e);
+                    }
+                }
                 this.emit("room.event", event["room_id"], event);
                 if (event['type'] === 'm.room.message') {
                     this.emit("room.message", event["room_id"], event);
@@ -638,15 +719,6 @@ export class Appservice extends EventEmitter {
                 }
                 if (event['type'] === 'm.room.create' && event['state_key'] === '' && event['content'] && event['content']['predecessor']) {
                     this.emit("room.upgraded", event['room_id'], event);
-                }
-            }
-
-            if (this.registration["de.sorunome.msc2409.push_ephemeral"] && req.body["de.sorunome.msc2409.ephemeral"]) {
-                for (let event of req.body["de.sorunome.msc2409.ephemeral"]) {
-                    LogService.info("Appservice", `Processing ephemeral event of type ${event["type"]}`);
-                    event = await this.processEphemeralEvent(event);
-                    // These events aren't tied to rooms, so just emit them generically
-                    this.emit("ephemeral.event", event);
                 }
             }
 

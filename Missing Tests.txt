@@ -1,0 +1,15 @@
+These functions are pending tests once some of the workarounds are removed:
+* Intent - enableEncryption()
+* Appservice - CryptoStorage
+* Appservice - intentOptions.encryption
+* Appservice - Decryption
+* Appservice - begin#botIntent->enableEncryption automatic
+
+Workarounds:
+* Lack of device ID impersonation, requiring login every time
+* Store access token from login attempt instead of device ID impersonation
+
+Blockers:
+* Unit testing postgresql is not fun
+* Unit testing Cryptex is not fun
+* Pending Patience-style tests for integration instead of trying to write tests for a lot of this

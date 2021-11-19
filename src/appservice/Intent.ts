@@ -1,4 +1,12 @@
-import { extractRequestError, IAppserviceStorageProvider, LogService, MatrixClient, Metrics } from "..";
+import {
+    extractRequestError,
+    IAppserviceCryptoStorageProvider,
+    IAppserviceStorageProvider,
+    ICryptoStorageProvider,
+    LogService,
+    MatrixClient,
+    Metrics
+} from "..";
 import { Appservice, IAppserviceOptions } from "./Appservice";
 
 // noinspection TypeScriptPreferShortImport
@@ -21,11 +29,13 @@ export class Intent {
      */
     public readonly metrics: Metrics;
 
-    private readonly client: MatrixClient;
     private readonly storage: IAppserviceStorageProvider;
-    private readonly unstableApisInstance: UnstableAppserviceApis;
+    private readonly cryptoStorage: IAppserviceCryptoStorageProvider;
 
+    private client: MatrixClient;
+    private unstableApisInstance: UnstableAppserviceApis;
     private knownJoinedRooms: string[] = [];
+    private cryptoSetupPromise: Promise<void>;
 
     /**
      * Creates a new intent. Intended to be created by application services.
@@ -33,14 +43,34 @@ export class Intent {
      * @param {string} impersonateUserId The user ID to impersonate.
      * @param {Appservice} appservice The application service itself.
      */
-    constructor(options: IAppserviceOptions, private impersonateUserId: string, private appservice: Appservice) {
+    constructor(private options: IAppserviceOptions, private impersonateUserId: string, private appservice: Appservice) {
         this.metrics = new Metrics(appservice.metrics);
-        this.client = new MatrixClient(options.homeserverUrl, options.registration.as_token);
-        this.client.metrics = new Metrics(appservice.metrics); // Metrics only go up by one parent
-        this.unstableApisInstance = new UnstableAppserviceApis(this.client);
         this.storage = options.storage;
-        if (impersonateUserId !== appservice.botUserId) this.client.impersonateUserId(impersonateUserId);
-        if (options.joinStrategy) this.client.setJoinStrategy(options.joinStrategy);
+        this.cryptoStorage = options.cryptoStorage;
+        this.makeClient(false);
+    }
+
+    private makeClient(withCrypto: boolean, accessToken?: string) {
+        let cryptoStore: ICryptoStorageProvider;
+        const storage = this.storage?.storageForUser?.(this.userId);
+        if (withCrypto) {
+            cryptoStore = this.cryptoStorage?.storageForUser(this.userId);
+            if (!cryptoStore) {
+                throw new Error("Tried to set up client with crypto when not available");
+            }
+            if (!storage) {
+                throw new Error("Tried to set up client with crypto, but no persistent storage");
+            }
+        }
+        this.client = new MatrixClient(this.options.homeserverUrl, accessToken ?? this.options.registration.as_token, storage, cryptoStore);
+        this.client.metrics = new Metrics(this.appservice.metrics); // Metrics only go up by one parent
+        this.unstableApisInstance = new UnstableAppserviceApis(this.client);
+        if (this.impersonateUserId !== this.appservice.botUserId) {
+            this.client.impersonateUserId(this.impersonateUserId);
+        }
+        if (this.options.joinStrategy) {
+            this.client.setJoinStrategy(this.options.joinStrategy);
+        }
     }
 
     /**
@@ -64,6 +94,59 @@ export class Intent {
      */
     public get unstableApis(): UnstableAppserviceApis {
         return this.unstableApisInstance;
+    }
+
+    /**
+     * Sets up crypto on the client if it hasn't already been set up.
+     * @returns {Promise<void>} Resolves when complete.
+     */
+    @timedIntentFunctionCall()
+    public async enableEncryption(): Promise<void> {
+        if (!this.cryptoSetupPromise) {
+            this.cryptoSetupPromise = new Promise(async (resolve, reject) => {
+                try {
+                    // Prepare a client first
+                    // XXX: We work around servers that don't support device_id impersonation
+                    await this.ensureRegistered();
+                    const storage = this.storage?.storageForUser?.(this.userId);
+                    // noinspection ES6RedundantAwait
+                    const accessToken = await Promise.resolve(storage?.readValue("accessToken"));
+                    if (!accessToken) {
+                        const loginBody = {
+                            type: "uk.half-shot.msc2778.login.application_service",
+                            identifier: {
+                                type: "m.id.user",
+                                user: this.userId,
+                            },
+                        };
+                        this.client.impersonateUserId(null); // avoid confusing homeserver
+                        const res = await this.client.doRequest("POST", "/_matrix/client/r0/login", {}, loginBody);
+                        this.makeClient(true, res['access_token']);
+                        storage.storeValue("accessToken", this.client.accessToken);
+                    } else {
+                        this.makeClient(true, accessToken);
+                    }
+
+                    // // Populate the crypto store with basic information (to avoid server hit)
+                    // const devices = await this.client.getOwnDevices();
+                    // const deviceId = devices.find(d => d.device_id)?.device_id;
+                    // if (deviceId) {
+                    //     this.client.impersonateUserId(this.userId, deviceId);
+                    //     // await this.client.cryptoStore.setDeviceId(deviceId);
+                    // } else {
+                    //     // noinspection ExceptionCaughtLocallyJS
+                    //     throw new Error("Unable to establish a device ID");
+                    // }
+
+                    // Now set up crypto
+                    await this.client.crypto.prepare(await this.client.getJoinedRooms());
+                    resolve();
+                } catch (e) {
+                    reject(e);
+                }
+            });
+        }
+        return this.cryptoSetupPromise;
     }
 
     /**

@@ -27,6 +27,7 @@ import {
     RECEIVER_DEVICE,
     RECEIVER_OLM_SESSION,
     STATIC_OUTBOUND_SESSION,
+    STATIC_PICKLE_KEY,
 } from "../TestUtils";
 import { DeviceTracker } from "../../src/e2ee/DeviceTracker";
 import { STATIC_TEST_DEVICES } from "./DeviceTrackerTest";
@@ -119,6 +120,39 @@ describe('CryptoClient', () => {
             await client.crypto.prepare([]);
             expect(deviceKeySpy.callCount).toEqual(3);
             expect(otkSpy.callCount).toEqual(3);
+        });
+
+        it('should not create or store a pickle key if one is present', async () => {
+            const userId = "@alice:example.org";
+            const { client } = createTestClient(null, userId, true);
+
+            await client.cryptoStore.setDeviceId(TEST_DEVICE_ID);
+
+            const deviceKeySpy = simple.stub().callFn(() => Promise.resolve({}));
+            const otkSpy = simple.stub().callFn(() => Promise.resolve({}));
+            client.uploadDeviceKeys = deviceKeySpy;
+            client.uploadDeviceOneTimeKeys = otkSpy;
+            client.checkOneTimeKeyCounts = () => Promise.resolve({});
+
+            client.cryptoStore.setPickleKey = () => {
+                throw new Error("Should not have been called");
+            };
+            const getSpy = simple.stub().callFn(() => Promise.resolve(STATIC_PICKLE_KEY));
+            const originalSet = client.cryptoStore.setPickledAccount.bind(client.cryptoStore);
+            const setAccSpy = simple.stub().callFn(async (pickled) => {
+                const account = new (await prepareOlm()).Account();
+                account.unpickle(STATIC_PICKLE_KEY, pickled);
+                account.free();
+                originalSet(pickled);
+            });
+            client.cryptoStore.getPickleKey = getSpy;
+            client.cryptoStore.setPickledAccount = setAccSpy;
+
+            await client.crypto.prepare([]);
+            expect(deviceKeySpy.callCount).toEqual(1);
+            expect(otkSpy.callCount).toEqual(1);
+            expect(getSpy.callCount).toEqual(1);
+            expect(setAccSpy.callCount).toEqual(2); // we save it twice
         });
 
         it('should use given values if they are all present', async () => {
@@ -2143,20 +2177,31 @@ describe('CryptoClient', () => {
             expect(logSpy.callCount).toBe(2);
         });
 
-        it('should ignore messages from unknown devices', async () => {
+        it('should resync device lists from unknown devices', async () => {
             await client.crypto.prepare([]);
 
+            const messages = [
+                "Received encrypted message from unknown identity key (trying resync):",
+                "Received encrypted message from unknown identity key (ignoring message):"
+            ];
             const logSpy = simple.stub().callFn((mod, msg) => {
                 expect(mod).toEqual("CryptoClient");
-                expect(msg).toEqual("Received encrypted message from unknown identity key (ignoring message):");
+                expect(msg).toEqual(messages[logSpy.callCount - 1]);
             });
             LogService.setLogger({ warn: logSpy } as any as ILogger);
 
             const sender = "@bob:example.org";
-            client.cryptoStore.getActiveUserDevices = async (uid) => {
+            const flagSpy = simple.stub().callFn(async (userIds, resync) => {
+                expect(userIds).toMatchObject([sender]);
+                expect(resync).toBe(true);
+            });
+            client.crypto.flagUsersDeviceListsOutdated = flagSpy;
+
+            const getSpy = simple.stub().callFn(async (uid) => {
                 expect(uid).toEqual(sender);
                 return [STATIC_TEST_DEVICES["NTTFKSVBSI"]];
-            };
+            });
+            client.cryptoStore.getActiveUserDevices = getSpy;
 
             await client.crypto.processInboundDeviceMessage({
                 content: <any>{
@@ -2172,7 +2217,9 @@ describe('CryptoClient', () => {
                 type: "m.room.encrypted",
                 sender: sender,
             });
-            expect(logSpy.callCount).toBe(1);
+            expect(logSpy.callCount).toBe(2);
+            expect(getSpy.callCount).toBe(2);
+            expect(flagSpy.callCount).toBe(1);
         });
 
         describe('decryption', () => {

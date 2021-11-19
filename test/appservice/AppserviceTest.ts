@@ -929,7 +929,7 @@ describe('Appservice', () => {
         }
     });
 
-    it('should not emit ephemeral events from transactions by default', async () => {
+    it('should emit ephemeral events from transactions', async () => {
         const port = await getPort();
         const hsToken = "s3cret_token";
         const appservice = new Appservice({
@@ -946,71 +946,7 @@ describe('Appservice', () => {
                     rooms: [],
                     aliases: [],
                 },
-                // "de.sorunome.msc2409.push_ephemeral": true, // implied false for this test
-            },
-        });
-        appservice.botIntent.ensureRegistered = () => {
-            return null;
-        };
-
-        await appservice.begin();
-
-        try {
-            const txnBody = {
-                events: [
-                    {type: "m.room.message", roomId: "!somewhere:example.org"},
-                    {type: "m.room.not_message", roomId: "!elsewhere:example.org"},
-                ],
-                "de.sorunome.msc2409.ephemeral": [
-                    {type: "m.typing", userId: "@someone:example.org"},
-                    {type: "m.not_typing", userId: "@someone_else:example.org"},
-                ]
-            };
-
-            const eventSpy = simple.stub().callFn((ev) => {
-                if (ev["type"] === "m.typing") expect(ev).toMatchObject(txnBody["de.sorunome.msc2409.ephemeral"][0]);
-                else expect(ev).toMatchObject(txnBody["de.sorunome.msc2409.ephemeral"][1]);
-            });
-            appservice.on("ephemeral.event", eventSpy);
-
-            async function doCall(route: string, opts: any = {}) {
-                const res = await requestPromise({
-                    uri: `http://localhost:${port}${route}`,
-                    method: "PUT",
-                    qs: {access_token: hsToken},
-                    ...opts,
-                });
-                expect(res).toMatchObject({});
-
-                expect(eventSpy.callCount).toBe(0);
-                eventSpy.callCount = 0;
-            }
-
-            await doCall("/transactions/1", {json: txnBody});
-            await doCall("/_matrix/app/v1/transactions/2", {json: txnBody});
-        } finally {
-            appservice.stop();
-        }
-    });
-
-    it('should emit ephemeral events from transactions when enabled', async () => {
-        const port = await getPort();
-        const hsToken = "s3cret_token";
-        const appservice = new Appservice({
-            port: port,
-            bindAddress: '127.0.0.1',
-            homeserverName: 'example.org',
-            homeserverUrl: 'https://localhost',
-            registration: {
-                as_token: "",
-                hs_token: hsToken,
-                sender_localpart: "_bot_",
-                namespaces: {
-                    users: [{exclusive: true, regex: "@_prefix_.*:.+"}],
-                    rooms: [],
-                    aliases: [],
-                },
-                "de.sorunome.msc2409.push_ephemeral": true,
+                // "de.sorunome.msc2409.push_ephemeral": true, // Shouldn't affect emission
             },
         });
         appservice.botIntent.ensureRegistered = () => {
@@ -1047,133 +983,6 @@ describe('Appservice', () => {
                 expect(res).toMatchObject({});
 
                 expect(eventSpy.callCount).toBe(2);
-                eventSpy.callCount = 0;
-            }
-
-            await doCall("/transactions/1", {json: txnBody});
-            await doCall("/_matrix/app/v1/transactions/2", {json: txnBody});
-        } finally {
-            appservice.stop();
-        }
-    });
-
-    it('should not emit ephemeral events from transactions when disabled', async () => {
-        const port = await getPort();
-        const hsToken = "s3cret_token";
-        const appservice = new Appservice({
-            port: port,
-            bindAddress: '127.0.0.1',
-            homeserverName: 'example.org',
-            homeserverUrl: 'https://localhost',
-            registration: {
-                as_token: "",
-                hs_token: hsToken,
-                sender_localpart: "_bot_",
-                namespaces: {
-                    users: [{exclusive: true, regex: "@_prefix_.*:.+"}],
-                    rooms: [],
-                    aliases: [],
-                },
-                "de.sorunome.msc2409.push_ephemeral": false,
-            },
-        });
-        appservice.botIntent.ensureRegistered = () => {
-            return null;
-        };
-
-        await appservice.begin();
-
-        try {
-            const txnBody = {
-                events: [
-                    {type: "m.room.message", roomId: "!somewhere:example.org"},
-                    {type: "m.room.not_message", roomId: "!elsewhere:example.org"},
-                ],
-                "de.sorunome.msc2409.ephemeral": [
-                    {type: "m.typing", userId: "@someone:example.org"},
-                    {type: "m.not_typing", userId: "@someone_else:example.org"},
-                ],
-            };
-
-            const eventSpy = simple.stub().callFn((ev) => {
-                if (ev["type"] === "m.typing") expect(ev).toMatchObject(txnBody["de.sorunome.msc2409.ephemeral"][0]);
-                else expect(ev).toMatchObject(txnBody["de.sorunome.msc2409.ephemeral"][1]);
-            });
-            appservice.on("ephemeral.event", eventSpy);
-
-            async function doCall(route: string, opts: any = {}) {
-                const res = await requestPromise({
-                    uri: `http://localhost:${port}${route}`,
-                    method: "PUT",
-                    qs: {access_token: hsToken},
-                    ...opts,
-                });
-                expect(res).toMatchObject({});
-
-                expect(eventSpy.callCount).toBe(0);
-                eventSpy.callCount = 0;
-            }
-
-            await doCall("/transactions/1", {json: txnBody});
-            await doCall("/_matrix/app/v1/transactions/2", {json: txnBody});
-        } finally {
-            appservice.stop();
-        }
-    });
-
-    it('should not emit ephemeral events from transactions when enabled but none present', async () => {
-        const port = await getPort();
-        const hsToken = "s3cret_token";
-        const appservice = new Appservice({
-            port: port,
-            bindAddress: '127.0.0.1',
-            homeserverName: 'example.org',
-            homeserverUrl: 'https://localhost',
-            registration: {
-                as_token: "",
-                hs_token: hsToken,
-                sender_localpart: "_bot_",
-                namespaces: {
-                    users: [{exclusive: true, regex: "@_prefix_.*:.+"}],
-                    rooms: [],
-                    aliases: [],
-                },
-                "de.sorunome.msc2409.push_ephemeral": true,
-            },
-        });
-        appservice.botIntent.ensureRegistered = () => {
-            return null;
-        };
-
-        await appservice.begin();
-
-        try {
-            const txnBody = {
-                events: [
-                    {type: "m.room.message", roomId: "!somewhere:example.org"},
-                    {type: "m.room.not_message", roomId: "!elsewhere:example.org"},
-                ],
-                // "de.sorunome.msc2409.ephemeral": [
-                //     {type: "m.typing", userId: "@someone:example.org"},
-                //     {type: "m.not_typing", userId: "@someone_else:example.org"},
-                // ]
-            };
-
-            const eventSpy = simple.stub().callFn((ev) => {
-                throw new Error("Unexpected call: No events anticipated");
-            });
-            appservice.on("ephemeral.event", eventSpy);
-
-            async function doCall(route: string, opts: any = {}) {
-                const res = await requestPromise({
-                    uri: `http://localhost:${port}${route}`,
-                    method: "PUT",
-                    qs: {access_token: hsToken},
-                    ...opts,
-                });
-                expect(res).toMatchObject({});
-
-                expect(eventSpy.callCount).toBe(0);
                 eventSpy.callCount = 0;
             }
 
@@ -1801,6 +1610,32 @@ describe('Appservice', () => {
         }
     });
 
+    // TODO: Populate once intent tests are stable
+
+    it.skip('should not try decryption if crypto is not possible', async () => {
+
+    });
+
+    it.skip('should decrypt events when enabled', async () => {
+
+    });
+
+    it.skip('should decrypt using non-bot accounts if needed', async () => {
+
+    });
+
+    it.skip('should create intents which are crypto-ready when enabled', async () => {
+
+    });
+
+    it.skip('should not create crypto-ready intents when disabled', async () => {
+
+    });
+
+    it.skip('should prepare the bot intent with encryption at startup if enabled', async () => {
+
+    });
+
     it('should emit while querying users', async () => {
         const port = await getPort();
         const hsToken = "s3cret_token";
@@ -1834,10 +1669,10 @@ describe('Appservice', () => {
             userIntent.ensureRegistered = () => {
                 return null;
             };
-            const nameSpy = simple.stub(userIntent.underlyingClient, "setDisplayName").callFn(() => {
+            const nameSpy = simple.mock(userIntent.underlyingClient, "setDisplayName").callFn(() => {
                 return null;
             });
-            const avatarSpy = simple.stub(userIntent.underlyingClient, "setAvatarUrl").callFn(() => {
+            const avatarSpy = simple.mock(userIntent.underlyingClient, "setAvatarUrl").callFn(() => {
                 return null;
             });
 
@@ -2074,10 +1909,10 @@ describe('Appservice', () => {
             userIntent.ensureRegistered = () => {
                 return null;
             };
-            const nameSpy = simple.stub(userIntent.underlyingClient, "setDisplayName").callFn(() => {
+            const nameSpy = simple.mock(userIntent.underlyingClient, "setDisplayName").callFn(() => {
                 return null;
             });
-            const avatarSpy = simple.stub(userIntent.underlyingClient, "setAvatarUrl").callFn(() => {
+            const avatarSpy = simple.mock(userIntent.underlyingClient, "setAvatarUrl").callFn(() => {
                 return null;
             });
 
@@ -2156,10 +1991,10 @@ describe('Appservice', () => {
             userIntent.ensureRegistered = () => {
                 return null;
             };
-            const nameSpy = simple.stub(userIntent.underlyingClient, "setDisplayName").callFn(() => {
+            const nameSpy = simple.mock(userIntent.underlyingClient, "setDisplayName").callFn(() => {
                 return null;
             });
-            const avatarSpy = simple.stub(userIntent.underlyingClient, "setAvatarUrl").callFn(() => {
+            const avatarSpy = simple.mock(userIntent.underlyingClient, "setAvatarUrl").callFn(() => {
                 return null;
             });
 

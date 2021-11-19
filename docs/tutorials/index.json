@@ -1,0 +1,34 @@
+{
+  "bot": {
+    "title": "Bot usage",
+    "order": 1
+  },
+  "appservice": {
+    "title": "Appservice (bridge) usage",
+    "order": 2,
+    "children": {
+      "bot-to-appservice": {
+        "title": "Converting a bot to an appservice",
+        "order": 1
+      }
+    }
+  },
+  "room-upgrades": {
+    "title": "Room upgrades",
+    "order": 4
+  },
+  "encryption": {
+    "title": "Encryption",
+    "order": 3,
+    "children": {
+      "encryption-bots": {
+        "title": "Encryption for bots",
+        "order": 1
+      },
+      "encryption-appservices": {
+        "title": "Encryption for appservices",
+        "order": 2
+      }
+    }
+  }
+}

@@ -2,7 +2,7 @@
  * A Matrix event.
  * @category Matrix events
  */
-export class MatrixEvent<T extends Object> {
+export class MatrixEvent<T extends (Object | unknown) = unknown> {
     constructor(protected event: any) {
     }
 

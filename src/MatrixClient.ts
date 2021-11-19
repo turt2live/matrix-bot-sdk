@@ -34,6 +34,7 @@ import {
     OTKClaimResponse,
     OTKCounts,
     OTKs,
+    OwnUserDevice,
 } from "./models/Crypto";
 import { requiresCrypto } from "./e2ee/decorators";
 import { ICryptoStorageProvider } from "./storage/ICryptoStorageProvider";
@@ -76,6 +77,7 @@ export class MatrixClient extends EventEmitter {
     private requestId = 0;
     private lastJoinedRoomIds: string[] = [];
     private impersonatedUserId: string;
+    private impersonatedDeviceId: string;
     private joinStrategy: IJoinRoomStrategy = null;
     private eventProcessors: { [eventType: string]: IPreprocessor[] } = {};
     private filterId = 0;
@@ -168,11 +170,20 @@ export class MatrixClient extends EventEmitter {
      * is for an application service, and that the userId given is within the reach of the
      * application service. Setting this to null will stop future impersonation. The user ID is
      * assumed to already be valid
-     * @param {string} userId The user ID to masquerade as
+     * @param {string} userId The user ID to masquerade as, or `null` to clear masquerading.
+     * @param {string} deviceId Optional device ID to impersonate under the given user, if supported
+     * by the server. Check the whoami response after setting.
      */
-    public impersonateUserId(userId: string): void {
+    public impersonateUserId(userId: string | null, deviceId?: string): void {
         this.impersonatedUserId = userId;
         this.userId = userId;
+        if (userId) {
+            this.impersonatedDeviceId = deviceId;
+        } else if (deviceId) {
+            throw new Error("Cannot impersonate just a device: need a user ID");
+        } else {
+            this.impersonatedDeviceId = null;
+        }
     }
 
     /**
@@ -1797,6 +1808,18 @@ export class MatrixClient extends EventEmitter {
     }
 
     /**
+     * Gets a device list for the client's own account, with metadata. The devices are not verified
+     * in this response, but should be active on the account.
+     * @returns {Promise<OwnUserDevice[]>} Resolves to the active devices on the account.
+     */
+    @timedMatrixClientFunctionCall()
+    public async getOwnDevices(): Promise<OwnUserDevice[]> {
+        return this.doRequest("GET", "/_matrix/client/r0/devices").then(r => {
+            return r['devices'];
+        });
+    }
+
+    /**
      * Claims One Time Keys for a set of user devices, returning those keys. The caller is expected to verify
      * and validate the returned keys.
      *
@@ -1848,6 +1871,10 @@ export class MatrixClient extends EventEmitter {
         if (this.impersonatedUserId) {
             if (!qs) qs = {"user_id": this.impersonatedUserId};
             else qs["user_id"] = this.impersonatedUserId;
+        }
+        if (this.impersonatedDeviceId) {
+            if (!qs) qs = {"org.matrix.msc3202.device_id": this.impersonatedDeviceId};
+            else qs["org.matrix.msc3202.device_id"] = this.impersonatedDeviceId;
         }
         const headers = {};
         if (this.accessToken) {

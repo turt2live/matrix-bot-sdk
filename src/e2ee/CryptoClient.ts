@@ -125,10 +125,11 @@ export class CryptoClient {
             if (!pickled || !pickleKey) {
                 LogService.debug("CryptoClient", "Creating new Olm account: previous session lost or not set up");
 
+                const hasPickleKey = !!pickleKey;
                 account.create();
-                pickleKey = crypto.randomBytes(64).toString('hex');
+                pickleKey = pickleKey ?? crypto.randomBytes(64).toString('hex');
                 pickled = account.pickle(pickleKey);
-                await this.client.cryptoStore.setPickleKey(pickleKey);
+                if (!hasPickleKey) await this.client.cryptoStore.setPickleKey(pickleKey);
                 await this.client.cryptoStore.setPickledAccount(pickled);
 
                 makeReady();
@@ -650,8 +651,16 @@ export class CryptoClient {
                     return;
                 }
 
-                const userDevices = await this.client.cryptoStore.getActiveUserDevices(message.sender);
-                const senderDevice = userDevices.find(d => d.keys[`${DeviceKeyAlgorithm.Curve25519}:${d.device_id}`] === message.content.sender_key);
+                let userDevices = await this.client.cryptoStore.getActiveUserDevices(message.sender);
+                let senderDevice = userDevices.find(d => d.keys[`${DeviceKeyAlgorithm.Curve25519}:${d.device_id}`] === message.content.sender_key);
+                if (!senderDevice) {
+                    LogService.warn("CryptoClient", "Received encrypted message from unknown identity key (trying resync):", message.content.sender_key);
+                    await this.flagUsersDeviceListsOutdated([message.sender], true);
+
+                    // try again
+                    userDevices = await this.client.cryptoStore.getActiveUserDevices(message.sender);
+                    senderDevice = userDevices.find(d => d.keys[`${DeviceKeyAlgorithm.Curve25519}:${d.device_id}`] === message.content.sender_key);
+                }
                 if (!senderDevice) {
                     LogService.warn("CryptoClient", "Received encrypted message from unknown identity key (ignoring message):", message.content.sender_key);
                     return;

@@ -6,18 +6,18 @@ describe('MemoryStorageProvider', () => {
         const provider = new MemoryStorageProvider();
 
         const value = "testing";
-        expect(provider.getSyncToken()).toBeFalsy();
-        provider.setSyncToken(value);
-        expect(provider.getSyncToken()).toEqual(value);
+        expect(await provider.getSyncToken()).toBeFalsy();
+        await provider.setSyncToken(value);
+        expect(await provider.getSyncToken()).toEqual(value);
     });
 
     it('should return the right filter object', async () => {
         const provider = new MemoryStorageProvider();
 
         const value: IFilterInfo = {id: 12, filter: {hello: "world"}};
-        expect(provider.getFilter()).toBeFalsy();
-        provider.setFilter(value);
-        expect(provider.getFilter()).toMatchObject(<any>value);
+        expect(await provider.getFilter()).toBeFalsy();
+        await provider.setFilter(value);
+        expect(await provider.getFilter()).toMatchObject(<any>value);
     });
 
     it('should track registered users', async () => {
@@ -26,17 +26,17 @@ describe('MemoryStorageProvider', () => {
         const userIdA = "@first:example.org";
         const userIdB = "@second:example.org";
 
-        expect(provider.isUserRegistered(userIdA)).toBeFalsy();
-        expect(provider.isUserRegistered(userIdB)).toBeFalsy();
-        provider.addRegisteredUser(userIdA);
-        expect(provider.isUserRegistered(userIdA)).toBeTruthy();
-        expect(provider.isUserRegistered(userIdB)).toBeFalsy();
-        provider.addRegisteredUser(userIdA); // duplicated to make sure it is safe to do so
-        expect(provider.isUserRegistered(userIdA)).toBeTruthy();
-        expect(provider.isUserRegistered(userIdB)).toBeFalsy();
-        provider.addRegisteredUser(userIdB);
-        expect(provider.isUserRegistered(userIdA)).toBeTruthy();
-        expect(provider.isUserRegistered(userIdB)).toBeTruthy();
+        expect(await provider.isUserRegistered(userIdA)).toBeFalsy();
+        expect(await provider.isUserRegistered(userIdB)).toBeFalsy();
+        await provider.addRegisteredUser(userIdA);
+        expect(await provider.isUserRegistered(userIdA)).toBeTruthy();
+        expect(await provider.isUserRegistered(userIdB)).toBeFalsy();
+        await provider.addRegisteredUser(userIdA); // duplicated to make sure it is safe to do so
+        expect(await provider.isUserRegistered(userIdA)).toBeTruthy();
+        expect(await provider.isUserRegistered(userIdB)).toBeFalsy();
+        await provider.addRegisteredUser(userIdB);
+        expect(await provider.isUserRegistered(userIdA)).toBeTruthy();
+        expect(await provider.isUserRegistered(userIdB)).toBeTruthy();
     });
 
     it('should track completed transactions', async () => {
@@ -45,17 +45,17 @@ describe('MemoryStorageProvider', () => {
         const txnA = "@first:example.org";
         const txnB = "@second:example.org";
 
-        expect(provider.isTransactionCompleted(txnA)).toBeFalsy();
-        expect(provider.isTransactionCompleted(txnB)).toBeFalsy();
-        provider.setTransactionCompleted(txnA);
-        expect(provider.isTransactionCompleted(txnA)).toBeTruthy();
-        expect(provider.isTransactionCompleted(txnB)).toBeFalsy();
-        provider.setTransactionCompleted(txnA); // duplicated to make sure it is safe to do so
-        expect(provider.isTransactionCompleted(txnA)).toBeTruthy();
-        expect(provider.isTransactionCompleted(txnB)).toBeFalsy();
-        provider.setTransactionCompleted(txnB);
-        expect(provider.isTransactionCompleted(txnA)).toBeTruthy();
-        expect(provider.isTransactionCompleted(txnB)).toBeTruthy();
+        expect(await provider.isTransactionCompleted(txnA)).toBeFalsy();
+        expect(await provider.isTransactionCompleted(txnB)).toBeFalsy();
+        await provider.setTransactionCompleted(txnA);
+        expect(await provider.isTransactionCompleted(txnA)).toBeTruthy();
+        expect(await provider.isTransactionCompleted(txnB)).toBeFalsy();
+        await provider.setTransactionCompleted(txnA); // duplicated to make sure it is safe to do so
+        expect(await provider.isTransactionCompleted(txnA)).toBeTruthy();
+        expect(await provider.isTransactionCompleted(txnB)).toBeFalsy();
+        await provider.setTransactionCompleted(txnB);
+        expect(await provider.isTransactionCompleted(txnA)).toBeTruthy();
+        expect(await provider.isTransactionCompleted(txnB)).toBeTruthy();
     });
 
     it('should track arbitrary key value pairs', async () => {
@@ -64,8 +64,59 @@ describe('MemoryStorageProvider', () => {
         const key = "test";
         const value = "example";
 
-        expect(provider.readValue(key)).toBeFalsy();
-        provider.storeValue(key, value);
-        expect(provider.readValue(key)).toEqual(value);
+        expect(await provider.readValue(key)).toBeFalsy();
+        await provider.storeValue(key, value);
+        expect(await provider.readValue(key)).toEqual(value);
+    });
+
+    describe('namespacing', () => {
+        it('should return the right sync token', async () => {
+            const provider = new MemoryStorageProvider();
+
+            const value = "testing";
+            const namespace = "@user:example.org";
+
+            const nsProvider = provider.storageForUser(namespace);
+            expect(nsProvider).toBeDefined();
+
+            expect(await provider.getSyncToken()).toBeFalsy();
+            expect(await nsProvider.getSyncToken()).toBeFalsy();
+            await nsProvider.setSyncToken(value);
+            expect(await provider.getSyncToken()).toBeFalsy();
+            expect(await nsProvider.getSyncToken()).toEqual(value);
+        });
+
+        it('should return the right filter object', async () => {
+            const provider = new MemoryStorageProvider();
+
+            const value: IFilterInfo = {id: 12, filter: {hello: "world"}};
+            const namespace = "@user:example.org";
+
+            const nsProvider = provider.storageForUser(namespace);
+            expect(nsProvider).toBeDefined();
+
+            expect(await provider.getFilter()).toBeFalsy();
+            expect(await nsProvider.getFilter()).toBeFalsy();
+            await nsProvider.setFilter(value);
+            expect(await provider.getFilter()).toBeFalsy();
+            expect(await nsProvider.getFilter()).toMatchObject(<any>value);
+        });
+
+        it('should track arbitrary key value pairs', async () => {
+            const provider = new MemoryStorageProvider();
+
+            const key = "test";
+            const value = "example";
+            const namespace = "@user:example.org";
+
+            const nsProvider = provider.storageForUser(namespace);
+            expect(nsProvider).toBeDefined();
+
+            expect(await provider.readValue(key)).toBeFalsy();
+            expect(await nsProvider.readValue(key)).toBeFalsy();
+            await nsProvider.storeValue(key, value);
+            expect(await provider.readValue(key)).toBeFalsy();
+            expect(await nsProvider.readValue(key)).toEqual(value);
+        });
     });
 });

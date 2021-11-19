@@ -1,5 +1,6 @@
 import {
     Appservice,
+    IAppserviceCryptoStorageProvider,
     IAppserviceOptions,
     IAppserviceStorageProvider,
     IJoinRoomStrategy,
@@ -11,6 +12,7 @@ import * as expect from "expect";
 import * as simple from "simple-mock";
 import * as MockHttpBackend from 'matrix-mock-request';
 import { expectArrayEquals } from "../TestUtils";
+import { NamespacingSqliteCryptoStorageProvider } from "../../src/storage/NamespacingSqliteCryptoStorageProvider";
 
 describe('Intent', () => {
     it('should prepare the underlying client for a bot user', async () => {
@@ -524,7 +526,7 @@ describe('Intent', () => {
             });
             const joinSpy = simple.stub().callFn((rid) => {
                 expect(rid).toEqual(targetRoomId);
-                return {};
+                return Promise.resolve("!joined:example.org");
             });
             intent.underlyingClient.getJoinedRooms = getJoinedSpy;
             intent.underlyingClient.joinRoom = joinSpy;
@@ -558,7 +560,7 @@ describe('Intent', () => {
             });
             const joinSpy = simple.stub().callFn((rid) => {
                 expect(rid).toEqual(targetRoomId);
-                return {};
+                return Promise.resolve("!joined:example.org");
             });
             intent.underlyingClient.getJoinedRooms = getJoinedSpy;
             intent.underlyingClient.joinRoom = joinSpy;
@@ -633,7 +635,7 @@ describe('Intent', () => {
             });
             const joinSpy = simple.stub().callFn((rid) => {
                 expect(rid).toEqual(targetRoomId);
-                return {};
+                return Promise.resolve("!joined:example.org");
             });
             intent.underlyingClient.getJoinedRooms = getJoinedSpy;
             intent.underlyingClient.joinRoom = joinSpy;
@@ -968,8 +970,8 @@ describe('Intent', () => {
                 expect(rid).toEqual(targetRoomId);
                 return {};
             });
-            const refreshJoinedRoomsSpy = simple.mock(intent, "refreshJoinedRooms").callFn(() => {
-                return Promise.resolve();
+            const refreshJoinedRoomsSpy = simple.stub().callFn(() => {
+                return Promise.resolve([]);
             });
 
             const joinRoomSpy = simple.stub().callFn((rid) => {
@@ -1059,8 +1061,8 @@ describe('Intent', () => {
                 expect(rid).toEqual(targetRoomId);
                 return {};
             });
-            const refreshJoinedRoomsSpy = simple.mock(intent, "refreshJoinedRooms").callFn(() => {
-                return Promise.resolve();
+            const refreshJoinedRoomsSpy = simple.stub().callFn(() => {
+                return Promise.resolve([]);
             });
 
             const leaveRoomSpy = simple.stub().callFn((rid) => {
@@ -1120,6 +1122,68 @@ describe('Intent', () => {
             expect(leaveRoomSpy.callCount).toBe(1);
             expect(registeredSpy.callCount).toBe(1);
             expect(joinSpy.callCount).toBe(0);
+        });
+    });
+
+    describe('enableEncryption', () => {
+        const userId = "@someone:example.org";
+        const botUserId = "@bot:example.org";
+        const asToken = "s3cret";
+        const hsUrl = "https://localhost";
+        const appservice = <Appservice>{botUserId: botUserId};
+        let storage: IAppserviceStorageProvider;
+        let cryptoStorage: IAppserviceCryptoStorageProvider;
+        let options: IAppserviceOptions;
+        let intent: Intent;
+
+        beforeEach(() => {
+            storage = new MemoryStorageProvider();
+            cryptoStorage = new NamespacingSqliteCryptoStorageProvider(":memory:");
+            options = {
+                homeserverUrl: hsUrl,
+                storage: storage,
+                cryptoStorage: cryptoStorage,
+                intentOptions: {
+                    encryption: true,
+                },
+                port: 9000,
+                bindAddress: "127.0.0.1",
+                homeserverName: "example.org",
+                registration: {
+                    id: asToken,
+                    as_token: asToken,
+                    hs_token: asToken,
+                    sender_localpart: "bot",
+                    namespaces: {
+                        users: [],
+                        aliases: [],
+                        rooms: [],
+                    },
+                },
+            };
+            intent = new Intent(options, userId, appservice);
+        });
+
+        // TODO: Test once device_id impersonation set up
+
+        it.skip('should only set up crypto once', async () => {
+
+        });
+
+        it.skip('should set up crypto', async () => {
+
+        });
+
+        it.skip('should impersonate device IDs when known', async () => {
+
+        });
+
+        it.skip('should use the same device ID when known', async () => {
+
+        });
+
+        it.skip('should log in to get a device ID if none are viable', async () => {
+
         });
     });
 });

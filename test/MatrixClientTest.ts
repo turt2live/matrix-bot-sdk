@@ -23,7 +23,7 @@ import * as MockHttpBackend from 'matrix-mock-request';
 import { expectArrayEquals, feedOlmAccount, feedStaticOlmAccount } from "./TestUtils";
 import { redactObjectForLogging } from "../src/http";
 import { PowerLevelAction } from "../src/models/PowerLevelAction";
-import { SqliteCryptoStorageProvider } from "../src/storage/SqliteCryptoStorageProvider";
+import { NamespacingSqliteCryptoStorageProvider } from "../src/storage/NamespacingSqliteCryptoStorageProvider";
 
 export const TEST_DEVICE_ID = "TEST_DEVICE";
 
@@ -31,7 +31,7 @@ export function createTestClient(storage: IStorageProvider = null, userId: strin
     const http = new MockHttpBackend();
     const hsUrl = "https://localhost";
     const accessToken = "s3cret";
-    const client = new MatrixClient(hsUrl, accessToken, storage, crypto ? new SqliteCryptoStorageProvider(":memory:") : null);
+    const client = new MatrixClient(hsUrl, accessToken, storage, crypto ? new NamespacingSqliteCryptoStorageProvider(":memory:") : null);
     (<any>client).userId = userId; // private member access
     setRequestFn(http.requestFn);
 
@@ -78,7 +78,7 @@ describe('MatrixClient', () => {
             const homeserverUrl = "https://example.org";
             const accessToken = "example_token";
 
-            const client = new MatrixClient(homeserverUrl, accessToken, null, new SqliteCryptoStorageProvider(":memory:"));
+            const client = new MatrixClient(homeserverUrl, accessToken, null, new NamespacingSqliteCryptoStorageProvider(":memory:"));
             expect(client.crypto).toBeDefined();
         });
 
@@ -241,11 +241,54 @@ describe('MatrixClient', () => {
             client.impersonateUserId(userId);
 
             http.when("GET", "/test").respond(200, (path, content, req) => {
-                expect(req.opts.qs.user_id).toBe(userId);
+                expect(req.opts.qs["user_id"]).toBe(userId);
+                expect(req.opts.qs["org.matrix.msc3202.device_id"]).toBe(undefined);
             });
 
             http.flushAllExpected();
             await client.doRequest("GET", "/test");
+        });
+
+        it('should set a device_id param on requests', async () => {
+            const {client, http} = createTestClient();
+
+            const userId = "@testing:example.org";
+            const deviceId = "DEVICE_TEST";
+            client.impersonateUserId(userId, deviceId);
+
+            http.when("GET", "/test").respond(200, (path, content, req) => {
+                expect(req.opts.qs["user_id"]).toBe(userId);
+                expect(req.opts.qs["org.matrix.msc3202.device_id"]).toBe(deviceId);
+            });
+
+            http.flushAllExpected();
+            await client.doRequest("GET", "/test");
+        });
+
+        it('should stop impersonation with a null user_id', async () => {
+            const {client, http} = createTestClient();
+
+            const userId = "@testing:example.org";
+            client.impersonateUserId(userId); // set first
+            client.impersonateUserId(null);
+
+            http.when("GET", "/test").respond(200, (path, content, req) => {
+                expect(req.opts.qs?.["user_id"]).toBe(undefined);
+                expect(req.opts.qs?.["org.matrix.msc3202.device_id"]).toBe(undefined);
+            });
+
+            http.flushAllExpected();
+            await client.doRequest("GET", "/test");
+        });
+
+        it('should not allow impersonation of only a device ID', async () => {
+            const {client} = createTestClient();
+
+            try {
+                client.impersonateUserId(null, "DEVICE");
+            } catch (e) {
+                expect(e.message).toBe("Cannot impersonate just a device: need a user ID");
+            }
         });
     });
 
@@ -6670,6 +6713,22 @@ describe('MatrixClient', () => {
 
             http.flushAllExpected();
             await client.sendToDevices(type, messages);
+        });
+    });
+
+    describe('getOwnDevices', () => {
+        it('should call the right endpoint', async () => {
+            const userId = "@test:example.org";
+            const { client, http } = createTestClient(null, userId, true);
+
+            const devices = ["schema not followed for simplicity"];
+            http.when("GET", "/_matrix/client/r0/devices").respond(200, (path, content) => {
+                return {devices};
+            });
+
+            http.flushAllExpected();
+            const res = await client.getOwnDevices();
+            expect(res).toMatchObject(devices);
         });
     });
 
