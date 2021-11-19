@@ -5,7 +5,13 @@
   },
   "appservice": {
     "title": "Appservice (bridge) usage",
-    "order": 2
+    "order": 2,
+    "children": {
+      "bot-to-appservice": {
+        "title": "Converting a bot to an appservice",
+        "order": 1
+      }
+    }
   },
   "room-upgrades": {
     "title": "Room upgrades",
