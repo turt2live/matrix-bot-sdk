@@ -2,7 +2,7 @@ Bots are typically simple creatures which act on commands and provide utility to
 normal Matrix clients work, with the added complexity of needing to be run on a server somewhere. Unlike appservices
 (bridges), bots do not need to be added by a server admin and can be attached to any regular account.
 
-<!-- TODO: setup environment a lot like the matrix.org blog -->
+For a guide starting from scratch, check out the [matrix.org guide](https://matrix.org/docs/guides/usage-of-matrix-bot-sdk).
 
 ## Creating the bot account
 
@@ -93,80 +93,61 @@ async function handleCommand(roomId: string, event: any) {
 }
 ```
 
-## General usage
+## Watching for events
 
-<!-- TODO: Improve section -->
+A `MatrixClient` instance will call listeners for various different things that might happen after the bot has started.
+
+### [Room messages](https://spec.matrix.org/latest/client-server-api/#instant-messaging) & [events](https://spec.matrix.org/latest/client-server-api/#events)
 
 ```typescript
-const MatrixClient = require("matrix-bot-sdk").MatrixClient;
-const AutojoinRoomsMixin = require("matrix-bot-sdk").AutojoinRoomsMixin;
-
-const client = new MatrixClient("https://matrix.org", "your_access_token_here");
-AutojoinRoomsMixin.setupOnClient(client);
-
-// To listen for room messages (m.room.message) only:
-client.on("room.message", (roomId, event) => {
-    if (!event["content"]) return;
-    console.log(event["sender"] + " says " + event["content"]["body"]);
-
-    client.sendMessage(roomId, {
-        "msgtype": "m.notice",
-        "body": "hello!",
-    });
-
-    // or...
-    client.sendNotice(roomId, "hello!");
+client.on("room.message", (roomId: string, event: any) => {
+    // `event['type']` will always be an `m.room.message` and can be processed as such
+    
+    // be sure to check if the event is redacted/invalid though:
+    if (!event['content']?.['msgtype']) return;
 });
-
-// Or to listen for any event that happens in a room:
-client.on("room.event", (roomId, event) => {
-    if (!event["content"]) return;
-    console.log(event["sender"] + " sent " + event["type"]);
-});
-
-client.start().then(() => console.log("Client started!"));
 ```
 
-
-## Rich replies
-
-<!-- TODO: Improve section -->
-
-To automatically process rich replies coming into the client:
 ```typescript
-const MatrixClient = require("matrix-bot-sdk").MatrixClient;
-const RichRepliesPreprocessor = require("matrix-bot-sdk").RichRepliesPreprocessor;
-const IRichReplyMetadata = require("matrix-bot-sdk").IRichReplyMetadata;
-
-const client = new MatrixClient("https://matrix.org", "your_access_token_here");
-
-// Set fetchRealEventContents to true to have the preprocessor get the real event
-client.addPreprocessor(new RichRepliesPreprocessor(fetchRealEventContents: false));
-
-// regular client usage here. When you encounter an event:
-const event = {/* from somewhere, such as on a room message */};
-if (event["mx_richreply"]) {
-    const reply = <IRichReplyMetadata>event["mx_richreply"];
-    console.log("The original event was " + reply.parentEventId + " and the text was " + reply.fallbackPlainBody);
-}
+client.on("room.event", (roomId: string, event: any) => {
+    // Check `event['type']` to see if it is an event you're interested in
+    if (event['type'] !== 'org.example.custom') return;
+    
+    // Note that state events can also be sent down this listener too
+    if (event['state_key'] !== undefined) return; // state event
+});
 ```
 
-To send a rich reply to an event:
+### [Account data](https://spec.matrix.org/latest/client-server-api/#client-config)
+
 ```typescript
-const MatrixClient = require("matrix-bot-sdk").MatrixClient;
-const AutojoinRoomsMixin = require("matrix-bot-sdk").AutojoinRoomsMixin;
-const RichReply = require("matrix-bot-sdk").RichReply;
-
-const client = new MatrixClient("https://matrix.org", "your_access_token_here");
-AutojoinRoomsMixin.setupOnClient(client);
-
-client.on("room.message", (roomId, event) => {
-    if (!event["content"]) return;
-
-    const newEvent = RichReply.createFor(event, "Hello!", "<b>Hello!</b>");
-    newEvent["msgtype"] = "m.notice";
-    client.sendMessage(roomId, newEvent);
+client.on("account_data", (event: any) => {
+    // Handle the account data update
 });
+```
 
-client.start().then(() => console.log("Client started!"));
+```typescript
+client.on("room.account_data", (roomId: string, event: any) => {
+    // Handle the room account data update 
+});
+```
+
+### Room membership
+
+```typescript
+client.on("room.join", (roomId: string, event: any) => {
+    // The client has joined `roomId`
+});
+```
+
+```typescript
+client.on("room.leave", (roomId: string, event: any) => {
+    // The client has left `roomId` (either voluntarily, kicked, or banned)
+});
+```
+
+```typescript
+client.on("room.join", (roomId: string, event: any) => {
+    // The client has been invited to `roomId`
+});
 ```

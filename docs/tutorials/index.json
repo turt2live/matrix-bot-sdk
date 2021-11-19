@@ -1,10 +1,10 @@
 {
   "bot": {
-    "title": "Creating a bot",
+    "title": "Bot usage",
     "order": 1
   },
   "appservice": {
-    "title": "Creating an appservice (bridge)",
+    "title": "Appservice (bridge) usage",
     "order": 2
   },
   "room-upgrades": {
