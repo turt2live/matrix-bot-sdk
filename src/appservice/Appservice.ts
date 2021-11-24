@@ -19,6 +19,13 @@ import { MatrixBridge } from "./MatrixBridge";
 import * as LRU from "lru-cache";
 import { IApplicationServiceProtocol } from "./http_responses";
 
+const EDU_ANNOTATION_KEY = "io.t2bot.sdk.bot.type";
+
+enum EduAnnotation {
+    ToDevice = "to_device",
+    Ephemeral = "ephemeral",
+}
+
 /**
  * Represents an application service's registration file. This is expected to be
  * loaded from another source, such as a YAML file.
@@ -576,7 +583,6 @@ export class Appservice extends EventEmitter {
 
     private async processEphemeralEvent(event: any): Promise<any> {
         if (!event) return event;
-        if (event['edu_type']) event['type'] = event['edu_type']; // handle property change during MSC2409's course
         if (!this.eventProcessors[event["type"]]) return event;
 
         for (const processor of this.eventProcessors[event["type"]]) {
@@ -657,24 +663,43 @@ export class Appservice extends EventEmitter {
 
         LogService.info("Appservice", "Processing transaction " + txnId);
         this.pendingTransactions[txnId] = new Promise<void>(async (resolve) => {
-            // Process EDUs first to give the best chance at decryption
+            // Process to-device messages and EDUs first to give the best chance at decryption
+            const orderedEdus = [];
+            if (Array.isArray(req.body["de.sorunome.msc2409.to_device"])) {
+                orderedEdus.push(...req.body["de.sorunome.msc2409.to_device"].map(e => ({
+                    ...e,
+                    unsigned: {
+                        ...e['unsigned'],
+                        [EDU_ANNOTATION_KEY]: EduAnnotation.ToDevice,
+                    },
+                })));
+            }
             if (Array.isArray(req.body["de.sorunome.msc2409.ephemeral"])) {
-                for (let event of req.body["de.sorunome.msc2409.ephemeral"]) {
-                    LogService.info("Appservice", `Processing ephemeral event of type ${event["type"]}`);
-                    event = await this.processEphemeralEvent(event);
+                orderedEdus.push(...req.body["de.sorunome.msc2409.ephemeral"].map(e => ({
+                    ...e,
+                    unsigned: {
+                        ...e['unsigned'],
+                        [EDU_ANNOTATION_KEY]: EduAnnotation.Ephemeral,
+                    },
+                })));
+            }
+            for (let event of orderedEdus) {
+                if (event['edu_type']) event['type'] = event['edu_type']; // handle property change during MSC2409's course
 
-                    // These events aren't tied to rooms, so just emit them generically
-                    this.emit("ephemeral.event", event);
+                LogService.info("Appservice", `Processing ${event['unsigned'][EDU_ANNOTATION_KEY]} event of type ${event["type"]}`);
+                event = await this.processEphemeralEvent(event);
 
-                    if (event["type"] === "m.room.encrypted") {
-                        const toUser = event["to_user_id"];
-                        try {
-                            const intent = this.getIntentForUserId(toUser);
-                            await intent.enableEncryption();
-                            await intent.underlyingClient.crypto?.processInboundDeviceMessage(event);
-                        } catch (e) {
-                            LogService.error("Appservice", `Error handling encrypted to-device message sent to ${toUser}`, e);
-                        }
+                // These events aren't tied to rooms, so just emit them generically
+                this.emit("ephemeral.event", event);
+
+                if (event["type"] === "m.room.encrypted") {
+                    const toUser = event["to_user_id"];
+                    try {
+                        const intent = this.getIntentForUserId(toUser);
+                        await intent.enableEncryption();
+                        await intent.underlyingClient.crypto?.processInboundDeviceMessage(event);
+                    } catch (e) {
+                        LogService.error("Appservice", `Error handling encrypted to-device message sent to ${toUser}`, e);
                     }
                 }
             }
