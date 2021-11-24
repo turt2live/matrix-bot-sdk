@@ -844,8 +844,11 @@ export class MatrixClient extends EventEmitter {
                 }
                 if (event['type'] === 'm.room.message') {
                     await emitFn("room.message", roomId, event);
-                }
-                if (event['type'] === 'm.room.tombstone' && event['state_key'] === '') {
+                } if (event['type'] === 'm.reaction') {
+                    await emitFn("reaction", roomId, event);
+                } if (event['type'] === 'm.room.redaction') {
+                    await emitFn('room.redaction', roomId, event);
+                } if (event['type'] === 'm.room.tombstone' && event['state_key'] === '') {
                     await emitFn("room.archived", roomId, event);
                 }
                 if (event['type'] === 'm.room.create' && event['state_key'] === '' && event['content']
