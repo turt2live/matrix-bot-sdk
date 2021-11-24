@@ -11,7 +11,8 @@ import {
     LogService,
     MatrixClient,
     MemoryStorageProvider,
-    Metrics
+    Metrics,
+    OTKAlgorithm,
 } from "..";
 import { EventEmitter } from "events";
 import * as morgan from "morgan";
@@ -663,7 +664,45 @@ export class Appservice extends EventEmitter {
 
         LogService.info("Appservice", "Processing transaction " + txnId);
         this.pendingTransactions[txnId] = new Promise<void>(async (resolve) => {
-            // Process to-device messages and EDUs first to give the best chance at decryption
+            // Process device list changes to ensure we enter the decryption/encryption loops with the best possible state
+            const deviceLists = req.body["org.matrix.msc3202.device_lists"]
+            if (deviceLists) {
+                if (Array.isArray(deviceLists["changed"])) {
+                    await this.botClient.crypto?.flagUsersDeviceListsOutdated(deviceLists['changed'], true);
+                }
+                if (Array.isArray(deviceLists["removed"])) {
+                    // Like MatrixClient, we don't need to resync removed devices immediately. We'll do this
+                    // later all on our own.
+                    await this.botClient.crypto?.flagUsersDeviceListsOutdated(deviceLists['removed'], false);
+                }
+            }
+
+            // Process OTKs and fallback keys next so we can ensure that we have appropriate counts for if the transaction
+            // takes a bit longer to process than expected. We want to be able to decrypt messages in future transactions.
+            const otks = req.body["org.matrix.msc3202.device_one_time_keys_count"];
+            if (otks) {
+                for (const userId of Object.keys(otks)) {
+                    const intent = this.getIntentForUserId(userId);
+                    await intent.enableEncryption();
+                    const otksForUser = otks[intent.underlyingClient.crypto?.clientDeviceId];
+                    if (otksForUser) {
+                        await intent.underlyingClient.crypto?.updateCounts(otksForUser);
+                    }
+                }
+            }
+            const fallbacks = req.body["org.matrix.msc3202.device_unused_fallback_key_types"];
+            if (fallbacks) {
+                for (const userId of Object.keys(fallbacks)) {
+                    const intent = this.getIntentForUserId(userId);
+                    await intent.enableEncryption();
+                    const fallbacksForUser = fallbacks[intent.underlyingClient.crypto?.clientDeviceId];
+                    if (Array.isArray(fallbacksForUser) && !fallbacksForUser.includes(OTKAlgorithm.Signed)) {
+                        await intent.underlyingClient.crypto?.updateFallbackKey();
+                    }
+                }
+            }
+
+            // Process to-device messages and EDUs to give the best chance at decryption
             const orderedEdus = [];
             if (Array.isArray(req.body["de.sorunome.msc2409.to_device"])) {
                 orderedEdus.push(...req.body["de.sorunome.msc2409.to_device"].map(e => ({
