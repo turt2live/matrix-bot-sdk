@@ -576,6 +576,7 @@ export class Appservice extends EventEmitter {
 
     private async processEphemeralEvent(event: any): Promise<any> {
         if (!event) return event;
+        if (event['edu_type']) event['type'] = event['edu_type']; // handle property change during MSC2409's course
         if (!this.eventProcessors[event["type"]]) return event;
 
         for (const processor of this.eventProcessors[event["type"]]) {
