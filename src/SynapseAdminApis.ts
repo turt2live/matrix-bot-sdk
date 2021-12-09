@@ -166,6 +166,34 @@ export enum SynapseRoomProperty {
     NumStateEvents = "state_events",
 }
 
+export interface SynapseListUserOptions {
+    /**
+     * Filters to only return users with user IDs that contain this value. This parameter is ignored when using the name parameter.
+     */
+    user_id?: string;
+    /**
+     * Filters to only return users with user ID localparts or displaynames that contain this value.
+     */
+    name?: string;
+    /**
+     * If false will exclude guest users. Defaults to true to include guest users.
+     */
+    guests?: boolean;
+    /**
+     * If true will include deactivated users. Defaults to false to exclude deactivated users.
+     */
+    deactivated?: boolean;
+    /**
+     * The method by which to sort the returned list of users. If the ordered field has duplicates, the second order is always by ascending name, which guarantees a stable ordering.
+     * **Caution**: The database only has indexes on the columns `name` and `creation_ts`. This means that if a different sort order is used, it can cause a large load on the database.
+     */
+    order_by?: "name"|"is_guest"|"admin"|"user_type"|"deactivated"|"shadow_banned"|"displayname"|"avatar_url"|"creation_ts";
+    /**
+     * The number of results to return at a time.
+     */
+    limit?: number;
+}
+
 /**
  * Access to various administrative APIs specifically available in Synapse.
  * @category Admin APIs
@@ -214,6 +242,35 @@ export class SynapseAdminApis {
         if (limit) qs['limit'] = limit;
         if (name) qs['name'] = name;
         return this.client.doRequest("GET", "/_synapse/admin/v2/users", qs);
+    }
+
+    /**
+     * Get a list of all users registered with Synapse, optionally filtered by some criteria. The
+     * client making the request must be an admin user.
+     *
+     * This method returns an async generator that can be used to filter results.
+     * @param options Options to pass to the user listing function
+     * @example
+     * for await (const user of synapseAdminApis.listAllUsers()) {
+     *    if (user.name === '@alice:example.com') {
+     *       return user;
+     *    }
+     * }
+     */
+    public async *listAllUsers(options: SynapseListUserOptions = {}): AsyncGenerator<SynapseUserListing> {
+        let from: string|undefined = undefined;
+        let response: SynapseUserList;
+        do {
+            const qs = {
+                ...options,
+                ...(from && {from}),
+            };
+            response = await this.client.doRequest("GET", "/_synapse/admin/v2/users", qs);
+            for (const user of response.users) {
+                yield user;
+            }
+            from = response.next_token;
+        } while (from)
     }
 
     /**
