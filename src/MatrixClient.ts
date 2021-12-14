@@ -73,6 +73,11 @@ export class MatrixClient extends EventEmitter {
      */
     public readonly crypto: CryptoClient;
 
+    /**
+     * The number of times to retry a request before giving up.
+     */
+    public maxRetries = 0;
+
     private userId: string;
     private requestId = 0;
     private lastJoinedRoomIds: string[] = [];
@@ -1867,7 +1872,7 @@ export class MatrixClient extends EventEmitter {
      * @returns {Promise<any>} Resolves to the response (body), rejected if a non-2xx status code was returned.
      */
     @timedMatrixClientFunctionCall()
-    public doRequest(method, endpoint, qs = null, body = null, timeout = 60000, raw = false, contentType = "application/json", noEncoding = false): Promise<any> {
+    public async doRequest(method, endpoint, qs = null, body = null, timeout = 60000, raw = false, contentType = "application/json", noEncoding = false): Promise<any> {
         if (this.impersonatedUserId) {
             if (!qs) qs = {"user_id": this.impersonatedUserId};
             else qs["user_id"] = this.impersonatedUserId;
@@ -1880,9 +1885,68 @@ export class MatrixClient extends EventEmitter {
         if (this.accessToken) {
             headers["Authorization"] = `Bearer ${this.accessToken}`;
         }
-        return doHttpRequest(this.homeserverUrl, method, endpoint, qs, body, headers, timeout, raw, contentType, noEncoding);
+
+        const backoffTime = (nRetries: number) => {
+            return TIMEOUT_BACKOFF_BASE ** nRetries * timeout;
+        }
+
+        const waitFor = (time: number) => {
+            return new Promise(resolve => setTimeout(resolve, time));
+        };
+
+        // We would like to have the requestId from doHttpRequest so that logging retries can be a little more informative.
+        // The thing that stops us moving this code to http.ts is the configurable maxRetries, since if we have that here we can configure it per client.
+        // Another reason for doing it here is giving the opportunity for a client to prevent retries for specific
+        // endpoints via the event emitter on the client, there could be better ways of doing this though?
+        let attempt = 0;
+        let shouldRetry = true;
+        const requestId = ++clientRequestId;
+        while (true) {
+            try {
+                return await doHttpRequest(this.homeserverUrl, method, endpoint, qs, body, headers, backoffTime(attempt), raw, contentType, noEncoding);
+            } catch (err) {
+                // Capture details about the failed request in an event to give listeners the opportunity to stop the request being retried.
+                const event = Object.freeze({
+                    attempt,
+                    stopRetry() {
+                        LogService.debug('MatrixClient.ts', `Client request-${requestId} stopped by a request.timeout listener.`)
+                        shouldRetry = false;
+                    },
+                    err
+                });
+                // FIXME: What about the rate limit errors? do we want to do something with those?
+                if (err.code === 'ESOCKETTIMEDOUT' || err.code === 'ETIMEDOUT') {
+                    LogService.info('MatrixClient.ts', `Retrying client request-${requestId} ${method} ${endpoint}, current attempt ${attempt}.`);
+                    this.emit('request.timeout', this.homeserverUrl, method, endpoint, event);
+                } else {
+                    throw err;
+                }
+
+                if (attempt < this.maxRetries && shouldRetry) {
+                    await waitFor(backoffTime(attempt));
+                    attempt++;
+                } else if (this.maxRetries > 0) {
+                    LogService.error('MatrixClient.ts', `client request-${requestId} retry limit reached ${this.maxRetries}.`)
+                    // FIXME: Do we want to wrap the error or something to explain how many times we've retried?
+                    throw err;
+                } else {
+                    // This means that they didn't want to retry either by intervention with a listener or maxRetries was set to 0.
+                    throw err;
+                }
+            }
+        }
     }
 }
+
+/**
+ * The base to exponentiate by `n` retries of a failed request.
+ */
+const TIMEOUT_BACKOFF_BASE = 1.6;
+
+/**
+ * This is used to identify requests from the client that are being retried.
+ */
+let clientRequestId = 0;
 
 export interface RoomDirectoryLookupResponse {
     roomId: string;

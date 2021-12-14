@@ -38,6 +38,44 @@ export function createTestClient(storage: IStorageProvider = null, userId: strin
     return {http, hsUrl, accessToken, client};
 }
 
+
+/**
+ * Create a client that simulates request timeout.
+ * @param timeoutsPerRequest How many times to timeout per request.
+ * @returns A mock client that experiances a lot of request's ESOCKETTIMEDOUT.
+ */
+export function createTimeoutClient(timeoutsPerRequest: number): MatrixClient {
+    const hsUrl = "https://localhost";
+    const accessToken = "s3cret";
+    const client = new MatrixClient(hsUrl, accessToken);
+    (<any>client).userId = 'esockettimedout4life'; // private member access
+
+    let timeoutCount = 0;
+    let currentUrl = null;
+    const timeoutRequest = (url, cb: (error, request, body) => void) => {
+        if (timeoutCount < timeoutsPerRequest) {
+            if (currentUrl !== null && currentUrl.uri !== url.uri) {
+                // We can't run concurrently because the getRequestFn will be shared and we need them to be unique to each test.
+                throw new Error('This should not be happening, two tests are running concurrently and we are not prepared for that.');
+            }
+            currentUrl = url;
+            const timeoutError = new Error('ESOCKETTIMEDOUT');
+            Object.assign(timeoutError, { 
+                code: 'ESOCKETTIMEDOUT',
+                connect: false,
+            });
+            timeoutCount++;
+            cb(timeoutError, null, null);
+        } else {
+            timeoutCount = 0;
+            currentUrl = null;
+            cb(null, 'request', 'body');
+        }
+    };
+    setRequestFn(timeoutRequest);
+    return client;
+}
+
 export async function createPreparedCryptoTestClient(userId: string): Promise<{ client: MatrixClient, http: MockHttpBackend, hsUrl: string, accessToken: string }> {
     const r = createTestClient(null, userId, true);
 
@@ -6837,6 +6875,50 @@ describe('MatrixClient', () => {
 
             const result = redactObjectForLogging(input);
             expect(result).toMatchObject(output);
+        });
+    });
+    describe('requestTimeoutRetry', function () {
+        it('should be able to survive a timeout', async function () {
+            const client = createTimeoutClient(1);
+            client.maxRetries = 1;
+            let retries = 0;
+            client.on('request.timeout', (url, method, endpoint, event) => {
+                retries = event.retries;
+            });
+            const response = await client.doRequest("GET", "/survive-timeout", null, null, 10);
+            expect(response).toBe('body');
+            expect(retries).toBe(1);
+        });
+        it('will not prolong a timeout situation longer than the configured limit', async function () {
+            const client = createTimeoutClient(2);
+            client.maxRetries = 1;
+            let retries = 0;
+            client.on('request.timeout', (url, method, endpoint, event) => {
+                retries = event.retries;
+            });
+            await expect(client.doRequest("GET", "/do-not-prolong-timeout", null, null, 10)).rejects.toThrowError('ESOCKETTIMEDOUT');
+            expect(retries).toBe(1);
+        });
+        it('should be able to cancel a retry', async function () {
+            const client = createTimeoutClient(4);
+            client.maxRetries = 3;
+            let retries = 0;
+            client.on('request.timeout', (url, method, endpoint, event) => {
+                event.stopRetry();
+                retries = event.retries;
+            });
+            await expect(client.doRequest("GET", "/cancel-retry", null, null, 10)).rejects.toThrowError('ESOCKETTIMEDOUT');
+            expect(retries).toBe(0);
+        });
+        it('will not retry unless the client is configured to', async function () {
+            const client = createTimeoutClient(1);
+            expect(client.maxRetries).toBe(0);
+            let retries = 0;
+            client.on('request.timeout', (url, method, endpoint, event) => {
+                retries = event.retries;
+            });
+            await expect(client.doRequest("GET", "/never-retry", null, null, 10)).rejects.toThrowError('ESOCKETTIMEDOUT');
+            expect(retries).toBe(0);
         });
     });
 });
