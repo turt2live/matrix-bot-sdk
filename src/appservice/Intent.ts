@@ -106,37 +106,48 @@ export class Intent {
             this.cryptoSetupPromise = new Promise(async (resolve, reject) => {
                 try {
                     // Prepare a client first
-                    // XXX: We work around servers that don't support device_id impersonation
                     await this.ensureRegistered();
                     const storage = this.storage?.storageForUser?.(this.userId);
-                    // noinspection ES6RedundantAwait
-                    const accessToken = await Promise.resolve(storage?.readValue("accessToken"));
-                    if (!accessToken) {
-                        const loginBody = {
-                            type: "uk.half-shot.msc2778.login.application_service",
-                            identifier: {
-                                type: "m.id.user",
-                                user: this.userId,
-                            },
-                        };
-                        this.client.impersonateUserId(null); // avoid confusing homeserver
-                        const res = await this.client.doRequest("POST", "/_matrix/client/r0/login", {}, loginBody);
-                        this.makeClient(true, res['access_token']);
-                        storage.storeValue("accessToken", this.client.accessToken);
-                    } else {
-                        this.makeClient(true, accessToken);
+                    this.client.impersonateUserId(this.userId); // make sure the devices call works
+
+                    // Try to impersonate a device ID
+                    const devices = await this.client.getOwnDevices();
+                    const deviceId = devices.find(d => d.device_id)?.device_id;
+                    let prepared = false;
+                    if (deviceId) {
+                        this.makeClient(true);
+                        this.client.impersonateUserId(this.userId, deviceId);
+
+                        // verify that the server supports this
+                        const respDeviceId = (await this.client.getWhoAmI()).device_id;
+                        prepared = (respDeviceId === deviceId);
                     }
 
-                    // // Populate the crypto store with basic information (to avoid server hit)
-                    // const devices = await this.client.getOwnDevices();
-                    // const deviceId = devices.find(d => d.device_id)?.device_id;
-                    // if (deviceId) {
-                    //     this.client.impersonateUserId(this.userId, deviceId);
-                    //     // await this.client.cryptoStore.setDeviceId(deviceId);
-                    // } else {
-                    //     // noinspection ExceptionCaughtLocallyJS
-                    //     throw new Error("Unable to establish a device ID");
-                    // }
+                    if (!prepared) {
+                        // XXX: We work around servers that don't support device_id impersonation
+                        const accessToken = await Promise.resolve(storage?.readValue("accessToken"));
+                        if (!accessToken) {
+                            const loginBody = {
+                                type: "uk.half-shot.msc2778.login.application_service",
+                                identifier: {
+                                    type: "m.id.user",
+                                    user: this.userId,
+                                },
+                            };
+                            this.client.impersonateUserId(null); // avoid confusing homeserver
+                            const res = await this.client.doRequest("POST", "/_matrix/client/r0/login", {}, loginBody);
+                            this.makeClient(true, res['access_token']);
+                            storage.storeValue("accessToken", this.client.accessToken);
+                            prepared = true;
+                        } else {
+                            this.makeClient(true, accessToken);
+                            prepared = true;
+                        }
+                    }
+
+                    if (!prepared) {// noinspection ExceptionCaughtLocallyJS
+                        throw new Error("Unable to establish a device ID");
+                    }
 
                     // Now set up crypto
                     await this.client.crypto.prepare(await this.client.getJoinedRooms());
