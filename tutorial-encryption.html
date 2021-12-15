@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title> Encryption</title>
+
+  <script src="https://cdn.jsdelivr.net/gh/google/code-prettify@master/loader/run_prettify.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="./build/entry.js"></script>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+  <!--[if lt IE 9]>
+    <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+  <![endif]-->
+  <link href="https://fonts.googleapis.com/css?family=Roboto:100,400,700|Inconsolata,700" rel="stylesheet">
+  <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.6.3/css/all.css" integrity="sha384-UHRtZLI+pbxtHCWp1t77Bi1L4ZtiqrqD80Kn4Z8NTSRyMA2Fd33n5dQ8lWUE00s/" crossorigin="anonymous">
+  <link type="text/css" rel="stylesheet" href="https://jmblog.github.io/color-themes-for-google-code-prettify/themes/tomorrow-night.min.css">
+  <link type="text/css" rel="stylesheet" href="styles/app.min.css">
+  <link type="text/css" rel="stylesheet" href="styles/iframe.css">
+  <link type="text/css" rel="stylesheet" href="">
+  <script async defer src="https://buttons.github.io/buttons.js"></script>
+
+  
+</head>
+
+
+
+<body class="layout small-header">
+    <div id="stickyNavbarOverlay"></div>
+    
+
+<div class="top-nav">
+    <div class="inner">
+        <a id="hamburger" role="button" class="navbar-burger" aria-label="menu" aria-expanded="false">
+            <span aria-hidden="true"></span>
+            <span aria-hidden="true"></span>
+            <span aria-hidden="true"></span>
+        </a>
+        <div class="logo">
+            
+            
+        </div>
+        <div class="menu">
+            
+            <div class="navigation">
+                <a
+                    href="index.html"
+                    class="link"
+                >
+                    API Documentation
+                </a>
+                
+                <div class="dropdown is-hoverable is-right">
+                    <a class="dropdown-trigger link">
+                        Tutorials
+                        <i class="fas fa-chevron-down fa-xs"></i>
+                    </a>
+                    <div class="dropdown-menu">
+                        <div class="dropdown-content">
+                        
+                            <a class="dropdown-item" href="tutorial-appservice_.html">
+                                Appservice (bridge) usage
+                            </a>
+                        
+                            <a class="dropdown-item" href="tutorial-bot.html">
+                                Bot usage
+                            </a>
+                        
+                            <a class="dropdown-item" href="tutorial-encryption.html">
+                                Encryption
+                            </a>
+                        
+                            <a class="dropdown-item" href="tutorial-room-upgrades.html">
+                                Room upgrades
+                            </a>
+                        
+                        </div>
+                    </div>
+                </div>
+                
+                
+                
+            </div>
+        </div>
+    </div>
+</div>
+    <div id="main">
+        <div
+            class="sidebar tutorials"
+            id="sidebarNav"
+        >
+            
+            <nav>
+                
+                    <div class="category"><h3>Tutorials</h3><ul><li><a href="tutorial-appservice_.html">Appservice (bridge) usage</a><ul><li><a href="tutorial-bot-to-appservice.html">Converting a bot to an appservice</a></li></ul></li><li><a href="tutorial-bot.html">Bot usage</a></li><li><a href="tutorial-encryption.html">Encryption</a><ul><li><a href="tutorial-encryption-bots.html">Encryption for bots</a></li><li><a href="tutorial-encryption-appservices.html">Encryption for appservices</a></li></ul></li><li><a href="tutorial-room-upgrades.html">Room upgrades</a></li></ul></div>
+                
+            </nav>
+        </div>
+        <div class="core" id="main-content-wrapper">
+            <div class="content">
+                <header class="page-title">
+                    <p>Tutorial</p>
+                    <h1>Encryption</h1>
+                </header>
+                <section>
+
+<article>
+    <p>Matrix supports end-to-end encryption between users in encrypted rooms. Not all rooms are encrypted, and most bots and
+bridges do not support encryption out of the gate. With the bot-sdk, encryption (or crypto) needs to be turned on
+deliberately in the code.</p>
+<p>The following guides go into detail on how to enable encryption for different use cases:</p>
+<ul>
+<li><a href="tutorial-encryption-bots.html">Encryption for bots</a></li>
+<li><a href="tutorial-encryption-appservices.html">Encryption for appservices</a></li>
+</ul>
+<h2>General principles</h2>
+<p>For both bots and appservices, an <a href="ICryptoStorageProvider.html">ICryptoStorageProvider</a> will be needed to actually enable encryption. This can
+be your own implementation of the interface (including <code>storageForUser</code> in the case of appservices), or it can be one of
+the built in types.</p>
+<p>For bots, <a href="NamespacingSqliteCryptoStorageProvider.html">NamespacingSqliteCryptoStorageProvider</a> is typically best. There is also an
+<a href="NamespacingPostgresCryptoStorageProvider.html">NamespacingPostgresCryptoStorageProvider</a> intended for appservices, though works fine with bots too. The PostgreSQL
+implementation takes a <a href="ICryptoSecureStorageProvider.html">ICryptoSecureStorageProvider</a> which can also be implemented on your own, or using something
+like <a href="CryptexCryptoSecureStorageProvider.html">CryptexCryptoSecureStorageProvider</a> instead.</p>
+<pre class="prettyprint source lang-typescript"><code>// Sqlite is easiest for most bots
+const sqliteStorage = new NamespacingSqliteCryptoStorageProvider(&quot;./path/to/bot.db&quot;);
+
+// PostgreSQL is easier for appservices, but just as available to bots. It requires a secret management provider.
+// See the appservices tutorial for more information: <a href="tutorial-encryption-appservices.html">Encryption for appservices</a>
+const cryptexInstance = new CryptexCryptoSecureStorageProvider(); // read from default locations
+const psqlStorage = new NamespacingPostgresCryptoStorageProvider(&quot;postgresql://user:pass@domain/database&quot;, cryptexInstance);
+</code></pre>
+</article>
+
+</section>
+
+            </div>
+            
+            <footer class="footer">
+                <div class="content has-text-centered">
+                    <p>Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.6.7</a></p>
+                    <p class="sidebar-created-by">
+                        <a href="https://github.com/SoftwareBrothers/better-docs" target="_blank">BetterDocs theme</a> provided with <i class="fas fa-heart"></i> by 
+                        <a href="http://softwarebrothers.co" target="_blank">SoftwareBrothers - JavaScript Development Agency</a>
+                    </p>
+                </div>
+            </footer>
+            
+        </div>
+        <div id="side-nav" class="side-nav">
+        </div>
+    </div>
+<script src="scripts/app.min.js"></script>
+<script>PR.prettyPrint();</script>
+<script src="scripts/linenumber.js"> </script>
+
+</body>
+</html>

@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title> Encryption for bots</title>
+
+  <script src="https://cdn.jsdelivr.net/gh/google/code-prettify@master/loader/run_prettify.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="./build/entry.js"></script>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+  <!--[if lt IE 9]>
+    <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+  <![endif]-->
+  <link href="https://fonts.googleapis.com/css?family=Roboto:100,400,700|Inconsolata,700" rel="stylesheet">
+  <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.6.3/css/all.css" integrity="sha384-UHRtZLI+pbxtHCWp1t77Bi1L4ZtiqrqD80Kn4Z8NTSRyMA2Fd33n5dQ8lWUE00s/" crossorigin="anonymous">
+  <link type="text/css" rel="stylesheet" href="https://jmblog.github.io/color-themes-for-google-code-prettify/themes/tomorrow-night.min.css">
+  <link type="text/css" rel="stylesheet" href="styles/app.min.css">
+  <link type="text/css" rel="stylesheet" href="styles/iframe.css">
+  <link type="text/css" rel="stylesheet" href="">
+  <script async defer src="https://buttons.github.io/buttons.js"></script>
+
+  
+</head>
+
+
+
+<body class="layout small-header">
+    <div id="stickyNavbarOverlay"></div>
+    
+
+<div class="top-nav">
+    <div class="inner">
+        <a id="hamburger" role="button" class="navbar-burger" aria-label="menu" aria-expanded="false">
+            <span aria-hidden="true"></span>
+            <span aria-hidden="true"></span>
+            <span aria-hidden="true"></span>
+        </a>
+        <div class="logo">
+            
+            
+        </div>
+        <div class="menu">
+            
+            <div class="navigation">
+                <a
+                    href="index.html"
+                    class="link"
+                >
+                    API Documentation
+                </a>
+                
+                <div class="dropdown is-hoverable is-right">
+                    <a class="dropdown-trigger link">
+                        Tutorials
+                        <i class="fas fa-chevron-down fa-xs"></i>
+                    </a>
+                    <div class="dropdown-menu">
+                        <div class="dropdown-content">
+                        
+                            <a class="dropdown-item" href="tutorial-appservice_.html">
+                                Appservice (bridge) usage
+                            </a>
+                        
+                            <a class="dropdown-item" href="tutorial-bot.html">
+                                Bot usage
+                            </a>
+                        
+                            <a class="dropdown-item" href="tutorial-encryption.html">
+                                Encryption
+                            </a>
+                        
+                            <a class="dropdown-item" href="tutorial-room-upgrades.html">
+                                Room upgrades
+                            </a>
+                        
+                        </div>
+                    </div>
+                </div>
+                
+                
+                
+            </div>
+        </div>
+    </div>
+</div>
+    <div id="main">
+        <div
+            class="sidebar tutorials"
+            id="sidebarNav"
+        >
+            
+            <nav>
+                
+                    <div class="category"><h3>Tutorials</h3><ul><li><a href="tutorial-appservice_.html">Appservice (bridge) usage</a><ul><li><a href="tutorial-bot-to-appservice.html">Converting a bot to an appservice</a></li></ul></li><li><a href="tutorial-bot.html">Bot usage</a></li><li><a href="tutorial-encryption.html">Encryption</a><ul><li><a href="tutorial-encryption-bots.html">Encryption for bots</a></li><li><a href="tutorial-encryption-appservices.html">Encryption for appservices</a></li></ul></li><li><a href="tutorial-room-upgrades.html">Room upgrades</a></li></ul></div>
+                
+            </nav>
+        </div>
+        <div class="core" id="main-content-wrapper">
+            <div class="content">
+                <header class="page-title">
+                    <p>Tutorial</p>
+                    <h1>Encryption for bots</h1>
+                </header>
+                <section>
+
+<article>
+    <p>Setting up encryption for a bot is easy: simply provide a crypto storage provider in addition to your other storage
+providers and it'll start working behind the scenes.</p>
+<pre class="prettyprint source lang-typescript"><code>const storageProvider = new SimpleFsStorageProvider(&quot;./path/to/bot.json&quot;); // or any other <a href="IStorageProvider.html">IStorageProvider</a>
+const cryptoProvider = new NamespacingSqliteCryptoStorageProvider(&quot;./path/to/bot.db&quot;); // or any other <a href="ICryptoStorageProvider.html">ICryptoStorageProvider</a>
+
+// ⚠⚠ Be sure to back up both `bot.json` and `bot.db` when using this setup
+
+const homeserverUrl = &quot;https://example.org&quot;; // where the bot can reach the homeserver at
+const accessToken = &quot;...&quot;; // acquired from login or registration.
+
+// ℹ The access token for the bot should remain consistent. The crypto storage in particular will assume that the
+// device ID (and thus access token) does not change between restarts. If the access token becomes invalid, or the
+// crypto storage is lost, a new access token and new crypto storage will need to be created.
+
+const client = new MatrixClient(homeserverUrl, accessToken, storageProvider, cryptoProvider);
+
+// set up your listeners here
+client.on(&quot;room.message&quot;, (roomId: string, event: any) => {
+    if (!event['content']?.['msgtype']) return;
+    
+    // handle message here. It'll be decrypted already.
+});
+
+// This will set up crypto if needed and prepare the client for automatically decrypting and encrypting messages. Simply
+// use the client like you would without encryption and it should just work.
+client.start().then(() => console.log(&quot;Bot started!&quot;));
+</code></pre>
+<h2>Advanced usage</h2>
+<p>To monitor the encryption/decryption process, add the following listeners:</p>
+<pre class="prettyprint source lang-typescript"><code>client.on(&quot;room.encrypted_event&quot;, (roomId: string, event: any) => {
+    // handle `m.room.encrypted` event that was received from the server
+});
+</code></pre>
+<pre class="prettyprint source lang-typescript"><code>client.on(&quot;room.decrypted_event&quot;, (roomId: string, event: any) => {
+    // handle a decrypted `m.room.encrypted` event (`event` will be representative of the cleartext event).
+    
+    // this is effectively the same as `on('room.event', ...)` though at a different point in the lifecycle.
+});
+</code></pre>
+<pre class="prettyprint source lang-typescript"><code>client.on(&quot;room.failed_decryption&quot;, (roomId: string, event: any, error: Error) => {
+    // handle `m.room.encrypted` event that could not be decrypted
+});
+</code></pre>
+</article>
+
+</section>
+
+            </div>
+            
+            <footer class="footer">
+                <div class="content has-text-centered">
+                    <p>Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.6.7</a></p>
+                    <p class="sidebar-created-by">
+                        <a href="https://github.com/SoftwareBrothers/better-docs" target="_blank">BetterDocs theme</a> provided with <i class="fas fa-heart"></i> by 
+                        <a href="http://softwarebrothers.co" target="_blank">SoftwareBrothers - JavaScript Development Agency</a>
+                    </p>
+                </div>
+            </footer>
+            
+        </div>
+        <div id="side-nav" class="side-nav">
+        </div>
+    </div>
+<script src="scripts/app.min.js"></script>
+<script>PR.prettyPrint();</script>
+<script src="scripts/linenumber.js"> </script>
+
+</body>
+</html>

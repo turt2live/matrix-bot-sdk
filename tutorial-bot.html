@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title> Bot usage</title>
+
+  <script src="https://cdn.jsdelivr.net/gh/google/code-prettify@master/loader/run_prettify.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="./build/entry.js"></script>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+  <!--[if lt IE 9]>
+    <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+  <![endif]-->
+  <link href="https://fonts.googleapis.com/css?family=Roboto:100,400,700|Inconsolata,700" rel="stylesheet">
+  <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.6.3/css/all.css" integrity="sha384-UHRtZLI+pbxtHCWp1t77Bi1L4ZtiqrqD80Kn4Z8NTSRyMA2Fd33n5dQ8lWUE00s/" crossorigin="anonymous">
+  <link type="text/css" rel="stylesheet" href="https://jmblog.github.io/color-themes-for-google-code-prettify/themes/tomorrow-night.min.css">
+  <link type="text/css" rel="stylesheet" href="styles/app.min.css">
+  <link type="text/css" rel="stylesheet" href="styles/iframe.css">
+  <link type="text/css" rel="stylesheet" href="">
+  <script async defer src="https://buttons.github.io/buttons.js"></script>
+
+  
+</head>
+
+
+
+<body class="layout small-header">
+    <div id="stickyNavbarOverlay"></div>
+    
+
+<div class="top-nav">
+    <div class="inner">
+        <a id="hamburger" role="button" class="navbar-burger" aria-label="menu" aria-expanded="false">
+            <span aria-hidden="true"></span>
+            <span aria-hidden="true"></span>
+            <span aria-hidden="true"></span>
+        </a>
+        <div class="logo">
+            
+            
+        </div>
+        <div class="menu">
+            
+            <div class="navigation">
+                <a
+                    href="index.html"
+                    class="link"
+                >
+                    API Documentation
+                </a>
+                
+                <div class="dropdown is-hoverable is-right">
+                    <a class="dropdown-trigger link">
+                        Tutorials
+                        <i class="fas fa-chevron-down fa-xs"></i>
+                    </a>
+                    <div class="dropdown-menu">
+                        <div class="dropdown-content">
+                        
+                            <a class="dropdown-item" href="tutorial-appservice_.html">
+                                Appservice (bridge) usage
+                            </a>
+                        
+                            <a class="dropdown-item" href="tutorial-bot.html">
+                                Bot usage
+                            </a>
+                        
+                            <a class="dropdown-item" href="tutorial-encryption.html">
+                                Encryption
+                            </a>
+                        
+                            <a class="dropdown-item" href="tutorial-room-upgrades.html">
+                                Room upgrades
+                            </a>
+                        
+                        </div>
+                    </div>
+                </div>
+                
+                
+                
+            </div>
+        </div>
+    </div>
+</div>
+    <div id="main">
+        <div
+            class="sidebar tutorials"
+            id="sidebarNav"
+        >
+            
+            <nav>
+                
+                    <div class="category"><h3>Tutorials</h3><ul><li><a href="tutorial-appservice_.html">Appservice (bridge) usage</a><ul><li><a href="tutorial-bot-to-appservice.html">Converting a bot to an appservice</a></li></ul></li><li><a href="tutorial-bot.html">Bot usage</a></li><li><a href="tutorial-encryption.html">Encryption</a><ul><li><a href="tutorial-encryption-bots.html">Encryption for bots</a></li><li><a href="tutorial-encryption-appservices.html">Encryption for appservices</a></li></ul></li><li><a href="tutorial-room-upgrades.html">Room upgrades</a></li></ul></div>
+                
+            </nav>
+        </div>
+        <div class="core" id="main-content-wrapper">
+            <div class="content">
+                <header class="page-title">
+                    <p>Tutorial</p>
+                    <h1>Bot usage</h1>
+                </header>
+                <section>
+
+<article>
+    <p>Bots are typically simple creatures which act on commands and provide utility to rooms. They work very similar to how
+normal Matrix clients work, with the added complexity of needing to be run on a server somewhere. Unlike appservices
+(bridges), bots do not need to be added by a server admin and can be attached to any regular account.</p>
+<p>For a guide starting from scratch, check out the <a href="https://matrix.org/docs/guides/usage-of-matrix-bot-sdk">matrix.org guide</a>.</p>
+<h2>Creating the bot account</h2>
+<p>The bot-sdk can be used to script a simple registration or login script, depending on whether or not an account has
+been made prior to deploying the bot. If you already have an access token, skip this section.</p>
+<p><strong>Registration</strong>:</p>
+<pre class="prettyprint source lang-typescript"><code>import { MatrixAuth } from &quot;matrix-bot-sdk&quot;;
+
+// This will be the URL where clients can reach your homeserver. Note that this might be different
+// from where the web/chat interface is hosted. The server must support password registration without
+// captcha or terms of service (public servers typically won't work).
+const homeserverUrl = &quot;https://example.org&quot;;
+
+const auth = new MatrixAuth(homeserverUrl);
+const client = await auth.passwordRegister(&quot;username&quot;, &quot;password&quot;);
+
+console.log(&quot;Copy this access token to your bot's config: &quot;, client.accessToken);
+</code></pre>
+<p><strong>Login</strong> (preferred):</p>
+<pre class="prettyprint source lang-typescript"><code>import { MatrixAuth } from &quot;matrix-bot-sdk&quot;;
+
+// This will be the URL where clients can reach your homeserver. Note that this might be different
+// from where the web/chat interface is hosted. The server must support password registration without
+// captcha or terms of service (public servers typically won't work).
+const homeserverUrl = &quot;https://example.org&quot;;
+
+const auth = new MatrixAuth(homeserverUrl);
+const client = await auth.passwordLogin(&quot;username&quot;, &quot;password&quot;);
+
+console.log(&quot;Copy this access token to your bot's config: &quot;, client.accessToken);
+</code></pre>
+<p>In either case, the access token printed at the end will need copying to your bot's config.</p>
+<h2>Quickstart bot</h2>
+<p>As an example, a bot which replies to <code>!hello</code> commands would be:</p>
+<pre class="prettyprint source lang-typescript"><code>import { 
+    MatrixClient,
+    SimpleFsStorageProvider,
+    AutojoinRoomsMixin,
+} from &quot;matrix-bot-sdk&quot;;
+
+// This will be the URL where clients can reach your homeserver. Note that this might be different
+// from where the web/chat interface is hosted. The server must support password registration without
+// captcha or terms of service (public servers typically won't work).
+const homeserverUrl = &quot;https://example.org&quot;;
+
+// Use the access token you got from login or registration above.
+const accessToken = &quot;ACQUIRED_FROM_ABOVE&quot;;
+
+// In order to make sure the bot doesn't lose its state between restarts, we'll give it a place to cache
+// any information it needs to. You can implement your own storage provider if you like, but a JSON file
+// will work fine for this example.
+const storage = new SimpleFsStorageProvider(&quot;hello-bot.json&quot;);
+
+// Finally, let's create the client and set it to autojoin rooms. Autojoining is typical of bots to ensure
+// they can be easily added to any room.
+const client = new MatrixClient(homeserverUrl, accessToken, storage);
+AutojoinRoomsMixin.setupOnClient(client);
+
+// Before we start the bot, register our command handler
+client.on(&quot;room.message&quot;, handleCommand);
+
+// Now that everything is set up, start the bot. This will start the sync loop and run until killed.
+client.start().then(() => console.log(&quot;Bot started!&quot;));
+
+// This is the command handler we registered a few lines up
+async function handleCommand(roomId: string, event: any) {
+    // Don't handle unhelpful events (ones that aren't text messages, are redacted, or sent by us)
+    if (event['content']?.['msgtype'] !== 'm.text') return;
+    if (event['sender'] === await client.getUserId()) return;
+    
+    // Check to ensure that the `!hello` command is being run
+    const body = event['content']['body'];
+    if (!body?.startsWith(&quot;!hello&quot;)) return;
+    
+    // Now that we've passed all the checks, we can actually act upon the command
+    await client.replyNotice(roomId, event, &quot;Hello world!&quot;);
+}
+</code></pre>
+<h2>Watching for events</h2>
+<p>A <code>MatrixClient</code> instance will call listeners for various different things that might happen after the bot has started.</p>
+<h3><a href="https://spec.matrix.org/latest/client-server-api/#instant-messaging">Room messages</a> &amp; <a href="https://spec.matrix.org/latest/client-server-api/#events">events</a></h3>
+<pre class="prettyprint source lang-typescript"><code>client.on(&quot;room.message&quot;, (roomId: string, event: any) => {
+    // `event['type']` will always be an `m.room.message` and can be processed as such
+    
+    // be sure to check if the event is redacted/invalid though:
+    if (!event['content']?.['msgtype']) return;
+});
+</code></pre>
+<pre class="prettyprint source lang-typescript"><code>client.on(&quot;room.event&quot;, (roomId: string, event: any) => {
+    // Check `event['type']` to see if it is an event you're interested in
+    if (event['type'] !== 'org.example.custom') return;
+    
+    // Note that state events can also be sent down this listener too
+    if (event['state_key'] !== undefined) return; // state event
+});
+</code></pre>
+<h3><a href="https://spec.matrix.org/latest/client-server-api/#client-config">Account data</a></h3>
+<pre class="prettyprint source lang-typescript"><code>client.on(&quot;account_data&quot;, (event: any) => {
+    // Handle the account data update
+});
+</code></pre>
+<pre class="prettyprint source lang-typescript"><code>client.on(&quot;room.account_data&quot;, (roomId: string, event: any) => {
+    // Handle the room account data update 
+});
+</code></pre>
+<h3>Room membership</h3>
+<pre class="prettyprint source lang-typescript"><code>client.on(&quot;room.join&quot;, (roomId: string, event: any) => {
+    // The client has joined `roomId`
+});
+</code></pre>
+<pre class="prettyprint source lang-typescript"><code>client.on(&quot;room.leave&quot;, (roomId: string, event: any) => {
+    // The client has left `roomId` (either voluntarily, kicked, or banned)
+});
+</code></pre>
+<pre class="prettyprint source lang-typescript"><code>client.on(&quot;room.join&quot;, (roomId: string, event: any) => {
+    // The client has been invited to `roomId`
+});
+</code></pre>
+</article>
+
+</section>
+
+            </div>
+            
+            <footer class="footer">
+                <div class="content has-text-centered">
+                    <p>Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.6.7</a></p>
+                    <p class="sidebar-created-by">
+                        <a href="https://github.com/SoftwareBrothers/better-docs" target="_blank">BetterDocs theme</a> provided with <i class="fas fa-heart"></i> by 
+                        <a href="http://softwarebrothers.co" target="_blank">SoftwareBrothers - JavaScript Development Agency</a>
+                    </p>
+                </div>
+            </footer>
+            
+        </div>
+        <div id="side-nav" class="side-nav">
+        </div>
+    </div>
+<script src="scripts/app.min.js"></script>
+<script>PR.prettyPrint();</script>
+<script src="scripts/linenumber.js"> </script>
+
+</body>
+</html>

@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title> Appservice (bridge) usage</title>
+
+  <script src="https://cdn.jsdelivr.net/gh/google/code-prettify@master/loader/run_prettify.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="./build/entry.js"></script>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+  <!--[if lt IE 9]>
+    <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+  <![endif]-->
+  <link href="https://fonts.googleapis.com/css?family=Roboto:100,400,700|Inconsolata,700" rel="stylesheet">
+  <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.6.3/css/all.css" integrity="sha384-UHRtZLI+pbxtHCWp1t77Bi1L4ZtiqrqD80Kn4Z8NTSRyMA2Fd33n5dQ8lWUE00s/" crossorigin="anonymous">
+  <link type="text/css" rel="stylesheet" href="https://jmblog.github.io/color-themes-for-google-code-prettify/themes/tomorrow-night.min.css">
+  <link type="text/css" rel="stylesheet" href="styles/app.min.css">
+  <link type="text/css" rel="stylesheet" href="styles/iframe.css">
+  <link type="text/css" rel="stylesheet" href="">
+  <script async defer src="https://buttons.github.io/buttons.js"></script>
+
+  
+</head>
+
+
+
+<body class="layout small-header">
+    <div id="stickyNavbarOverlay"></div>
+    
+
+<div class="top-nav">
+    <div class="inner">
+        <a id="hamburger" role="button" class="navbar-burger" aria-label="menu" aria-expanded="false">
+            <span aria-hidden="true"></span>
+            <span aria-hidden="true"></span>
+            <span aria-hidden="true"></span>
+        </a>
+        <div class="logo">
+            
+            
+        </div>
+        <div class="menu">
+            
+            <div class="navigation">
+                <a
+                    href="index.html"
+                    class="link"
+                >
+                    API Documentation
+                </a>
+                
+                <div class="dropdown is-hoverable is-right">
+                    <a class="dropdown-trigger link">
+                        Tutorials
+                        <i class="fas fa-chevron-down fa-xs"></i>
+                    </a>
+                    <div class="dropdown-menu">
+                        <div class="dropdown-content">
+                        
+                            <a class="dropdown-item" href="tutorial-appservice_.html">
+                                Appservice (bridge) usage
+                            </a>
+                        
+                            <a class="dropdown-item" href="tutorial-bot.html">
+                                Bot usage
+                            </a>
+                        
+                            <a class="dropdown-item" href="tutorial-encryption.html">
+                                Encryption
+                            </a>
+                        
+                            <a class="dropdown-item" href="tutorial-room-upgrades.html">
+                                Room upgrades
+                            </a>
+                        
+                        </div>
+                    </div>
+                </div>
+                
+                
+                
+            </div>
+        </div>
+    </div>
+</div>
+    <div id="main">
+        <div
+            class="sidebar tutorials"
+            id="sidebarNav"
+        >
+            
+            <nav>
+                
+                    <div class="category"><h3>Tutorials</h3><ul><li><a href="tutorial-appservice_.html">Appservice (bridge) usage</a><ul><li><a href="tutorial-bot-to-appservice.html">Converting a bot to an appservice</a></li></ul></li><li><a href="tutorial-bot.html">Bot usage</a></li><li><a href="tutorial-encryption.html">Encryption</a><ul><li><a href="tutorial-encryption-bots.html">Encryption for bots</a></li><li><a href="tutorial-encryption-appservices.html">Encryption for appservices</a></li></ul></li><li><a href="tutorial-room-upgrades.html">Room upgrades</a></li></ul></div>
+                
+            </nav>
+        </div>
+        <div class="core" id="main-content-wrapper">
+            <div class="content">
+                <header class="page-title">
+                    <p>Tutorial</p>
+                    <h1>Appservice (bridge) usage</h1>
+                </header>
+                <section>
+
+<article>
+    <p>Application services are essentially superpowered bots with a much more capable connection to the homeserver. While bots
+can operate on nearly any homeserver, appservices need to be specifically installed and configured by the server admins.
+Because of the direct connection nature, and the ability to reserve a whole namespace of user IDs, appservices typically
+take the shape of bridges. They also typically take the shape of single-user bots which outgrew the performance of calling
+<code>/sync</code> in a loop.</p>
+<p>Appservices are added to homeservers using a registration file. Typically, these are YAML files which get added/listed
+to the server config somewhere. Check your homeserver software's documentation for how to install an appservice.</p>
+<p>The bot-sdk does not automatically generate a registration file, but it is trivial to generate one by hand. Implementations
+typically request that the server admin also supply an exact copy of the registration file so it can be handed off to the
+bot-sdk to handle. Advanced uses (ie: multiple namespaces for a single appservice) might require translating the registration
+file into something the bot-sdk is willing to accept, however most cases will be perfectly fine to just read it in directly.</p>
+<p>An example registration file is:</p>
+<pre class="prettyprint source lang-yaml"><code># A general purpose identifier for the appservice. Typically, this is just a lowercase version of the application
+# name. It should be unique among all other appservices installed on the homeserver.
+id: mybridge
+
+# These are the authentication secrets used to communicate between the homeserver and appservice. They should
+# be secret, sufficiently complex, and different from each other and all other appservices installed on the 
+# homeserver.
+as_token: &lt;RANDOM STRING>
+hs_token: &lt;RANDOM STRING>
+
+# These are the namespaces that the appservice would like to reserve or use. Typically, bridges will want to
+# reserve an alias and user namespace.
+namespaces:
+  aliases:
+    - exclusive: true
+      # It's good practice to limit the regex to just bridge users on the current homeserver to avoid confusing
+      # your bridge with other people who might be using it.
+      regex: &quot;#bridge_.+:example.org&quot;
+  users:
+    - exclusive: true
+      regex: &quot;@bridge_.+:example.org&quot;
+  rooms: [] # not commonly used, but required to be set
+
+rate_limited: false # typical bridges don't want to be rate limited
+
+# This is the localpart of the primary user for the appservice. For bridges, this is typically known as the
+# &quot;bridge bot&quot; user.
+sender_localpart: &quot;bridge_bot&quot;
+
+# This is where the homeserver can reach your appservice at. The bot-sdk will automatically expose a webserver
+# at the configured port to handle this traffic and turn it into useful events.
+url: &quot;http://localhost:9000&quot;
+
+# If you need ephemeral events (for crypto or other reasons), set this to true. Defaults to false to avoid flooding
+# the appservice wtih traffic.
+de.sorunome.msc2409.push_ephemeral: true
+</code></pre>
+<h2>Creating the appservice instance</h2>
+<p>The <a href="Appservice.html">Appservice</a> class wants a whole bunch of options, though the details are not much different from a regular
+bot. Namely, it wants a storage mechanism, config options for the webserver, and an appservice registration to use as
+reference.</p>
+<pre class="prettyprint source lang-typescript"><code>const registration: <a href="IAppserviceRegistration.html">IAppserviceRegistration</a> = {/* ... typically read from the YAML file ... */ };
+const options: <a href="IAppserviceOptions.html">IAppserviceOptions</a> = {
+    // Webserver options
+    port: 9000,
+    bindAddress: &quot;0.0.0.0&quot;,
+
+    // Where the appservice can reach the homeserver at. This should be the same URL configured for clients and bots.
+    homeserverUrl: &quot;https://example.org&quot;,
+
+    // The domain name of the homeserver. This is the part that is included in user IDs.
+    homeserverName: &quot;example.org&quot;,
+
+    registration: registration,
+    storage: new SimpleFsStorageProvider(&quot;./path/to/appservice.json&quot;), // or any other <a href="IAppserviceStorageProvider.html">IAppserviceStorageProvider</a>
+    joinStrategy: new SimpleRetryJoinStrategy(), // just to ensure reliable joins
+};
+const appservice = new Appservice(options);
+
+// Attach listeners here
+appservice.on(&quot;room.message&quot;, (roomId: string, event: any) => {
+    if (!event['content']?.['msgtype']) return;
+    
+    // handle message
+});
+
+// Typically appservices will want to autojoin all rooms
+AutojoinRoomsMixin.setupOnAppservice(appservice);
+
+// Actually start the appservice
+appservice.begin().then(() => console.log(&quot;Appservice started&quot;));
+</code></pre>
+<p>The <code>appservice</code> instance will emit all the same stuff as a regular bot. Check out the bot tutorial for more information:
+<a href="tutorial-bot.html">Bot usage</a>.</p>
+<h2>Intents</h2>
+<p>Intents are how the bot-sdk deals with the namespace of users declared in the registration. The bridge bot user is also
+an intent, though with a special accessor.</p>
+<p>To get the bridge bot intent, use <code>appservice.botIntent</code>. For all other intents, <code>appservice.getIntentForSuffix(&quot;suffix&quot;)</code>
+is typically easiest.</p>
+<p>The <a href="Intent.html">Intent</a> class has all sorts of built-in functions, though if you need to do something more complex then you
+may need to handle the intent differently:</p>
+<pre class="prettyprint source lang-typescript"><code>const intent = appservice.getIntentForSuffix(&quot;your_suffix&quot;); // typically a suffix is an identifier from a third party platform
+await intent.ensureRegistered(); // can be called multiple times safely
+await intent.underlyingClient.setDisplayName(&quot;Name&quot;); // or whatever function you'd like to call
+</code></pre>
+<p>Typically the bridge bot intent is used for anything which doesn't need to be impersonated by a specific user ID, such
+as querying room state or inviting users. The bridge client is exposed as <code>appservice.botClient</code> for easy access.</p>
+</article>
+
+</section>
+
+            </div>
+            
+            <footer class="footer">
+                <div class="content has-text-centered">
+                    <p>Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.6.7</a></p>
+                    <p class="sidebar-created-by">
+                        <a href="https://github.com/SoftwareBrothers/better-docs" target="_blank">BetterDocs theme</a> provided with <i class="fas fa-heart"></i> by 
+                        <a href="http://softwarebrothers.co" target="_blank">SoftwareBrothers - JavaScript Development Agency</a>
+                    </p>
+                </div>
+            </footer>
+            
+        </div>
+        <div id="side-nav" class="side-nav">
+        </div>
+    </div>
+<script src="scripts/app.min.js"></script>
+<script>PR.prettyPrint();</script>
+<script src="scripts/linenumber.js"> </script>
+
+</body>
+</html>

@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title> Encryption for appservices</title>
+
+  <script src="https://cdn.jsdelivr.net/gh/google/code-prettify@master/loader/run_prettify.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="./build/entry.js"></script>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+  <!--[if lt IE 9]>
+    <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+  <![endif]-->
+  <link href="https://fonts.googleapis.com/css?family=Roboto:100,400,700|Inconsolata,700" rel="stylesheet">
+  <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.6.3/css/all.css" integrity="sha384-UHRtZLI+pbxtHCWp1t77Bi1L4ZtiqrqD80Kn4Z8NTSRyMA2Fd33n5dQ8lWUE00s/" crossorigin="anonymous">
+  <link type="text/css" rel="stylesheet" href="https://jmblog.github.io/color-themes-for-google-code-prettify/themes/tomorrow-night.min.css">
+  <link type="text/css" rel="stylesheet" href="styles/app.min.css">
+  <link type="text/css" rel="stylesheet" href="styles/iframe.css">
+  <link type="text/css" rel="stylesheet" href="">
+  <script async defer src="https://buttons.github.io/buttons.js"></script>
+
+  
+</head>
+
+
+
+<body class="layout small-header">
+    <div id="stickyNavbarOverlay"></div>
+    
+
+<div class="top-nav">
+    <div class="inner">
+        <a id="hamburger" role="button" class="navbar-burger" aria-label="menu" aria-expanded="false">
+            <span aria-hidden="true"></span>
+            <span aria-hidden="true"></span>
+            <span aria-hidden="true"></span>
+        </a>
+        <div class="logo">
+            
+            
+        </div>
+        <div class="menu">
+            
+            <div class="navigation">
+                <a
+                    href="index.html"
+                    class="link"
+                >
+                    API Documentation
+                </a>
+                
+                <div class="dropdown is-hoverable is-right">
+                    <a class="dropdown-trigger link">
+                        Tutorials
+                        <i class="fas fa-chevron-down fa-xs"></i>
+                    </a>
+                    <div class="dropdown-menu">
+                        <div class="dropdown-content">
+                        
+                            <a class="dropdown-item" href="tutorial-appservice_.html">
+                                Appservice (bridge) usage
+                            </a>
+                        
+                            <a class="dropdown-item" href="tutorial-bot.html">
+                                Bot usage
+                            </a>
+                        
+                            <a class="dropdown-item" href="tutorial-encryption.html">
+                                Encryption
+                            </a>
+                        
+                            <a class="dropdown-item" href="tutorial-room-upgrades.html">
+                                Room upgrades
+                            </a>
+                        
+                        </div>
+                    </div>
+                </div>
+                
+                
+                
+            </div>
+        </div>
+    </div>
+</div>
+    <div id="main">
+        <div
+            class="sidebar tutorials"
+            id="sidebarNav"
+        >
+            
+            <nav>
+                
+                    <div class="category"><h3>Tutorials</h3><ul><li><a href="tutorial-appservice_.html">Appservice (bridge) usage</a><ul><li><a href="tutorial-bot-to-appservice.html">Converting a bot to an appservice</a></li></ul></li><li><a href="tutorial-bot.html">Bot usage</a></li><li><a href="tutorial-encryption.html">Encryption</a><ul><li><a href="tutorial-encryption-bots.html">Encryption for bots</a></li><li><a href="tutorial-encryption-appservices.html">Encryption for appservices</a></li></ul></li><li><a href="tutorial-room-upgrades.html">Room upgrades</a></li></ul></div>
+                
+            </nav>
+        </div>
+        <div class="core" id="main-content-wrapper">
+            <div class="content">
+                <header class="page-title">
+                    <p>Tutorial</p>
+                    <h1>Encryption for appservices</h1>
+                </header>
+                <section>
+
+<article>
+    <p>Encryption for appservices is just about as easy as bots, though involves using a storage mechanism which is capable of
+handling the higher traffic. The bot-sdk provides a PostgreSQL implementation of <a href="ICryptoStorageProvider.html">ICryptoStorageProvider</a>, though
+you're welcome to write your own. Note that <code>storageForUser()</code> <strong>must</strong> be implemented if writing your own provider.</p>
+<h2><a href="NamespacingPostgresCryptoStorageProvider.html">NamespacingPostgresCryptoStorageProvider</a></h2>
+<p>This provider requires an <a href="ICryptoSecureStorageProvider.html">ICryptoSecureStorageProvider</a>. The bot-sdk provides one using
+<a href="https://github.com/TomFrost/Cryptex">Cryptex</a>, though you're welcome to write your own.</p>
+<p>Upon instantiation, the class will automatically prepare the database for you.</p>
+<p>⚠ It is important not to lose the PostgreSQL database or the Cryptex key (eg, in AWS KMS). Losing either will make for
+a difficult recovery of the encryption state.</p>
+<pre class="prettyprint source lang-typescript"><code>const storage = new SimpleFsStorageProvider(&quot;./path/to/appservice.json&quot;); // or any other <a href="IStorageProvider.html">IStorageProvider</a>
+const secureStorage = new CryptexCryptoSecureStorageProvider(); // instance of an <a href="ICryptoSecureStorageProvider.html">ICryptoSecureStorageProvider</a>
+const psqlStorage = new NamespacingPostgresCryptoStorageProvider(&quot;postgresql://user:pass@domain/database&quot;, secureStorage);
+
+const registration: IAppserviceRegistration = {
+    /* ... */
+    &quot;de.sorunome.msc2409.push_ephemeral&quot;: true,
+};
+const options: IAppserviceOptions = {
+    /* ... */
+    storage: storage,
+    cryptoStorage: psqlStorage,
+    intentOptions: {
+        // Enable encryption on all appservice users, including the `sender_localpart` user
+        encryption: true,
+    },
+}
+const appservice = new Appservice(options);
+</code></pre>
+<h2><a href="CryptexCryptoSecureStorageProvider.html">CryptexCryptoSecureStorageProvider</a></h2>
+<p>This is an implementation of <a href="ICryptoSecureStorageProvider.html">ICryptoSecureStorageProvider</a> using <a href="https://github.com/TomFrost/Cryptex">Cryptex</a>.</p>
+<p>The configuration methods supported by the Cryptex library are all supported here. The recommendation for appservices is
+to add to their own config a section which mirrors the Cryptex configuration to pass it through to the provider.</p>
+<p>⚠ It is important not to lose the Cryptex key (eg, in AWS KMS). Losing it will make for  a difficult recovery of the
+encryption state.</p>
+<p>For example:</p>
+<pre class="prettyprint source lang-yaml"><code># Your appservice config
+
+crypto:
+  algorithm: &quot;aes256&quot;
+  keySource: &quot;kms&quot;
+  keySourceOpts:
+    dataKey: &quot;... from KMS ...&quot;
+    region: &quot;us-east-2&quot;
+  secrets:
+    # `pickle_key` is the only secret the provider cares about (currently)
+    pickle_key: &quot;... encrypted with KMS key ...&quot;
+</code></pre>
+<p>Then, after parsing, the provider instance can be created as:</p>
+<pre class="prettyprint source lang-typescript"><code>const secureStorage = new CryptexCryptoSecureStorageProvider({
+    config: config.get(&quot;crypto&quot;),
+});
+</code></pre>
+<h3>Using AWS <a href="https://aws.amazon.com/kms/">KMS</a></h3>
+<ol>
+<li>Create a new symmetric key in the <a href="https://aws.amazon.com/kms/">KMS</a> Console.</li>
+<li>Give access to a user which has access to the <a href="http://docs.aws.amazon.com/cli/latest/userguide/installing.html">AWS CLI tool</a>.</li>
+<li>Run the following to get the <code>dataKey</code> for <code>keySourceOpts</code> above:<pre class="prettyprint source lang-bash"><code>aws kms generate-data-key-without-plaintext \
+    --key-id alias/&lt;YOUR_KEY_ALIAS> \
+    --key-spec AES_256 \
+    --output text \
+    --query CiphertextBlob
+</code></pre>
+</li>
+<li>In an empty directory somewhere, create a <code>cryptex.json</code> file which looks similar to the following:<pre class="prettyprint source lang-json"><code>{
+  &quot;production&quot;: {
+    &quot;algorithm&quot;: &quot;aes256&quot;,
+    &quot;keySource&quot;: &quot;kms&quot;,
+    &quot;keySourceOpts&quot;: {
+      &quot;dataKey&quot;: &quot;... from KMS ...&quot;,
+      &quot;region&quot;: &quot;us-east-2&quot;
+    },
+    &quot;secrets&quot;: {}
+  }
+}
+</code></pre>
+</li>
+<li>Run <code>cryptex encrypt $YOUR_PICKLE_KEY</code> in that directory - the pickle key should be sufficiently complex.</li>
+<li>Copy the output of that command into the <code>pickle_key</code> value for the appservice config.</li>
+<li>(Optional) Delete the directory used to encrypt the pickle key.</li>
+</ol>
+<h2>Advanced usage</h2>
+<p>To monitor the encryption/decryption process, add the following listeners:</p>
+<pre class="prettyprint source lang-typescript"><code>appservice.on(&quot;room.encrypted_event&quot;, (roomId: string, event: any) => {
+    // handle `m.room.encrypted` event that was received from the server
+});
+</code></pre>
+<pre class="prettyprint source lang-typescript"><code>appservice.on(&quot;room.decrypted_event&quot;, (roomId: string, event: any) => {
+    // handle a decrypted `m.room.encrypted` event (`event` will be representative of the cleartext event).
+    
+    // this is effectively the same as `on('room.event', ...)` though at a different point in the lifecycle.
+});
+</code></pre>
+<pre class="prettyprint source lang-typescript"><code>appservice.on(&quot;room.failed_decryption&quot;, (roomId: string, event: any, error: Error) => {
+    // handle `m.room.encrypted` event that could not be decrypted
+});
+</code></pre>
+<p>To control when encryption is set up for <a href="Intent.html">Intent</a>s, set <code>intentOptions.encryption = false</code> in the appservice options
+and call <code>await intent.enableEncryption()</code> before encryption will be needed. It is safe to call multiple times.</p>
+</article>
+
+</section>
+
+            </div>
+            
+            <footer class="footer">
+                <div class="content has-text-centered">
+                    <p>Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.6.7</a></p>
+                    <p class="sidebar-created-by">
+                        <a href="https://github.com/SoftwareBrothers/better-docs" target="_blank">BetterDocs theme</a> provided with <i class="fas fa-heart"></i> by 
+                        <a href="http://softwarebrothers.co" target="_blank">SoftwareBrothers - JavaScript Development Agency</a>
+                    </p>
+                </div>
+            </footer>
+            
+        </div>
+        <div id="side-nav" class="side-nav">
+        </div>
+    </div>
+<script src="scripts/app.min.js"></script>
+<script>PR.prettyPrint();</script>
+<script src="scripts/linenumber.js"> </script>
+
+</body>
+</html>

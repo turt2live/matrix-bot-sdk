@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title> PresenceEvent</title>
+
+  <script src="https://cdn.jsdelivr.net/gh/google/code-prettify@master/loader/run_prettify.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="./build/entry.js"></script>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+  <!--[if lt IE 9]>
+    <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+  <![endif]-->
+  <link href="https://fonts.googleapis.com/css?family=Roboto:100,400,700|Inconsolata,700" rel="stylesheet">
+  <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.6.3/css/all.css" integrity="sha384-UHRtZLI+pbxtHCWp1t77Bi1L4ZtiqrqD80Kn4Z8NTSRyMA2Fd33n5dQ8lWUE00s/" crossorigin="anonymous">
+  <link type="text/css" rel="stylesheet" href="https://jmblog.github.io/color-themes-for-google-code-prettify/themes/tomorrow-night.min.css">
+  <link type="text/css" rel="stylesheet" href="styles/app.min.css">
+  <link type="text/css" rel="stylesheet" href="styles/iframe.css">
+  <link type="text/css" rel="stylesheet" href="">
+  <script async defer src="https://buttons.github.io/buttons.js"></script>
+
+  
+</head>
+
+
+
+<body class="layout small-header">
+    <div id="stickyNavbarOverlay"></div>
+    
+
+<div class="top-nav">
+    <div class="inner">
+        <a id="hamburger" role="button" class="navbar-burger" aria-label="menu" aria-expanded="false">
+            <span aria-hidden="true"></span>
+            <span aria-hidden="true"></span>
+            <span aria-hidden="true"></span>
+        </a>
+        <div class="logo">
+            
+            
+        </div>
+        <div class="menu">
+            
+            <div class="navigation">
+                <a
+                    href="index.html"
+                    class="link"
+                >
+                    API Documentation
+                </a>
+                
+                <div class="dropdown is-hoverable is-right">
+                    <a class="dropdown-trigger link">
+                        Tutorials
+                        <i class="fas fa-chevron-down fa-xs"></i>
+                    </a>
+                    <div class="dropdown-menu">
+                        <div class="dropdown-content">
+                        
+                            <a class="dropdown-item" href="tutorial-appservice_.html">
+                                Appservice (bridge) usage
+                            </a>
+                        
+                            <a class="dropdown-item" href="tutorial-bot.html">
+                                Bot usage
+                            </a>
+                        
+                            <a class="dropdown-item" href="tutorial-encryption.html">
+                                Encryption
+                            </a>
+                        
+                            <a class="dropdown-item" href="tutorial-room-upgrades.html">
+                                Room upgrades
+                            </a>
+                        
+                        </div>
+                    </div>
+                </div>
+                
+                
+                
+            </div>
+        </div>
+    </div>
+</div>
+    <div id="main">
+        <div
+            class="sidebar "
+            id="sidebarNav"
+        >
+            
+            <nav>
+                
+                    <h2><a href="index.html">Documentation</a></h2><div class="category"><h3>Classes</h3><ul><li><a href="MatrixAuth.html">MatrixAuth</a></li><li><a href="MatrixClient.html">MatrixClient</a></li><li><a href="SynchronousMatrixClient.html">SynchronousMatrixClient</a></li></ul><h3>Interfaces</h3><ul><li><a href="IFilterInfo.html">IFilterInfo</a></li><li><a href="MSC2380MediaInfo.html">MSC2380MediaInfo</a></li><li><a href="PowerLevelBounds.html">PowerLevelBounds</a></li></ul><h3>Global</h3><ul><li><a href="global.html#PowerLevelAction">PowerLevelAction</a></li><li><a href="global.html#validateSpaceOrderString">validateSpaceOrderString</a></li></ul></div><div class="category"><h2>Admin APIs</h2><h3>Classes</h3><ul><li><a href="AdminApis.html">AdminApis</a></li><li><a href="SynapseAdminApis.html">SynapseAdminApis</a></li></ul><h3>Interfaces</h3><ul><li><a href="SynapseRoomList.html">SynapseRoomList</a></li><li><a href="SynapseRoomListing.html">SynapseRoomListing</a></li><li><a href="SynapseUser.html">SynapseUser</a></li><li><a href="SynapseUserList.html">SynapseUserList</a></li><li><a href="SynapseUserListing.html">SynapseUserListing</a></li><li><a href="SynapseUserProperties.html">SynapseUserProperties</a></li><li><a href="WhoisInfo.html">WhoisInfo</a></li></ul><h3>Global</h3><ul><li><a href="global.html#SynapseRoomProperty">SynapseRoomProperty</a></li></ul></div><div class="category"><h2>Application services</h2><h3>Classes</h3><ul><li><a href="Appservice.html">Appservice</a></li><li><a href="Intent.html">Intent</a></li><li><a href="MatrixBridge.html">MatrixBridge</a></li></ul><h3>Interfaces</h3><ul><li><a href="IApplicationServiceProtocol.html">IApplicationServiceProtocol</a></li><li><a href="IAppserviceOptions.html">IAppserviceOptions</a></li><li><a href="IAppserviceRegistration.html">IAppserviceRegistration</a></li><li><a href="IRemoteRoomInfo.html">IRemoteRoomInfo</a></li><li><a href="IRemoteUserInfo.html">IRemoteUserInfo</a></li></ul></div><div class="category"><h2>Encryption</h2><h3>Classes</h3><ul><li><a href="CryptoClient.html">CryptoClient</a></li><li><a href="DeviceTracker.html">DeviceTracker</a></li><li><a href="PantalaimonClient.html">PantalaimonClient</a></li><li><a href="RoomTracker.html">RoomTracker</a></li></ul><h3>Global</h3><ul><li><a href="global.html#requiresCrypto">requiresCrypto</a></li><li><a href="global.html#requiresReady">requiresReady</a></li></ul></div><div class="category"><h2>Identity Servers</h2><h3>Classes</h3><ul><li><a href="IdentityClient.html">IdentityClient</a></li></ul></div><div class="category"><h2>Join strategies</h2><h3>Classes</h3><ul><li><a href="AppserviceJoinRoomStrategy.html">AppserviceJoinRoomStrategy</a></li><li><a href="SimpleRetryJoinStrategy.html">SimpleRetryJoinStrategy</a></li></ul></div><div class="category"><h2>Logging</h2><h3>Classes</h3><ul><li><a href="ConsoleLogger.html">ConsoleLogger</a></li><li><a href="LogLevel.html">LogLevel</a></li><li><a href="LogService.html">LogService</a></li><li><a href="RichConsoleLogger.html">RichConsoleLogger</a></li></ul><h3>Interfaces</h3><ul><li><a href="ILogger.html">ILogger</a></li></ul><h3>Global</h3><ul><li><a href="global.html#extractRequestError">extractRequestError</a></li></ul></div><div class="category"><h2>Matrix event contents</h2><h3>Interfaces</h3><ul><li><a href="AliasesEventContent.html">AliasesEventContent</a></li><li><a href="AudioMessageEventContent.html">AudioMessageEventContent</a></li><li><a href="CanonicalAliasEventContent.html">CanonicalAliasEventContent</a></li><li><a href="CreateEventContent.html">CreateEventContent</a></li><li><a href="EncryptedFile.html">EncryptedFile</a></li><li><a href="EncryptedRoomEventContent.html">EncryptedRoomEventContent</a></li><li><a href="EncryptionEventContent.html">EncryptionEventContent</a></li><li><a href="FileMessageEventContent.html">FileMessageEventContent</a></li><li><a href="ImageMessageEventContent.html">ImageMessageEventContent</a></li><li><a href="JoinRulesEventContent.html">JoinRulesEventContent</a></li><li><a href="LocationMessageEventContent.html">LocationMessageEventContent</a></li><li><a href="MembershipEventContent.html">MembershipEventContent</a></li><li><a href="MessageEventContent.html">MessageEventContent</a></li><li><a href="MSC2716ChunkEventContent.html">MSC2716ChunkEventContent</a></li><li><a href="MSC2716InsertionEventContent.html">MSC2716InsertionEventContent</a></li><li><a href="MSC2716MarkerEventContent.html">MSC2716MarkerEventContent</a></li><li><a href="PinnedEventsEventContent.html">PinnedEventsEventContent</a></li><li><a href="PowerLevelsEventContent.html">PowerLevelsEventContent</a></li><li><a href="PresenceEventContent.html">PresenceEventContent</a></li><li><a href="RedactionEventContent.html">RedactionEventContent</a></li><li><a href="RoomAvatarEventContent.html">RoomAvatarEventContent</a></li><li><a href="RoomEventContent.html">RoomEventContent</a></li><li><a href="RoomNameEventContent.html">RoomNameEventContent</a></li><li><a href="RoomTopicEventContent.html">RoomTopicEventContent</a></li><li><a href="SpaceChildEventContent.html">SpaceChildEventContent</a></li><li><a href="TextualMessageEventContent.html">TextualMessageEventContent</a></li><li><a href="VideoMessageEventContent.html">VideoMessageEventContent</a></li></ul></div><div class="category"><h2>Matrix event info</h2><h3>Interfaces</h3><ul><li><a href="DimensionalFileInfo.html">DimensionalFileInfo</a></li><li><a href="FileInfo.html">FileInfo</a></li><li><a href="FileWithThumbnailInfo.html">FileWithThumbnailInfo</a></li><li><a href="PreviousRoomInfo.html">PreviousRoomInfo</a></li><li><a href="ThumbnailedFileInfo.html">ThumbnailedFileInfo</a></li><li><a href="ThumbnailInfo.html">ThumbnailInfo</a></li><li><a href="TimedFileInfo.html">TimedFileInfo</a></li><li><a href="TypicalUnsigned.html">TypicalUnsigned</a></li><li><a href="VideoFileInfo.html">VideoFileInfo</a></li></ul></div><div class="category"><h2>Matrix events</h2><h3>Classes</h3><ul><li><a href="AliasesEvent.html">AliasesEvent</a></li><li><a href="CanonicalAliasEvent.html">CanonicalAliasEvent</a></li><li><a href="CreateEvent.html">CreateEvent</a></li><li><a href="EncryptedRoomEvent.html">EncryptedRoomEvent</a></li><li><a href="EncryptionEvent.html">EncryptionEvent</a></li><li><a href="EventRedactedError.html">EventRedactedError</a></li><li><a href="InvalidEventError.html">InvalidEventError</a></li><li><a href="JoinRulesEvent.html">JoinRulesEvent</a></li><li><a href="MatrixEvent.html">MatrixEvent</a></li><li><a href="MembershipEvent.html">MembershipEvent</a></li><li><a href="MessageEvent.html">MessageEvent</a></li><li><a href="PinnedEventsEvent.html">PinnedEventsEvent</a></li><li><a href="PowerLevelsEvent.html">PowerLevelsEvent</a></li><li><a href="PresenceEvent.html">PresenceEvent</a></li><li><a href="RedactionEvent.html">RedactionEvent</a></li><li><a href="RoomAvatarEvent.html">RoomAvatarEvent</a></li><li><a href="RoomEvent.html">RoomEvent</a></li><li><a href="RoomNameEvent.html">RoomNameEvent</a></li><li><a href="RoomTopicEvent.html">RoomTopicEvent</a></li><li><a href="SpaceChildEvent.html">SpaceChildEvent</a></li><li><a href="StateEvent.html">StateEvent</a></li></ul><h3>Global</h3><ul><li><a href="global.html#EventKind">EventKind</a></li><li><a href="global.html#wrapRoomEvent">wrapRoomEvent</a></li></ul></div><div class="category"><h2>Metrics</h2><h3>Classes</h3><ul><li><a href="Metrics.html">Metrics</a></li></ul><h3>Interfaces</h3><ul><li><a href="FunctionCallContext.html">FunctionCallContext</a></li><li><a href="IdentityClientCallContext.html">IdentityClientCallContext</a></li><li><a href="IMetricListener.html">IMetricListener</a></li><li><a href="IntentCallContext.html">IntentCallContext</a></li><li><a href="MatrixClientCallContext.html">MatrixClientCallContext</a></li></ul><h3>Global</h3><ul><li><a href="global.html#METRIC_IDENTITY_CLIENT_FAILED_FUNCTION_CALL">METRIC_IDENTITY_CLIENT_FAILED_FUNCTION_CALL</a></li><li><a href="global.html#METRIC_IDENTITY_CLIENT_FUNCTION_CALL">METRIC_IDENTITY_CLIENT_FUNCTION_CALL</a></li><li><a href="global.html#METRIC_IDENTITY_CLIENT_SUCCESSFUL_FUNCTION_CALL">METRIC_IDENTITY_CLIENT_SUCCESSFUL_FUNCTION_CALL</a></li><li><a href="global.html#METRIC_INTENT_FAILED_FUNCTION_CALL">METRIC_INTENT_FAILED_FUNCTION_CALL</a></li><li><a href="global.html#METRIC_INTENT_FUNCTION_CALL">METRIC_INTENT_FUNCTION_CALL</a></li><li><a href="global.html#METRIC_INTENT_SUCCESSFUL_FUNCTION_CALL">METRIC_INTENT_SUCCESSFUL_FUNCTION_CALL</a></li><li><a href="global.html#METRIC_MATRIX_CLIENT_FAILED_FUNCTION_CALL">METRIC_MATRIX_CLIENT_FAILED_FUNCTION_CALL</a></li><li><a href="global.html#METRIC_MATRIX_CLIENT_FUNCTION_CALL">METRIC_MATRIX_CLIENT_FUNCTION_CALL</a></li><li><a href="global.html#METRIC_MATRIX_CLIENT_SUCCESSFUL_FUNCTION_CALL">METRIC_MATRIX_CLIENT_SUCCESSFUL_FUNCTION_CALL</a></li><li><a href="global.html#timedIdentityClientFunctionCall">timedIdentityClientFunctionCall</a></li><li><a href="global.html#timedIntentFunctionCall">timedIntentFunctionCall</a></li><li><a href="global.html#timedMatrixClientFunctionCall">timedMatrixClientFunctionCall</a></li></ul></div><div class="category"><h2>Mixins</h2><h3>Classes</h3><ul><li><a href="AutojoinRoomsMixin.html">AutojoinRoomsMixin</a></li><li><a href="AutojoinUpgradedRoomsMixin.html">AutojoinUpgradedRoomsMixin</a></li></ul></div><div class="category"><h2>Models</h2><h3>Classes</h3><ul><li><a href="MatrixProfile.html">MatrixProfile</a></li><li><a href="Presence.html">Presence</a></li><li><a href="Space.html">Space</a></li></ul><h3>Interfaces</h3><ul><li><a href="FallbackKey.html">FallbackKey</a></li><li><a href="IdentityServerAccount.html">IdentityServerAccount</a></li><li><a href="IdentityServerInvite.html">IdentityServerInvite</a></li><li><a href="IInboundGroupSession.html">IInboundGroupSession</a></li><li><a href="IMegolmEncrypted.html">IMegolmEncrypted</a></li><li><a href="IMRoomKey.html">IMRoomKey</a></li><li><a href="IOlmEncrypted.html">IOlmEncrypted</a></li><li><a href="IOlmPayload.html">IOlmPayload</a></li><li><a href="IOlmSession.html">IOlmSession</a></li><li><a href="IOutboundGroupSession.html">IOutboundGroupSession</a></li><li><a href="IToDeviceMessage.html">IToDeviceMessage</a></li><li><a href="IWhoAmI.html">IWhoAmI</a></li><li><a href="MatrixProfileInfo.html">MatrixProfileInfo</a></li><li><a href="MSC2716BatchSendResponse.html">MSC2716BatchSendResponse</a></li><li><a href="MultiUserDeviceListResponse.html">MultiUserDeviceListResponse</a></li><li><a href="OpenIDConnectToken.html">OpenIDConnectToken</a></li><li><a href="OTKClaimResponse.html">OTKClaimResponse</a></li><li><a href="OwnUserDevice.html">OwnUserDevice</a></li><li><a href="Policies.html">Policies</a></li><li><a href="Policy.html">Policy</a></li><li><a href="Signatures.html">Signatures</a></li><li><a href="SignedCurve25519OTK.html">SignedCurve25519OTK</a></li><li><a href="SpaceChildEntityOptions.html">SpaceChildEntityOptions</a></li><li><a href="SpaceCreateOptions.html">SpaceCreateOptions</a></li><li><a href="SpaceEntityMap.html">SpaceEntityMap</a></li><li><a href="StoredUserDevice.html">StoredUserDevice</a></li><li><a href="Threepid.html">Threepid</a></li><li><a href="TranslatedPolicy.html">TranslatedPolicy</a></li><li><a href="UserDevice.html">UserDevice</a></li></ul><h3>Global</h3><ul><li><a href="global.html#DeviceKeyAlgorithm">DeviceKeyAlgorithm</a></li><li><a href="global.html#EncryptionAlgorithm">EncryptionAlgorithm</a></li><li><a href="global.html#OTKAlgorithm">OTKAlgorithm</a></li><li><a href="global.html#RoomEncryptionAlgorithm">RoomEncryptionAlgorithm</a></li></ul></div><div class="category"><h2>Preprocessors</h2><h3>Classes</h3><ul><li><a href="RichRepliesPreprocessor.html">RichRepliesPreprocessor</a></li></ul><h3>Interfaces</h3><ul><li><a href="IPreprocessor.html">IPreprocessor</a></li><li><a href="IRichReplyMetadata.html">IRichReplyMetadata</a></li></ul></div><div class="category"><h2>Storage providers</h2><h3>Classes</h3><ul><li><a href="CryptexCryptoSecureStorageProvider.html">CryptexCryptoSecureStorageProvider</a></li><li><a href="MemoryStorageProvider.html">MemoryStorageProvider</a></li><li><a href="NamespacedFsProvider.html">NamespacedFsProvider</a></li><li><a href="NamespacingPostgresCryptoStorageProvider.html">NamespacingPostgresCryptoStorageProvider</a></li><li><a href="NamespacingSqliteCryptoStorageProvider.html">NamespacingSqliteCryptoStorageProvider</a></li><li><a href="SimpleFsStorageProvider.html">SimpleFsStorageProvider</a></li><li><a href="SqliteCryptoStorageProvider.html">SqliteCryptoStorageProvider</a></li></ul><h3>Interfaces</h3><ul><li><a href="IAppserviceCryptoStorageProvider.html">IAppserviceCryptoStorageProvider</a></li><li><a href="IAppserviceStorageProvider.html">IAppserviceStorageProvider</a></li><li><a href="ICryptoSecureStorageProvider.html">ICryptoSecureStorageProvider</a></li><li><a href="ICryptoStorageProvider.html">ICryptoStorageProvider</a></li><li><a href="IStorageProvider.html">IStorageProvider</a></li></ul></div><div class="category"><h2>Unit testing</h2><h3>Global</h3><ul><li><a href="global.html#doHttpRequest">doHttpRequest</a></li><li><a href="global.html#getRequestFn">getRequestFn</a></li><li><a href="global.html#setRequestFn">setRequestFn</a></li></ul></div><div class="category"><h2>Unstable APIs</h2><h3>Classes</h3><ul><li><a href="UnstableApis.html">UnstableApis</a></li><li><a href="UnstableAppserviceApis.html">UnstableAppserviceApis</a></li></ul><h3>Interfaces</h3><ul><li><a href="GroupProfile.html">GroupProfile</a></li></ul></div><div class="category"><h2>Utilities</h2><h3>Classes</h3><ul><li><a href="MatrixEntity.html">MatrixEntity</a></li><li><a href="MatrixGlob.html">MatrixGlob</a></li><li><a href="MentionPill.html">MentionPill</a></li><li><a href="Permalinks.html">Permalinks</a></li><li><a href="ProfileCache.html">ProfileCache</a></li><li><a href="RichReply.html">RichReply</a></li><li><a href="RoomAlias.html">RoomAlias</a></li><li><a href="UnpaddedBase64.html">UnpaddedBase64</a></li><li><a href="UserID.html">UserID</a></li></ul><h3>Interfaces</h3><ul><li><a href="PermalinkParts.html">PermalinkParts</a></li></ul><h3>Global</h3><ul><li><a href="global.html#decodeBase64">decodeBase64</a></li><li><a href="global.html#decodeUnpaddedBase64">decodeUnpaddedBase64</a></li><li><a href="global.html#decodeUnpaddedUrlSafeBase64">decodeUnpaddedUrlSafeBase64</a></li><li><a href="global.html#encodeBase64">encodeBase64</a></li><li><a href="global.html#encodeUnpaddedBase64">encodeUnpaddedBase64</a></li><li><a href="global.html#encodeUnpaddedUrlSafeBase64">encodeUnpaddedUrlSafeBase64</a></li></ul></div>
+                
+            </nav>
+        </div>
+        <div class="core" id="main-content-wrapper">
+            <div class="content">
+                <header class="page-title">
+                    <p>Class</p>
+                    <h1>PresenceEvent</h1>
+                </header>
+                
+
+
+
+
+<section>
+
+<header>
+    
+        <h2><span class="attribs"><span class="type-signature"></span></span>PresenceEvent<span class="signature">()</span><span class="type-signature"></span></h2>
+        
+            <div class="class-description">Wraps a m.presence ephemeral event in Matrix</div>
+        
+    
+</header>
+
+<article>
+    <div class="container-overview">
+    
+        
+            <div class='vertical-section'>
+                <div class="members">
+                    <div class="member">
+                        <div class=name>
+                            <span class="tag">Constructor</span>
+                        </div>
+                        
+
+
+    
+    <h4 class="name" id="PresenceEvent">
+        <a class="href-link" href="#PresenceEvent">#</a>
+        
+        <span class="code-name">
+            
+                new PresenceEvent<span class="signature">()</span><span class="type-signature"></span>
+            
+        </span>
+    </h4>
+    
+
+    
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    
+
+    
+
+    
+
+    
+        <p class="tag-source">
+            <a href="models_events_PresenceEvent.ts.html" class="button">View Source</a>
+            <span>
+                <a href="models_events_PresenceEvent.ts.html">models/events/PresenceEvent.ts</a>, <a href="models_events_PresenceEvent.ts.html#line7">line 7</a>
+            </span>
+        </p>
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                    </div>
+                </div>
+            </div>
+        
+    
+    </div>
+    
+    
+
+    
+
+    
+        <h3 class="subsection-title">Classes</h3>
+
+        <dl>
+            <dt><a href="PresenceEvent.html">PresenceEvent</a></dt>
+            <dd></dd>
+        </dl>
+    
+
+    
+
+    
+
+    
+
+    
+        <div class='vertical-section'>
+            <h1>Members</h1>
+            <div class="members">
+            
+                <div class="member">
+
+<h4 class="name" id="presence">
+    <a class="href-link" href="#presence">#</a>
+    
+    <span class="code-name">
+        presence
+    </span>
+    
+</h4>
+
+
+
+
+<div class="description">
+    The current presence state for the user.
+</div>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    
+
+    
+
+    
+
+    
+        <p class="tag-source">
+            <a href="models_events_PresenceEvent.ts.html" class="button">View Source</a>
+            <span>
+                <a href="models_events_PresenceEvent.ts.html">models/events/PresenceEvent.ts</a>, <a href="models_events_PresenceEvent.ts.html#line14">line 14</a>
+            </span>
+        </p>
+    
+</dl>
+
+
+
+
+
+</div>
+            
+            </div>
+        </div>
+    
+
+    
+
+    
+
+    
+</article>
+
+</section>
+
+
+
+
+            </div>
+            
+            <footer class="footer">
+                <div class="content has-text-centered">
+                    <p>Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.6.7</a></p>
+                    <p class="sidebar-created-by">
+                        <a href="https://github.com/SoftwareBrothers/better-docs" target="_blank">BetterDocs theme</a> provided with <i class="fas fa-heart"></i> by 
+                        <a href="http://softwarebrothers.co" target="_blank">SoftwareBrothers - JavaScript Development Agency</a>
+                    </p>
+                </div>
+            </footer>
+            
+        </div>
+        <div id="side-nav" class="side-nav">
+        </div>
+    </div>
+<script src="scripts/app.min.js"></script>
+<script>PR.prettyPrint();</script>
+<script src="scripts/linenumber.js"> </script>
+
+</body>
+</html>

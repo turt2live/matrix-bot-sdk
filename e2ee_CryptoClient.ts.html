@@ -1,0 +1,1070 @@
+
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title> e2ee/CryptoClient.ts</title>
+
+  <script src="https://cdn.jsdelivr.net/gh/google/code-prettify@master/loader/run_prettify.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="./build/entry.js"></script>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+  <!--[if lt IE 9]>
+    <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+  <![endif]-->
+  <link href="https://fonts.googleapis.com/css?family=Roboto:100,400,700|Inconsolata,700" rel="stylesheet">
+  <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.6.3/css/all.css" integrity="sha384-UHRtZLI+pbxtHCWp1t77Bi1L4ZtiqrqD80Kn4Z8NTSRyMA2Fd33n5dQ8lWUE00s/" crossorigin="anonymous">
+  <link type="text/css" rel="stylesheet" href="https://jmblog.github.io/color-themes-for-google-code-prettify/themes/tomorrow-night.min.css">
+  <link type="text/css" rel="stylesheet" href="styles/app.min.css">
+  <link type="text/css" rel="stylesheet" href="styles/iframe.css">
+  <link type="text/css" rel="stylesheet" href="">
+  <script async defer src="https://buttons.github.io/buttons.js"></script>
+
+  
+</head>
+
+
+
+<body class="layout small-header">
+    <div id="stickyNavbarOverlay"></div>
+    
+
+<div class="top-nav">
+    <div class="inner">
+        <a id="hamburger" role="button" class="navbar-burger" aria-label="menu" aria-expanded="false">
+            <span aria-hidden="true"></span>
+            <span aria-hidden="true"></span>
+            <span aria-hidden="true"></span>
+        </a>
+        <div class="logo">
+            
+            
+        </div>
+        <div class="menu">
+            
+            <div class="navigation">
+                <a
+                    href="index.html"
+                    class="link"
+                >
+                    API Documentation
+                </a>
+                
+                <div class="dropdown is-hoverable is-right">
+                    <a class="dropdown-trigger link">
+                        Tutorials
+                        <i class="fas fa-chevron-down fa-xs"></i>
+                    </a>
+                    <div class="dropdown-menu">
+                        <div class="dropdown-content">
+                        
+                            <a class="dropdown-item" href="tutorial-appservice_.html">
+                                Appservice (bridge) usage
+                            </a>
+                        
+                            <a class="dropdown-item" href="tutorial-bot.html">
+                                Bot usage
+                            </a>
+                        
+                            <a class="dropdown-item" href="tutorial-encryption.html">
+                                Encryption
+                            </a>
+                        
+                            <a class="dropdown-item" href="tutorial-room-upgrades.html">
+                                Room upgrades
+                            </a>
+                        
+                        </div>
+                    </div>
+                </div>
+                
+                
+                
+            </div>
+        </div>
+    </div>
+</div>
+    <div id="main">
+        <div
+            class="sidebar "
+            id="sidebarNav"
+        >
+            
+            <nav>
+                
+                    <h2><a href="index.html">Documentation</a></h2><div class="category"><h3>Classes</h3><ul><li><a href="MatrixAuth.html">MatrixAuth</a></li><li><a href="MatrixClient.html">MatrixClient</a></li><li><a href="SynchronousMatrixClient.html">SynchronousMatrixClient</a></li></ul><h3>Interfaces</h3><ul><li><a href="IFilterInfo.html">IFilterInfo</a></li><li><a href="MSC2380MediaInfo.html">MSC2380MediaInfo</a></li><li><a href="PowerLevelBounds.html">PowerLevelBounds</a></li></ul><h3>Global</h3><ul><li><a href="global.html#PowerLevelAction">PowerLevelAction</a></li><li><a href="global.html#validateSpaceOrderString">validateSpaceOrderString</a></li></ul></div><div class="category"><h2>Admin APIs</h2><h3>Classes</h3><ul><li><a href="AdminApis.html">AdminApis</a></li><li><a href="SynapseAdminApis.html">SynapseAdminApis</a></li></ul><h3>Interfaces</h3><ul><li><a href="SynapseRoomList.html">SynapseRoomList</a></li><li><a href="SynapseRoomListing.html">SynapseRoomListing</a></li><li><a href="SynapseUser.html">SynapseUser</a></li><li><a href="SynapseUserList.html">SynapseUserList</a></li><li><a href="SynapseUserListing.html">SynapseUserListing</a></li><li><a href="SynapseUserProperties.html">SynapseUserProperties</a></li><li><a href="WhoisInfo.html">WhoisInfo</a></li></ul><h3>Global</h3><ul><li><a href="global.html#SynapseRoomProperty">SynapseRoomProperty</a></li></ul></div><div class="category"><h2>Application services</h2><h3>Classes</h3><ul><li><a href="Appservice.html">Appservice</a></li><li><a href="Intent.html">Intent</a></li><li><a href="MatrixBridge.html">MatrixBridge</a></li></ul><h3>Interfaces</h3><ul><li><a href="IApplicationServiceProtocol.html">IApplicationServiceProtocol</a></li><li><a href="IAppserviceOptions.html">IAppserviceOptions</a></li><li><a href="IAppserviceRegistration.html">IAppserviceRegistration</a></li><li><a href="IRemoteRoomInfo.html">IRemoteRoomInfo</a></li><li><a href="IRemoteUserInfo.html">IRemoteUserInfo</a></li></ul></div><div class="category"><h2>Encryption</h2><h3>Classes</h3><ul><li><a href="CryptoClient.html">CryptoClient</a></li><li><a href="DeviceTracker.html">DeviceTracker</a></li><li><a href="PantalaimonClient.html">PantalaimonClient</a></li><li><a href="RoomTracker.html">RoomTracker</a></li></ul><h3>Global</h3><ul><li><a href="global.html#requiresCrypto">requiresCrypto</a></li><li><a href="global.html#requiresReady">requiresReady</a></li></ul></div><div class="category"><h2>Identity Servers</h2><h3>Classes</h3><ul><li><a href="IdentityClient.html">IdentityClient</a></li></ul></div><div class="category"><h2>Join strategies</h2><h3>Classes</h3><ul><li><a href="AppserviceJoinRoomStrategy.html">AppserviceJoinRoomStrategy</a></li><li><a href="SimpleRetryJoinStrategy.html">SimpleRetryJoinStrategy</a></li></ul></div><div class="category"><h2>Logging</h2><h3>Classes</h3><ul><li><a href="ConsoleLogger.html">ConsoleLogger</a></li><li><a href="LogLevel.html">LogLevel</a></li><li><a href="LogService.html">LogService</a></li><li><a href="RichConsoleLogger.html">RichConsoleLogger</a></li></ul><h3>Interfaces</h3><ul><li><a href="ILogger.html">ILogger</a></li></ul><h3>Global</h3><ul><li><a href="global.html#extractRequestError">extractRequestError</a></li></ul></div><div class="category"><h2>Matrix event contents</h2><h3>Interfaces</h3><ul><li><a href="AliasesEventContent.html">AliasesEventContent</a></li><li><a href="AudioMessageEventContent.html">AudioMessageEventContent</a></li><li><a href="CanonicalAliasEventContent.html">CanonicalAliasEventContent</a></li><li><a href="CreateEventContent.html">CreateEventContent</a></li><li><a href="EncryptedFile.html">EncryptedFile</a></li><li><a href="EncryptedRoomEventContent.html">EncryptedRoomEventContent</a></li><li><a href="EncryptionEventContent.html">EncryptionEventContent</a></li><li><a href="FileMessageEventContent.html">FileMessageEventContent</a></li><li><a href="ImageMessageEventContent.html">ImageMessageEventContent</a></li><li><a href="JoinRulesEventContent.html">JoinRulesEventContent</a></li><li><a href="LocationMessageEventContent.html">LocationMessageEventContent</a></li><li><a href="MembershipEventContent.html">MembershipEventContent</a></li><li><a href="MessageEventContent.html">MessageEventContent</a></li><li><a href="MSC2716ChunkEventContent.html">MSC2716ChunkEventContent</a></li><li><a href="MSC2716InsertionEventContent.html">MSC2716InsertionEventContent</a></li><li><a href="MSC2716MarkerEventContent.html">MSC2716MarkerEventContent</a></li><li><a href="PinnedEventsEventContent.html">PinnedEventsEventContent</a></li><li><a href="PowerLevelsEventContent.html">PowerLevelsEventContent</a></li><li><a href="PresenceEventContent.html">PresenceEventContent</a></li><li><a href="RedactionEventContent.html">RedactionEventContent</a></li><li><a href="RoomAvatarEventContent.html">RoomAvatarEventContent</a></li><li><a href="RoomEventContent.html">RoomEventContent</a></li><li><a href="RoomNameEventContent.html">RoomNameEventContent</a></li><li><a href="RoomTopicEventContent.html">RoomTopicEventContent</a></li><li><a href="SpaceChildEventContent.html">SpaceChildEventContent</a></li><li><a href="TextualMessageEventContent.html">TextualMessageEventContent</a></li><li><a href="VideoMessageEventContent.html">VideoMessageEventContent</a></li></ul></div><div class="category"><h2>Matrix event info</h2><h3>Interfaces</h3><ul><li><a href="DimensionalFileInfo.html">DimensionalFileInfo</a></li><li><a href="FileInfo.html">FileInfo</a></li><li><a href="FileWithThumbnailInfo.html">FileWithThumbnailInfo</a></li><li><a href="PreviousRoomInfo.html">PreviousRoomInfo</a></li><li><a href="ThumbnailedFileInfo.html">ThumbnailedFileInfo</a></li><li><a href="ThumbnailInfo.html">ThumbnailInfo</a></li><li><a href="TimedFileInfo.html">TimedFileInfo</a></li><li><a href="TypicalUnsigned.html">TypicalUnsigned</a></li><li><a href="VideoFileInfo.html">VideoFileInfo</a></li></ul></div><div class="category"><h2>Matrix events</h2><h3>Classes</h3><ul><li><a href="AliasesEvent.html">AliasesEvent</a></li><li><a href="CanonicalAliasEvent.html">CanonicalAliasEvent</a></li><li><a href="CreateEvent.html">CreateEvent</a></li><li><a href="EncryptedRoomEvent.html">EncryptedRoomEvent</a></li><li><a href="EncryptionEvent.html">EncryptionEvent</a></li><li><a href="EventRedactedError.html">EventRedactedError</a></li><li><a href="InvalidEventError.html">InvalidEventError</a></li><li><a href="JoinRulesEvent.html">JoinRulesEvent</a></li><li><a href="MatrixEvent.html">MatrixEvent</a></li><li><a href="MembershipEvent.html">MembershipEvent</a></li><li><a href="MessageEvent.html">MessageEvent</a></li><li><a href="PinnedEventsEvent.html">PinnedEventsEvent</a></li><li><a href="PowerLevelsEvent.html">PowerLevelsEvent</a></li><li><a href="PresenceEvent.html">PresenceEvent</a></li><li><a href="RedactionEvent.html">RedactionEvent</a></li><li><a href="RoomAvatarEvent.html">RoomAvatarEvent</a></li><li><a href="RoomEvent.html">RoomEvent</a></li><li><a href="RoomNameEvent.html">RoomNameEvent</a></li><li><a href="RoomTopicEvent.html">RoomTopicEvent</a></li><li><a href="SpaceChildEvent.html">SpaceChildEvent</a></li><li><a href="StateEvent.html">StateEvent</a></li></ul><h3>Global</h3><ul><li><a href="global.html#EventKind">EventKind</a></li><li><a href="global.html#wrapRoomEvent">wrapRoomEvent</a></li></ul></div><div class="category"><h2>Metrics</h2><h3>Classes</h3><ul><li><a href="Metrics.html">Metrics</a></li></ul><h3>Interfaces</h3><ul><li><a href="FunctionCallContext.html">FunctionCallContext</a></li><li><a href="IdentityClientCallContext.html">IdentityClientCallContext</a></li><li><a href="IMetricListener.html">IMetricListener</a></li><li><a href="IntentCallContext.html">IntentCallContext</a></li><li><a href="MatrixClientCallContext.html">MatrixClientCallContext</a></li></ul><h3>Global</h3><ul><li><a href="global.html#METRIC_IDENTITY_CLIENT_FAILED_FUNCTION_CALL">METRIC_IDENTITY_CLIENT_FAILED_FUNCTION_CALL</a></li><li><a href="global.html#METRIC_IDENTITY_CLIENT_FUNCTION_CALL">METRIC_IDENTITY_CLIENT_FUNCTION_CALL</a></li><li><a href="global.html#METRIC_IDENTITY_CLIENT_SUCCESSFUL_FUNCTION_CALL">METRIC_IDENTITY_CLIENT_SUCCESSFUL_FUNCTION_CALL</a></li><li><a href="global.html#METRIC_INTENT_FAILED_FUNCTION_CALL">METRIC_INTENT_FAILED_FUNCTION_CALL</a></li><li><a href="global.html#METRIC_INTENT_FUNCTION_CALL">METRIC_INTENT_FUNCTION_CALL</a></li><li><a href="global.html#METRIC_INTENT_SUCCESSFUL_FUNCTION_CALL">METRIC_INTENT_SUCCESSFUL_FUNCTION_CALL</a></li><li><a href="global.html#METRIC_MATRIX_CLIENT_FAILED_FUNCTION_CALL">METRIC_MATRIX_CLIENT_FAILED_FUNCTION_CALL</a></li><li><a href="global.html#METRIC_MATRIX_CLIENT_FUNCTION_CALL">METRIC_MATRIX_CLIENT_FUNCTION_CALL</a></li><li><a href="global.html#METRIC_MATRIX_CLIENT_SUCCESSFUL_FUNCTION_CALL">METRIC_MATRIX_CLIENT_SUCCESSFUL_FUNCTION_CALL</a></li><li><a href="global.html#timedIdentityClientFunctionCall">timedIdentityClientFunctionCall</a></li><li><a href="global.html#timedIntentFunctionCall">timedIntentFunctionCall</a></li><li><a href="global.html#timedMatrixClientFunctionCall">timedMatrixClientFunctionCall</a></li></ul></div><div class="category"><h2>Mixins</h2><h3>Classes</h3><ul><li><a href="AutojoinRoomsMixin.html">AutojoinRoomsMixin</a></li><li><a href="AutojoinUpgradedRoomsMixin.html">AutojoinUpgradedRoomsMixin</a></li></ul></div><div class="category"><h2>Models</h2><h3>Classes</h3><ul><li><a href="MatrixProfile.html">MatrixProfile</a></li><li><a href="Presence.html">Presence</a></li><li><a href="Space.html">Space</a></li></ul><h3>Interfaces</h3><ul><li><a href="FallbackKey.html">FallbackKey</a></li><li><a href="IdentityServerAccount.html">IdentityServerAccount</a></li><li><a href="IdentityServerInvite.html">IdentityServerInvite</a></li><li><a href="IInboundGroupSession.html">IInboundGroupSession</a></li><li><a href="IMegolmEncrypted.html">IMegolmEncrypted</a></li><li><a href="IMRoomKey.html">IMRoomKey</a></li><li><a href="IOlmEncrypted.html">IOlmEncrypted</a></li><li><a href="IOlmPayload.html">IOlmPayload</a></li><li><a href="IOlmSession.html">IOlmSession</a></li><li><a href="IOutboundGroupSession.html">IOutboundGroupSession</a></li><li><a href="IToDeviceMessage.html">IToDeviceMessage</a></li><li><a href="IWhoAmI.html">IWhoAmI</a></li><li><a href="MatrixProfileInfo.html">MatrixProfileInfo</a></li><li><a href="MSC2716BatchSendResponse.html">MSC2716BatchSendResponse</a></li><li><a href="MultiUserDeviceListResponse.html">MultiUserDeviceListResponse</a></li><li><a href="OpenIDConnectToken.html">OpenIDConnectToken</a></li><li><a href="OTKClaimResponse.html">OTKClaimResponse</a></li><li><a href="OwnUserDevice.html">OwnUserDevice</a></li><li><a href="Policies.html">Policies</a></li><li><a href="Policy.html">Policy</a></li><li><a href="Signatures.html">Signatures</a></li><li><a href="SignedCurve25519OTK.html">SignedCurve25519OTK</a></li><li><a href="SpaceChildEntityOptions.html">SpaceChildEntityOptions</a></li><li><a href="SpaceCreateOptions.html">SpaceCreateOptions</a></li><li><a href="SpaceEntityMap.html">SpaceEntityMap</a></li><li><a href="StoredUserDevice.html">StoredUserDevice</a></li><li><a href="Threepid.html">Threepid</a></li><li><a href="TranslatedPolicy.html">TranslatedPolicy</a></li><li><a href="UserDevice.html">UserDevice</a></li></ul><h3>Global</h3><ul><li><a href="global.html#DeviceKeyAlgorithm">DeviceKeyAlgorithm</a></li><li><a href="global.html#EncryptionAlgorithm">EncryptionAlgorithm</a></li><li><a href="global.html#OTKAlgorithm">OTKAlgorithm</a></li><li><a href="global.html#RoomEncryptionAlgorithm">RoomEncryptionAlgorithm</a></li></ul></div><div class="category"><h2>Preprocessors</h2><h3>Classes</h3><ul><li><a href="RichRepliesPreprocessor.html">RichRepliesPreprocessor</a></li></ul><h3>Interfaces</h3><ul><li><a href="IPreprocessor.html">IPreprocessor</a></li><li><a href="IRichReplyMetadata.html">IRichReplyMetadata</a></li></ul></div><div class="category"><h2>Storage providers</h2><h3>Classes</h3><ul><li><a href="CryptexCryptoSecureStorageProvider.html">CryptexCryptoSecureStorageProvider</a></li><li><a href="MemoryStorageProvider.html">MemoryStorageProvider</a></li><li><a href="NamespacedFsProvider.html">NamespacedFsProvider</a></li><li><a href="NamespacingPostgresCryptoStorageProvider.html">NamespacingPostgresCryptoStorageProvider</a></li><li><a href="NamespacingSqliteCryptoStorageProvider.html">NamespacingSqliteCryptoStorageProvider</a></li><li><a href="SimpleFsStorageProvider.html">SimpleFsStorageProvider</a></li><li><a href="SqliteCryptoStorageProvider.html">SqliteCryptoStorageProvider</a></li></ul><h3>Interfaces</h3><ul><li><a href="IAppserviceCryptoStorageProvider.html">IAppserviceCryptoStorageProvider</a></li><li><a href="IAppserviceStorageProvider.html">IAppserviceStorageProvider</a></li><li><a href="ICryptoSecureStorageProvider.html">ICryptoSecureStorageProvider</a></li><li><a href="ICryptoStorageProvider.html">ICryptoStorageProvider</a></li><li><a href="IStorageProvider.html">IStorageProvider</a></li></ul></div><div class="category"><h2>Unit testing</h2><h3>Global</h3><ul><li><a href="global.html#doHttpRequest">doHttpRequest</a></li><li><a href="global.html#getRequestFn">getRequestFn</a></li><li><a href="global.html#setRequestFn">setRequestFn</a></li></ul></div><div class="category"><h2>Unstable APIs</h2><h3>Classes</h3><ul><li><a href="UnstableApis.html">UnstableApis</a></li><li><a href="UnstableAppserviceApis.html">UnstableAppserviceApis</a></li></ul><h3>Interfaces</h3><ul><li><a href="GroupProfile.html">GroupProfile</a></li></ul></div><div class="category"><h2>Utilities</h2><h3>Classes</h3><ul><li><a href="MatrixEntity.html">MatrixEntity</a></li><li><a href="MatrixGlob.html">MatrixGlob</a></li><li><a href="MentionPill.html">MentionPill</a></li><li><a href="Permalinks.html">Permalinks</a></li><li><a href="ProfileCache.html">ProfileCache</a></li><li><a href="RichReply.html">RichReply</a></li><li><a href="RoomAlias.html">RoomAlias</a></li><li><a href="UnpaddedBase64.html">UnpaddedBase64</a></li><li><a href="UserID.html">UserID</a></li></ul><h3>Interfaces</h3><ul><li><a href="PermalinkParts.html">PermalinkParts</a></li></ul><h3>Global</h3><ul><li><a href="global.html#decodeBase64">decodeBase64</a></li><li><a href="global.html#decodeUnpaddedBase64">decodeUnpaddedBase64</a></li><li><a href="global.html#decodeUnpaddedUrlSafeBase64">decodeUnpaddedUrlSafeBase64</a></li><li><a href="global.html#encodeBase64">encodeBase64</a></li><li><a href="global.html#encodeUnpaddedBase64">encodeUnpaddedBase64</a></li><li><a href="global.html#encodeUnpaddedUrlSafeBase64">encodeUnpaddedUrlSafeBase64</a></li></ul></div>
+                
+            </nav>
+        </div>
+        <div class="core" id="main-content-wrapper">
+            <div class="content">
+                <header class="page-title">
+                    <p>Source</p>
+                    <h1>e2ee/CryptoClient.ts</h1>
+                </header>
+                
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>import { MatrixClient } from "../MatrixClient";
+import { LogService } from "../logging/LogService";
+import * as Olm from "@matrix-org/olm";
+import * as crypto from "crypto";
+import * as anotherJson from "another-json";
+import {
+    DeviceKeyAlgorithm,
+    EncryptionAlgorithm,
+    FallbackKey,
+    IMegolmEncrypted,
+    IMRoomKey,
+    IOlmEncrypted,
+    IOlmPayload,
+    IOlmSession,
+    IToDeviceMessage,
+    OTKAlgorithm,
+    OTKCounts,
+    OTKs,
+    Signatures,
+    SignedCurve25519OTK,
+    UserDevice,
+} from "../models/Crypto";
+import { requiresReady } from "./decorators";
+import { RoomTracker } from "./RoomTracker";
+import { DeviceTracker } from "./DeviceTracker";
+import { EncryptionEvent } from "../models/events/EncryptionEvent";
+import { EncryptedRoomEvent } from "../models/events/EncryptedRoomEvent";
+import { RoomEvent } from "../models/events/RoomEvent";
+import { EncryptedFile } from "../models/events/MessageEvent";
+import {
+    decodeUnpaddedBase64,
+    decodeUnpaddedUrlSafeBase64,
+    encodeUnpaddedBase64,
+    encodeUnpaddedUrlSafeBase64,
+} from "../b64";
+import { PassThrough } from "stream";
+
+/**
+ * Manages encryption for a MatrixClient. Get an instance from a MatrixClient directly
+ * rather than creating one manually.
+ * @category Encryption
+ */
+export class CryptoClient {
+    private ready = false;
+    private deviceId: string;
+    private pickleKey: string;
+    private deviceEd25519: string;
+    private deviceCurve25519: string;
+    private maxOTKs: number;
+    private roomTracker: RoomTracker;
+    private deviceTracker: DeviceTracker;
+
+    public constructor(private client: MatrixClient) {
+        this.roomTracker = new RoomTracker(this.client);
+        this.deviceTracker = new DeviceTracker(this.client);
+    }
+
+    /**
+     * The device ID for the MatrixClient.
+     */
+    public get clientDeviceId(): string {
+        return this.deviceId;
+    }
+
+    /**
+     * Whether or not the crypto client is ready to be used. If not ready, prepare() should be called.
+     * @see prepare
+     */
+    public get isReady(): boolean {
+        return this.ready;
+    }
+
+    private async getOlmAccount(): Promise&lt;Olm.Account> {
+        const account = new Olm.Account();
+        account.unpickle(this.pickleKey, await this.client.cryptoStore.getPickledAccount());
+        return account;
+    }
+
+    private async storeAndFreeOlmAccount(account: Olm.Account) {
+        const pickled = account.pickle(this.pickleKey);
+        await this.client.cryptoStore.setPickledAccount(pickled);
+        account.free();
+    }
+
+    /**
+     * Prepares the crypto client for usage.
+     * @param {string[]} roomIds The room IDs the MatrixClient is joined to.
+     */
+    public async prepare(roomIds: string[]) {
+        await this.roomTracker.prepare(roomIds);
+
+        const storedDeviceId = await this.client.cryptoStore.getDeviceId();
+        if (storedDeviceId) {
+            this.deviceId = storedDeviceId;
+        } else {
+            const deviceId = (await this.client.getWhoAmI())['device_id'];
+            if (!deviceId) {
+                throw new Error("Encryption not possible: server not revealing device ID");
+            }
+            this.deviceId = deviceId;
+            await this.client.cryptoStore.setDeviceId(this.deviceId);
+        }
+
+        LogService.debug("CryptoClient", "Starting with device ID:", this.deviceId);
+
+        // We should be in a ready enough shape to kick off Olm
+        await Olm.init();
+
+        let pickled = await this.client.cryptoStore.getPickledAccount();
+        let pickleKey = await this.client.cryptoStore.getPickleKey();
+
+        const account = new Olm.Account();
+
+        const makeReady = () => {
+            const keys = JSON.parse(account.identity_keys());
+            this.deviceCurve25519 = keys['curve25519'];
+            this.deviceEd25519 = keys['ed25519'];
+
+            this.pickleKey = pickleKey;
+            this.maxOTKs = account.max_number_of_one_time_keys();
+            this.ready = true;
+        };
+
+        try {
+            if (!pickled || !pickleKey) {
+                LogService.debug("CryptoClient", "Creating new Olm account: previous session lost or not set up");
+
+                const hasPickleKey = !!pickleKey;
+                account.create();
+                pickleKey = pickleKey ?? crypto.randomBytes(64).toString('hex');
+                pickled = account.pickle(pickleKey);
+                if (!hasPickleKey) await this.client.cryptoStore.setPickleKey(pickleKey);
+                await this.client.cryptoStore.setPickledAccount(pickled);
+
+                makeReady();
+
+                const counts = await this.client.uploadDeviceKeys([
+                    EncryptionAlgorithm.MegolmV1AesSha2,
+                    EncryptionAlgorithm.OlmV1Curve25519AesSha2,
+                ], {
+                    [`${DeviceKeyAlgorithm.Ed25519}:${this.deviceId}`]: this.deviceEd25519,
+                    [`${DeviceKeyAlgorithm.Curve25519}:${this.deviceId}`]: this.deviceCurve25519,
+                });
+                await this.updateCounts(counts);
+            } else {
+                account.unpickle(pickleKey, pickled);
+                makeReady();
+                await this.updateCounts(await this.client.checkOneTimeKeyCounts());
+            }
+        } finally {
+            account.free();
+        }
+    }
+
+    /**
+     * Checks if a room is encrypted.
+     * @param {string} roomId The room ID to check.
+     * @returns {Promise&lt;boolean>} Resolves to true if encrypted, false otherwise.
+     */
+    @requiresReady()
+    public async isRoomEncrypted(roomId: string): Promise&lt;boolean> {
+        const config = await this.roomTracker.getRoomCryptoConfig(roomId);
+        return !!config?.algorithm;
+    }
+
+    /**
+     * Updates the One Time Key counts, potentially triggering an async upload of more
+     * one time keys.
+     * @param {OTKCounts} counts The current counts to work within.
+     * @returns {Promise&lt;void>} Resolves when complete.
+     */
+    @requiresReady()
+    public async updateCounts(counts: OTKCounts) {
+        const have = counts[OTKAlgorithm.Signed] || 0;
+        const need = Math.floor(this.maxOTKs / 2) - have;
+        if (need &lt;= 0) return;
+
+        LogService.debug("CryptoClient", `Creating ${need} more OTKs`);
+
+        const account = await this.getOlmAccount();
+        try {
+            account.generate_one_time_keys(need);
+            const { curve25519: keys } = JSON.parse(account.one_time_keys());
+            const signed: OTKs = {};
+            for (const keyId in keys) {
+                if (!keys.hasOwnProperty(keyId)) continue;
+                const obj = {key: keys[keyId]};
+                obj['signatures'] = await this.sign(obj);
+                signed[`${OTKAlgorithm.Signed}:${keyId}`] = obj;
+            }
+            await this.client.uploadDeviceOneTimeKeys(signed);
+            account.mark_keys_as_published();
+        } finally {
+            await this.storeAndFreeOlmAccount(account);
+        }
+    }
+
+    /**
+     * Updates the client's fallback key.
+     * @returns {Promise&lt;void>} Resolves when complete.
+     */
+    @requiresReady()
+    public async updateFallbackKey(): Promise&lt;void> {
+        const account = await this.getOlmAccount();
+        try {
+            account.generate_fallback_key();
+
+            const key = JSON.parse(account.fallback_key());
+            const keyId = Object.keys(key[OTKAlgorithm.Unsigned])[0];
+            const obj: Partial&lt;SignedCurve25519OTK> = {
+                key: key[OTKAlgorithm.Unsigned][keyId],
+                fallback: true,
+            };
+            const signatures = await this.sign(obj);
+            const fallback: FallbackKey = {
+                keyId: keyId,
+                key: {
+                    ...obj,
+                    signatures: signatures,
+                } as SignedCurve25519OTK &amp; {fallback: true},
+            };
+            await this.client.uploadFallbackKey(fallback);
+        } finally {
+            await this.storeAndFreeOlmAccount(account);
+        }
+    }
+
+    /**
+     * Signs an object using the device keys.
+     * @param {object} obj The object to sign.
+     * @returns {Promise&lt;Signatures>} The signatures for the object.
+     */
+    @requiresReady()
+    public async sign(obj: object): Promise&lt;Signatures> {
+        obj = JSON.parse(JSON.stringify(obj));
+        const existingSignatures = obj['signatures'] || {};
+
+        delete obj['signatures'];
+        delete obj['unsigned'];
+
+        const account = await this.getOlmAccount();
+        try {
+            const sig = account.sign(anotherJson.stringify(obj));
+            return {
+                [await this.client.getUserId()]: {
+                    [`${DeviceKeyAlgorithm.Ed25519}:${this.deviceId}`]: sig,
+                },
+                ...existingSignatures,
+            };
+        } finally {
+            account.free();
+        }
+    }
+
+    /**
+     * Verifies a signature on an object.
+     * @param {object} obj The signed object.
+     * @param {string} key The key which has supposedly signed the object.
+     * @param {string} signature The advertised signature.
+     * @returns {Promise&lt;boolean>} Resolves to true if a valid signature, false otherwise.
+     */
+    @requiresReady()
+    public async verifySignature(obj: object, key: string, signature: string): Promise&lt;boolean> {
+        obj = JSON.parse(JSON.stringify(obj));
+
+        delete obj['signatures'];
+        delete obj['unsigned'];
+
+        const util = new Olm.Utility();
+        try {
+            const message = anotherJson.stringify(obj);
+            util.ed25519_verify(key, message, signature);
+        } catch (e) {
+            // Assume it's a verification failure
+            return false;
+        } finally {
+            util.free();
+        }
+
+        return true;
+    }
+
+    /**
+     * Flags multiple user's device lists as outdated, optionally queuing an immediate update.
+     * @param {string} userIds The user IDs to flag the device lists of.
+     * @param {boolean} resync True (default) to queue an immediate update, false otherwise.
+     * @returns {Promise&lt;void>} Resolves when the device lists have been flagged. Will also wait
+     * for the resync if one was requested.
+     */
+    @requiresReady()
+    public flagUsersDeviceListsOutdated(userIds: string[], resync = true): Promise&lt;void> {
+        return this.deviceTracker.flagUsersOutdated(userIds, resync);
+    }
+
+    /**
+     * Gets or creates Olm sessions for the given users and devices. Where sessions cannot be created,
+     * the user/device will be excluded from the returned map.
+     * @param {Record&lt;string, string[]>} userDeviceMap Map of user IDs to device IDs
+     * @param {boolean} force If true, force creation of a session for the referenced users.
+     * @returns {Promise&lt;Record&lt;string, Record&lt;string, IOlmSession>>>} Resolves to a map of user ID to device
+     * ID to session. Users/devices which cannot have sessions made will not be included, thus the object
+     * may be empty.
+     */
+    @requiresReady()
+    public async getOrCreateOlmSessions(userDeviceMap: Record&lt;string, string[]>, force = false): Promise&lt;Record&lt;string, Record&lt;string, IOlmSession>>> {
+        const otkClaimRequest: Record&lt;string, Record&lt;string, OTKAlgorithm>> = {};
+        const userDeviceSessionIds: Record&lt;string, Record&lt;string, IOlmSession>> = {};
+
+        const myUserId = await this.client.getUserId();
+        const myDeviceId = this.clientDeviceId;
+        for (const userId of Object.keys(userDeviceMap)) {
+            for (const deviceId of userDeviceMap[userId]) {
+                if (userId === myUserId &amp;&amp; deviceId === myDeviceId) {
+                    // Skip creating a session for our own device
+                    continue;
+                }
+
+                const existingSession = force ? null : (await this.client.cryptoStore.getCurrentOlmSession(userId, deviceId));
+                if (existingSession) {
+                    if (!userDeviceSessionIds[userId]) userDeviceSessionIds[userId] = {};
+                    userDeviceSessionIds[userId][deviceId] = existingSession;
+                } else {
+                    if (!otkClaimRequest[userId]) otkClaimRequest[userId] = {};
+                    otkClaimRequest[userId][deviceId] = OTKAlgorithm.Signed;
+                }
+            }
+        }
+
+        if (Object.keys(otkClaimRequest).length > 0) {
+            const claimed = await this.client.claimOneTimeKeys(otkClaimRequest);
+            for (const userId of Object.keys(claimed.one_time_keys)) {
+                if (!otkClaimRequest[userId]) {
+                    LogService.warn("CryptoClient", `Server injected unexpected user: ${userId} - not claiming keys`);
+                    continue;
+                }
+                const storedDevices = await this.client.cryptoStore.getActiveUserDevices(userId);
+                for (const deviceId of Object.keys(claimed.one_time_keys[userId])) {
+                    try {
+                        if (!otkClaimRequest[userId][deviceId]) {
+                            LogService.warn("CryptoClient", `Server provided an unexpected device in claim response (skipping): ${userId} ${deviceId}`);
+                            continue;
+                        }
+
+                        const device = storedDevices.find(d => d.user_id === userId &amp;&amp; d.device_id === deviceId);
+                        if (!device) {
+                            LogService.warn("CryptoClient", `Failed to handle claimed OTK: unable to locate stored device for user: ${userId} ${deviceId}`);
+                            continue;
+                        }
+
+                        const deviceKeyLabel = `${DeviceKeyAlgorithm.Ed25519}:${deviceId}`;
+
+                        const keyId = Object.keys(claimed.one_time_keys[userId][deviceId])[0];
+                        const signedKey = claimed.one_time_keys[userId][deviceId][keyId];
+                        const signature = signedKey?.signatures?.[userId]?.[deviceKeyLabel];
+                        if (!signature) {
+                            LogService.warn("CryptoClient", `Failed to find appropriate signature for claimed OTK ${userId} ${deviceId}`);
+                            continue;
+                        }
+
+                        const verified = await this.verifySignature(signedKey, device.keys[deviceKeyLabel], signature);
+                        if (!verified) {
+                            LogService.warn("CryptoClient", `Invalid signature for claimed OTK ${userId} ${deviceId}`);
+                            continue;
+                        }
+
+                        // TODO: Handle spec rate limiting
+                        // Clients should rate-limit the number of sessions it creates per device that it receives a message
+                        // from. Clients should not create a new session with another device if it has already created one
+                        // for that given device in the past 1 hour.
+
+                        // Finally, we can create a session. We do this on each loop just in case something goes wrong given
+                        // we don't have app-level transaction support here. We want to persist as many outbound sessions as
+                        // we can before exploding.
+                        const account = await this.getOlmAccount();
+                        const session = new Olm.Session();
+                        try {
+                            const curveDeviceKey = device.keys[`${DeviceKeyAlgorithm.Curve25519}:${deviceId}`];
+                            session.create_outbound(account, curveDeviceKey, signedKey.key);
+                            const storedSession: IOlmSession = {
+                                sessionId: session.session_id(),
+                                lastDecryptionTs: Date.now(),
+                                pickled: session.pickle(this.pickleKey),
+                            };
+                            await this.client.cryptoStore.storeOlmSession(userId, deviceId, storedSession);
+
+                            if (!userDeviceSessionIds[userId]) userDeviceSessionIds[userId] = {};
+                            userDeviceSessionIds[userId][deviceId] = storedSession;
+                        } finally {
+                            session.free();
+                            await this.storeAndFreeOlmAccount(account);
+                        }
+                    } catch (e) {
+                        LogService.warn("CryptoClient", `Unable to verify signature of claimed OTK ${userId} ${deviceId}:`, e);
+                    }
+                }
+            }
+        }
+
+        return userDeviceSessionIds;
+    }
+
+    @requiresReady()
+    private async encryptAndSendOlmMessage(device: UserDevice, session: IOlmSession, type: string, content: any): Promise&lt;void> {
+        const olmSession = new Olm.Session();
+        try {
+            olmSession.unpickle(this.pickleKey, session.pickled);
+            const payload: IOlmPayload = {
+                keys: {
+                    ed25519: this.deviceEd25519,
+                },
+                recipient_keys: {
+                    ed25519: device.keys[`${DeviceKeyAlgorithm.Ed25519}:${device.device_id}`],
+                },
+                recipient: device.user_id,
+                sender: await this.client.getUserId(),
+                content: content,
+                type: type,
+            };
+            const encrypted = olmSession.encrypt(JSON.stringify(payload));
+            await this.client.cryptoStore.storeOlmSession(device.user_id, device.device_id, {
+                pickled: olmSession.pickle(this.pickleKey),
+                lastDecryptionTs: session.lastDecryptionTs,
+                sessionId: olmSession.session_id(),
+            });
+            const message: IOlmEncrypted = {
+                algorithm: EncryptionAlgorithm.OlmV1Curve25519AesSha2,
+                ciphertext: {
+                    [device.keys[`${DeviceKeyAlgorithm.Curve25519}:${device.device_id}`]]: encrypted as any,
+                },
+                sender_key: this.deviceCurve25519,
+            };
+            await this.client.sendToDevices("m.room.encrypted", {
+                [device.user_id]: {
+                    [device.device_id]: message,
+                },
+            });
+        } finally {
+            olmSession.free();
+        }
+    }
+
+    /**
+     * Encrypts the details of a room event, returning an encrypted payload to be sent in an
+     * `m.room.encrypted` event to the room. If needed, this function will send decryption keys
+     * to the appropriate devices in the room (this happens when the Megolm session rotates or
+     * gets created).
+     * @param {string} roomId The room ID to encrypt within. If the room is not encrypted, an
+     * error is thrown.
+     * @param {string} eventType The event type being encrypted.
+     * @param {any} content The event content being encrypted.
+     * @returns {Promise&lt;IMegolmEncrypted>} Resolves to the encrypted content for an `m.room.encrypted` event.
+     */
+    @requiresReady()
+    public async encryptRoomEvent(roomId: string, eventType: string, content: any): Promise&lt;IMegolmEncrypted> {
+        if (!(await this.isRoomEncrypted(roomId))) {
+            throw new Error("Room is not encrypted");
+        }
+
+        let relatesTo: any;
+        if (content['m.relates_to']) {
+            relatesTo = JSON.parse(JSON.stringify(content['m.relates_to']));
+            delete content['m.relates_to'];
+        }
+
+        const now = (new Date()).getTime();
+
+        let currentSession = await this.client.cryptoStore.getCurrentOutboundGroupSession(roomId);
+        if (currentSession &amp;&amp; (currentSession.expiresTs &lt;= now || currentSession.usesLeft &lt;= 0)) {
+            currentSession = null; // force rotation
+        }
+        if (!currentSession) {
+            // Make a new session, either because we don't have one or it rotated.
+            const roomConfig = new EncryptionEvent({
+                type: "m.room.encryption",
+                state_key: "",
+                content: await this.roomTracker.getRoomCryptoConfig(roomId),
+            });
+
+            const newSession = new Olm.OutboundGroupSession();
+            try {
+                newSession.create();
+                const pickled = newSession.pickle(this.pickleKey);
+                currentSession = {
+                    sessionId: newSession.session_id(),
+                    roomId: roomId,
+                    pickled: pickled,
+                    isCurrent: true,
+                    usesLeft: roomConfig.rotationPeriodMessages,
+                    expiresTs: now + roomConfig.rotationPeriodMs,
+                };
+
+                // Store the session as an inbound session up front. This is to ensure that we have the
+                // earliest possible ratchet available to our own decryption functions. We don't store
+                // the outbound session here as it is stored earlier on.
+                await this.storeInboundGroupSession({
+                    room_id: roomId,
+                    session_id: newSession.session_id(),
+                    session_key: newSession.session_key(),
+                    algorithm: EncryptionAlgorithm.MegolmV1AesSha2,
+                }, await this.client.getUserId(), this.clientDeviceId);
+            } finally {
+                newSession.free();
+            }
+        }
+
+        // TODO: Include invited members?
+        const memberUserIds = await this.client.getJoinedRoomMembers(roomId);
+        const devices = await this.deviceTracker.getDevicesFor(memberUserIds);
+
+        const session = new Olm.OutboundGroupSession();
+        try {
+            session.unpickle(this.pickleKey, currentSession.pickled);
+
+            const neededSessions: Record&lt;string, string[]> = {};
+            for (const userId of Object.keys(devices)) {
+                neededSessions[userId] = devices[userId].map(d => d.device_id);
+            }
+            const olmSessions = await this.getOrCreateOlmSessions(neededSessions);
+
+            for (const userId of Object.keys(devices)) {
+                for (const device of devices[userId]) {
+                    const olmSession = olmSessions[userId]?.[device.device_id];
+                    if (!olmSession) {
+                        LogService.warn("CryptoClient", `Unable to send Megolm session to ${userId} ${device.device_id}: No Olm session`);
+                        continue;
+                    }
+                    const lastSession = await this.client.cryptoStore.getLastSentOutboundGroupSession(userId, device.device_id, roomId);
+                    if (lastSession?.sessionId !== session.session_id() || session.message_index() &lt; (lastSession?.index ?? Number.MAX_SAFE_INTEGER)) {
+                        await this.encryptAndSendOlmMessage(device, olmSession, "m.room_key", &lt;IMRoomKey>{
+                            algorithm: EncryptionAlgorithm.MegolmV1AesSha2,
+                            room_id: roomId,
+                            session_id: session.session_id(),
+                            session_key: session.session_key(),
+                        });
+                        await this.client.cryptoStore.storeSentOutboundGroupSession(currentSession, session.message_index(), device);
+                    }
+                }
+            }
+
+            // Encrypt after to avoid UNKNOWN_MESSAGE_INDEX errors on remote end
+            const encrypted = session.encrypt(JSON.stringify({
+                type: eventType,
+                content: content,
+                room_id: roomId,
+            }));
+
+            currentSession.pickled = session.pickle(this.pickleKey);
+            currentSession.usesLeft--;
+            await this.client.cryptoStore.storeOutboundGroupSession(currentSession);
+
+            const body = {
+                sender_key: this.deviceCurve25519,
+                ciphertext: encrypted,
+                session_id: session.session_id(),
+                device_id: this.clientDeviceId,
+            };
+            if (relatesTo) {
+                body['m.relates_to'] = relatesTo;
+            }
+            return {
+                ...body,
+                algorithm: EncryptionAlgorithm.MegolmV1AesSha2,
+            };
+        } finally {
+            session.free();
+        }
+    }
+
+    /**
+     * Decrypts a room event. Currently only supports Megolm-encrypted events (default for this SDK).
+     * @param {EncryptedRoomEvent} event The encrypted event.
+     * @param {string} roomId The room ID where the event was sent.
+     * @returns {Promise&lt;RoomEvent&lt;unknown>>} Resolves to a decrypted room event, or rejects/throws with
+     * an error if the event is undecryptable.
+     */
+    @requiresReady()
+    public async decryptRoomEvent(event: EncryptedRoomEvent, roomId: string): Promise&lt;RoomEvent&lt;unknown>> {
+        if (event.algorithm !== EncryptionAlgorithm.MegolmV1AesSha2) {
+            throw new Error("Unable to decrypt: Unknown algorithm");
+        }
+
+        const encrypted = event.megolmProperties;
+        const senderDevice = await this.client.cryptoStore.getActiveUserDevice(event.sender, encrypted.device_id);
+        if (!senderDevice) {
+            throw new Error("Unable to decrypt: Unknown device for sender");
+        }
+
+        if (senderDevice.keys[`${DeviceKeyAlgorithm.Curve25519}:${senderDevice.device_id}`] !== encrypted.sender_key) {
+            throw new Error("Unable to decrypt: Device key mismatch");
+        }
+
+        const storedSession = await this.client.cryptoStore.getInboundGroupSession(event.sender, encrypted.device_id, roomId, encrypted.session_id);
+        if (!storedSession) {
+            throw new Error("Unable to decrypt: Unknown inbound session ID");
+        }
+
+        const session = new Olm.InboundGroupSession();
+        try {
+            session.unpickle(this.pickleKey, storedSession.pickled);
+            const cleartext = session.decrypt(encrypted.ciphertext) as { plaintext: string, message_index: number };
+            const eventBody = JSON.parse(cleartext.plaintext);
+            const messageIndex = cleartext.message_index;
+
+            const existingEventId = await this.client.cryptoStore.getEventForMessageIndex(roomId, storedSession.sessionId, messageIndex);
+            if (existingEventId &amp;&amp; existingEventId !== event.eventId) {
+                throw new Error("Unable to decrypt: Message replay attack");
+            }
+
+            await this.client.cryptoStore.setMessageIndexForEvent(roomId, event.eventId, storedSession.sessionId, messageIndex);
+
+            storedSession.pickled = session.pickle(this.pickleKey);
+            await this.client.cryptoStore.storeInboundGroupSession(storedSession);
+
+            return new RoomEvent&lt;unknown>({
+                ...event.raw,
+                type: eventBody.type || "io.t2bot.unknown",
+                content: (typeof(eventBody.content) === 'object') ? eventBody.content : {},
+            });
+        } finally {
+            session.free();
+        }
+    }
+
+    /**
+     * Handles an inbound to-device message, decrypting it if needed. This will not throw
+     * under normal circumstances and should always resolve successfully.
+     * @param {IToDeviceMessage&lt;IOlmEncrypted>} message The message to process.
+     * @returns {Promise&lt;void>} Resolves when complete. Should never fail.
+     */
+    @requiresReady()
+    public async processInboundDeviceMessage(message: IToDeviceMessage&lt;IOlmEncrypted>): Promise&lt;void> {
+        if (!message?.content || !message?.sender || !message?.type) {
+            LogService.warn("CryptoClient", "Received invalid encrypted message");
+            return;
+        }
+        try {
+            if (message.type === "m.room.encrypted") {
+                if (message.content?.['algorithm'] !== EncryptionAlgorithm.OlmV1Curve25519AesSha2) {
+                    LogService.warn("CryptoClient", "Received encrypted message with unknown encryption algorithm");
+                    return;
+                }
+
+                const myMessage = message.content.ciphertext?.[this.deviceCurve25519];
+                if (!myMessage) {
+                    LogService.warn("CryptoClient", "Received encrypted message not intended for us (ignoring message)");
+                    return;
+                }
+
+                if (!Number.isFinite(myMessage.type) || !myMessage.body) {
+                    LogService.warn("CryptoClient", "Received invalid encrypted message (ignoring message)");
+                    return;
+                }
+
+                let userDevices = await this.client.cryptoStore.getActiveUserDevices(message.sender);
+                let senderDevice = userDevices.find(d => d.keys[`${DeviceKeyAlgorithm.Curve25519}:${d.device_id}`] === message.content.sender_key);
+                if (!senderDevice) {
+                    LogService.warn("CryptoClient", "Received encrypted message from unknown identity key (trying resync):", message.content.sender_key);
+                    await this.flagUsersDeviceListsOutdated([message.sender], true);
+
+                    // try again
+                    userDevices = await this.client.cryptoStore.getActiveUserDevices(message.sender);
+                    senderDevice = userDevices.find(d => d.keys[`${DeviceKeyAlgorithm.Curve25519}:${d.device_id}`] === message.content.sender_key);
+                }
+                if (!senderDevice) {
+                    LogService.warn("CryptoClient", "Received encrypted message from unknown identity key (ignoring message):", message.content.sender_key);
+                    return;
+                }
+
+                const sessions = await this.client.cryptoStore.getOlmSessions(senderDevice.user_id, senderDevice.device_id);
+                let trySession: IOlmSession;
+                for (const storedSession of sessions) {
+                    const checkSession = new Olm.Session();
+                    try {
+                        checkSession.unpickle(this.pickleKey, storedSession.pickled);
+                        if (checkSession.matches_inbound(myMessage.body)) {
+                            trySession = storedSession;
+                            break;
+                        }
+                    } finally {
+                        checkSession.free();
+                    }
+                }
+
+                if (myMessage.type === 0 &amp;&amp; !trySession) {
+                    // Store the session because we can
+                    const inboundSession = new Olm.Session();
+                    const account = await this.getOlmAccount();
+                    try {
+                        inboundSession.create_inbound_from(account, message.content.sender_key, myMessage.body);
+                        account.remove_one_time_keys(inboundSession);
+                        trySession = {
+                            pickled: inboundSession.pickle(this.pickleKey),
+                            sessionId: inboundSession.session_id(),
+                            lastDecryptionTs: Date.now(),
+                        };
+                        await this.client.cryptoStore.storeOlmSession(senderDevice.user_id, senderDevice.device_id, trySession);
+                    } finally {
+                        inboundSession.free();
+                        await this.storeAndFreeOlmAccount(account);
+                    }
+                }
+
+                if (myMessage.type !== 0 &amp;&amp; !trySession) {
+                    LogService.warn("CryptoClient", "Unable to find suitable session for encrypted to-device message; Establishing new session");
+                    await this.establishNewOlmSession(senderDevice);
+                    return;
+                }
+
+                // Try decryption (finally)
+                const session = new Olm.Session();
+                let decrypted: IOlmPayload;
+                try {
+                    session.unpickle(this.pickleKey, trySession.pickled);
+                    decrypted = JSON.parse(session.decrypt(myMessage.type, myMessage.body));
+                } catch (e) {
+                    LogService.warn("CryptoClient", "Decryption error with to-device message, assuming corrupted session and re-establishing.", e);
+                    await this.establishNewOlmSession(senderDevice);
+                    return;
+                } finally {
+                    session.free();
+                }
+
+                const wasForUs = decrypted.recipient === (await this.client.getUserId());
+                const wasFromThem = decrypted.sender === message.sender;
+                const hasType = typeof(decrypted.type) === 'string';
+                const hasContent = !!decrypted.content &amp;&amp; typeof(decrypted.content) === 'object';
+                const ourKeyMatches = decrypted.recipient_keys?.ed25519 === this.deviceEd25519;
+                const theirKeyMatches = decrypted.keys?.ed25519 === senderDevice.keys[`${DeviceKeyAlgorithm.Ed25519}:${senderDevice.device_id}`];
+                if (!wasForUs || !wasFromThem || !hasType || !hasContent || !ourKeyMatches || !theirKeyMatches) {
+                    LogService.warn("CryptoClient", "Successfully decrypted to-device message, but it failed validation. Ignoring message.", {
+                        wasForUs,
+                        wasFromThem,
+                        hasType,
+                        hasContent,
+                        ourKeyMatches,
+                        theirKeyMatches,
+                    });
+                    return;
+                }
+
+                trySession.lastDecryptionTs = Date.now();
+                await this.client.cryptoStore.storeOlmSession(senderDevice.user_id, senderDevice.device_id, trySession);
+
+                if (decrypted.type === "m.room_key") {
+                    await this.handleInboundRoomKey(decrypted, senderDevice, message);
+                } else if (decrypted.type === "m.dummy") {
+                    // success! Nothing to do.
+                } else {
+                    LogService.warn("CryptoClient", `Unknown decrypted to-device message type: ${decrypted.type}`);
+                }
+            } else {
+                LogService.warn("CryptoClient", `Unknown to-device message type: ${message.type}`);
+            }
+        } catch (e) {
+            LogService.error("CryptoClient", "Non-fatal error while processing to-device message:", e);
+        }
+    }
+
+    private async handleInboundRoomKey(message: IToDeviceMessage&lt;IMRoomKey>, device: UserDevice, original: IToDeviceMessage&lt;IOlmEncrypted>): Promise&lt;void> {
+        if (message.content?.algorithm !== EncryptionAlgorithm.MegolmV1AesSha2) {
+            LogService.warn("CryptoClient", "Ignoring m.room_key for unknown encryption algorithm");
+            return;
+        }
+        if (!message.content?.room_id || !message.content?.session_id || !message.content?.session_key) {
+            LogService.warn("CryptoClient", "Ignoring invalid m.room_key");
+            return;
+        }
+
+        const deviceKey = device.keys[`${DeviceKeyAlgorithm.Curve25519}:${device.device_id}`];
+        if (deviceKey !== original.content?.sender_key) {
+            LogService.warn("CryptoClient", "Ignoring m.room_key message from unexpected sender");
+            return;
+        }
+
+        // See if we already know about this session (if we do: ignore the message)
+        const knownSession = await this.client.cryptoStore.getInboundGroupSession(device.user_id, device.device_id, message.content.room_id, message.content.session_id);
+        if (knownSession) {
+            return; // ignore
+        }
+
+        await this.storeInboundGroupSession(message.content, device.user_id, device.device_id);
+    }
+
+    private async storeInboundGroupSession(key: IMRoomKey, senderUserId: string, senderDeviceId: string): Promise&lt;void> {
+        const inboundSession = new Olm.InboundGroupSession();
+        try {
+            inboundSession.create(key.session_key);
+            if (inboundSession.session_id() !== key.session_id) {
+                LogService.warn("CryptoClient", "Ignoring m.room_key with mismatched session_id");
+                return;
+            }
+            await this.client.cryptoStore.storeInboundGroupSession({
+                roomId: key.room_id,
+                sessionId: key.session_id,
+                senderDeviceId: senderDeviceId,
+                senderUserId: senderUserId,
+                pickled: inboundSession.pickle(this.pickleKey),
+            });
+        } finally {
+            inboundSession.free();
+        }
+    }
+
+    private async establishNewOlmSession(device: UserDevice): Promise&lt;void> {
+        const olmSessions = await this.getOrCreateOlmSessions({
+            [device.user_id]: [device.device_id],
+        }, true);
+
+        // Share the session immediately
+        await this.encryptAndSendOlmMessage(device, olmSessions[device.user_id][device.device_id], "m.dummy", {});
+    }
+
+    /**
+     * Encrypts a file for uploading in a room, returning the encrypted data and information
+     * to include in a message event (except media URL) for sending.
+     * @param {Buffer} file The file to encrypt.
+     * @returns {{buffer: Buffer, file: Omit&lt;EncryptedFile, "url">}} Resolves to the encrypted
+     * contents and file information.
+     */
+    @requiresReady()
+    public async encryptMedia(file: Buffer): Promise&lt;{buffer: Buffer, file: Omit&lt;EncryptedFile, "url">}> {
+        const key = crypto.randomBytes(32);
+        const iv = new Uint8Array(16);
+        crypto.randomBytes(8).forEach((v, i) => iv[i] = v); // only fill high side to avoid 64bit overflow
+
+        const cipher = crypto.createCipheriv("aes-256-ctr", key, iv);
+
+        const buffers: Buffer[] = [];
+        cipher.on('data', b => {
+            buffers.push(b);
+        });
+
+        const stream = new PassThrough();
+        stream.pipe(cipher);
+        stream.end(file);
+
+        const finishPromise = new Promise&lt;Buffer>(resolve => {
+            cipher.end(() => {
+                resolve(Buffer.concat(buffers));
+            });
+        });
+
+        const cipheredContent = await finishPromise;
+
+        let sha256: string;
+        const util = new Olm.Utility();
+        try {
+            const arr = new Uint8Array(cipheredContent);
+            sha256 = util.sha256(arr);
+        } finally {
+            util.free();
+        }
+
+        return {
+            buffer: Buffer.from(cipheredContent),
+            file: {
+                hashes: {
+                    sha256: sha256,
+                },
+                key: {
+                    alg: "A256CTR",
+                    ext: true,
+                    key_ops: ['encrypt', 'decrypt'],
+                    kty: "oct",
+                    k: encodeUnpaddedUrlSafeBase64(key),
+                },
+                iv: encodeUnpaddedBase64(iv),
+                v: 'v2',
+            },
+        };
+    }
+
+    /**
+     * Decrypts a previously-uploaded encrypted file, validating the fields along the way.
+     * @param {EncryptedFile} file The file to decrypt.
+     * @returns {Promise&lt;Buffer>} Resolves to the decrypted file contents.
+     */
+    public async decryptMedia(file: EncryptedFile): Promise&lt;Buffer> {
+        if (file.v !== "v2") {
+            throw new Error("Unknown encrypted file version");
+        }
+        if (file.key?.kty !== "oct" || file.key?.alg !== "A256CTR" || file.key?.ext !== true) {
+            throw new Error("Improper JWT: Missing or invalid fields");
+        }
+        if (!file.key.key_ops.includes("encrypt") || !file.key.key_ops.includes("decrypt")) {
+            throw new Error("Missing required key_ops");
+        }
+        if (!file.hashes?.sha256) {
+            throw new Error("Missing SHA256 hash");
+        }
+
+        const key = decodeUnpaddedUrlSafeBase64(file.key.k);
+        const iv = decodeUnpaddedBase64(file.iv);
+        const ciphered = (await this.client.downloadContent(file.url)).data;
+
+        let sha256: string;
+        const util = new Olm.Utility();
+        try {
+            const arr = new Uint8Array(ciphered);
+            sha256 = util.sha256(arr);
+        } finally {
+            util.free();
+        }
+
+        if (sha256 !== file.hashes.sha256) {
+            throw new Error("SHA256 mismatch");
+        }
+
+        const decipher = crypto.createDecipheriv("aes-256-ctr", key, iv);
+
+        const buffers: Buffer[] = [];
+        decipher.on('data', b => {
+            buffers.push(b);
+        });
+
+        const stream = new PassThrough();
+        stream.pipe(decipher);
+        stream.end(ciphered);
+
+        return new Promise&lt;Buffer>(resolve => {
+            decipher.end(() => {
+                resolve(Buffer.concat(buffers));
+            });
+        });
+    }
+}
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+            </div>
+            
+            <footer class="footer">
+                <div class="content has-text-centered">
+                    <p>Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.6.7</a></p>
+                    <p class="sidebar-created-by">
+                        <a href="https://github.com/SoftwareBrothers/better-docs" target="_blank">BetterDocs theme</a> provided with <i class="fas fa-heart"></i> by 
+                        <a href="http://softwarebrothers.co" target="_blank">SoftwareBrothers - JavaScript Development Agency</a>
+                    </p>
+                </div>
+            </footer>
+            
+        </div>
+        <div id="side-nav" class="side-nav">
+        </div>
+    </div>
+<script src="scripts/app.min.js"></script>
+<script>PR.prettyPrint();</script>
+<script src="scripts/linenumber.js"> </script>
+
+</body>
+</html>
