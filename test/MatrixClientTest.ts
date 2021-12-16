@@ -6878,47 +6878,55 @@ describe('MatrixClient', () => {
         });
     });
     describe('requestTimeoutRetry', function () {
-        it('should be able to survive a timeout', async function () {
-            const client = createTimeoutClient(1);
+        it('Should be able to handle timeout situations.', async function () {
+            // This test is a bit long because it is difficult to test this
+            // with an accurate number of timeouts when each step is in a different `it` block.
+            // The reason being that the request function accessible via getRequest will be shared
+            // and seperate `it` blocks will run concurrently, which interferes with us wanting precise control.
+
+            // should be able to survive a timeout
+            let client = createTimeoutClient(1);
             client.maxRetries = 1;
-            let retries = 0;
+            let attempt = 0;
             client.on('request.timeout', (url, method, endpoint, event) => {
-                retries = event.retries;
+                attempt = event.attempt;
             });
             const response = await client.doRequest("GET", "/survive-timeout", null, null, 10);
             expect(response).toBe('body');
-            expect(retries).toBe(1);
-        });
-        it('will not prolong a timeout situation longer than the configured limit', async function () {
-            const client = createTimeoutClient(2);
+            // The timeout will happen when we have only made one request, the following request will succeed and the event will not emit again.
+            expect(attempt).toBe(0);
+
+            // will not prolong a timeout situation longer than the configured limit
+            client = createTimeoutClient(2);
             client.maxRetries = 1;
-            let retries = 0;
+            attempt = 0;
             client.on('request.timeout', (url, method, endpoint, event) => {
-                retries = event.retries;
+                attempt = event.attempt;
             });
             await expect(client.doRequest("GET", "/do-not-prolong-timeout", null, null, 10)).rejects.toThrowError('ESOCKETTIMEDOUT');
-            expect(retries).toBe(1);
-        });
-        it('should be able to cancel a retry', async function () {
-            const client = createTimeoutClient(4);
+            expect(attempt).toBe(1);
+
+            // should be able to cancel a retry
+            client = createTimeoutClient(4);
             client.maxRetries = 3;
-            let retries = 0;
+            attempt = 0;
             client.on('request.timeout', (url, method, endpoint, event) => {
                 event.stopRetry();
-                retries = event.retries;
+                attempt = event.attempt;
             });
             await expect(client.doRequest("GET", "/cancel-retry", null, null, 10)).rejects.toThrowError('ESOCKETTIMEDOUT');
-            expect(retries).toBe(0);
-        });
-        it('will not retry unless the client is configured to', async function () {
-            const client = createTimeoutClient(1);
+            expect(attempt).toBe(0);
+
+            // will not retry when the client has not been configured to / has the default settings.
+            client = createTimeoutClient(1);
             expect(client.maxRetries).toBe(0);
-            let retries = 0;
+            attempt = 0;
             client.on('request.timeout', (url, method, endpoint, event) => {
-                retries = event.retries;
+                attempt = event.attempt;
             });
             await expect(client.doRequest("GET", "/never-retry", null, null, 10)).rejects.toThrowError('ESOCKETTIMEDOUT');
-            expect(retries).toBe(0);
-        });
+            expect(attempt).toBe(0);
+            
+        })
     });
 });
