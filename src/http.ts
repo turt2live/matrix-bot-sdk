@@ -27,13 +27,13 @@ export function doHttpRequest(baseUrl: string, method: "GET"|"POST"|"PUT"|"DELET
     const url = baseUrl + endpoint;
 
     // This is logged at info so that when a request fails people can figure out which one.
-    LogService.debug("MatrixHttpClient (REQ-" + requestId + ")", method + " " + url);
+    LogService.debug("MatrixHttpClient", "(REQ-" + requestId + ")", method + " " + url);
 
     // Don't log the request unless we're in debug mode. It can be large.
     if (LogService.level.includes(LogLevel.TRACE)) {
-        if (qs) LogService.trace("MatrixHttpClient (REQ-" + requestId + ")", "qs = " + JSON.stringify(qs));
-        if (body && !Buffer.isBuffer(body)) LogService.trace("MatrixHttpClient (REQ-" + requestId + ")", "body = " + JSON.stringify(this.redactObjectForLogging(body)));
-        if (body && Buffer.isBuffer(body)) LogService.trace("MatrixHttpClient (REQ-" + requestId + ")", "body = <Buffer>");
+        if (qs) LogService.trace("MatrixHttpClient", "(REQ-" + requestId + ")", "qs = " + JSON.stringify(qs));
+        if (body && !Buffer.isBuffer(body)) LogService.trace("MatrixHttpClient", "(REQ-" + requestId + ")", "body = " + JSON.stringify(this.redactObjectForLogging(body)));
+        if (body && Buffer.isBuffer(body)) LogService.trace("MatrixHttpClient", "(REQ-" + requestId + ")", "body = <Buffer>");
     }
 
     const params: { [k: string]: any } = {
@@ -63,7 +63,7 @@ export function doHttpRequest(baseUrl: string, method: "GET"|"POST"|"PUT"|"DELET
     return new Promise((resolve, reject) => {
         getRequestFn()(params, (err, response, resBody) => {
             if (err) {
-                LogService.error("MatrixHttpClient (REQ-" + requestId + ")", err);
+                LogService.error("MatrixHttpClient", "(REQ-" + requestId + ")", err);
                 reject(err);
             } else {
                 if (typeof (resBody) === 'string') {
@@ -85,11 +85,11 @@ export function doHttpRequest(baseUrl: string, method: "GET"|"POST"|"PUT"|"DELET
                 // Don't log the body unless we're in debug mode. They can be large.
                 if (LogService.level.includes(LogLevel.TRACE)) {
                     const redactedBody = respIsBuffer ? '<Buffer>' : redactObjectForLogging(response.body);
-                    LogService.trace("MatrixHttpClient (REQ-" + requestId + " RESP-H" + response.statusCode + ")", redactedBody);
+                    LogService.trace("MatrixHttpClient", "(REQ-" + requestId + " RESP-H" + response.statusCode + ")", redactedBody);
                 }
                 if (response.statusCode < 200 || response.statusCode >= 300) {
                     const redactedBody = respIsBuffer ? '<Buffer>' : redactObjectForLogging(response.body);
-                    LogService.error("MatrixHttpClient (REQ-" + requestId + ")", redactedBody);
+                    LogService.error("MatrixHttpClient", "(REQ-" + requestId + ")", redactedBody);
                     reject(response);
                 } else resolve(raw ? response : resBody);
             }
