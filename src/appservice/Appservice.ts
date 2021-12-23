@@ -667,14 +667,14 @@ export class Appservice extends EventEmitter {
             // Process device list changes to ensure we enter the decryption/encryption loops with the best possible state
             const deviceLists = req.body["org.matrix.msc3202.device_lists"]
             if (deviceLists) {
-                if (Array.isArray(deviceLists["changed"])) {
-                    await this.botClient.crypto?.flagUsersDeviceListsOutdated(deviceLists['changed'], true);
-                }
-                if (Array.isArray(deviceLists["removed"])) {
-                    // Like MatrixClient, we don't need to resync removed devices immediately. We'll do this
-                    // later all on our own.
-                    await this.botClient.crypto?.flagUsersDeviceListsOutdated(deviceLists['removed'], false);
-                }
+                // if (Array.isArray(deviceLists["changed"])) {
+                //     await this.botClient.crypto?.flagUsersDeviceListsOutdated(deviceLists['changed'], true);
+                // }
+                // if (Array.isArray(deviceLists["removed"])) {
+                //     // Like MatrixClient, we don't need to resync removed devices immediately. We'll do this
+                //     // later all on our own.
+                //     await this.botClient.crypto?.flagUsersDeviceListsOutdated(deviceLists['removed'], false);
+                // }
             }
 
             // Process OTKs and fallback keys next so we can ensure that we have appropriate counts for if the transaction
@@ -682,23 +682,23 @@ export class Appservice extends EventEmitter {
             const otks = req.body["org.matrix.msc3202.device_one_time_keys_count"];
             if (otks) {
                 for (const userId of Object.keys(otks)) {
-                    const intent = this.getIntentForUserId(userId);
-                    await intent.enableEncryption();
-                    const otksForUser = otks[intent.underlyingClient.crypto?.clientDeviceId];
-                    if (otksForUser) {
-                        await intent.underlyingClient.crypto?.updateCounts(otksForUser);
-                    }
+                    // const intent = this.getIntentForUserId(userId);
+                    // await intent.enableEncryption();
+                    // const otksForUser = otks[intent.underlyingClient.crypto?.clientDeviceId];
+                    // if (otksForUser) {
+                    //     await intent.underlyingClient.crypto?.updateCounts(otksForUser);
+                    // }
                 }
             }
             const fallbacks = req.body["org.matrix.msc3202.device_unused_fallback_key_types"];
             if (fallbacks) {
                 for (const userId of Object.keys(fallbacks)) {
-                    const intent = this.getIntentForUserId(userId);
-                    await intent.enableEncryption();
-                    const fallbacksForUser = fallbacks[intent.underlyingClient.crypto?.clientDeviceId];
-                    if (Array.isArray(fallbacksForUser) && !fallbacksForUser.includes(OTKAlgorithm.Signed)) {
-                        await intent.underlyingClient.crypto?.updateFallbackKey();
-                    }
+                    // const intent = this.getIntentForUserId(userId);
+                    // await intent.enableEncryption();
+                    // const fallbacksForUser = fallbacks[intent.underlyingClient.crypto?.clientDeviceId];
+                    // if (Array.isArray(fallbacksForUser) && !fallbacksForUser.includes(OTKAlgorithm.Signed)) {
+                    //     await intent.underlyingClient.crypto?.updateFallbackKey();
+                    // }
                 }
             }
 
@@ -736,7 +736,7 @@ export class Appservice extends EventEmitter {
                     try {
                         const intent = this.getIntentForUserId(toUser);
                         await intent.enableEncryption();
-                        await intent.underlyingClient.crypto?.processInboundDeviceMessage(event);
+                        // await intent.underlyingClient.crypto?.processInboundDeviceMessage(event);
                     } catch (e) {
                         LogService.error("Appservice", `Error handling encrypted to-device message sent to ${toUser}`, e);
                     }

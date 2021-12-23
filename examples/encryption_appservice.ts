@@ -12,9 +12,7 @@ import {
     SimpleRetryJoinStrategy
 } from "../src";
 import * as fs from "fs";
-import { NamespacingSqliteCryptoStorageProvider } from "../src/storage/NamespacingSqliteCryptoStorageProvider";
-import { NamespacingPostgresCryptoStorageProvider } from "../src/storage/NamespacingPostgresCryptoStorageProvider";
-import { CryptexCryptoSecureStorageProvider } from "../src/storage/CryptexCryptoSecureStorageProvider";
+import { RustSdkCryptoStorageProvider } from "../src/storage/RustSdkCryptoStorageProvider";
 
 LogService.setLogger(new RichConsoleLogger());
 LogService.setLevel(LogLevel.TRACE);
@@ -31,18 +29,7 @@ try {
 const dmTarget = creds?.['dmTarget'] ?? "@admin:localhost";
 const homeserverUrl = creds?.['homeserverUrl'] ?? "http://localhost:8008";
 const storage = new SimpleFsStorageProvider("./examples/storage/encryption_appservice.json");
-const cryptexStore = new CryptexCryptoSecureStorageProvider({
-    config: {
-        keySource: "kms",
-        keySourceOpts: {
-            dataKey: creds?.['kmsKey'] || 'NOT_SET',
-            region: "us-east-2",
-        },
-        secrets: creds?.['secrets'] || {},
-        algorithm: "aes256",
-    },
-});
-const crypto = new NamespacingPostgresCryptoStorageProvider(creds?.["psql"] ?? "postgresql://localhost/encrypted_appservice", cryptexStore);
+const crypto = new RustSdkCryptoStorageProvider("./examples/storage/encryption_appservice_sled");
 const worksImage = fs.readFileSync("./examples/static/it-works.png");
 
 const registration: IAppserviceRegistration = {
@@ -69,7 +56,7 @@ const options: IAppserviceOptions = {
     storage: storage,
     registration: registration,
     joinStrategy: new SimpleRetryJoinStrategy(),
-    cryptoStorage: crypto,
+    // cryptoStorage: crypto,
 
     intentOptions: {
         encryption: true,
