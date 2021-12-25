@@ -1,4 +1,5 @@
 import { SyncV3Operation } from "./operations";
+import { RequiredStateTuple, SortBehaviour } from "./V3List";
 
 /**
  * @category Unstable: Sync V3
@@ -29,6 +30,13 @@ export interface SyncV3Room {
 /**
  * @category Unstable: Sync V3
  */
+export interface SyncV3OperationRoom extends Pick<SyncV3Room, "required_state" | "timeline"> {
+    room_id: string;
+}
+
+/**
+ * @category Unstable: Sync V3
+ */
 export interface SyncV3Response {
     ops: SyncV3Operation[];
     initial?: boolean;
@@ -37,5 +45,27 @@ export interface SyncV3Response {
     };
     counts: number[]; // number of joined rooms per list
     extensions: {}; // TODO
-    pos: number; // TODO: unknown purpose
+    pos: string;
 }
+
+/**
+ * @category Unstable: Sync V3
+ */
+export interface SyncV3List {
+    rooms: [number, number][];
+    sort: SortBehaviour[];
+    required_state: RequiredStateTuple[];
+    timeline_limit: number;
+    filters?: SyncV3ListFilter;
+}
+
+/**
+ * @category Unstable: Sync V3
+ */
+export interface SyncV3ListFilter {
+    is_dm?: boolean;
+    spaces?: string[]; // IDs
+    is_encrypted?: boolean;
+    is_invite?: boolean;
+}
+

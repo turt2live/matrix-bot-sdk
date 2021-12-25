@@ -1,4 +1,4 @@
-import { SyncV3Room } from "./models";
+import { SyncV3OperationRoom, SyncV3Room } from "./models";
 
 /**
  * @category Unstable: Sync V3
@@ -8,6 +8,7 @@ export enum Operation {
     Update = "UPDATE",
     Insert = "INSERT",
     Delete = "DELETE",
+    Invalidate = "INVALIDATE",
 }
 
 /**
@@ -46,7 +47,16 @@ export type OpInsert = {
     op: Operation.Insert;
     list: number;
     index: number;
-    room: (Pick<SyncV3Room, "timeline" | "required_state"> & {room_id: string});
+    room: SyncV3OperationRoom;
+}
+
+/**
+ * @category Unstable: Sync V3
+ */
+export type OpInvalidate = {
+    op: Operation.Invalidate;
+    list: number;
+    range: [number, number];
 }
 
 /**
@@ -54,6 +64,7 @@ export type OpInsert = {
  */
 export type SyncV3Operation =
     | OpSync
+    | OpInvalidate
     | OpInsert
     | OpUpdate
     | OpDelete;

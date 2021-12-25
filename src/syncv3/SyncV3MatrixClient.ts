@@ -1,10 +1,8 @@
 import { MatrixClient } from "../MatrixClient";
-import * as crypto from "crypto";
 import { extractRequestError, LogService } from "../logging/LogService";
 import { IStorageProvider } from "../storage/IStorageProvider";
-import { List, ListBehaviour } from "./List";
 import { SyncV3Response } from "./models";
-import { Operation } from "./operations";
+import { IV3List, ListBehaviour, SortBehaviour, V3List } from "./V3List";
 
 /**
  * A MatrixClient class which attempts to use Sync V3 instead of the normal sync protocol
@@ -16,27 +14,43 @@ import { Operation } from "./operations";
  * @category Unstable: Sync V3
  */
 export class SyncV3MatrixClient extends MatrixClient {
-    private syncSessionId: string;
-    private lists = [
-        new List(0, this, ListBehaviour.General),
-        new List(1, this, ListBehaviour.Invites),
-    ];
+    private lastPos: string;
+    private lists: V3List[] = [];
 
     /**
-     Creates a new matrix client
-     @param {string} homeserverUrl The homeserver's client-server API URL
-     @param {string} accessToken The access token for the homeserver
-     @param {IStorageProvider} storage The storage provider to use.
+     * Creates a new matrix client
+     * @param {string} homeserverUrl The homeserver's client-server API URL
+     * @param {string} accessToken The access token for the homeserver
+     * @param {IStorageProvider} storage The storage provider to use.
+     * @param {SortBehaviour[]} sortBehaviours The list sorting behaviour to use.
      */
-    public constructor(homeserverUrl: string, accessToken: string, storage: IStorageProvider) {
+    public constructor(homeserverUrl: string, accessToken: string, storage: IStorageProvider, sortBehaviours: SortBehaviour[] = [SortBehaviour.Name]) {
         super(homeserverUrl, accessToken, storage);
+
+        this.lists = [
+            new V3List(ListBehaviour.JoinedOnly, sortBehaviours),
+            new V3List(ListBehaviour.InvitedOnly, sortBehaviours),
+            new V3List(ListBehaviour.DMsOnly, sortBehaviours),
+        ];
+    }
+
+    public get joinedList(): IV3List {
+        return this.lists[0];
+    }
+
+    public get invitedList(): IV3List {
+        return this.lists[1];
+    }
+
+    public get directMessagesList(): IV3List {
+        return this.lists[2];
     }
 
     protected async startSyncInternal(): Promise<any> {
-        this.syncSessionId = await this.storageProvider.readValue("sync_v3_session");
-        if (!this.syncSessionId) {
-            this.syncSessionId = crypto.randomBytes(16).toString('hex');
-            await this.storageProvider.storeValue("sync_v3_session", this.syncSessionId);
+        this.lastPos = await this.storageProvider.getSyncToken();
+        for (let i = 0; i < this.lists.length; i++) {
+            const value = JSON.parse((await this.storageProvider.readValue(`sync_v3_list_${i}`)) || "{}");
+            await this.lists[i].processOperations(this, value.count ?? 0, value.ops ?? []);
         }
         this.loopSync();
     }
@@ -51,6 +65,8 @@ export class SyncV3MatrixClient extends MatrixClient {
             try {
                 const response = await this.doSyncV3();
                 await this.processSyncV3(response);
+                this.lastPos = response.pos;
+                await this.storageProvider.setSyncToken(this.lastPos);
             } catch (e) {
                 LogService.error("MatrixClientLite", "Error handling sync " + extractRequestError(e));
                 const backoffTime = 5000 + Math.random() * (15000 - 5000); // TODO: de-hardcode values. SYNC_BACKOFF_MIN_MS SYNC_BACKOFF_MAX_MS
@@ -65,65 +81,22 @@ export class SyncV3MatrixClient extends MatrixClient {
     }
 
     private async processSyncV3(sync: SyncV3Response): Promise<void> {
-        for (const op of sync.ops) {
-            const list = this.lists[op.list];
-            switch(op.op) {
-                case Operation.Sync:
-                    await list.handleSyncOp(op);
-                    break;
-                case Operation.Update:
-                    await list.handleUpdateOp(op);
-                    break;
-                case Operation.Insert:
-                    await list.handleInsertOp(op);
-                    break;
-                case Operation.Delete:
-                    await list.handleDeleteOp(op);
-                    break;
-                default:
-                    LogService.warn("SyncV3MatrixClient", "Unhandled operation: ", op);
-                    break;
-            }
+        for (let i = 0; i < this.lists.length; i++) {
+            const ops = sync.ops.filter(o => o.list === i);
+            await this.lists[i].processOperations(this, sync.counts[i], ops);
+            await this.storageProvider.storeValue(`sync_v3_list_${i}`, JSON.stringify({
+                ops: this.lists[i].lossySerialized,
+                count: this.lists[i].totalRoomCount,
+            }));
         }
     }
 
     private async doSyncV3(): Promise<SyncV3Response> {
-        return this.doRequest("POST", "/_matrix/client/unstable/org.matrix.msc3575/sync", {}, {
-            session_id: this.syncSessionId,
-            lists: [{
-                // First list: default catch-all for everything.
-
-                // We want all rooms
-                // rooms: [[0, Number.MAX_SAFE_INTEGER]],
-                rooms: [[0, 100]], // For testing purposes, reduce window size (otherwise OOM)
-
-                // We don't care about sort
-                //sort: ["by_notification_count"],
-
-                // We don't have any required state, so tell the server that
-                // required_state: [
-                //     ["m.room.member", await this.getUserId()],
-                // ], // [["event type", "state key"]]
-                //
-                // // We don't want any previous timeline state to avoid confusing bots
-                // // timeline_limit: 0,
-                // timeline_limit: 20,
-            }, {
-                // Second list: invites only
-
-                // rooms: [[0, Number.MAX_SAFE_INTEGER]],
-                rooms: [[0, 100]], // For testing purposes, reduce window size (otherwise OOM)
-
-                // required_state: [
-                //     ["m.room.member", await this.getUserId()],
-                // ], // [["event type", "state key"]]
-                // timeline_limit: 20,
-
-                filters: {
-                    is_invite: true,
-                },
-                priority: 1,
-            }],
+        const userId = await this.getUserId();
+        const qs = {};
+        if (this.lastPos) qs['pos'] = this.lastPos;
+        return this.doRequest("POST", "/_matrix/client/unstable/org.matrix.msc3575/sync", qs, {
+            lists: this.lists.map(l => l.getDefinitionFor(userId)),
 
             // TODO: Support extensions for crypto and such
         });

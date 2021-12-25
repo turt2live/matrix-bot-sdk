@@ -28,7 +28,7 @@ const client = new SyncV3MatrixClient(homeserverUrl, accessToken, storage);
 AutojoinRoomsMixin.setupOnClient(client);
 
 (async function() {
-    // client.joinRoom('!XdNQQKxyQPITMAgdZJ:localhost');
+    // client.joinRoom('!dIJnfuNqTABKFEGJVf:localhost');
     client.on("room.message", async (roomId: string, event: any) => {
         const message = new MessageEvent(event);
         if (message.sender === await client.getUserId() || message.messageType === "m.notice") return;
