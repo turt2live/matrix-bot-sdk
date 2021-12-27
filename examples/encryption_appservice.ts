@@ -7,7 +7,7 @@ import {
     LogLevel,
     LogService,
     MessageEvent,
-    RichConsoleLogger,
+    RichConsoleLogger, RustSdkAppserviceCryptoStorageProvider,
     SimpleFsStorageProvider,
     SimpleRetryJoinStrategy
 } from "../src";
@@ -29,13 +29,13 @@ try {
 const dmTarget = creds?.['dmTarget'] ?? "@admin:localhost";
 const homeserverUrl = creds?.['homeserverUrl'] ?? "http://localhost:8008";
 const storage = new SimpleFsStorageProvider("./examples/storage/encryption_appservice.json");
-const crypto = new RustSdkCryptoStorageProvider("./examples/storage/encryption_appservice_sled");
+const crypto = new RustSdkAppserviceCryptoStorageProvider("./examples/storage/encryption_appservice_sled");
 const worksImage = fs.readFileSync("./examples/static/it-works.png");
 
 const registration: IAppserviceRegistration = {
     as_token: creds?.['asToken'] ?? "change_me",
     hs_token: creds?.['hsToken'] ?? "change_me",
-    sender_localpart: "crypto_test_appservice_bot2",
+    sender_localpart: "crypto_test_appservice_rust3",
     namespaces: {
         users: [{
             regex: "@crypto.*:localhost",
@@ -56,7 +56,7 @@ const options: IAppserviceOptions = {
     storage: storage,
     registration: registration,
     joinStrategy: new SimpleRetryJoinStrategy(),
-    // cryptoStorage: crypto,
+    cryptoStorage: crypto,
 
     intentOptions: {
         encryption: true,

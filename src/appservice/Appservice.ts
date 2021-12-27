@@ -664,45 +664,18 @@ export class Appservice extends EventEmitter {
 
         LogService.info("Appservice", "Processing transaction " + txnId);
         this.pendingTransactions[txnId] = new Promise<void>(async (resolve) => {
-            // Process device list changes to ensure we enter the decryption/encryption loops with the best possible state
-            const deviceLists = req.body["org.matrix.msc3202.device_lists"]
-            if (deviceLists) {
-                // if (Array.isArray(deviceLists["changed"])) {
-                //     await this.botClient.crypto?.flagUsersDeviceListsOutdated(deviceLists['changed'], true);
-                // }
-                // if (Array.isArray(deviceLists["removed"])) {
-                //     // Like MatrixClient, we don't need to resync removed devices immediately. We'll do this
-                //     // later all on our own.
-                //     await this.botClient.crypto?.flagUsersDeviceListsOutdated(deviceLists['removed'], false);
-                // }
-            }
+            // Process all the crypto stuff first to ensure that future transactions (if not this one)
+            // will decrypt successfully. We start with EDUs because we need structures to put counts
+            // and such into in a later stage, and EDUs are independent of crypto.
 
-            // Process OTKs and fallback keys next so we can ensure that we have appropriate counts for if the transaction
-            // takes a bit longer to process than expected. We want to be able to decrypt messages in future transactions.
-            const otks = req.body["org.matrix.msc3202.device_one_time_keys_count"];
-            if (otks) {
-                for (const userId of Object.keys(otks)) {
-                    // const intent = this.getIntentForUserId(userId);
-                    // await intent.enableEncryption();
-                    // const otksForUser = otks[intent.underlyingClient.crypto?.clientDeviceId];
-                    // if (otksForUser) {
-                    //     await intent.underlyingClient.crypto?.updateCounts(otksForUser);
-                    // }
-                }
-            }
-            const fallbacks = req.body["org.matrix.msc3202.device_unused_fallback_key_types"];
-            if (fallbacks) {
-                for (const userId of Object.keys(fallbacks)) {
-                    // const intent = this.getIntentForUserId(userId);
-                    // await intent.enableEncryption();
-                    // const fallbacksForUser = fallbacks[intent.underlyingClient.crypto?.clientDeviceId];
-                    // if (Array.isArray(fallbacksForUser) && !fallbacksForUser.includes(OTKAlgorithm.Signed)) {
-                    //     await intent.underlyingClient.crypto?.updateFallbackKey();
-                    // }
-                }
-            }
+            const byUserId: {
+                [userId: string]: {
+                    counts: Record<string, Number>;
+                    toDevice: any[];
+                    unusedFallbacks: OTKAlgorithm[];
+                };
+            } = {};
 
-            // Process to-device messages and EDUs to give the best chance at decryption
             const orderedEdus = [];
             if (Array.isArray(req.body["de.sorunome.msc2409.to_device"])) {
                 orderedEdus.push(...req.body["de.sorunome.msc2409.to_device"].map(e => ({
@@ -731,15 +704,58 @@ export class Appservice extends EventEmitter {
                 // These events aren't tied to rooms, so just emit them generically
                 this.emit("ephemeral.event", event);
 
-                if (event["type"] === "m.room.encrypted") {
+                if (event["type"] === "m.room.encrypted" || event[EDU_ANNOTATION_KEY] === EduAnnotation.ToDevice) {
                     const toUser = event["to_user_id"];
-                    try {
-                        const intent = this.getIntentForUserId(toUser);
+                    const intent = this.getIntentForUserId(toUser);
+                    await intent.enableEncryption();
+
+                    if (!byUserId[toUser]) byUserId[toUser] = {counts: null, toDevice: null, unusedFallbacks: null};
+                    if (!byUserId[toUser].toDevice) byUserId[toUser].toDevice = [];
+                    byUserId[toUser].toDevice.push(event);
+                }
+            }
+
+            if (this.cryptoStorage) {
+                const deviceLists: {changed: string[], removed: string[]} = req.body["org.matrix.msc3202.device_lists"] ?? { changed: [], removed: [] };
+
+                const otks = req.body["org.matrix.msc3202.device_one_time_keys_count"];
+                if (otks) {
+                    for (const userId of Object.keys(otks)) {
+                        const intent = this.getIntentForUserId(userId);
                         await intent.enableEncryption();
-                        // await intent.underlyingClient.crypto?.processInboundDeviceMessage(event);
-                    } catch (e) {
-                        LogService.error("Appservice", `Error handling encrypted to-device message sent to ${toUser}`, e);
+                        const otksForUser = otks[intent.underlyingClient.crypto?.clientDeviceId];
+                        if (otksForUser) {
+                            if (!byUserId[userId]) byUserId[userId] = {counts: null, toDevice: null, unusedFallbacks: null};
+                            byUserId[userId].counts = otksForUser;
+                        }
                     }
+                }
+
+                const fallbacks = req.body["org.matrix.msc3202.device_unused_fallback_key_types"];
+                if (fallbacks) {
+                    for (const userId of Object.keys(fallbacks)) {
+                        const intent = this.getIntentForUserId(userId);
+                        await intent.enableEncryption();
+                        const fallbacksForUser = fallbacks[intent.underlyingClient.crypto?.clientDeviceId];
+                        if (Array.isArray(fallbacksForUser) && !fallbacksForUser.includes(OTKAlgorithm.Signed)) {
+                            if (!byUserId[userId]) byUserId[userId] = {counts: null, toDevice: null, unusedFallbacks: null};
+                            byUserId[userId].unusedFallbacks = fallbacksForUser;
+                        }
+                    }
+                }
+
+                for (const userId of Object.keys(byUserId)) {
+                    const intent = this.getIntentForUserId(userId);
+                    await intent.enableEncryption();
+                    const info = byUserId[userId];
+                    const userStorage = this.storage.storageForUser(userId);
+
+                    if (!info.toDevice) info.toDevice = [];
+                    if (!info.unusedFallbacks) info.unusedFallbacks = JSON.parse(await userStorage.readValue("last_unused_fallbacks") || "[]");
+                    if (!info.counts) info.counts = JSON.parse(await userStorage.readValue("last_counts") || "{}");
+
+                    LogService.info("Appservice", `Updating crypto state for ${userId}`);
+                    await intent.underlyingClient.crypto.updateSyncData(info.toDevice, info.counts, info.unusedFallbacks, deviceLists.changed, deviceLists.removed);
                 }
             }
 
