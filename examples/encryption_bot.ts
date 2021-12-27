@@ -3,12 +3,13 @@ import {
     FileMessageEventContent,
     LogLevel,
     LogService,
-    MatrixClient, MessageEvent,
+    MatrixClient,
+    MessageEvent,
     RichConsoleLogger,
+    RustSdkCryptoStorageProvider,
     SimpleFsStorageProvider,
 } from "../src";
 import * as fs from "fs";
-import { RustSdkCryptoStorageProvider } from "../src/storage/RustSdkCryptoStorageProvider";
 
 LogService.setLogger(new RichConsoleLogger());
 LogService.setLevel(LogLevel.TRACE);

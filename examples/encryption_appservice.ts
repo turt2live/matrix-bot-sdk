@@ -7,12 +7,12 @@ import {
     LogLevel,
     LogService,
     MessageEvent,
-    RichConsoleLogger, RustSdkAppserviceCryptoStorageProvider,
+    RichConsoleLogger,
+    RustSdkAppserviceCryptoStorageProvider,
     SimpleFsStorageProvider,
-    SimpleRetryJoinStrategy
+    SimpleRetryJoinStrategy,
 } from "../src";
 import * as fs from "fs";
-import { RustSdkCryptoStorageProvider } from "../src/storage/RustSdkCryptoStorageProvider";
 
 LogService.setLogger(new RichConsoleLogger());
 LogService.setLevel(LogLevel.TRACE);

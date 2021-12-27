@@ -14,7 +14,11 @@ import { RoomTracker } from "./RoomTracker";
 import { EncryptedRoomEvent } from "../models/events/EncryptedRoomEvent";
 import { RoomEvent } from "../models/events/RoomEvent";
 import { EncryptedFile } from "../models/events/MessageEvent";
-import { OlmMachine, encryptFile as rustEncryptFile, decryptFile as rustDecryptFile } from "@turt2live/matrix-sdk-crypto-nodejs";
+import {
+    decryptFile as rustDecryptFile,
+    encryptFile as rustEncryptFile,
+    OlmMachine,
+} from "@turt2live/matrix-sdk-crypto-nodejs";
 import { RustSdkCryptoStorageProvider } from "../storage/RustSdkCryptoStorageProvider";
 import { SdkOlmEngine } from "./SdkOlmEngine";
 
