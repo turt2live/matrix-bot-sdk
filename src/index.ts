@@ -9,6 +9,7 @@ export * from "./appservice/UnstableAppserviceApis";
 export * from "./e2ee/RoomTracker";
 export * from "./e2ee/CryptoClient";
 export * from "./e2ee/decorators";
+export * from "./e2ee/SdkOlmEngine";
 
 // Helpers
 export * from "./helpers/RichReply";
@@ -83,7 +84,7 @@ export * from "./storage/IStorageProvider";
 export * from "./storage/MemoryStorageProvider";
 export * from "./storage/SimpleFsStorageProvider";
 export * from "./storage/ICryptoStorageProvider";
-//export * from "./storage/SqliteCryptoStorageProvider"; // Not exported because of optional dependency
+export * from "./storage/RustSdkCryptoStorageProvider";
 
 // Strategies
 export * from "./strategies/AppserviceJoinRoomStrategy";

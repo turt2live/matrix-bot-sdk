@@ -49,13 +49,8 @@
     "scripts/*",
     "tsconfig.json"
   ],
-  "optionalDependencies": {
-    "better-sqlite3": "^7.4.3",
-    "cryptex": "^1.0.1",
-    "pg-promise": "^10.11.1"
-  },
+  "optionalDependencies": {},
   "dependencies": {
-    "@matrix-org/olm": "https://gitlab.matrix.org/api/v4/projects/27/packages/npm/@matrix-org/olm/-/@matrix-org/olm-3.2.8.tgz",
     "@types/express": "^4.17.13",
     "another-json": "^0.2.0",
     "chalk": "^4.1.0",

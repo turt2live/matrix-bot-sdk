@@ -1,7 +1,5 @@
 import { MatrixClient } from "../MatrixClient";
 import { LogService } from "../logging/LogService";
-import * as Olm from "@matrix-org/olm";
-import * as anotherJson from "another-json";
 import {
     DeviceKeyAlgorithm,
     IMegolmEncrypted,
@@ -79,7 +77,7 @@ export class CryptoClient {
 
         LogService.debug("CryptoClient", "Starting with device ID:", this.deviceId);
 
-        this.machine = OlmMachine.withSledBackend(await this.client.getUserId(), this.deviceId, new SdkOlmEngine(this.client), this.storage.sledPath);
+        this.machine = OlmMachine.withSledBackend(await this.client.getUserId(), this.deviceId, new SdkOlmEngine(this.client), this.storage.storagePath);
         await this.machine.runEngineUntilComplete();
 
         const identity = this.machine.identityKeys;
@@ -132,34 +130,6 @@ export class CryptoClient {
             ...sig,
             ...existingSignatures,
         };
-    }
-
-    /**
-     * Verifies a signature on an object.
-     * @param {object} obj The signed object.
-     * @param {string} key The key which has supposedly signed the object.
-     * @param {string} signature The advertised signature.
-     * @returns {Promise<boolean>} Resolves to true if a valid signature, false otherwise.
-     */
-    @requiresReady()
-    public async verifySignature(obj: object, key: string, signature: string): Promise<boolean> {
-        obj = JSON.parse(JSON.stringify(obj));
-
-        delete obj['signatures'];
-        delete obj['unsigned'];
-
-        const util = new Olm.Utility();
-        try {
-            const message = anotherJson.stringify(obj);
-            util.ed25519_verify(key, message, signature);
-        } catch (e) {
-            // Assume it's a verification failure
-            return false;
-        } finally {
-            util.free();
-        }
-
-        return true;
     }
 
     /**
