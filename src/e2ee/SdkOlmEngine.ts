@@ -5,7 +5,7 @@ import {
     KeyQueryResults,
     OlmEngine,
     OTKCounts, ToDeviceMessages
-} from "matrix-sdk-crypto-nodejs";
+} from "@turt2live/matrix-sdk-crypto-nodejs";
 import { MatrixClient } from "../MatrixClient";
 import { OTKAlgorithm } from "../models/Crypto";
 

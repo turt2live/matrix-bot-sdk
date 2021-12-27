@@ -273,6 +273,14 @@
   resolved "http://localhost:4873/@napi-rs%2fcli/-/cli-2.2.0.tgz#0129406192c2dfff6e8fc3de0c8be1d2ec286e3f"
   integrity sha512-lXOKq0EZWztzHIlpXhKG0Nrv/PDZAl/yBsqQTG0aDfdjGCJudtPgWLR7zzaJoYzkkdFJo0r+teYYzgC+cXB4KQ==
 
+"@turt2live/matrix-sdk-crypto-nodejs@^0.1.0-beta.1":
+  version "0.1.0-beta.1"
+  resolved "https://registry.yarnpkg.com/@turt2live/matrix-sdk-crypto-nodejs/-/matrix-sdk-crypto-nodejs-0.1.0-beta.1.tgz#6a1524e1aa6e028c90b5582194b5f31e07ecae38"
+  integrity sha512-5nJ+ZHM/EtBlDLUYPbtk0A+NqTyBP/SVzR6Ix+5j47Du5IOVPu98QkSc+7aEQth+K8NKsdLKhjQ9ZVsxzlqiyw==
+  dependencies:
+    "@napi-rs/cli" "^2.0.0-beta.5"
+    shelljs "^0.8.4"
+
 "@types/babel-types@*", "@types/babel-types@^7.0.0":
   version "7.0.9"
   resolved "https://registry.yarnpkg.com/@types/babel-types/-/babel-types-7.0.9.tgz#01d7b86949f455402a94c788883fe4ba574cad41"
@@ -2809,14 +2817,6 @@ matrix-mock-request@^1.2.3:
   dependencies:
     bluebird "^3.5.0"
     expect "^1.20.2"
-
-matrix-sdk-crypto-nodejs@^0.1.20:
-  version "0.1.20"
-  resolved "http://localhost:4873/matrix-sdk-crypto-nodejs/-/matrix-sdk-crypto-nodejs-0.1.20.tgz#284f2cb06d66a77187e556ab10374c9e1fcdaae0"
-  integrity sha512-c7wsgMOhISgSJ5XZiGrDmsl73zzPfa6Yk2cUvDlIio3lqFYbrGku4iitiaayw0HXoJ0OuxaC082FawF6V1cRhQ==
-  dependencies:
-    "@napi-rs/cli" "^2.0.0-beta.5"
-    shelljs "^0.8.4"
 
 mdurl@^1.0.1:
   version "1.0.1"
