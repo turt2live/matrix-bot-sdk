@@ -197,6 +197,7 @@ export class CryptoClient {
      * @param {EncryptedFile} file The file to decrypt.
      * @returns {Promise<Buffer>} Resolves to the decrypted file contents.
      */
+    @requiresReady()
     public async decryptMedia(file: EncryptedFile): Promise<Buffer> {
         return rustDecryptFile((await this.client.downloadContent(file.url)).data, {
             ...file,

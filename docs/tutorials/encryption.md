@@ -9,21 +9,5 @@ The following guides go into detail on how to enable encryption for different us
 
 ## General principles
 
-For both bots and appservices, an {@link ICryptoStorageProvider} will be needed to actually enable encryption. This can
-be your own implementation of the interface (including `storageForUser` in the case of appservices), or it can be one of
-the built in types.
-
-For bots, {@link NamespacingSqliteCryptoStorageProvider} is typically best. There is also an 
-{@link NamespacingPostgresCryptoStorageProvider} intended for appservices, though works fine with bots too. The PostgreSQL
-implementation takes a {@link ICryptoSecureStorageProvider} which can also be implemented on your own, or using something
-like {@link CryptexCryptoSecureStorageProvider} instead.
-
-```typescript
-// Sqlite is easiest for most bots
-const sqliteStorage = new NamespacingSqliteCryptoStorageProvider("./path/to/bot.db");
-
-// PostgreSQL is easier for appservices, but just as available to bots. It requires a secret management provider.
-// See the appservices tutorial for more information: {@tutorial encryption-appservices}
-const cryptexInstance = new CryptexCryptoSecureStorageProvider(); // read from default locations
-const psqlStorage = new NamespacingPostgresCryptoStorageProvider("postgresql://user:pass@domain/database", cryptexInstance);
-```
+For both bots and appservices, an {@link ICryptoStorageProvider} will be needed to actually enable encryption. Eventually
+this will be able to be your own implementation, but for now must be a {@link RustSdkCryptoStorageProvider} or derivative.

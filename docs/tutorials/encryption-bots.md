@@ -3,9 +3,9 @@ providers and it'll start working behind the scenes.
 
 ```typescript
 const storageProvider = new SimpleFsStorageProvider("./path/to/bot.json"); // or any other {@link IStorageProvider}
-const cryptoProvider = new NamespacingSqliteCryptoStorageProvider("./path/to/bot.db"); // or any other {@link ICryptoStorageProvider}
+const cryptoProvider = new RustSdkCryptoStorageProvider("./path/to/directory");
 
-// ⚠⚠ Be sure to back up both `bot.json` and `bot.db` when using this setup
+// ⚠⚠ Be sure to back up both `./path/to/bot.json` and `./path/to/directory` when using this setup
 
 const homeserverUrl = "https://example.org"; // where the bot can reach the homeserver at
 const accessToken = "..."; // acquired from login or registration.
@@ -19,7 +19,7 @@ const client = new MatrixClient(homeserverUrl, accessToken, storageProvider, cry
 // set up your listeners here
 client.on("room.message", (roomId: string, event: any) => {
     if (!event['content']?.['msgtype']) return;
-    
+
     // handle message here. It'll be decrypted already.
 });
 

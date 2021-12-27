@@ -9,6 +9,11 @@ import {
 import { MatrixClient } from "../MatrixClient";
 import { OTKAlgorithm } from "../models/Crypto";
 
+/**
+ * A representation of a rust-sdk OlmEngine for the bot-sdk. You should not need to
+ * instantiate this yourself.
+ * @category Encryption
+ */
 export class SdkOlmEngine implements OlmEngine {
     public constructor(private client: MatrixClient) {
     }

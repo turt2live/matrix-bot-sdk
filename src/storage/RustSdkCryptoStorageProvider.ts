@@ -8,9 +8,17 @@ import * as sha512 from "hash.js/lib/hash/sha/512";
 import * as sha256 from "hash.js/lib/hash/sha/256"
 import { IAppserviceCryptoStorageProvider } from "./IAppserviceStorageProvider";
 
+/**
+ * A crypto storage provider for the default rust-sdk store (sled, file-based).
+ * @category Storage providers
+ */
 export class RustSdkCryptoStorageProvider implements ICryptoStorageProvider {
     private db: any;
 
+    /**
+     * Creates a new rust-sdk storage provider.
+     * @param {string} storagePath The *directory* to persist database details to.
+     */
     public constructor(public readonly storagePath: string) {
         this.storagePath = path.resolve(this.storagePath);
         mkdirp.sync(storagePath);
@@ -43,7 +51,15 @@ export class RustSdkCryptoStorageProvider implements ICryptoStorageProvider {
     }
 }
 
+/**
+ * An appservice crypto storage provider for the default rust-sdk store (sled, file-based).
+ * @category Storage providers
+ */
 export class RustSdkAppserviceCryptoStorageProvider extends RustSdkCryptoStorageProvider implements IAppserviceCryptoStorageProvider {
+    /**
+     * Creates a new rust-sdk storage provider.
+     * @param {string} baseStoragePath The *directory* to persist database details to.
+     */
     public constructor(private baseStoragePath: string) {
         super(path.join(baseStoragePath, "_default"));
     }
