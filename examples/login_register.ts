@@ -2,7 +2,7 @@ import { MatrixAuth } from "../src";
 
 // CAUTION: This logs a lot of secrets the console, including the password. Use with caution.
 
-const homeserverUrl = "http://localhost:8338";
+const homeserverUrl = "http://localhost:8008";
 const password = "P@ssw0rd";
 const username = `example_user_${new Date().getTime()}`;
 
@@ -14,7 +14,6 @@ auth.passwordRegister(username, password).then(client => {
     console.log("Registered as " + userId + " - Trying to log in now");
     return auth.passwordLogin(username, password);
 }).then(client => {
-    console.log(client.accessToken);
     return client.getUserId();
 }).then(userId => {
     console.log("Logged in as " + userId);
