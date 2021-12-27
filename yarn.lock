@@ -2810,10 +2810,10 @@ matrix-mock-request@^1.2.3:
     bluebird "^3.5.0"
     expect "^1.20.2"
 
-matrix-sdk-crypto-nodejs@^0.1.15:
-  version "0.1.15"
-  resolved "http://localhost:4873/matrix-sdk-crypto-nodejs/-/matrix-sdk-crypto-nodejs-0.1.15.tgz#96c9305a0dff51081e37e0868e2df36b64d0ebbd"
-  integrity sha512-5ayxgmGDy3PtNQph7gPP+PifSW6CbupzGBO7Mi1Pe9pHepHJyvqpR2fPJLik670NI1SSluTWP2Te6VzLIDxhVw==
+matrix-sdk-crypto-nodejs@^0.1.20:
+  version "0.1.20"
+  resolved "http://localhost:4873/matrix-sdk-crypto-nodejs/-/matrix-sdk-crypto-nodejs-0.1.20.tgz#284f2cb06d66a77187e556ab10374c9e1fcdaae0"
+  integrity sha512-c7wsgMOhISgSJ5XZiGrDmsl73zzPfa6Yk2cUvDlIio3lqFYbrGku4iitiaayw0HXoJ0OuxaC082FawF6V1cRhQ==
   dependencies:
     "@napi-rs/cli" "^2.0.0-beta.5"
     shelljs "^0.8.4"
