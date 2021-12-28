@@ -16,14 +16,17 @@ import {
     OTKs,
     RoomDirectoryLookupResponse,
     RoomEvent,
+    RustSdkCryptoStorageProvider,
     setRequestFn,
 } from "../src";
+import * as tmp from "tmp";
 import * as simple from "simple-mock";
 import * as MockHttpBackend from 'matrix-mock-request';
 import { expectArrayEquals, feedOlmAccount, feedStaticOlmAccount } from "./TestUtils";
 import { redactObjectForLogging } from "../src/http";
 import { PowerLevelAction } from "../src/models/PowerLevelAction";
-import { NamespacingSqliteCryptoStorageProvider } from "../src/storage/NamespacingSqliteCryptoStorageProvider";
+
+tmp.setGracefulCleanup();
 
 export const TEST_DEVICE_ID = "TEST_DEVICE";
 
@@ -31,25 +34,11 @@ export function createTestClient(storage: IStorageProvider = null, userId: strin
     const http = new MockHttpBackend();
     const hsUrl = "https://localhost";
     const accessToken = "s3cret";
-    const client = new MatrixClient(hsUrl, accessToken, storage, crypto ? new NamespacingSqliteCryptoStorageProvider(":memory:") : null);
+    const client = new MatrixClient(hsUrl, accessToken, storage, crypto ? new RustSdkCryptoStorageProvider(tmp.dirSync().name) : null);
     (<any>client).userId = userId; // private member access
     setRequestFn(http.requestFn);
 
     return {http, hsUrl, accessToken, client};
-}
-
-export async function createPreparedCryptoTestClient(userId: string): Promise<{ client: MatrixClient, http: MockHttpBackend, hsUrl: string, accessToken: string }> {
-    const r = createTestClient(null, userId, true);
-
-    await r.client.cryptoStore.setDeviceId(TEST_DEVICE_ID);
-    await feedStaticOlmAccount(r.client);
-    r.client.uploadDeviceKeys = () => Promise.resolve({});
-    r.client.uploadDeviceOneTimeKeys = () => Promise.resolve({});
-    r.client.checkOneTimeKeyCounts = () => Promise.resolve({});
-
-    await r.client.crypto.prepare([]);
-
-    return r;
 }
 
 describe('MatrixClient', () => {
@@ -78,7 +67,7 @@ describe('MatrixClient', () => {
             const homeserverUrl = "https://example.org";
             const accessToken = "example_token";
 
-            const client = new MatrixClient(homeserverUrl, accessToken, null, new NamespacingSqliteCryptoStorageProvider(":memory:"));
+            const client = new MatrixClient(homeserverUrl, accessToken, null, new RustSdkCryptoStorageProvider(tmp.dirSync().name));
             expect(client.crypto).toBeDefined();
         });
 

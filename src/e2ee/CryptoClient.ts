@@ -21,6 +21,7 @@ import {
 } from "@turt2live/matrix-sdk-crypto-nodejs";
 import { RustSdkCryptoStorageProvider } from "../storage/RustSdkCryptoStorageProvider";
 import { SdkOlmEngine } from "./SdkOlmEngine";
+import { InternalOlmMachineFactory } from "./InternalOlmMachineFactory";
 
 /**
  * Manages encryption for a MatrixClient. Get an instance from a MatrixClient directly
@@ -81,7 +82,7 @@ export class CryptoClient {
 
         LogService.debug("CryptoClient", "Starting with device ID:", this.deviceId);
 
-        this.machine = OlmMachine.withSledBackend(await this.client.getUserId(), this.deviceId, new SdkOlmEngine(this.client), this.storage.storagePath);
+        this.machine = new InternalOlmMachineFactory(await this.client.getUserId(), this.deviceId, new SdkOlmEngine(this.client), this.storage.storagePath).build();
         await this.machine.runEngineUntilComplete();
 
         const identity = this.machine.identityKeys;
