@@ -12,7 +12,7 @@ import {
     MemoryStorageProvider,
     OpenIDConnectToken,
     OTKAlgorithm,
-    OTKCounts, OTKLabel,
+    OTKCounts,
     OTKs,
     RoomDirectoryLookupResponse,
     RoomEvent,

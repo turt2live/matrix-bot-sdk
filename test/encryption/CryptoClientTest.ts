@@ -1,12 +1,12 @@
 import * as expect from "expect";
 import * as simple from "simple-mock";
 import {
-    ConsoleLogger, DeviceKeyAlgorithm,
+    ConsoleLogger,
+    DeviceKeyAlgorithm,
     EncryptedFile,
     LogService,
     MatrixClient,
     RoomEncryptionAlgorithm,
-
 } from "../../src";
 import { createTestClient, TEST_DEVICE_ID } from "../MatrixClientTest";
 import { InternalOlmMachineFactory } from "../../src/e2ee/InternalOlmMachineFactory";
