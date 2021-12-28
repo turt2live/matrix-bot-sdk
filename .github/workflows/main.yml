@@ -5,40 +5,40 @@ jobs:
   # Global
   # ================================================
 
-  eslint-14:
-    name: 'ESLint Node 14'
+  eslint-16:
+    name: 'ESLint Node 16'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-node@v2
         with:
-          node-version: '14'
+          node-version: '16'
       - run: yarn install
       - run: yarn lint
 
-  # Node 12
+  # Node 16
   # ================================================
 
-  build-12:
-    name: 'Build Node 12'
+  build-16:
+    name: 'Build Node 16'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-node@v2
         with:
-          node-version: '12'
+          node-version: '16'
       - run: yarn install
       - run: yarn build
       - run: yarn build:examples
 
-  tests-12:
-    name: 'Mocha Tests Node 12'
+  tests-16:
+    name: 'Mocha Tests Node 16'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-node@v2
         with:
-          node-version: '12'
+          node-version: '16'
       - run: yarn install
       - uses: nick-invision/retry@v2
         with:
