@@ -1,7 +1,7 @@
 import * as expect from "expect";
 import * as simple from "simple-mock";
 import {
-    ConsoleLogger,
+    ConsoleLogger, DeviceKeyAlgorithm,
     EncryptedFile,
     LogService,
     MatrixClient,
@@ -10,7 +10,7 @@ import {
 } from "../../src";
 import { createTestClient, TEST_DEVICE_ID } from "../MatrixClientTest";
 import { InternalOlmMachineFactory } from "../../src/e2ee/InternalOlmMachineFactory";
-import { OlmMachine } from "@turt2live/matrix-sdk-crypto-nodejs";
+import { OlmMachine, Signatures } from "@turt2live/matrix-sdk-crypto-nodejs";
 
 describe('CryptoClient', () => {
     afterEach(() => {
@@ -18,14 +18,15 @@ describe('CryptoClient', () => {
     });
 
     it('should not have a device ID or be ready until prepared', async () => {
-        const userId = "@alice:example.org";
-        const { client } = createTestClient(null, userId, true);
-
-        client.getWhoAmI = () => Promise.resolve({ user_id: userId, device_id: TEST_DEVICE_ID });
         InternalOlmMachineFactory.FACTORY_OVERRIDE = () => ({
             identityKeys: {},
             runEngineUntilComplete: () => Promise.resolve(),
         } as OlmMachine);
+
+        const userId = "@alice:example.org";
+        const { client } = createTestClient(null, userId, true);
+
+        client.getWhoAmI = () => Promise.resolve({ user_id: userId, device_id: TEST_DEVICE_ID });
 
         expect(client.crypto).toBeDefined();
         expect(client.crypto.clientDeviceId).toBeFalsy();
@@ -39,14 +40,16 @@ describe('CryptoClient', () => {
 
     describe('prepare', () => {
         it('should prepare the room tracker', async () => {
+            InternalOlmMachineFactory.FACTORY_OVERRIDE = () => ({
+                identityKeys: {},
+                runEngineUntilComplete: () => Promise.resolve(),
+            } as OlmMachine);
+
             const userId = "@alice:example.org";
             const roomIds = ["!a:example.org", "!b:example.org"];
             const { client } = createTestClient(null, userId, true);
 
             client.getWhoAmI = () => Promise.resolve({ user_id: userId, device_id: TEST_DEVICE_ID });
-            client.uploadDeviceKeys = () => Promise.resolve({});
-            client.uploadDeviceOneTimeKeys = () => Promise.resolve({});
-            client.checkOneTimeKeyCounts = () => Promise.resolve({});
 
             const prepareSpy = simple.stub().callFn((rids: string[]) => {
                 expect(rids).toBe(roomIds);
@@ -60,6 +63,11 @@ describe('CryptoClient', () => {
         });
 
         it('should use a stored device ID', async () => {
+            InternalOlmMachineFactory.FACTORY_OVERRIDE = () => ({
+                identityKeys: {},
+                runEngineUntilComplete: () => Promise.resolve(),
+            } as OlmMachine);
+
             const userId = "@alice:example.org";
             const { client } = createTestClient(null, userId, true);
 
@@ -67,9 +75,6 @@ describe('CryptoClient', () => {
 
             const whoamiSpy = simple.stub().callFn(() => Promise.resolve({ user_id: userId, device_id: "wrong" }));
             client.getWhoAmI = whoamiSpy;
-            client.uploadDeviceKeys = () => Promise.resolve({});
-            client.uploadDeviceOneTimeKeys = () => Promise.resolve({});
-            client.checkOneTimeKeyCounts = () => Promise.resolve({});
 
             await client.crypto.prepare([]);
             expect(whoamiSpy.callCount).toEqual(0);
@@ -79,13 +84,15 @@ describe('CryptoClient', () => {
 
     describe('isRoomEncrypted', () => {
         it('should fail when the crypto has not been prepared', async () => {
+            InternalOlmMachineFactory.FACTORY_OVERRIDE = () => ({
+                identityKeys: {},
+                runEngineUntilComplete: () => Promise.resolve(),
+            } as OlmMachine);
+
             const userId = "@alice:example.org";
             const { client } = createTestClient(null, userId, true);
 
             await client.cryptoStore.setDeviceId(TEST_DEVICE_ID);
-            client.uploadDeviceKeys = () => Promise.resolve({});
-            client.uploadDeviceOneTimeKeys = () => Promise.resolve({});
-            client.checkOneTimeKeyCounts = () => Promise.resolve({});
             // await client.crypto.prepare([]); // deliberately commented
 
             try {
@@ -99,13 +106,15 @@ describe('CryptoClient', () => {
         });
 
         it('should return false for unknown rooms', async () => {
+            InternalOlmMachineFactory.FACTORY_OVERRIDE = () => ({
+                identityKeys: {},
+                runEngineUntilComplete: () => Promise.resolve(),
+            } as OlmMachine);
+
             const userId = "@alice:example.org";
             const { client } = createTestClient(null, userId, true);
 
             await client.cryptoStore.setDeviceId(TEST_DEVICE_ID);
-            client.uploadDeviceKeys = () => Promise.resolve({});
-            client.uploadDeviceOneTimeKeys = () => Promise.resolve({});
-            client.checkOneTimeKeyCounts = () => Promise.resolve({});
             client.getRoomStateEvent = () => Promise.reject("return value not used");
             await client.crypto.prepare([]);
 
@@ -114,13 +123,15 @@ describe('CryptoClient', () => {
         });
 
         it('should return false for unencrypted rooms', async () => {
+            InternalOlmMachineFactory.FACTORY_OVERRIDE = () => ({
+                identityKeys: {},
+                runEngineUntilComplete: () => Promise.resolve(),
+            } as OlmMachine);
+
             const userId = "@alice:example.org";
             const { client } = createTestClient(null, userId, true);
 
             await client.cryptoStore.setDeviceId(TEST_DEVICE_ID);
-            client.uploadDeviceKeys = () => Promise.resolve({});
-            client.uploadDeviceOneTimeKeys = () => Promise.resolve({});
-            client.checkOneTimeKeyCounts = () => Promise.resolve({});
             client.getRoomStateEvent = () => Promise.reject("implying 404");
             await client.crypto.prepare([]);
 
@@ -129,13 +140,15 @@ describe('CryptoClient', () => {
         });
 
         it('should return true for encrypted rooms (redacted state)', async () => {
+            InternalOlmMachineFactory.FACTORY_OVERRIDE = () => ({
+                identityKeys: {},
+                runEngineUntilComplete: () => Promise.resolve(),
+            } as OlmMachine);
+
             const userId = "@alice:example.org";
             const { client } = createTestClient(null, userId, true);
 
             await client.cryptoStore.setDeviceId(TEST_DEVICE_ID);
-            client.uploadDeviceKeys = () => Promise.resolve({});
-            client.uploadDeviceOneTimeKeys = () => Promise.resolve({});
-            client.checkOneTimeKeyCounts = () => Promise.resolve({});
             client.getRoomStateEvent = () => Promise.resolve({});
             await client.crypto.prepare([]);
 
@@ -144,12 +157,15 @@ describe('CryptoClient', () => {
         });
 
         it('should return true for encrypted rooms', async () => {
+            InternalOlmMachineFactory.FACTORY_OVERRIDE = () => ({
+                identityKeys: {},
+                runEngineUntilComplete: () => Promise.resolve(),
+            } as OlmMachine);
+
             const userId = "@alice:example.org";
             const { client } = createTestClient(null, userId, true);
 
             await client.cryptoStore.setDeviceId(TEST_DEVICE_ID);
-            client.uploadDeviceOneTimeKeys = () => Promise.resolve({});
-            client.checkOneTimeKeyCounts = () => Promise.resolve({});
             client.getRoomStateEvent = () => Promise.resolve({ algorithm: RoomEncryptionAlgorithm.MegolmV1AesSha2 });
             await client.crypto.prepare([]);
 
@@ -163,13 +179,20 @@ describe('CryptoClient', () => {
         let client: MatrixClient;
 
         beforeEach(async () => {
+            InternalOlmMachineFactory.FACTORY_OVERRIDE = () => ({
+                identityKeys: {},
+                runEngineUntilComplete: () => Promise.resolve(),
+                sign: async (_) => ({
+                    [userId]: {
+                        [DeviceKeyAlgorithm.Ed25519 + ":" + TEST_DEVICE_ID]: "SIGNATURE_GOES_HERE",
+                    },
+                } as Signatures),
+            } as OlmMachine);
+
             const { client: mclient } = createTestClient(null, userId, true);
             client = mclient;
 
             await client.cryptoStore.setDeviceId(TEST_DEVICE_ID);
-            client.uploadDeviceKeys = () => Promise.resolve({});
-            client.uploadDeviceOneTimeKeys = () => Promise.resolve({});
-            client.checkOneTimeKeyCounts = () => Promise.resolve({});
 
             // client crypto not prepared for the one test which wants that state
         });
@@ -203,7 +226,7 @@ describe('CryptoClient', () => {
             const signatures = await client.crypto.sign(obj);
             expect(signatures).toMatchObject({
                 [userId]: {
-                    [`ed25519:${TEST_DEVICE_ID}`]: "zb/gbMjWCxfVrN5ASjvKr+leUWdaX026pccfiul+TzE7tABjWqnzjZiy6ox2MQk85IWD+DpR8Mo65a5o+/m4Cw",
+                    [`ed25519:${TEST_DEVICE_ID}`]: expect.any(String),
                 },
                 ...obj.signatures,
             });
@@ -217,13 +240,15 @@ describe('CryptoClient', () => {
         let client: MatrixClient;
 
         beforeEach(async () => {
+            InternalOlmMachineFactory.FACTORY_OVERRIDE = () => ({
+                identityKeys: {},
+                runEngineUntilComplete: () => Promise.resolve(),
+            } as OlmMachine);
+
             const { client: mclient } = createTestClient(null, userId, true);
             client = mclient;
 
             await client.cryptoStore.setDeviceId(TEST_DEVICE_ID);
-            client.uploadDeviceKeys = () => Promise.resolve({});
-            client.uploadDeviceOneTimeKeys = () => Promise.resolve({});
-            client.checkOneTimeKeyCounts = () => Promise.resolve({});
 
             // client crypto not prepared for the one test which wants that state
         });
@@ -265,13 +290,15 @@ describe('CryptoClient', () => {
         let client: MatrixClient;
 
         beforeEach(async () => {
+            InternalOlmMachineFactory.FACTORY_OVERRIDE = () => ({
+                identityKeys: {},
+                runEngineUntilComplete: () => Promise.resolve(),
+            } as OlmMachine);
+
             const { client: mclient } = createTestClient(null, userId, true);
             client = mclient;
 
             await client.cryptoStore.setDeviceId(TEST_DEVICE_ID);
-            client.uploadDeviceKeys = () => Promise.resolve({});
-            client.uploadDeviceOneTimeKeys = () => Promise.resolve({});
-            client.checkOneTimeKeyCounts = () => Promise.resolve({});
 
             // client crypto not prepared for the one test which wants that state
         });
@@ -297,13 +324,15 @@ describe('CryptoClient', () => {
         let client: MatrixClient;
 
         beforeEach(async () => {
+            InternalOlmMachineFactory.FACTORY_OVERRIDE = () => ({
+                identityKeys: {},
+                runEngineUntilComplete: () => Promise.resolve(),
+            } as OlmMachine);
+
             const { client: mclient } = createTestClient(null, userId, true);
             client = mclient;
 
             await client.cryptoStore.setDeviceId(TEST_DEVICE_ID);
-            client.uploadDeviceKeys = () => Promise.resolve({});
-            client.uploadDeviceOneTimeKeys = () => Promise.resolve({});
-            client.checkOneTimeKeyCounts = () => Promise.resolve({});
 
             // client crypto not prepared for the one test which wants that state
         });
@@ -384,13 +413,15 @@ describe('CryptoClient', () => {
         }
 
         beforeEach(async () => {
+            InternalOlmMachineFactory.FACTORY_OVERRIDE = () => ({
+                identityKeys: {},
+                runEngineUntilComplete: () => Promise.resolve(),
+            } as OlmMachine);
+
             const { client: mclient } = createTestClient(null, userId, true);
             client = mclient;
 
             await client.cryptoStore.setDeviceId(TEST_DEVICE_ID);
-            client.uploadDeviceKeys = () => Promise.resolve({});
-            client.uploadDeviceOneTimeKeys = () => Promise.resolve({});
-            client.checkOneTimeKeyCounts = () => Promise.resolve({});
 
             // client crypto not prepared for the one test which wants that state
         });
@@ -429,82 +460,6 @@ describe('CryptoClient', () => {
             });
             expect(result.join('')).toEqual(inputBuffer.join(''));
             expect(downloadSpy.callCount).toBe(1);
-        });
-
-        it('should fail on unknown or invalid fields', async () => {
-            await client.crypto.prepare([]);
-
-            try {
-                const f = copyOfTestFile();
-                // @ts-ignore
-                f.v = "wrong";
-                await client.crypto.decryptMedia(f);
-
-                // noinspection ExceptionCaughtLocallyJS
-                throw new Error("Failed to fail");
-            } catch (e) {
-                expect(e.message).toEqual("Unknown encrypted file version");
-            }
-
-            try {
-                const f = copyOfTestFile();
-                // @ts-ignore
-                f.key.kty = "wrong";
-                await client.crypto.decryptMedia(f);
-
-                // noinspection ExceptionCaughtLocallyJS
-                throw new Error("Failed to fail");
-            } catch (e) {
-                expect(e.message).toEqual("Improper JWT: Missing or invalid fields");
-            }
-
-            try {
-                const f = copyOfTestFile();
-                // @ts-ignore
-                f.key.alg = "wrong";
-                await client.crypto.decryptMedia(f);
-
-                // noinspection ExceptionCaughtLocallyJS
-                throw new Error("Failed to fail");
-            } catch (e) {
-                expect(e.message).toEqual("Improper JWT: Missing or invalid fields");
-            }
-
-            try {
-                const f = copyOfTestFile();
-                // @ts-ignore
-                f.key.ext = "wrong";
-                await client.crypto.decryptMedia(f);
-
-                // noinspection ExceptionCaughtLocallyJS
-                throw new Error("Failed to fail");
-            } catch (e) {
-                expect(e.message).toEqual("Improper JWT: Missing or invalid fields");
-            }
-
-            try {
-                const f = copyOfTestFile();
-                // @ts-ignore
-                f.key.key_ops = ["wrong"];
-                await client.crypto.decryptMedia(f);
-
-                // noinspection ExceptionCaughtLocallyJS
-                throw new Error("Failed to fail");
-            } catch (e) {
-                expect(e.message).toEqual("Missing required key_ops");
-            }
-
-            try {
-                const f = copyOfTestFile();
-                // @ts-ignore
-                f.hashes = {};
-                await client.crypto.decryptMedia(f);
-
-                // noinspection ExceptionCaughtLocallyJS
-                throw new Error("Failed to fail");
-            } catch (e) {
-                expect(e.message).toEqual("Missing SHA256 hash");
-            }
         });
 
         it('should decrypt', async () => {

@@ -541,10 +541,13 @@ export class MatrixClient extends EventEmitter {
      * @returns {Promise<string>} The user ID of this client
      */
     @timedMatrixClientFunctionCall()
-    public getUserId(): Promise<string> {
-        if (this.userId) return Promise.resolve(this.userId);
+    public async getUserId(): Promise<string> {
+        if (this.userId) return this.userId;
 
-        return this.getWhoAmI().then(() => this.userId);
+        // getWhoAmI should populate `this.userId` for us
+        await this.getWhoAmI();
+
+        return this.userId;
     }
 
     /**

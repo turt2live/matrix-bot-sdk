@@ -273,10 +273,10 @@
   resolved "http://localhost:4873/@napi-rs%2fcli/-/cli-2.2.0.tgz#0129406192c2dfff6e8fc3de0c8be1d2ec286e3f"
   integrity sha512-lXOKq0EZWztzHIlpXhKG0Nrv/PDZAl/yBsqQTG0aDfdjGCJudtPgWLR7zzaJoYzkkdFJo0r+teYYzgC+cXB4KQ==
 
-"@turt2live/matrix-sdk-crypto-nodejs@^0.1.0-beta.1":
-  version "0.1.0-beta.1"
-  resolved "https://registry.yarnpkg.com/@turt2live/matrix-sdk-crypto-nodejs/-/matrix-sdk-crypto-nodejs-0.1.0-beta.1.tgz#6a1524e1aa6e028c90b5582194b5f31e07ecae38"
-  integrity sha512-5nJ+ZHM/EtBlDLUYPbtk0A+NqTyBP/SVzR6Ix+5j47Du5IOVPu98QkSc+7aEQth+K8NKsdLKhjQ9ZVsxzlqiyw==
+"@turt2live/matrix-sdk-crypto-nodejs@^0.1.0-beta.4":
+  version "0.1.0-beta.4"
+  resolved "https://registry.yarnpkg.com/@turt2live/matrix-sdk-crypto-nodejs/-/matrix-sdk-crypto-nodejs-0.1.0-beta.4.tgz#8dca5489888a5007942d4b6409a484b93e016164"
+  integrity sha512-SrygX9wNHeDSUE4bwci5XK1W3rRGUN5D2fv44k2yqsRbsNFXB8/Gs7chderPddweFxcF0Milfoj8/YDLu1bufg==
   dependencies:
     "@napi-rs/cli" "^2.0.0-beta.5"
     shelljs "^0.8.4"
