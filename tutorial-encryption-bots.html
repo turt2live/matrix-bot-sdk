@@ -110,9 +110,9 @@
     <p>Setting up encryption for a bot is easy: simply provide a crypto storage provider in addition to your other storage
 providers and it'll start working behind the scenes.</p>
 <pre class="prettyprint source lang-typescript"><code>const storageProvider = new SimpleFsStorageProvider(&quot;./path/to/bot.json&quot;); // or any other <a href="IStorageProvider.html">IStorageProvider</a>
-const cryptoProvider = new NamespacingSqliteCryptoStorageProvider(&quot;./path/to/bot.db&quot;); // or any other <a href="ICryptoStorageProvider.html">ICryptoStorageProvider</a>
+const cryptoProvider = new RustSdkCryptoStorageProvider(&quot;./path/to/directory&quot;);
 
-// ⚠⚠ Be sure to back up both `bot.json` and `bot.db` when using this setup
+// ⚠⚠ Be sure to back up both `./path/to/bot.json` and `./path/to/directory` when using this setup
 
 const homeserverUrl = &quot;https://example.org&quot;; // where the bot can reach the homeserver at
 const accessToken = &quot;...&quot;; // acquired from login or registration.
@@ -126,7 +126,7 @@ const client = new MatrixClient(homeserverUrl, accessToken, storageProvider, cry
 // set up your listeners here
 client.on(&quot;room.message&quot;, (roomId: string, event: any) => {
     if (!event['content']?.['msgtype']) return;
-    
+
     // handle message here. It'll be decrypted already.
 });
 

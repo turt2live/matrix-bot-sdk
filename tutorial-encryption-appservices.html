@@ -108,85 +108,28 @@
 
 <article>
     <p>Encryption for appservices is just about as easy as bots, though involves using a storage mechanism which is capable of
-handling the higher traffic. The bot-sdk provides a PostgreSQL implementation of <a href="ICryptoStorageProvider.html">ICryptoStorageProvider</a>, though
-you're welcome to write your own. Note that <code>storageForUser()</code> <strong>must</strong> be implemented if writing your own provider.</p>
-<h2><a href="NamespacingPostgresCryptoStorageProvider.html">NamespacingPostgresCryptoStorageProvider</a></h2>
-<p>This provider requires an <a href="ICryptoSecureStorageProvider.html">ICryptoSecureStorageProvider</a>. The bot-sdk provides one using
-<a href="https://github.com/TomFrost/Cryptex">Cryptex</a>, though you're welcome to write your own.</p>
-<p>Upon instantiation, the class will automatically prepare the database for you.</p>
-<p>⚠ It is important not to lose the PostgreSQL database or the Cryptex key (eg, in AWS KMS). Losing either will make for
-a difficult recovery of the encryption state.</p>
+handling the higher traffic. Eventually the SDK will support custom stores, however for now the crypto store must be
+a <a href="RustSdkAppserviceCryptoStorageProvider.html">RustSdkAppserviceCryptoStorageProvider</a>.</p>
 <pre class="prettyprint source lang-typescript"><code>const storage = new SimpleFsStorageProvider(&quot;./path/to/appservice.json&quot;); // or any other <a href="IStorageProvider.html">IStorageProvider</a>
-const secureStorage = new CryptexCryptoSecureStorageProvider(); // instance of an <a href="ICryptoSecureStorageProvider.html">ICryptoSecureStorageProvider</a>
-const psqlStorage = new NamespacingPostgresCryptoStorageProvider(&quot;postgresql://user:pass@domain/database&quot;, secureStorage);
+const cryptoStorage = new RustSdkAppserviceCryptoStorageProvider(&quot;./path/to/directory&quot;);
+
+// ⚠⚠ Be sure to back up both `./path/to/appservice.json` and `./path/to/directory` when using this setup
 
 const registration: IAppserviceRegistration = {
-    /* ... */
-    &quot;de.sorunome.msc2409.push_ephemeral&quot;: true,
+   /* ... */
+   &quot;de.sorunome.msc2409.push_ephemeral&quot;: true,
 };
 const options: IAppserviceOptions = {
-    /* ... */
-    storage: storage,
-    cryptoStorage: psqlStorage,
-    intentOptions: {
-        // Enable encryption on all appservice users, including the `sender_localpart` user
-        encryption: true,
-    },
+   /* ... */
+   storage: storage,
+   cryptoStorage: cryptoStorage,
+   intentOptions: {
+      // Enable encryption on all appservice users, including the `sender_localpart` user
+      encryption: true,
+   },
 }
 const appservice = new Appservice(options);
 </code></pre>
-<h2><a href="CryptexCryptoSecureStorageProvider.html">CryptexCryptoSecureStorageProvider</a></h2>
-<p>This is an implementation of <a href="ICryptoSecureStorageProvider.html">ICryptoSecureStorageProvider</a> using <a href="https://github.com/TomFrost/Cryptex">Cryptex</a>.</p>
-<p>The configuration methods supported by the Cryptex library are all supported here. The recommendation for appservices is
-to add to their own config a section which mirrors the Cryptex configuration to pass it through to the provider.</p>
-<p>⚠ It is important not to lose the Cryptex key (eg, in AWS KMS). Losing it will make for  a difficult recovery of the
-encryption state.</p>
-<p>For example:</p>
-<pre class="prettyprint source lang-yaml"><code># Your appservice config
-
-crypto:
-  algorithm: &quot;aes256&quot;
-  keySource: &quot;kms&quot;
-  keySourceOpts:
-    dataKey: &quot;... from KMS ...&quot;
-    region: &quot;us-east-2&quot;
-  secrets:
-    # `pickle_key` is the only secret the provider cares about (currently)
-    pickle_key: &quot;... encrypted with KMS key ...&quot;
-</code></pre>
-<p>Then, after parsing, the provider instance can be created as:</p>
-<pre class="prettyprint source lang-typescript"><code>const secureStorage = new CryptexCryptoSecureStorageProvider({
-    config: config.get(&quot;crypto&quot;),
-});
-</code></pre>
-<h3>Using AWS <a href="https://aws.amazon.com/kms/">KMS</a></h3>
-<ol>
-<li>Create a new symmetric key in the <a href="https://aws.amazon.com/kms/">KMS</a> Console.</li>
-<li>Give access to a user which has access to the <a href="http://docs.aws.amazon.com/cli/latest/userguide/installing.html">AWS CLI tool</a>.</li>
-<li>Run the following to get the <code>dataKey</code> for <code>keySourceOpts</code> above:<pre class="prettyprint source lang-bash"><code>aws kms generate-data-key-without-plaintext \
-    --key-id alias/&lt;YOUR_KEY_ALIAS> \
-    --key-spec AES_256 \
-    --output text \
-    --query CiphertextBlob
-</code></pre>
-</li>
-<li>In an empty directory somewhere, create a <code>cryptex.json</code> file which looks similar to the following:<pre class="prettyprint source lang-json"><code>{
-  &quot;production&quot;: {
-    &quot;algorithm&quot;: &quot;aes256&quot;,
-    &quot;keySource&quot;: &quot;kms&quot;,
-    &quot;keySourceOpts&quot;: {
-      &quot;dataKey&quot;: &quot;... from KMS ...&quot;,
-      &quot;region&quot;: &quot;us-east-2&quot;
-    },
-    &quot;secrets&quot;: {}
-  }
-}
-</code></pre>
-</li>
-<li>Run <code>cryptex encrypt $YOUR_PICKLE_KEY</code> in that directory - the pickle key should be sufficiently complex.</li>
-<li>Copy the output of that command into the <code>pickle_key</code> value for the appservice config.</li>
-<li>(Optional) Delete the directory used to encrypt the pickle key.</li>
-</ol>
 <h2>Advanced usage</h2>
 <p>To monitor the encryption/decryption process, add the following listeners:</p>
 <pre class="prettyprint source lang-typescript"><code>appservice.on(&quot;room.encrypted_event&quot;, (roomId: string, event: any) => {

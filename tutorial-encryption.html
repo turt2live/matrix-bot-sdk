@@ -116,21 +116,8 @@ deliberately in the code.</p>
 <li><a href="tutorial-encryption-appservices.html">Encryption for appservices</a></li>
 </ul>
 <h2>General principles</h2>
-<p>For both bots and appservices, an <a href="ICryptoStorageProvider.html">ICryptoStorageProvider</a> will be needed to actually enable encryption. This can
-be your own implementation of the interface (including <code>storageForUser</code> in the case of appservices), or it can be one of
-the built in types.</p>
-<p>For bots, <a href="NamespacingSqliteCryptoStorageProvider.html">NamespacingSqliteCryptoStorageProvider</a> is typically best. There is also an
-<a href="NamespacingPostgresCryptoStorageProvider.html">NamespacingPostgresCryptoStorageProvider</a> intended for appservices, though works fine with bots too. The PostgreSQL
-implementation takes a <a href="ICryptoSecureStorageProvider.html">ICryptoSecureStorageProvider</a> which can also be implemented on your own, or using something
-like <a href="CryptexCryptoSecureStorageProvider.html">CryptexCryptoSecureStorageProvider</a> instead.</p>
-<pre class="prettyprint source lang-typescript"><code>// Sqlite is easiest for most bots
-const sqliteStorage = new NamespacingSqliteCryptoStorageProvider(&quot;./path/to/bot.db&quot;);
-
-// PostgreSQL is easier for appservices, but just as available to bots. It requires a secret management provider.
-// See the appservices tutorial for more information: <a href="tutorial-encryption-appservices.html">Encryption for appservices</a>
-const cryptexInstance = new CryptexCryptoSecureStorageProvider(); // read from default locations
-const psqlStorage = new NamespacingPostgresCryptoStorageProvider(&quot;postgresql://user:pass@domain/database&quot;, cryptexInstance);
-</code></pre>
+<p>For both bots and appservices, an <a href="ICryptoStorageProvider.html">ICryptoStorageProvider</a> will be needed to actually enable encryption. Eventually
+this will be able to be your own implementation, but for now must be a <a href="RustSdkCryptoStorageProvider.html">RustSdkCryptoStorageProvider</a> or derivative.</p>
 </article>
 
 </section>
