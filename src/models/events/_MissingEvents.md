@@ -18,9 +18,6 @@ These are the event types that need definitions.
 * `m.key.verification.accept`
 * `m.key.verification.key`
 * `m.key.verification.mac`
-* `m.room.encryption`
-* `m.room.encrypted`
-* `m.room.message` encrypted files
 * `m.room_key`
 * `m.room_key_request`
 * `m.forwarded_room_key`
