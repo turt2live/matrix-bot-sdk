@@ -29,6 +29,7 @@ import {
     DeviceKeyLabel,
     EncryptionAlgorithm,
     FallbackKey,
+    IToDeviceMessage,
     MultiUserDeviceListResponse,
     OTKAlgorithm,
     OTKClaimResponse,
@@ -40,6 +41,7 @@ import { requiresCrypto } from "./e2ee/decorators";
 import { ICryptoStorageProvider } from "./storage/ICryptoStorageProvider";
 import { EncryptedRoomEvent } from "./models/events/EncryptedRoomEvent";
 import { IWhoAmI } from "./models/Account";
+import { RustSdkCryptoStorageProvider } from "./storage/RustSdkCryptoStorageProvider";
 
 const SYNC_BACKOFF_MIN_MS = 5000;
 const SYNC_BACKOFF_MAX_MS = 15000;
@@ -115,6 +117,9 @@ export class MatrixClient extends EventEmitter {
         if (this.cryptoStore) {
             if (!this.storage || this.storage instanceof MemoryStorageProvider) {
                 LogService.warn("MatrixClientLite", "Starting an encryption-capable client with a memory store is not considered a good idea.");
+            }
+            if (!(this.cryptoStore instanceof RustSdkCryptoStorageProvider)) {
+                throw new Error("Cannot support custom encryption stores: Use a RustSdkCryptoStorageProvider");
             }
             this.crypto = new CryptoClient(this);
             LogService.debug("MatrixClientLite", "End-to-end encryption client created");
@@ -536,21 +541,23 @@ export class MatrixClient extends EventEmitter {
      * @returns {Promise<string>} The user ID of this client
      */
     @timedMatrixClientFunctionCall()
-    public getUserId(): Promise<string> {
-        if (this.userId) return Promise.resolve(this.userId);
+    public async getUserId(): Promise<string> {
+        if (this.userId) return this.userId;
 
-        return this.getWhoAmI().then(response => {
-            this.userId = response["user_id"];
-            return this.userId;
-        });
+        // getWhoAmI should populate `this.userId` for us
+        await this.getWhoAmI();
+
+        return this.userId;
     }
 
     /**
      * Gets the user's information from the server directly.
      * @returns {Promise<IWhoAmI>} The "who am I" response.
      */
-    public getWhoAmI(): Promise<IWhoAmI> {
-        return this.doRequest("GET", "/_matrix/client/r0/account/whoami");
+    public async getWhoAmI(): Promise<IWhoAmI> {
+        const whoami = await this.doRequest("GET", "/_matrix/client/r0/account/whoami");
+        this.userId = whoami["user_id"];
+        return whoami;
     }
 
     /**
@@ -680,48 +687,29 @@ export class MatrixClient extends EventEmitter {
 
         if (!raw) return; // nothing to process
 
-        if (raw['device_one_time_keys_count']) {
-            this.crypto?.updateCounts(raw['device_one_time_keys_count']);
-        }
-
-        let unusedFallbacks: string[] = null;
-        if (raw['org.matrix.msc2732.device_unused_fallback_key_types']) {
-            unusedFallbacks = raw['org.matrix.msc2732.device_unused_fallback_key_types'];
-        } else if (raw['device_unused_fallback_key_types']) {
-            unusedFallbacks = raw['device_unused_fallback_key_types'];
-        }
-
-        // XXX: We should be able to detect the presence of the array, but Synapse doesn't tell us about
-        // feature support if we didn't upload one, so assume we're on a latest version of Synapse at least.
-        if (!unusedFallbacks?.includes(OTKAlgorithm.Signed)) {
-            await this.crypto?.updateFallbackKey();
-        }
-
-        if (raw['device_lists']) {
-            const changed = raw['device_lists']['changed'];
-            const removed = raw['device_lists']['left'];
-
-            if (changed) {
-                this.crypto?.flagUsersDeviceListsOutdated(changed, true);
+        if (this.crypto) {
+            const inbox: IToDeviceMessage[] = [];
+            if (raw['to_device']?.['events']) {
+                inbox.push(...raw['to_device']['events']);
+                // TODO: Emit or do something with unknown messages?
             }
-            if (removed) {
-                // Don't resync removed device lists: they are uninteresting according to the server so we
-                // don't need them. When we request the user's device list again, we'll pull it all back in.
-                this.crypto?.flagUsersDeviceListsOutdated(removed, false);
+
+            let unusedFallbacks: OTKAlgorithm[] = [];
+            if (raw['org.matrix.msc2732.device_unused_fallback_key_types']) {
+                unusedFallbacks = raw['org.matrix.msc2732.device_unused_fallback_key_types'];
+            } else if (raw['device_unused_fallback_key_types']) {
+                unusedFallbacks = raw['device_unused_fallback_key_types'];
             }
+
+            const counts = raw['device_one_time_keys_count'] ?? {};
+
+            const changed = raw['device_lists']?.['changed'] ?? [];
+            const left = raw['device_lists']?.['left'] ?? [];
+
+            await this.crypto.updateSyncData(inbox, counts, unusedFallbacks, changed, left);
         }
 
         // Always process device messages first to ensure there are decryption keys
-        if (raw['to_device']?.['events']) {
-            const inbox = raw['to_device']['events'];
-            for (const message of inbox) {
-                if (message['type'] === 'm.room.encrypted') {
-                    await this.crypto?.processInboundDeviceMessage(message);
-                } else {
-                    // TODO: Emit or do something with unknown messages?
-                }
-            }
-        }
 
         if (raw['groups']) {
             const leave = raw['groups']['leave'] || {};

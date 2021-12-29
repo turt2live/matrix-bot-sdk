@@ -8,13 +8,11 @@ import {
     LogService,
     MessageEvent,
     RichConsoleLogger,
+    RustSdkAppserviceCryptoStorageProvider,
     SimpleFsStorageProvider,
-    SimpleRetryJoinStrategy
+    SimpleRetryJoinStrategy,
 } from "../src";
 import * as fs from "fs";
-import { NamespacingSqliteCryptoStorageProvider } from "../src/storage/NamespacingSqliteCryptoStorageProvider";
-import { NamespacingPostgresCryptoStorageProvider } from "../src/storage/NamespacingPostgresCryptoStorageProvider";
-import { CryptexCryptoSecureStorageProvider } from "../src/storage/CryptexCryptoSecureStorageProvider";
 
 LogService.setLogger(new RichConsoleLogger());
 LogService.setLevel(LogLevel.TRACE);
@@ -31,24 +29,13 @@ try {
 const dmTarget = creds?.['dmTarget'] ?? "@admin:localhost";
 const homeserverUrl = creds?.['homeserverUrl'] ?? "http://localhost:8008";
 const storage = new SimpleFsStorageProvider("./examples/storage/encryption_appservice.json");
-const cryptexStore = new CryptexCryptoSecureStorageProvider({
-    config: {
-        keySource: "kms",
-        keySourceOpts: {
-            dataKey: creds?.['kmsKey'] || 'NOT_SET',
-            region: "us-east-2",
-        },
-        secrets: creds?.['secrets'] || {},
-        algorithm: "aes256",
-    },
-});
-const crypto = new NamespacingPostgresCryptoStorageProvider(creds?.["psql"] ?? "postgresql://localhost/encrypted_appservice", cryptexStore);
+const crypto = new RustSdkAppserviceCryptoStorageProvider("./examples/storage/encryption_appservice_sled");
 const worksImage = fs.readFileSync("./examples/static/it-works.png");
 
 const registration: IAppserviceRegistration = {
     as_token: creds?.['asToken'] ?? "change_me",
     hs_token: creds?.['hsToken'] ?? "change_me",
-    sender_localpart: "crypto_test_appservice_bot2",
+    sender_localpart: "crypto_test_appservice_rust3",
     namespaces: {
         users: [{
             regex: "@crypto.*:localhost",
@@ -77,7 +64,8 @@ const options: IAppserviceOptions = {
 };
 
 const appservice = new Appservice(options);
-const bot = appservice.botIntent;
+// const bot = appservice.botIntent;
+const bot = appservice.getIntentForUserId("@crypto_nondefault_test2:localhost");
 
 (async function() {
     await bot.enableEncryption();

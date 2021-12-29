@@ -6,13 +6,16 @@ import {
     IJoinRoomStrategy,
     Intent,
     MemoryStorageProvider,
-    setRequestFn
+    RustSdkAppserviceCryptoStorageProvider,
+    setRequestFn,
 } from "../../src";
 import * as expect from "expect";
 import * as simple from "simple-mock";
 import * as MockHttpBackend from 'matrix-mock-request';
 import { expectArrayEquals } from "../TestUtils";
-import { NamespacingSqliteCryptoStorageProvider } from "../../src/storage/NamespacingSqliteCryptoStorageProvider";
+import * as tmp from "tmp";
+
+tmp.setGracefulCleanup();
 
 describe('Intent', () => {
     it('should prepare the underlying client for a bot user', async () => {
@@ -1138,7 +1141,7 @@ describe('Intent', () => {
 
         beforeEach(() => {
             storage = new MemoryStorageProvider();
-            cryptoStorage = new NamespacingSqliteCryptoStorageProvider(":memory:");
+            cryptoStorage = new RustSdkAppserviceCryptoStorageProvider(tmp.dirSync().name);
             options = {
                 homeserverUrl: hsUrl,
                 storage: storage,
