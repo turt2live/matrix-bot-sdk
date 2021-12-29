@@ -268,17 +268,17 @@
     "@types/yargs" "^16.0.0"
     chalk "^4.0.0"
 
-"@napi-rs/cli@^2.0.0-beta.5":
+"@napi-rs/cli@^2.2.0":
   version "2.2.0"
   resolved "https://registry.yarnpkg.com/@napi-rs/cli/-/cli-2.2.0.tgz#0129406192c2dfff6e8fc3de0c8be1d2ec286e3f"
   integrity sha512-lXOKq0EZWztzHIlpXhKG0Nrv/PDZAl/yBsqQTG0aDfdjGCJudtPgWLR7zzaJoYzkkdFJo0r+teYYzgC+cXB4KQ==
 
-"@turt2live/matrix-sdk-crypto-nodejs@0.1.0-beta.4":
-  version "0.1.0-beta.4"
-  resolved "https://registry.yarnpkg.com/@turt2live/matrix-sdk-crypto-nodejs/-/matrix-sdk-crypto-nodejs-0.1.0-beta.4.tgz#8dca5489888a5007942d4b6409a484b93e016164"
-  integrity sha512-SrygX9wNHeDSUE4bwci5XK1W3rRGUN5D2fv44k2yqsRbsNFXB8/Gs7chderPddweFxcF0Milfoj8/YDLu1bufg==
+"@turt2live/matrix-sdk-crypto-nodejs@^0.1.0-beta.6":
+  version "0.1.0-beta.6"
+  resolved "https://registry.yarnpkg.com/@turt2live/matrix-sdk-crypto-nodejs/-/matrix-sdk-crypto-nodejs-0.1.0-beta.6.tgz#53dc2ad4c7e495997e0ed05fc65750f9e8ce52ec"
+  integrity sha512-kqcBXaPsq40Kk1GUYDdmx0UE25zq32AkDhY9pKjtCF7Rr9PIWtPokHyI4/NXIXd4EgXMycxaticSf7cOSZR3Cw==
   dependencies:
-    "@napi-rs/cli" "^2.0.0-beta.5"
+    "@napi-rs/cli" "^2.2.0"
     shelljs "^0.8.4"
 
 "@types/babel-types@*", "@types/babel-types@^7.0.0":
