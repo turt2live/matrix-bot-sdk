@@ -118,18 +118,18 @@ export class Intent {
                     }
 
                     // Try to impersonate a device ID
-                    const devices = await this.client.getOwnDevices();
+                    const ownDevices = await this.client.getOwnDevices();
                     let deviceId = await cryptoStore.getDeviceId();
-                    if (!deviceId || !devices.some(d => d.device_id === deviceId)) {
+                    if (!deviceId || !ownDevices.some(d => d.device_id === deviceId)) {
                         const deviceKeys = await this.client.getUserDevices([this.userId]);
                         const userDeviceKeys = deviceKeys.device_keys[this.userId];
                         if (userDeviceKeys) {
                             // We really should be validating signatures here, but we're actively looking
                             // for devices without keys to impersonate, so it should be fine. In theory,
                             // those devices won't even be present but we're cautious.
-                            const devices = Array.from(Object.entries(userDeviceKeys))
+                            const devicesWithKeys = Array.from(Object.entries(userDeviceKeys))
                                 .filter(d => d[0] === d[1].device_id && !!d[1].keys?.[`${DeviceKeyAlgorithm.Curve25519}:${d[1].device_id}`])
-                            deviceId = devices[0]?.[1]?.device_id;
+                            deviceId = devicesWithKeys[0]?.[1]?.device_id;
                         }
                     }
                     let prepared = false;
