@@ -1,5 +1,5 @@
 name: Docs
-on: 
+on:
   push:
     branches:
       - master
@@ -9,16 +9,14 @@ jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v1
-    - name: Extract branch name
-      shell: bash
-      run: echo "##[set-output name=branch;]$(echo ${GITHUB_REF#refs/heads/})"
-      id: extract_branch
+    - uses: actions/checkout@v2
+    - uses: actions/setup-node@v2
+      with:
+        node-version: '14'
+    - run: yarn install
+    - run: yarn docs
     - name: Build and deploy docs
-      uses: JamesIves/github-pages-deploy-action@releases/v2
-      env:
-        ACCESS_TOKEN: ${{ secrets.GH_PAT }}
-        BASE_BRANCH: ${{ steps.extract_branch.outputs.branch }}
-        BRANCH: gh-pages
-        BUILD_SCRIPT: "yarn install && yarn docs"
-        FOLDER: ".jsdoc/matrix-bot-sdk/develop"
+      uses: JamesIves/github-pages-deploy-action@4.1.7
+      with:
+        branch: gh-pages
+        folder: .jsdoc/matrix-bot-sdk/develop
