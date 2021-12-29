@@ -718,12 +718,12 @@ export class Appservice extends EventEmitter {
             if (this.cryptoStorage) {
                 const deviceLists: {changed: string[], removed: string[]} = req.body["org.matrix.msc3202.device_lists"] ?? { changed: [], removed: [] };
 
-                const otks = req.body["org.matrix.msc3202.device_one_time_keys_count"];
+                const otks = req.body["org.matrix.msc3202.device_one_time_key_counts"];
                 if (otks) {
                     for (const userId of Object.keys(otks)) {
                         const intent = this.getIntentForUserId(userId);
                         await intent.enableEncryption();
-                        const otksForUser = otks[intent.underlyingClient.crypto?.clientDeviceId];
+                        const otksForUser = otks[userId][intent.underlyingClient.crypto.clientDeviceId];
                         if (otksForUser) {
                             if (!byUserId[userId]) byUserId[userId] = {counts: null, toDevice: null, unusedFallbacks: null};
                             byUserId[userId].counts = otksForUser;
@@ -736,7 +736,7 @@ export class Appservice extends EventEmitter {
                     for (const userId of Object.keys(fallbacks)) {
                         const intent = this.getIntentForUserId(userId);
                         await intent.enableEncryption();
-                        const fallbacksForUser = fallbacks[intent.underlyingClient.crypto?.clientDeviceId];
+                        const fallbacksForUser = fallbacks[userId][intent.underlyingClient.crypto.clientDeviceId];
                         if (Array.isArray(fallbacksForUser) && !fallbacksForUser.includes(OTKAlgorithm.Signed)) {
                             if (!byUserId[userId]) byUserId[userId] = {counts: null, toDevice: null, unusedFallbacks: null};
                             byUserId[userId].unusedFallbacks = fallbacksForUser;
