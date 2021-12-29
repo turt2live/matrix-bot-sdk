@@ -777,11 +777,28 @@ export class Appservice extends EventEmitter {
                         } catch (e1) {
                             LogService.warn("Appservice", `Bot client was not able to decrypt ${roomId} ${event['event_id']} - trying other intents`);
 
-                            // Try to figure out which clients might be able to decrypt this
-                            // TODO: Consider puppet bridges where the bot won't be in the room
-                            // See https://github.com/turt2live/matrix-bot-sdk/issues/161
-                            // noinspection ExceptionCaughtLocallyJS
-                            throw e1;
+                            let tryUserId: string;
+                            try {
+                                // TODO: This could be more efficient
+                                const userIdsInRoom = await this.botClient.getJoinedRoomMembers(roomId);
+                                tryUserId = userIdsInRoom.find(u => this.isNamespacedUser(u));
+                            } catch (e) {
+                                LogService.error("Appservice", "Failed to get members of room - cannot decrypt message");
+                            }
+
+                            if (tryUserId) {
+                                const intent = this.getIntentForUserId(tryUserId);
+
+                                event = (await intent.underlyingClient.crypto.decryptRoomEvent(encrypted, roomId)).raw;
+                                event = await this.processEvent(event);
+                                this.emit("room.decrypted_event", roomId, event);
+
+                                // For logging purposes: show that the event was decrypted
+                                LogService.info("Appservice", `Processing decrypted event of type ${event["type"]}`);
+                            } else {
+                                // noinspection ExceptionCaughtLocallyJS
+                                throw e1;
+                            }
                         }
                     } catch (e) {
                         LogService.error("Appservice", `Decryption error on ${event['room_id']} ${event['event_id']}`, e);
