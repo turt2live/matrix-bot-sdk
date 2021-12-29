@@ -1,4 +1,5 @@
 import {
+    DeviceKeyAlgorithm,
     extractRequestError,
     IAppserviceCryptoStorageProvider,
     IAppserviceStorageProvider,
@@ -110,15 +111,33 @@ export class Intent {
                     const storage = this.storage?.storageForUser?.(this.userId);
                     this.client.impersonateUserId(this.userId); // make sure the devices call works
 
+                    const cryptoStore = this.cryptoStorage?.storageForUser(this.userId);
+                    if (!cryptoStore) {
+                        // noinspection ExceptionCaughtLocallyJS
+                        throw new Error("Failed to create crypto store");
+                    }
+
                     // Try to impersonate a device ID
                     const devices = await this.client.getOwnDevices();
-                    const deviceId = devices.find(d => d.device_id)?.device_id;
+                    let deviceId = await cryptoStore.getDeviceId();
+                    if (!deviceId || !devices.some(d => d.device_id === deviceId)) {
+                        const deviceKeys = await this.client.getUserDevices([this.userId]);
+                        const userDeviceKeys = deviceKeys.device_keys[this.userId];
+                        if (userDeviceKeys) {
+                            // We really should be validating signatures here, but we're actively looking
+                            // for devices without keys to impersonate, so it should be fine. In theory,
+                            // those devices won't even be present but we're cautious.
+                            const devices = Array.from(Object.entries(userDeviceKeys))
+                                .filter(d => d[0] === d[1].device_id && !!d[1].keys?.[`${DeviceKeyAlgorithm.Curve25519}:${d[1].device_id}`])
+                            deviceId = devices[0]?.[1]?.device_id;
+                        }
+                    }
                     let prepared = false;
                     if (deviceId) {
                         this.makeClient(true);
                         this.client.impersonateUserId(this.userId, deviceId);
 
-                        // verify that the server supports this
+                        // verify that the server supports impersonating the device
                         const respDeviceId = (await this.client.getWhoAmI()).device_id;
                         prepared = (respDeviceId === deviceId);
                     }
