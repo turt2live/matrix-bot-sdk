@@ -83,7 +83,7 @@ export class CryptoClient {
         LogService.debug("CryptoClient", "Starting with device ID:", this.deviceId);
 
         this.machine = new InternalOlmMachineFactory(await this.client.getUserId(), this.deviceId, new SdkOlmEngine(this.client), this.storage.storagePath).build();
-        await this.machine.runEngineUntilComplete();
+        await this.machine.runEngine();
 
         const identity = this.machine.identityKeys;
         this.deviceCurve25519 = identity[DeviceKeyAlgorithm.Curve25519];

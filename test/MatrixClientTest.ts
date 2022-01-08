@@ -6424,7 +6424,7 @@ describe('MatrixClient', () => {
 
             InternalOlmMachineFactory.FACTORY_OVERRIDE = () => ({
                 identityKeys: {},
-                runEngineUntilComplete: () => Promise.resolve(),
+                runEngine: () => Promise.resolve(),
                 sign: async (_) => ({
                     [userId]: {
                         [DeviceKeyAlgorithm.Ed25519 + ":" + TEST_DEVICE_ID]: "SIGNATURE_GOES_HERE",

@@ -20,7 +20,7 @@ describe('CryptoClient', () => {
     it('should not have a device ID or be ready until prepared', async () => {
         InternalOlmMachineFactory.FACTORY_OVERRIDE = () => ({
             identityKeys: {},
-            runEngineUntilComplete: () => Promise.resolve(),
+            runEngine: () => Promise.resolve(),
         } as OlmMachine);
 
         const userId = "@alice:example.org";
@@ -42,7 +42,7 @@ describe('CryptoClient', () => {
         it('should prepare the room tracker', async () => {
             InternalOlmMachineFactory.FACTORY_OVERRIDE = () => ({
                 identityKeys: {},
-                runEngineUntilComplete: () => Promise.resolve(),
+                runEngine: () => Promise.resolve(),
             } as OlmMachine);
 
             const userId = "@alice:example.org";
@@ -65,7 +65,7 @@ describe('CryptoClient', () => {
         it('should use a stored device ID', async () => {
             InternalOlmMachineFactory.FACTORY_OVERRIDE = () => ({
                 identityKeys: {},
-                runEngineUntilComplete: () => Promise.resolve(),
+                runEngine: () => Promise.resolve(),
             } as OlmMachine);
 
             const userId = "@alice:example.org";
@@ -86,7 +86,7 @@ describe('CryptoClient', () => {
         it('should fail when the crypto has not been prepared', async () => {
             InternalOlmMachineFactory.FACTORY_OVERRIDE = () => ({
                 identityKeys: {},
-                runEngineUntilComplete: () => Promise.resolve(),
+                runEngine: () => Promise.resolve(),
             } as OlmMachine);
 
             const userId = "@alice:example.org";
@@ -108,7 +108,7 @@ describe('CryptoClient', () => {
         it('should return false for unknown rooms', async () => {
             InternalOlmMachineFactory.FACTORY_OVERRIDE = () => ({
                 identityKeys: {},
-                runEngineUntilComplete: () => Promise.resolve(),
+                runEngine: () => Promise.resolve(),
             } as OlmMachine);
 
             const userId = "@alice:example.org";
@@ -125,7 +125,7 @@ describe('CryptoClient', () => {
         it('should return false for unencrypted rooms', async () => {
             InternalOlmMachineFactory.FACTORY_OVERRIDE = () => ({
                 identityKeys: {},
-                runEngineUntilComplete: () => Promise.resolve(),
+                runEngine: () => Promise.resolve(),
             } as OlmMachine);
 
             const userId = "@alice:example.org";
@@ -142,7 +142,7 @@ describe('CryptoClient', () => {
         it('should return true for encrypted rooms (redacted state)', async () => {
             InternalOlmMachineFactory.FACTORY_OVERRIDE = () => ({
                 identityKeys: {},
-                runEngineUntilComplete: () => Promise.resolve(),
+                runEngine: () => Promise.resolve(),
             } as OlmMachine);
 
             const userId = "@alice:example.org";
@@ -159,7 +159,7 @@ describe('CryptoClient', () => {
         it('should return true for encrypted rooms', async () => {
             InternalOlmMachineFactory.FACTORY_OVERRIDE = () => ({
                 identityKeys: {},
-                runEngineUntilComplete: () => Promise.resolve(),
+                runEngine: () => Promise.resolve(),
             } as OlmMachine);
 
             const userId = "@alice:example.org";
@@ -181,7 +181,7 @@ describe('CryptoClient', () => {
         beforeEach(async () => {
             InternalOlmMachineFactory.FACTORY_OVERRIDE = () => ({
                 identityKeys: {},
-                runEngineUntilComplete: () => Promise.resolve(),
+                runEngine: () => Promise.resolve(),
                 sign: async (_) => ({
                     [userId]: {
                         [DeviceKeyAlgorithm.Ed25519 + ":" + TEST_DEVICE_ID]: "SIGNATURE_GOES_HERE",
@@ -242,7 +242,7 @@ describe('CryptoClient', () => {
         beforeEach(async () => {
             InternalOlmMachineFactory.FACTORY_OVERRIDE = () => ({
                 identityKeys: {},
-                runEngineUntilComplete: () => Promise.resolve(),
+                runEngine: () => Promise.resolve(),
             } as OlmMachine);
 
             const { client: mclient } = createTestClient(null, userId, true);
@@ -292,7 +292,7 @@ describe('CryptoClient', () => {
         beforeEach(async () => {
             InternalOlmMachineFactory.FACTORY_OVERRIDE = () => ({
                 identityKeys: {},
-                runEngineUntilComplete: () => Promise.resolve(),
+                runEngine: () => Promise.resolve(),
             } as OlmMachine);
 
             const { client: mclient } = createTestClient(null, userId, true);
@@ -326,7 +326,7 @@ describe('CryptoClient', () => {
         beforeEach(async () => {
             InternalOlmMachineFactory.FACTORY_OVERRIDE = () => ({
                 identityKeys: {},
-                runEngineUntilComplete: () => Promise.resolve(),
+                runEngine: () => Promise.resolve(),
             } as OlmMachine);
 
             const { client: mclient } = createTestClient(null, userId, true);
@@ -415,7 +415,7 @@ describe('CryptoClient', () => {
         beforeEach(async () => {
             InternalOlmMachineFactory.FACTORY_OVERRIDE = () => ({
                 identityKeys: {},
-                runEngineUntilComplete: () => Promise.resolve(),
+                runEngine: () => Promise.resolve(),
             } as OlmMachine);
 
             const { client: mclient } = createTestClient(null, userId, true);

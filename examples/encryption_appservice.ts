@@ -65,7 +65,7 @@ const options: IAppserviceOptions = {
 
 const appservice = new Appservice(options);
 // const bot = appservice.botIntent;
-const bot = appservice.getIntentForUserId("@crypto_nondefault_test2:localhost");
+const bot = appservice.getIntentForUserId("@crypto_nondefault_test3:localhost");
 
 (async function() {
     await bot.enableEncryption();
