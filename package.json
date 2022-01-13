@@ -19,6 +19,7 @@
     "lint": "eslint 'src/**/*.ts'",
     "test": "ts-mocha --project ./tsconfig.json test/*Test.ts test/**/*.ts",
     "build:examples": "tsc -p tsconfig-examples.json",
+    "example:bot": "yarn build:examples && node lib/examples/bot.js",
     "example:appservice": "yarn build:examples && node lib/examples/appservice.js",
     "example:login_register": "yarn build:examples && node lib/examples/login_register.js",
     "example:encryption_bot": "yarn build:examples && node lib/examples/encryption_bot.js",
