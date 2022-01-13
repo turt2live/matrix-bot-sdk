@@ -48,6 +48,8 @@ export function doHttpRequest(baseUrl: string, method: "GET"|"POST"|"PUT"|"DELET
         },
         timeout: timeout,
         headers: headers,
+        // Enable KeepAlive for HTTP
+        forever: true,
     };
 
     if (body) {
