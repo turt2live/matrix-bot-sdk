@@ -293,13 +293,6 @@
   dependencies:
     "@types/babel-types" "*"
 
-"@types/better-sqlite3@^5.4.3":
-  version "5.4.3"
-  resolved "https://registry.yarnpkg.com/@types/better-sqlite3/-/better-sqlite3-5.4.3.tgz#4f1142c02db111627d9c5792f8aa349fcf46d100"
-  integrity sha512-d4T8Htgz3sQL3u5oVwkWipZLBYUooKEA4fhU9Sp4F6VDIhifQo1NR/IDtnAIID0Y9IXV3TQnNhv6S+m8TnkEdg==
-  dependencies:
-    "@types/integer" "*"
-
 "@types/body-parser@*":
   version "1.19.2"
   resolved "https://registry.yarnpkg.com/@types/body-parser/-/body-parser-1.19.2.tgz#aea2059e28b7658639081347ac4fab3de166e6f0"
@@ -314,11 +307,6 @@
   integrity sha512-cdeYyv4KWoEgpBISTxWvqYsVy444DOqehiF3fM3ne10AmJ62RSyNkUnxMJXHQWRQQX2eR94m5y1IZyDwBjV9FQ==
   dependencies:
     "@types/node" "*"
-
-"@types/cryptex@^1.0.1":
-  version "1.0.1"
-  resolved "https://registry.yarnpkg.com/@types/cryptex/-/cryptex-1.0.1.tgz#a1213bd7ea3ab748076a15aca75e275a715c74a1"
-  integrity sha512-XfaSrt2RpsjQFM6Z/sNQ5KK6gB/WHm6CDfnKVj087qTY04YqswphU6/MxjEY2BWXwjvuexkuMMCl/6XPbnkigA==
 
 "@types/eslint-visitor-keys@^1.0.0":
   version "1.0.0"
@@ -350,11 +338,6 @@
     "@types/express-serve-static-core" "^4.17.18"
     "@types/qs" "*"
     "@types/serve-static" "*"
-
-"@types/integer@*":
-  version "4.0.1"
-  resolved "https://registry.yarnpkg.com/@types/integer/-/integer-4.0.1.tgz#022f2c77a899e383e6d3dd374142416c22a5b9df"
-  integrity sha512-QQojPymFcV1hrvWXA1h0pP9RmFBFNuWikZcUEjjVsS19IyKO+jqOX24lp2ZHF4A21EmkosJhJDX7CLG67F2s7A==
 
 "@types/istanbul-lib-coverage@*", "@types/istanbul-lib-coverage@^2.0.0", "@types/istanbul-lib-coverage@^2.0.1":
   version "2.0.4"

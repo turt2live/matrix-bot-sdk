@@ -69,8 +69,6 @@
     "sanitize-html": "^2.3.2"
   },
   "devDependencies": {
-    "@types/better-sqlite3": "^5.4.3",
-    "@types/cryptex": "^1.0.1",
     "@types/expect": "^24.3.0",
     "@types/mocha": "^8.0.1",
     "@types/node": "10",
