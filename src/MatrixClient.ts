@@ -83,7 +83,7 @@ export class MatrixClient extends EventEmitter {
     private joinStrategy: IJoinRoomStrategy = null;
     private eventProcessors: { [eventType: string]: IPreprocessor[] } = {};
     private filterId = 0;
-    private stopSyncing = false;
+    protected stopSyncing = false;
     private metricsInstance: Metrics = new Metrics();
     private unstableApisInstance = new UnstableApis(this);
 
