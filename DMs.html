@@ -5,7 +5,7 @@
   
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title> CreateEvent</title>
+  <title> DMs</title>
 
   <script src="https://cdn.jsdelivr.net/gh/google/code-prettify@master/loader/run_prettify.js"></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -102,7 +102,7 @@
             <div class="content">
                 <header class="page-title">
                     <p>Class</p>
-                    <h1>CreateEvent</h1>
+                    <h1>DMs</h1>
                 </header>
                 
 
@@ -113,9 +113,16 @@
 
 <header>
     
-        <h2><span class="attribs"><span class="type-signature"></span></span>CreateEvent<span class="signature">()</span><span class="type-signature"></span></h2>
+        <h2><span class="attribs"><span class="type-signature"></span></span>DMs<span class="signature">(client)</span><span class="type-signature"></span></h2>
         
-            <div class="class-description">Represents an m.room.create state event</div>
+            <div class="class-description">Handles DM (direct messages) matching between users. Note that bots which
+existed prior to this might not have DM rooms populated correctly - the
+account data can be populated externally and that will be reflected here.
+
+Note that DM status is persisted across all access tokens for a user and
+is not persisted with the regular stores. The DM map is instead tracked
+on the homeserver as account data and thus survives the bot's own storage
+being wiped.</div>
         
     
 </header>
@@ -134,12 +141,12 @@
 
 
     
-    <h4 class="name" id="CreateEvent">
-        <a class="href-link" href="#CreateEvent">#</a>
+    <h4 class="name" id="DMs">
+        <a class="href-link" href="#DMs">#</a>
         
         <span class="code-name">
             
-                new CreateEvent<span class="signature">()</span><span class="type-signature"></span>
+                new DMs<span class="signature">(client)</span><span class="type-signature"></span>
             
         </span>
     </h4>
@@ -147,6 +154,10 @@
 
     
     
+    <div class="description">
+        Creates a new DM map.
+    </div>
+    
 
 
 
@@ -155,6 +166,57 @@
 
 
 
+
+    <h5>Parameters:</h5>
+    
+<div class="table-container">
+    <table class="params table">
+        <thead>
+        <tr>
+            
+            <th>Name</th>
+            
+
+            <th>Type</th>
+
+            
+
+            
+
+            <th class="last">Description</th>
+        </tr>
+        </thead>
+
+        <tbody>
+        
+
+            
+<tr class="deep-level-0">
+  
+      <td class="name"><code>client</code></td>
+  
+
+  <td class="type">
+  
+      
+<span class="param-type"><a href="MatrixClient.html">MatrixClient</a></span>
+
+
+  
+  </td>
+
+  
+
+  
+
+  <td class="description last">The client the DM map is for.</td>
+</tr>
+
+
+        
+        </tbody>
+    </table>
+</div>
 
 
 
@@ -193,9 +255,9 @@
 
     
         <p class="tag-source">
-            <a href="models_events_CreateEvent.ts.html" class="button">View Source</a>
+            <a href="DMs.ts.html" class="button">View Source</a>
             <span>
-                <a href="models_events_CreateEvent.ts.html">models/events/CreateEvent.ts</a>, <a href="models_events_CreateEvent.ts.html#line7">line 7</a>
+                <a href="DMs.ts.html">DMs.ts</a>, <a href="DMs.ts.html#line15">line 15</a>
             </span>
         </p>
     
@@ -237,7 +299,7 @@
         <h3 class="subsection-title">Classes</h3>
 
         <dl>
-            <dt><a href="CreateEvent.html">CreateEvent</a></dt>
+            <dt><a href="DMs.html">DMs</a></dt>
             <dd></dd>
         </dl>
     
@@ -249,26 +311,124 @@
     
 
     
+
+    
         <div class='vertical-section'>
-            <h1>Members</h1>
+            <h1>Methods</h1>
             <div class="members">
             
                 <div class="member">
 
-<h4 class="name" id="creator">
-    <a class="href-link" href="#creator">#</a>
+
     
-    <span class="code-name">
-        creator
-    </span>
+    <h4 class="name" id="getOrCreateDm">
+        <a class="href-link" href="#getOrCreateDm">#</a>
+        
+            
+                <span class='tag'>async</span>
+            
+        
+        <span class="code-name">
+            
+                getOrCreateDm<span class="signature">(userId, createFn)</span><span class="type-signature"> &rarr; {Promise.&lt;string>}</span>
+            
+        </span>
+    </h4>
     
-</h4>
+
+    
+    
+    <div class="description">
+        Gets or creates a DM with a given user. If a DM needs to be created, it will
+be created as an encrypted DM (if both the MatrixClient and target user support
+crypto). Otherwise, the createFn can be used to override the call. Note that
+when creating a DM room the room should have `is_direct: true` set.
+    </div>
+    
 
 
 
 
-<div class="description">
-    The user ID who created the room.
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+<div class="table-container">
+    <table class="params table">
+        <thead>
+        <tr>
+            
+            <th>Name</th>
+            
+
+            <th>Type</th>
+
+            
+
+            
+
+            <th class="last">Description</th>
+        </tr>
+        </thead>
+
+        <tbody>
+        
+
+            
+<tr class="deep-level-0">
+  
+      <td class="name"><code>userId</code></td>
+  
+
+  <td class="type">
+  
+      
+<span class="param-type">string</span>
+
+
+  
+  </td>
+
+  
+
+  
+
+  <td class="description last">The user ID to get/create a DM for.</td>
+</tr>
+
+
+        
+
+            
+<tr class="deep-level-0">
+  
+      <td class="name"><code>createFn</code></td>
+  
+
+  <td class="type">
+  
+      
+<span class="param-type">function</span>
+
+
+  
+  </td>
+
+  
+
+  
+
+  <td class="description last">Optional function to use to create the room. Resolves
+to the created room ID.</td>
+</tr>
+
+
+        
+        </tbody>
+    </table>
 </div>
 
 
@@ -308,14 +468,55 @@
 
     
         <p class="tag-source">
-            <a href="models_events_CreateEvent.ts.html" class="button">View Source</a>
+            <a href="DMs.ts.html" class="button">View Source</a>
             <span>
-                <a href="models_events_CreateEvent.ts.html">models/events/CreateEvent.ts</a>, <a href="models_events_CreateEvent.ts.html#line14">line 14</a>
+                <a href="DMs.ts.html">DMs.ts</a>, <a href="DMs.ts.html#line109">line 109</a>
             </span>
         </p>
     
 </dl>
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <div class='columns method-parameter'>
+        <div class="column is-2"><label>Returns:</label></div>
+        <div class="column is-10">
+            
+                    
+
+<div class="columns">
+    
+    <div class='param-desc column is-7'>Resolves to the DM room ID.</div>
+    
+    
+    <div class='column is-5 has-text-left'>
+        <label>Type: </label>
+        
+<span class="param-type">Promise.&lt;string></span>
+
+
+    </div>
+    
+</div>
+
+                
+        </div>
+    </div>
 
 
 
@@ -324,20 +525,83 @@
             
                 <div class="member">
 
-<h4 class="name" id="federated">
-    <a class="href-link" href="#federated">#</a>
+
     
-    <span class="code-name">
-        federated
-    </span>
+    <h4 class="name" id="isDm">
+        <a class="href-link" href="#isDm">#</a>
+        
+        <span class="code-name">
+            
+                isDm<span class="signature">(roomId)</span><span class="type-signature"> &rarr; {boolean}</span>
+            
+        </span>
+    </h4>
     
-</h4>
+
+    
+    
+    <div class="description">
+        Determines if a given room is a DM according to the cache.
+    </div>
+    
 
 
 
 
-<div class="description">
-    Whether or not the room is federated. Default true (federated).
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+<div class="table-container">
+    <table class="params table">
+        <thead>
+        <tr>
+            
+            <th>Name</th>
+            
+
+            <th>Type</th>
+
+            
+
+            
+
+            <th class="last">Description</th>
+        </tr>
+        </thead>
+
+        <tbody>
+        
+
+            
+<tr class="deep-level-0">
+  
+      <td class="name"><code>roomId</code></td>
+  
+
+  <td class="type">
+  
+      
+<span class="param-type">string</span>
+
+
+  
+  </td>
+
+  
+
+  
+
+  <td class="description last">The room ID.</td>
+</tr>
+
+
+        
+        </tbody>
+    </table>
 </div>
 
 
@@ -377,14 +641,55 @@
 
     
         <p class="tag-source">
-            <a href="models_events_CreateEvent.ts.html" class="button">View Source</a>
+            <a href="DMs.ts.html" class="button">View Source</a>
             <span>
-                <a href="models_events_CreateEvent.ts.html">models/events/CreateEvent.ts</a>, <a href="models_events_CreateEvent.ts.html#line26">line 26</a>
+                <a href="DMs.ts.html">DMs.ts</a>, <a href="DMs.ts.html#line144">line 144</a>
             </span>
         </p>
     
 </dl>
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <div class='columns method-parameter'>
+        <div class="column is-2"><label>Returns:</label></div>
+        <div class="column is-10">
+            
+                    
+
+<div class="columns">
+    
+    <div class='param-desc column is-7'>True if the room ID is a cached DM room ID.</div>
+    
+    
+    <div class='column is-5 has-text-left'>
+        <label>Type: </label>
+        
+<span class="param-type">boolean</span>
+
+
+    </div>
+    
+</div>
+
+                
+        </div>
+    </div>
 
 
 
@@ -393,21 +698,37 @@
             
                 <div class="member">
 
-<h4 class="name" id="version">
-    <a class="href-link" href="#version">#</a>
+
     
-    <span class="code-name">
-        version
-    </span>
+    <h4 class="name" id="update">
+        <a class="href-link" href="#update">#</a>
+        
+            
+                <span class='tag'>async</span>
+            
+        
+        <span class="code-name">
+            
+                update<span class="signature">()</span><span class="type-signature"> &rarr; {Promise.&lt;void>}</span>
+            
+        </span>
+    </h4>
     
-</h4>
+
+    
+    
+    <div class="description">
+        Forces an update of the DM cache.
+    </div>
+    
 
 
 
 
-<div class="description">
-    The version of the room. Defaults to "1".
-</div>
+
+
+
+
 
 
 
@@ -446,14 +767,55 @@
 
     
         <p class="tag-source">
-            <a href="models_events_CreateEvent.ts.html" class="button">View Source</a>
+            <a href="DMs.ts.html" class="button">View Source</a>
             <span>
-                <a href="models_events_CreateEvent.ts.html">models/events/CreateEvent.ts</a>, <a href="models_events_CreateEvent.ts.html#line20">line 20</a>
+                <a href="DMs.ts.html">DMs.ts</a>, <a href="DMs.ts.html#line94">line 94</a>
             </span>
         </p>
     
 </dl>
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <div class='columns method-parameter'>
+        <div class="column is-2"><label>Returns:</label></div>
+        <div class="column is-10">
+            
+                    
+
+<div class="columns">
+    
+    <div class='param-desc column is-7'>Resolves when complete.</div>
+    
+    
+    <div class='column is-5 has-text-left'>
+        <label>Type: </label>
+        
+<span class="param-type">Promise.&lt;void></span>
+
+
+    </div>
+    
+</div>
+
+                
+        </div>
+    </div>
 
 
 
@@ -462,8 +824,6 @@
             
             </div>
         </div>
-    
-
     
 
     
