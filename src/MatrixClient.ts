@@ -42,6 +42,7 @@ import { ICryptoStorageProvider } from "./storage/ICryptoStorageProvider";
 import { EncryptedRoomEvent } from "./models/events/EncryptedRoomEvent";
 import { IWhoAmI } from "./models/Account";
 import { RustSdkCryptoStorageProvider } from "./storage/RustSdkCryptoStorageProvider";
+import { DMs } from "./DMs";
 
 const SYNC_BACKOFF_MIN_MS = 5000;
 const SYNC_BACKOFF_MAX_MS = 15000;
@@ -74,6 +75,11 @@ export class MatrixClient extends EventEmitter {
      * Will be null/undefined if crypto is not possible.
      */
     public readonly crypto: CryptoClient;
+
+    /**
+     * The DM manager instance for this client.
+     */
+    public readonly dms: DMs;
 
     private userId: string;
     private requestId = 0;
@@ -128,6 +134,8 @@ export class MatrixClient extends EventEmitter {
         }
 
         if (!this.storage) this.storage = new MemoryStorageProvider();
+
+        this.dms = new DMs(this);
     }
 
     /**
@@ -573,6 +581,8 @@ export class MatrixClient extends EventEmitter {
      * @returns {Promise<any>} Resolves when the client has started syncing
      */
     public async start(filter: any = null): Promise<any> {
+        await this.dms.update();
+
         this.stopSyncing = false;
         if (!filter || typeof (filter) !== "object") {
             LogService.trace("MatrixClientLite", "No filter given or invalid object - using defaults.");

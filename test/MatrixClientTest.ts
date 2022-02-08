@@ -323,6 +323,15 @@ describe('MatrixClient', () => {
         });
     });
 
+    describe('dms', () => {
+        it('should always return an object', async () => {
+            const {client} = createTestClient();
+
+            const result = client.dms;
+            expect(result).toBeDefined();
+        });
+    });
+
     describe('getOpenIDConnectToken', () => {
         it('should call the right endpoint', async () => {
             const {client, http, hsUrl} = createTestClient();
@@ -1007,6 +1016,9 @@ describe('MatrixClient', () => {
             const max = 5;
             let count = 0;
 
+            const dmsUpdate = simple.stub();
+            client.dms.update = dmsUpdate;
+
             // The sync handler checks which rooms it should ignore
             // noinspection TypeScriptValidateJSTypes
             http.when("GET", "/_matrix/client/r0/joined_rooms").respond(200, {joined_rooms: []});
@@ -1033,6 +1045,7 @@ describe('MatrixClient', () => {
             expect(count).toBeLessThan(max);
             await waitPromise;
             expect(count).toBe(max);
+            expect(dmsUpdate.callCount).toBe(1);
         }).timeout(10000);
     });
 
@@ -1040,6 +1053,9 @@ describe('MatrixClient', () => {
         it('should use an existing filter if one is present', async () => {
             const storage = new MemoryStorageProvider();
             const {client, http} = createTestClient(storage);
+
+            const dmsMock = simple.stub();
+            client.dms.update = dmsMock;
 
             (<any>client).userId = "@notused:example.org"; // to prevent calls to /whoami
 
@@ -1059,11 +1075,15 @@ describe('MatrixClient', () => {
 
             http.flushAllExpected();
             await client.start(filter);
+            expect(dmsMock.callCount).toBe(1);
         });
 
         it('should create a filter when the stored filter is outdated', async () => {
             const storage = new MemoryStorageProvider();
             const {client, http, hsUrl} = createTestClient(storage);
+
+            const dmsMock = simple.stub();
+            client.dms.update = dmsMock;
 
             const userId = "@testuser:example.org";
             (<any>client).userId = userId; // to prevent calls to /whoami
@@ -1093,11 +1113,15 @@ describe('MatrixClient', () => {
             http.flushAllExpected();
             await client.start(filter);
             expect(setFilterFn.callCount).toBe(1);
+            expect(dmsMock.callCount).toBe(1);
         });
 
         it('should create a filter when there is no stored filter', async () => {
             const storage = new MemoryStorageProvider();
             const {client, http, hsUrl} = createTestClient(storage);
+
+            const dmsMock = simple.stub();
+            client.dms.update = dmsMock;
 
             const userId = "@testuser:example.org";
             (<any>client).userId = userId; // to prevent calls to /whoami
@@ -1128,11 +1152,15 @@ describe('MatrixClient', () => {
             await client.start(filter);
             expect(getFilterFn.callCount).toBe(1);
             expect(setFilterFn.callCount).toBe(1);
+            expect(dmsMock.callCount).toBe(1);
         });
 
         it('should use the filter ID when syncing', async () => {
             const storage = new MemoryStorageProvider();
             const {client, http} = createTestClient(storage);
+
+            const dmsMock = simple.stub();
+            client.dms.update = dmsMock;
 
             (<any>client).userId = "@notused:example.org"; // to prevent calls to /whoami
 
@@ -1155,6 +1183,7 @@ describe('MatrixClient', () => {
 
             http.flushAllExpected();
             await client.start(filter);
+            expect(dmsMock.callCount).toBe(1);
         });
 
         it('should make sync requests with the new token', async () => {
@@ -1162,6 +1191,9 @@ describe('MatrixClient', () => {
             const {client, http} = createTestClient(storage);
 
             (<any>client).userId = "@notused:example.org"; // to prevent calls to /whoami
+
+            const dmsUpdate = simple.stub();
+            client.dms.update = dmsUpdate;
 
             const filter = {rooms: {limit: 12}};
             const filterId = "abc12345";
@@ -1196,6 +1228,7 @@ describe('MatrixClient', () => {
             http.flushAllExpected();
             await client.start(filter);
             await waitPromise;
+            expect(dmsUpdate.callCount).toBe(1);
         });
 
         it('should read the sync token from the store', async () => {
@@ -1203,6 +1236,9 @@ describe('MatrixClient', () => {
             const {client, http} = createTestClient(storage);
 
             (<any>client).userId = "@notused:example.org"; // to prevent calls to /whoami
+
+            const dmsUpdate = simple.stub();
+            client.dms.update = dmsUpdate;
 
             const filter = {rooms: {limit: 12}};
             const filterId = "abc12345";
@@ -1235,6 +1271,7 @@ describe('MatrixClient', () => {
             await client.start(filter);
             expect(getSyncTokenFn.callCount).toBe(1);
             await waitPromise;
+            expect(dmsUpdate.callCount).toBe(1);
         });
 
         it('should use the syncing presence variable', async () => {
@@ -1242,6 +1279,9 @@ describe('MatrixClient', () => {
             const {client, http} = createTestClient(storage);
 
             (<any>client).userId = "@notused:example.org"; // to prevent calls to /whoami
+
+            const dmsUpdate = simple.stub();
+            client.dms.update = dmsUpdate;
 
             const filter = {rooms: {limit: 12}};
             const filterId = "abc12345";
@@ -1270,6 +1310,7 @@ describe('MatrixClient', () => {
 
             http.flushAllExpected();
             await client.start(filter);
+            expect(dmsUpdate.callCount).toBe(1);
         });
     });
 

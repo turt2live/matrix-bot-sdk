@@ -5,6 +5,7 @@
  * @param {string} order The 'order' parameter of a m.space.child
  * @throws {Error} If the string is not valid
  * @returns {boolean} True if the string is valid
+ * @category Utilities
  */
 export function validateSpaceOrderString(order: string): true {
     if (typeof(order) !== 'string') {
