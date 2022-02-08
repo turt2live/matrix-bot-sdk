@@ -281,10 +281,10 @@
     domhandler "^4.2.0"
     selderee "^0.6.0"
 
-"@turt2live/matrix-sdk-crypto-nodejs@^0.1.0-beta.9":
-  version "0.1.0-beta.9"
-  resolved "https://registry.yarnpkg.com/@turt2live/matrix-sdk-crypto-nodejs/-/matrix-sdk-crypto-nodejs-0.1.0-beta.9.tgz#3837aafc6a9f688a5a1b64ae5c427cc417aca0a4"
-  integrity sha512-UyQHCcFJG73RzbvBKpjsB7apURCq6bCxILwV2iXOQlOrMRf0149mlYyyC86jLEUqP9/VQHZ8otMpjY3EopnguA==
+"@turt2live/matrix-sdk-crypto-nodejs@^0.1.0-beta.10":
+  version "0.1.0-beta.10"
+  resolved "https://registry.yarnpkg.com/@turt2live/matrix-sdk-crypto-nodejs/-/matrix-sdk-crypto-nodejs-0.1.0-beta.10.tgz#9b0a8e1f48badeb37a0b0f8eb0fb6dc9bbb1949a"
+  integrity sha512-y5TA8fD5a7xaIwjZhQ66eT3scDsU47GkcCuQ0vjlXB0shY2cCMB4MF1nY/7c1/DniM+KvDXxrhs2VXphlPLpaA==
   dependencies:
     "@napi-rs/cli" "^2.2.0"
     shelljs "^0.8.4"
