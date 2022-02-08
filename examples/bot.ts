@@ -31,6 +31,7 @@ const client = new MatrixClient(homeserverUrl, accessToken, storage, crypto);
 AutojoinRoomsMixin.setupOnClient(client);
 
 (async function() {
+    await client.dms.update(); // should update in `start()`, but we're earlier than that here
     const targetRoomId = await client.dms.getOrCreateDm(dmTarget);
 
     client.on("room.message", async (roomId: string, event: any) => {

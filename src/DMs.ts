@@ -23,16 +23,28 @@ export class DMs {
      * @param {MatrixClient} client The client the DM map is for.
      */
     public constructor(private client: MatrixClient) {
-        this.client.on("account_data", (ev) => this.handleAccountData(ev));
+        this.client.on("account_data", (ev) => {
+            if (ev['type'] !== 'm.direct') return;
+
+            // noinspection JSIgnoredPromiseFromCall
+            this.updateFromAccountData();
+        });
         this.client.on("room.invite", (rid, ev) => this.handleInvite(rid, ev));
     }
 
-    private handleAccountData(ev: any) {
-        if (ev['type'] !== 'm.direct') return;
+    private async updateFromAccountData() {
+        // Don't trust the sync update
+        let map = {};
+        try {
+            map = await this.client.getAccountData("m.direct");
+        } catch (e) {
+            if (e.body?.errcode !== "M_NOT_FOUND" && e.statusCode !== 404) {
+                LogService.warn("DMs", "Error getting m.direct account data: ", e);
+            }
+        }
 
         this.cached = new Map<string, string[]>();
 
-        const map = ev['content'] || {};
         for (const [userId, roomIds] of Object.entries(map)) {
             this.cached.set(userId, roomIds as string[]);
         }
@@ -86,15 +98,10 @@ export class DMs {
      * Forces an update of the DM cache.
      * @returns {Promise<void>} Resolves when complete.
      */
-    public async update() {
-        this.ready = this.client.getAccountData("m.direct")
-            .catch(e => {
-                if (e.body.errcode === "M_NOT_FOUND") {
-                    return {};
-                }
-                throw e;
-            })
-            .then(ev => this.handleAccountData({type: "m.direct", content: ev}));
+    public async update(): Promise<void> {
+        await this.ready; // finish the existing call if present
+        this.ready = this.updateFromAccountData();
+        return this.ready;
     }
 
     /**
@@ -144,6 +151,11 @@ export class DMs {
      * @returns {boolean} True if the room ID is a cached DM room ID.
      */
     public isDm(roomId: string): boolean {
-        return Array.from(this.cached.values()).some(v => v.includes(roomId));
+        for (const val of this.cached.values()) {
+            if (val.includes(roomId)) {
+                return true;
+            }
+        }
+        return false;
     }
 }
