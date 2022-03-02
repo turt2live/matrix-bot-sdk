@@ -310,9 +310,31 @@ describe('SynapseAdminApis', () => {
 
                 const roomId = "!room:example.org";
                 const state = [
-                    {content: {}, state_key: "", type: "m.room.create"},
-                    {content: {membership: "join"}, state_key: "@alice:example.org", type: "m.room.member"},
-                    {content: {membership: "leave"}, state_key: "@bob:example.org", type: "m.room.member"},
+                    {
+                        "delete_id": "delete_id1",
+                        "status": "failed",
+                        "error": "error message",
+                        "shutdown_room": {
+                            "kicked_users": [],
+                            "failed_to_kick_users": [],
+                            "local_aliases": [],
+                            "new_room_id": null
+                        }
+                    }, {
+                        "delete_id": "delete_id2",
+                        "status": "purging",
+                        "shutdown_room": {
+                            "kicked_users": [
+                                "@foobar:example.com"
+                            ],
+                            "failed_to_kick_users": [],
+                            "local_aliases": [
+                                "#badroom:example.com",
+                                "#evilsaloon:example.com"
+                            ],
+                            "new_room_id": "!newroomid:example.com"
+                        }
+                    }
                 ];
 
                 http.when("GET", "/_synapse/admin/v2/rooms").respond(200, (path, _content, req) => {
