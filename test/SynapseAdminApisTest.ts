@@ -293,14 +293,36 @@ describe('SynapseAdminApis', () => {
 
                 const roomId = "!room:example.org";
 
-                http.when("POST", "/_synapse/admin/v1/rooms").respond(200, (path, _content, req) => {
+                http.when("DELETE", "/_synapse/admin/v2/rooms").respond(200, (path, _content, req) => {
                     expect(JSON.parse(req.opts.body)).toMatchObject({purge: true});
-                    expect(path).toEqual(`${hsUrl}/_synapse/admin/v1/rooms/${encodeURIComponent(roomId)}/delete`);
+                    expect(path).toEqual(`${hsUrl}/_synapse/admin/v2/rooms/${encodeURIComponent(roomId)}`);
                     return {};
                 });
 
                 http.flushAllExpected();
                 await client.deleteRoom(roomId);
+            });
+        });
+
+        describe('getDeleteRoomState', () => {
+            it('should call the right endpoint', async () => {
+                const {client, http, hsUrl} = createTestSynapseAdminClient();
+
+                const roomId = "!room:example.org";
+                const state = [
+                    {content: {}, state_key: "", type: "m.room.create"},
+                    {content: {membership: "join"}, state_key: "@alice:example.org", type: "m.room.member"},
+                    {content: {membership: "leave"}, state_key: "@bob:example.org", type: "m.room.member"},
+                ];
+
+                http.when("GET", "/_synapse/admin/v2/rooms").respond(200, (path, _content, req) => {
+                    expect(path).toEqual(`${hsUrl}/_synapse/admin/v2/rooms/${encodeURIComponent(roomId)}/delete_status`);
+                    return { results: state };
+                });
+
+                http.flushAllExpected();
+                const result = await client.getDeleteRoomState(roomId);
+                expect(result).toMatchObject(state);
             });
         });
     });
