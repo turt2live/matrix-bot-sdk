@@ -8,6 +8,7 @@ import { IAppserviceStorageProvider } from "./IAppserviceStorageProvider";
  */
 export class MemoryStorageProvider implements IStorageProvider, IAppserviceStorageProvider {
 
+    private namespaced = new Map<string, MemoryStorageProvider>();
     private syncToken: string;
     private filter: IFilterInfo;
     private appserviceUsers: { [userId: string]: { registered: boolean } } = {};
@@ -54,5 +55,12 @@ export class MemoryStorageProvider implements IStorageProvider, IAppserviceStora
 
     storeValue(key: string, value: string): void {
         this.kvStore[key] = value;
+    }
+
+    storageForUser(userId: string): IStorageProvider {
+        if (!this.namespaced.has(userId)) {
+            this.namespaced.set(userId, new MemoryStorageProvider());
+        }
+        return this.namespaced.get(userId);
     }
 }

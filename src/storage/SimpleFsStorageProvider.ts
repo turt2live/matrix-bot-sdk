@@ -102,4 +102,41 @@ export class SimpleFsStorageProvider implements IStorageProvider, IAppserviceSto
         kvStore[key] = value;
         this.db.set("kvStore", kvStore).write();
     }
+
+    storageForUser(userId: string): IStorageProvider {
+        return new NamespacedFsProvider(userId, this);
+    }
+}
+
+/**
+ * A namespaced storage provider that uses the disk to store information.
+ * @category Storage providers
+ */
+class NamespacedFsProvider implements IStorageProvider {
+    constructor(private prefix: string, private parent: SimpleFsStorageProvider) {
+    }
+
+    setFilter(filter: IFilterInfo): Promise<any> | void {
+        return this.parent.storeValue(`${this.prefix}_int_filter`, JSON.stringify(filter));
+    }
+
+    getFilter(): IFilterInfo | Promise<IFilterInfo> {
+        return Promise.resolve(this.parent.readValue(`${this.prefix}_int_filter`)).then(r => r ? JSON.parse(r) : r);
+    }
+
+    setSyncToken(token: string | null): Promise<any> | void {
+        return this.parent.storeValue(`${this.prefix}_int_syncToken`, token);
+    }
+
+    getSyncToken(): string | Promise<string | null> | null {
+        return Promise.resolve(this.parent.readValue(`${this.prefix}_int_syncToken`)).then(r => r ?? null);
+    }
+
+    readValue(key: string): string | Promise<string | null | undefined> | null | undefined {
+        return this.parent.readValue(`${this.prefix}_kv_${key}`);
+    }
+
+    storeValue(key: string, value: string): Promise<any> | void {
+        return this.parent.storeValue(`${this.prefix}_kv_${key}`, value);
+    }
 }

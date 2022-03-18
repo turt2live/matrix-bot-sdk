@@ -16,14 +16,19 @@ import {
     OTKs,
     RoomDirectoryLookupResponse,
     RoomEvent,
+    RustSdkCryptoStorageProvider,
     setRequestFn,
 } from "../src";
+import * as tmp from "tmp";
 import * as simple from "simple-mock";
 import * as MockHttpBackend from 'matrix-mock-request';
-import { expectArrayEquals, feedOlmAccount, feedStaticOlmAccount } from "./TestUtils";
+import { expectArrayEquals } from "./TestUtils";
 import { redactObjectForLogging } from "../src/http";
 import { PowerLevelAction } from "../src/models/PowerLevelAction";
-import { SqliteCryptoStorageProvider } from "../src/storage/SqliteCryptoStorageProvider";
+import { InternalOlmMachineFactory } from "../src/e2ee/InternalOlmMachineFactory";
+import { OlmMachine, Signatures } from "@turt2live/matrix-sdk-crypto-nodejs";
+
+tmp.setGracefulCleanup();
 
 export const TEST_DEVICE_ID = "TEST_DEVICE";
 
@@ -31,28 +36,18 @@ export function createTestClient(storage: IStorageProvider = null, userId: strin
     const http = new MockHttpBackend();
     const hsUrl = "https://localhost";
     const accessToken = "s3cret";
-    const client = new MatrixClient(hsUrl, accessToken, storage, crypto ? new SqliteCryptoStorageProvider(":memory:") : null);
+    const client = new MatrixClient(hsUrl, accessToken, storage, crypto ? new RustSdkCryptoStorageProvider(tmp.dirSync().name) : null);
     (<any>client).userId = userId; // private member access
     setRequestFn(http.requestFn);
 
     return {http, hsUrl, accessToken, client};
 }
 
-export async function createPreparedCryptoTestClient(userId: string): Promise<{ client: MatrixClient, http: MockHttpBackend, hsUrl: string, accessToken: string }> {
-    const r = createTestClient(null, userId, true);
-
-    await r.client.cryptoStore.setDeviceId(TEST_DEVICE_ID);
-    await feedStaticOlmAccount(r.client);
-    r.client.uploadDeviceKeys = () => Promise.resolve({});
-    r.client.uploadDeviceOneTimeKeys = () => Promise.resolve({});
-    r.client.checkOneTimeKeyCounts = () => Promise.resolve({});
-
-    await r.client.crypto.prepare([]);
-
-    return r;
-}
-
 describe('MatrixClient', () => {
+    afterEach(() => {
+        InternalOlmMachineFactory.FACTORY_OVERRIDE = null;
+    });
+
     describe("constructor", () => {
         it('should pass through the homeserver URL and access token', () => {
             const homeserverUrl = "https://example.org";
@@ -78,7 +73,7 @@ describe('MatrixClient', () => {
             const homeserverUrl = "https://example.org";
             const accessToken = "example_token";
 
-            const client = new MatrixClient(homeserverUrl, accessToken, null, new SqliteCryptoStorageProvider(":memory:"));
+            const client = new MatrixClient(homeserverUrl, accessToken, null, new RustSdkCryptoStorageProvider(tmp.dirSync().name));
             expect(client.crypto).toBeDefined();
         });
 
@@ -105,6 +100,8 @@ describe('MatrixClient', () => {
 
         it('should reject upon error', async () => {
             const {client, http} = createTestClient();
+
+            // noinspection TypeScriptValidateJSTypes
             http.when("GET", "/test").respond(404, {error: "Not Found"});
 
             try {
@@ -122,6 +119,8 @@ describe('MatrixClient', () => {
             const {client, http} = createTestClient();
 
             const expectedResponse = {test: 1234};
+
+            // noinspection TypeScriptValidateJSTypes
             http.when("GET", "/test").respond(200, expectedResponse);
 
             http.flushAllExpected();
@@ -133,6 +132,8 @@ describe('MatrixClient', () => {
             const {client, http} = createTestClient();
 
             const expectedResponse = {test: 1234};
+
+            // noinspection TypeScriptValidateJSTypes
             http.when("GET", "/test").respond(200, expectedResponse);
 
             http.flushAllExpected();
@@ -144,6 +145,8 @@ describe('MatrixClient', () => {
             const {client, http} = createTestClient();
 
             const expectedInput = {test: 1234};
+
+            // noinspection TypeScriptValidateJSTypes
             http.when("PUT", "/test").respond(200, (path, content) => {
                 expect(content).toMatchObject(expectedInput);
                 return {};
@@ -157,6 +160,8 @@ describe('MatrixClient', () => {
             const {client, http} = createTestClient();
 
             const expectedInput = {test: 1234};
+
+            // noinspection TypeScriptValidateJSTypes
             http.when("GET", "/test").respond(200, (path, content, req) => {
                 expect(req.opts.qs).toMatchObject(expectedInput);
                 return {};
@@ -169,6 +174,7 @@ describe('MatrixClient', () => {
         it('should send the access token in the Authorization header', async () => {
             const {client, http, accessToken} = createTestClient();
 
+            // noinspection TypeScriptValidateJSTypes
             http.when("GET", "/test").respond(200, (path, content, req) => {
                 expect(req.opts.headers["Authorization"]).toEqual(`Bearer ${accessToken}`);
                 return {};
@@ -181,6 +187,7 @@ describe('MatrixClient', () => {
         it('should send application/json by default', async () => {
             const {client, http} = createTestClient();
 
+            // noinspection TypeScriptValidateJSTypes
             http.when("PUT", "/test").respond(200, (path, content, req) => {
                 expect(req.opts.headers["Content-Type"]).toEqual("application/json");
                 return {};
@@ -197,6 +204,7 @@ describe('MatrixClient', () => {
             const fakeJson = `{"BUFFER": "HACK"}`;
             Buffer.isBuffer = <any>(i => i === fakeJson);
 
+            // noinspection TypeScriptValidateJSTypes
             http.when("PUT", "/test").respond(200, (path, content, req) => {
                 expect(req.opts.headers["Content-Type"]).toEqual(contentType);
                 return {};
@@ -211,6 +219,7 @@ describe('MatrixClient', () => {
 
             const expectedOutput = {hello: "world"};
 
+            // noinspection TypeScriptValidateJSTypes
             http.when("PUT", "/test").respond(200, expectedOutput);
 
             http.flushAllExpected();
@@ -224,6 +233,7 @@ describe('MatrixClient', () => {
 
             const timeout = 10;
 
+            // noinspection TypeScriptValidateJSTypes
             http.when("GET", "/test").respond(200, (path, content, req) => {
                 expect(req.opts.timeout).toBe(timeout);
             });
@@ -240,12 +250,58 @@ describe('MatrixClient', () => {
             const userId = "@testing:example.org";
             client.impersonateUserId(userId);
 
+            // noinspection TypeScriptValidateJSTypes
             http.when("GET", "/test").respond(200, (path, content, req) => {
-                expect(req.opts.qs.user_id).toBe(userId);
+                expect(req.opts.qs["user_id"]).toBe(userId);
+                expect(req.opts.qs["org.matrix.msc3202.device_id"]).toBe(undefined);
             });
 
             http.flushAllExpected();
             await client.doRequest("GET", "/test");
+        });
+
+        it('should set a device_id param on requests', async () => {
+            const {client, http} = createTestClient();
+
+            const userId = "@testing:example.org";
+            const deviceId = "DEVICE_TEST";
+            client.impersonateUserId(userId, deviceId);
+
+            // noinspection TypeScriptValidateJSTypes
+            http.when("GET", "/test").respond(200, (path, content, req) => {
+                expect(req.opts.qs["user_id"]).toBe(userId);
+                expect(req.opts.qs["org.matrix.msc3202.device_id"]).toBe(deviceId);
+            });
+
+            http.flushAllExpected();
+            await client.doRequest("GET", "/test");
+        });
+
+        it('should stop impersonation with a null user_id', async () => {
+            const {client, http} = createTestClient();
+
+            const userId = "@testing:example.org";
+            client.impersonateUserId(userId); // set first
+            client.impersonateUserId(null);
+
+            // noinspection TypeScriptValidateJSTypes
+            http.when("GET", "/test").respond(200, (path, content, req) => {
+                expect(req.opts.qs?.["user_id"]).toBe(undefined);
+                expect(req.opts.qs?.["org.matrix.msc3202.device_id"]).toBe(undefined);
+            });
+
+            http.flushAllExpected();
+            await client.doRequest("GET", "/test");
+        });
+
+        it('should not allow impersonation of only a device ID', async () => {
+            const {client} = createTestClient();
+
+            try {
+                client.impersonateUserId(null, "DEVICE");
+            } catch (e) {
+                expect(e.message).toBe("Cannot impersonate just a device: need a user ID");
+            }
         });
     });
 
@@ -267,6 +323,15 @@ describe('MatrixClient', () => {
         });
     });
 
+    describe('dms', () => {
+        it('should always return an object', async () => {
+            const {client} = createTestClient();
+
+            const result = client.dms;
+            expect(result).toBeDefined();
+        });
+    });
+
     describe('getOpenIDConnectToken', () => {
         it('should call the right endpoint', async () => {
             const {client, http, hsUrl} = createTestClient();
@@ -281,6 +346,7 @@ describe('MatrixClient', () => {
 
             client.getUserId = () => Promise.resolve(userId);
 
+            // noinspection TypeScriptValidateJSTypes
             http.when("POST", "/_matrix/client/r0/user").respond(200, (path) => {
                 expect(path).toEqual(`${hsUrl}/_matrix/client/r0/user/${encodeURIComponent(userId)}/openid/request_token`);
                 return testToken;
@@ -295,7 +361,7 @@ describe('MatrixClient', () => {
     describe('getIdentityServerClient', () => {
         // This doubles as the test for IdentityClient#acquire()
         it('should prepare an identity server client', async () => {
-            const {client, http, hsUrl} = createTestClient();
+            const {client, http} = createTestClient();
 
             const testToken: OpenIDConnectToken = {
                 access_token: "s3cret",
@@ -310,6 +376,7 @@ describe('MatrixClient', () => {
             client.getUserId = () => Promise.resolve(userId);
             client.getOpenIDConnectToken = () => Promise.resolve(testToken);
 
+            // noinspection TypeScriptValidateJSTypes
             http.when("POST", "/_matrix/identity/v2/account").respond(200, (path) => {
                 expect(path).toEqual(`https://${identityDomain}/_matrix/identity/v2/account/register`);
                 return {token: identityToken};
@@ -330,6 +397,7 @@ describe('MatrixClient', () => {
 
             client.getUserId = () => Promise.resolve(userId);
 
+            // noinspection TypeScriptValidateJSTypes
             http.when("GET", "/_matrix/client/r0/user").respond(200, (path) => {
                 expect(path).toEqual(`${hsUrl}/_matrix/client/r0/user/${encodeURIComponent(userId)}/account_data/${encodeURIComponent(eventType)}`);
                 return {};
@@ -349,6 +417,7 @@ describe('MatrixClient', () => {
 
             client.getUserId = () => Promise.resolve(userId);
 
+            // noinspection TypeScriptValidateJSTypes
             http.when("GET", "/_matrix/client/r0/user").respond(200, (path) => {
                 expect(path).toEqual(`${hsUrl}/_matrix/client/r0/user/${encodeURIComponent(userId)}/account_data/${encodeURIComponent(eventType)}`);
                 return {};
@@ -359,7 +428,7 @@ describe('MatrixClient', () => {
         });
 
         it('should return the default on error', async () => {
-            const {client, http, hsUrl} = createTestClient();
+            const {client, http} = createTestClient();
 
             const eventType = "io.t2bot.test.data";
             const userId = "@test:example.org";
@@ -367,6 +436,7 @@ describe('MatrixClient', () => {
 
             client.getUserId = () => Promise.resolve(userId);
 
+            // noinspection TypeScriptValidateJSTypes
             http.when("GET", "/_matrix/client/r0/user").respond(404, {});
 
             http.flushAllExpected();
@@ -389,6 +459,7 @@ describe('MatrixClient', () => {
 
             client.getUserId = () => Promise.resolve(userId);
 
+            // noinspection TypeScriptValidateJSTypes
             http.when("GET", "/_matrix/client/r0/presence").respond(200, (path) => {
                 expect(path).toEqual(`${hsUrl}/_matrix/client/r0/presence/${encodeURIComponent(userId)}/status`);
                 return presenceObj;
@@ -412,6 +483,7 @@ describe('MatrixClient', () => {
                 currently_active: true,
             };
 
+            // noinspection TypeScriptValidateJSTypes
             http.when("GET", "/_matrix/client/r0/presence").respond(200, (path) => {
                 expect(path).toEqual(`${hsUrl}/_matrix/client/r0/presence/${encodeURIComponent(userId)}/status`);
                 return presenceObj;
@@ -433,6 +505,7 @@ describe('MatrixClient', () => {
 
             client.getUserId = () => Promise.resolve(userId);
 
+            // noinspection TypeScriptValidateJSTypes
             http.when("PUT", "/_matrix/client/r0/presence").respond(200, (path, obj) => {
                 expect(path).toEqual(`${hsUrl}/_matrix/client/r0/presence/${encodeURIComponent(userId)}/status`);
                 expect(obj).toMatchObject({
@@ -457,6 +530,7 @@ describe('MatrixClient', () => {
 
             client.getUserId = () => Promise.resolve(userId);
 
+            // noinspection TypeScriptValidateJSTypes
             http.when("GET", "/_matrix/client/r0/user").respond(200, (path) => {
                 expect(path).toEqual(`${hsUrl}/_matrix/client/r0/user/${encodeURIComponent(userId)}/rooms/${encodeURIComponent(roomId)}/account_data/${encodeURIComponent(eventType)}`);
                 return {};
@@ -477,6 +551,7 @@ describe('MatrixClient', () => {
 
             client.getUserId = () => Promise.resolve(userId);
 
+            // noinspection TypeScriptValidateJSTypes
             http.when("GET", "/_matrix/client/r0/user").respond(200, (path) => {
                 expect(path).toEqual(`${hsUrl}/_matrix/client/r0/user/${encodeURIComponent(userId)}/rooms/${encodeURIComponent(roomId)}/account_data/${encodeURIComponent(eventType)}`);
                 return {};
@@ -487,7 +562,7 @@ describe('MatrixClient', () => {
         });
 
         it('should return the default on error', async () => {
-            const {client, http, hsUrl} = createTestClient();
+            const {client, http} = createTestClient();
 
             const eventType = "io.t2bot.test.data";
             const roomId = "!test:example.org";
@@ -496,6 +571,7 @@ describe('MatrixClient', () => {
 
             client.getUserId = () => Promise.resolve(userId);
 
+            // noinspection TypeScriptValidateJSTypes
             http.when("GET", "/_matrix/client/r0/user").respond(404, {});
 
             http.flushAllExpected();
@@ -514,6 +590,7 @@ describe('MatrixClient', () => {
 
             client.getUserId = () => Promise.resolve(userId);
 
+            // noinspection TypeScriptValidateJSTypes
             http.when("PUT", "/_matrix/client/r0/user").respond(200, (path, content) => {
                 expect(path).toEqual(`${hsUrl}/_matrix/client/r0/user/${encodeURIComponent(userId)}/account_data/${encodeURIComponent(eventType)}`);
                 expect(content).toMatchObject(eventContent);
@@ -536,6 +613,7 @@ describe('MatrixClient', () => {
 
             client.getUserId = () => Promise.resolve(userId);
 
+            // noinspection TypeScriptValidateJSTypes
             http.when("PUT", "/_matrix/client/r0/user").respond(200, (path, content) => {
                 expect(path).toEqual(`${hsUrl}/_matrix/client/r0/user/${encodeURIComponent(userId)}/rooms/${encodeURIComponent(roomId)}/account_data/${encodeURIComponent(eventType)}`);
                 expect(content).toMatchObject(eventContent);
@@ -549,10 +627,11 @@ describe('MatrixClient', () => {
 
     describe('getPublishedAlias', () => {
         it('should return falsey on 404', async () => {
-            const {client, http, hsUrl} = createTestClient();
+            const {client, http} = createTestClient();
 
             const roomId = "!abc:example.org";
 
+            // noinspection TypeScriptValidateJSTypes
             http.when("GET", "/_matrix/client/r0/rooms/").respond(404, {});
 
             http.flushAllExpected();
@@ -561,10 +640,11 @@ describe('MatrixClient', () => {
         });
 
         it('should return falsey on no aliases (empty content)', async () => {
-            const {client, http, hsUrl} = createTestClient();
+            const {client, http} = createTestClient();
 
             const roomId = "!abc:example.org";
 
+            // noinspection TypeScriptValidateJSTypes
             http.when("GET", "/_matrix/client/r0/rooms/").respond(200, {});
 
             http.flushAllExpected();
@@ -573,12 +653,13 @@ describe('MatrixClient', () => {
         });
 
         it('should return the canonical alias where possible', async () => {
-            const {client, http, hsUrl} = createTestClient();
+            const {client, http} = createTestClient();
 
             const roomId = "!abc:example.org";
             const alias1 = "#test1:example.org";
             const alias2 = "#test2:example.org";
 
+            // noinspection TypeScriptValidateJSTypes
             http.when("GET", "/_matrix/client/r0/rooms/").respond(200, {
                 alias: alias1,
                 alt_aliases: [alias2],
@@ -590,12 +671,13 @@ describe('MatrixClient', () => {
         });
 
         it('should return the first alt alias where possible', async () => {
-            const {client, http, hsUrl} = createTestClient();
+            const {client, http} = createTestClient();
 
             const roomId = "!abc:example.org";
             const alias1 = "#test1:example.org";
             const alias2 = "#test2:example.org";
 
+            // noinspection TypeScriptValidateJSTypes
             http.when("GET", "/_matrix/client/r0/rooms/").respond(200, {
                 alt_aliases: [alias2, alias1],
             });
@@ -613,6 +695,7 @@ describe('MatrixClient', () => {
             const alias = "#test:example.org";
             const roomId = "!abc:example.org";
 
+            // noinspection TypeScriptValidateJSTypes
             http.when("PUT", "/_matrix/client/r0/directory/room/").respond(200, (path, content) => {
                 expect(path).toEqual(`${hsUrl}/_matrix/client/r0/directory/room/${encodeURIComponent(alias)}`);
                 expect(content).toMatchObject({room_id: roomId});
@@ -630,7 +713,8 @@ describe('MatrixClient', () => {
 
             const alias = "#test:example.org";
 
-            http.when("DELETE", "/_matrix/client/r0/directory/room/").respond(200, (path, content) => {
+            // noinspection TypeScriptValidateJSTypes
+            http.when("DELETE", "/_matrix/client/r0/directory/room/").respond(200, (path) => {
                 expect(path).toEqual(`${hsUrl}/_matrix/client/r0/directory/room/${encodeURIComponent(alias)}`);
                 return {};
             });
@@ -647,6 +731,7 @@ describe('MatrixClient', () => {
             const roomId = "!test:example.org";
             const visibility = "public";
 
+            // noinspection TypeScriptValidateJSTypes
             http.when("PUT", "/_matrix/client/r0/directory/list/room/").respond(200, (path, content) => {
                 expect(path).toEqual(`${hsUrl}/_matrix/client/r0/directory/list/room/${encodeURIComponent(roomId)}`);
                 expect(content).toMatchObject({visibility: visibility});
@@ -664,7 +749,8 @@ describe('MatrixClient', () => {
 
             const roomId = "!test:example.org";
 
-            http.when("GET", "/_matrix/client/r0/directory/list/room/").respond(200, (path, content) => {
+            // noinspection TypeScriptValidateJSTypes
+            http.when("GET", "/_matrix/client/r0/directory/list/room/").respond(200, (path) => {
                 expect(path).toEqual(`${hsUrl}/_matrix/client/r0/directory/list/room/${encodeURIComponent(roomId)}`);
                 return {};
             });
@@ -679,6 +765,7 @@ describe('MatrixClient', () => {
             const roomId = "!test:example.org";
             const visibility = "public";
 
+            // noinspection TypeScriptValidateJSTypes
             http.when("GET", "/_matrix/client/r0/directory/list/room/").respond(200, {visibility: visibility});
 
             http.flushAllExpected();
@@ -702,7 +789,7 @@ describe('MatrixClient', () => {
             const roomId = "!abc123:example.org";
             const alias = "#test:example.org";
 
-            const spy = simple.stub().returnWith(new Promise<RoomDirectoryLookupResponse>(((resolve, reject) => resolve({
+            const spy = simple.stub().returnWith(new Promise<RoomDirectoryLookupResponse>(((resolve) => resolve({
                 roomId: roomId,
                 residentServers: []
             }))));
@@ -735,7 +822,8 @@ describe('MatrixClient', () => {
             const alias = "#test:example.org";
             const servers = ["example.org", "localhost"];
 
-            http.when("GET", "/_matrix/client/r0/directory/room/").respond(200, (path, content) => {
+            // noinspection TypeScriptValidateJSTypes
+            http.when("GET", "/_matrix/client/r0/directory/room/").respond(200, (path) => {
                 expect(path).toEqual(`${hsUrl}/_matrix/client/r0/directory/room/${encodeURIComponent(alias)}`);
                 return {room_id: roomId, servers: servers};
             });
@@ -751,6 +839,7 @@ describe('MatrixClient', () => {
             const alias = "#test:example.org";
             const servers = ["example.org", "localhost"];
 
+            // noinspection TypeScriptValidateJSTypes
             http.when("GET", "/_matrix/client/r0/directory/room/").respond(200, {room_id: roomId, servers: servers});
 
             http.flushAllExpected();
@@ -764,8 +853,9 @@ describe('MatrixClient', () => {
             const {client, http, hsUrl} = createTestClient();
 
             const roomId = "!abc123:example.org";
-            const userId = "@example:matrix.org";
+            const userId = "@example:example.org";
 
+            // noinspection TypeScriptValidateJSTypes
             http.when("POST", "/_matrix/client/r0/rooms").respond(200, (path, content) => {
                 expect(path).toEqual(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/invite`);
                 expect(content).toMatchObject({user_id: userId});
@@ -782,8 +872,9 @@ describe('MatrixClient', () => {
             const {client, http, hsUrl} = createTestClient();
 
             const roomId = "!abc123:example.org";
-            const userId = "@example:matrix.org";
+            const userId = "@example:example.org";
 
+            // noinspection TypeScriptValidateJSTypes
             http.when("POST", "/_matrix/client/r0/rooms").respond(200, (path, content) => {
                 expect(path).toEqual(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/kick`);
                 expect(content).toMatchObject({user_id: userId});
@@ -798,9 +889,10 @@ describe('MatrixClient', () => {
             const {client, http, hsUrl} = createTestClient();
 
             const roomId = "!abc123:example.org";
-            const userId = "@example:matrix.org";
+            const userId = "@example:example.org";
             const reason = "Excessive unit testing";
 
+            // noinspection TypeScriptValidateJSTypes
             http.when("POST", "/_matrix/client/r0/rooms").respond(200, (path, content) => {
                 expect(path).toEqual(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/kick`);
                 expect(content).toMatchObject({user_id: userId, reason: reason});
@@ -817,8 +909,9 @@ describe('MatrixClient', () => {
             const {client, http, hsUrl} = createTestClient();
 
             const roomId = "!abc123:example.org";
-            const userId = "@example:matrix.org";
+            const userId = "@example:example.org";
 
+            // noinspection TypeScriptValidateJSTypes
             http.when("POST", "/_matrix/client/r0/rooms").respond(200, (path, content) => {
                 expect(path).toEqual(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/ban`);
                 expect(content).toMatchObject({user_id: userId});
@@ -833,9 +926,10 @@ describe('MatrixClient', () => {
             const {client, http, hsUrl} = createTestClient();
 
             const roomId = "!abc123:example.org";
-            const userId = "@example:matrix.org";
+            const userId = "@example:example.org";
             const reason = "Excessive unit testing";
 
+            // noinspection TypeScriptValidateJSTypes
             http.when("POST", "/_matrix/client/r0/rooms").respond(200, (path, content) => {
                 expect(path).toEqual(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/ban`);
                 expect(content).toMatchObject({user_id: userId, reason: reason});
@@ -852,8 +946,9 @@ describe('MatrixClient', () => {
             const {client, http, hsUrl} = createTestClient();
 
             const roomId = "!abc123:example.org";
-            const userId = "@example:matrix.org";
+            const userId = "@example:example.org";
 
+            // noinspection TypeScriptValidateJSTypes
             http.when("POST", "/_matrix/client/r0/rooms").respond(200, (path, content) => {
                 expect(path).toEqual(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/unban`);
                 expect(content).toMatchObject({user_id: userId});
@@ -869,7 +964,7 @@ describe('MatrixClient', () => {
         it('should return the user ID if it is already known', async () => {
             const {client} = createTestClient();
 
-            const userId = "@example:matrix.org";
+            const userId = "@example:example.org";
             (<any>client).userId = userId;
 
             const result = await client.getUserId();
@@ -877,11 +972,18 @@ describe('MatrixClient', () => {
         });
 
         it('should request the user ID if it is not known', async () => {
-            const {client} = createTestClient();
+            const {client, http} = createTestClient();
 
-            const userId = "@example:matrix.org";
-            client.getWhoAmI = () => Promise.resolve({user_id: userId});
+            const userId = "@example:example.org";
+            const response = {
+                user_id: userId,
+                device_id: "DEVICE",
+            };
 
+            // noinspection TypeScriptValidateJSTypes
+            http.when("GET", "/_matrix/client/r0/account/whoami").respond(200, response);
+
+            http.flushAllExpected();
             const result = await client.getUserId();
             expect(result).toEqual(userId);
         });
@@ -896,6 +998,7 @@ describe('MatrixClient', () => {
                 device_id: "DEVICE",
             };
 
+            // noinspection TypeScriptValidateJSTypes
             http.when("GET", "/_matrix/client/r0/account/whoami").respond(200, response);
 
             http.flushAllExpected();
@@ -913,12 +1016,17 @@ describe('MatrixClient', () => {
             const max = 5;
             let count = 0;
 
+            const dmsUpdate = simple.stub();
+            client.dms.update = dmsUpdate;
+
             // The sync handler checks which rooms it should ignore
+            // noinspection TypeScriptValidateJSTypes
             http.when("GET", "/_matrix/client/r0/joined_rooms").respond(200, {joined_rooms: []});
 
-            const waitPromise = new Promise((resolve, reject) => {
+            const waitPromise = new Promise((resolve) => {
                 for (let i = 0; i <= max * 2; i++) {
-                    http.when("GET", "/_matrix/client/r0/sync").respond(200, (path, content) => {
+                    // noinspection TypeScriptValidateJSTypes
+                    http.when("GET", "/_matrix/client/r0/sync").respond(200, () => {
                         expect(count).toBeLessThan(max + 1);
                         count++;
                         if (count === max) {
@@ -937,6 +1045,7 @@ describe('MatrixClient', () => {
             expect(count).toBeLessThan(max);
             await waitPromise;
             expect(count).toBe(max);
+            expect(dmsUpdate.callCount).toBe(1);
         }).timeout(10000);
     });
 
@@ -945,6 +1054,9 @@ describe('MatrixClient', () => {
             const storage = new MemoryStorageProvider();
             const {client, http} = createTestClient(storage);
 
+            const dmsMock = simple.stub();
+            client.dms.update = dmsMock;
+
             (<any>client).userId = "@notused:example.org"; // to prevent calls to /whoami
 
             const filter = {rooms: {limit: 12}};
@@ -952,20 +1064,26 @@ describe('MatrixClient', () => {
             simple.mock(storage, "getFilter").returnWith({id: 12, filter: filter});
 
             // The sync handler checks which rooms it should ignore
+            // noinspection TypeScriptValidateJSTypes
             http.when("GET", "/_matrix/client/r0/joined_rooms").respond(200, {joined_rooms: []});
 
-            http.when("GET", "/_matrix/client/r0/sync").respond(200, (path, content) => {
+            // noinspection TypeScriptValidateJSTypes
+            http.when("GET", "/_matrix/client/r0/sync").respond(200, () => {
                 client.stop();
                 return {next_batch: "123"};
             });
 
             http.flushAllExpected();
             await client.start(filter);
+            expect(dmsMock.callCount).toBe(1);
         });
 
         it('should create a filter when the stored filter is outdated', async () => {
             const storage = new MemoryStorageProvider();
             const {client, http, hsUrl} = createTestClient(storage);
+
+            const dmsMock = simple.stub();
+            client.dms.update = dmsMock;
 
             const userId = "@testuser:example.org";
             (<any>client).userId = userId; // to prevent calls to /whoami
@@ -981,8 +1099,10 @@ describe('MatrixClient', () => {
             });
 
             // The sync handler checks which rooms it should ignore
+            // noinspection TypeScriptValidateJSTypes
             http.when("GET", "/_matrix/client/r0/joined_rooms").respond(200, {joined_rooms: []});
 
+            // noinspection TypeScriptValidateJSTypes
             http.when("POST", "/_matrix/client/r0/user").respond(200, (path, content) => {
                 expect(path).toEqual(`${hsUrl}/_matrix/client/r0/user/${encodeURIComponent(userId)}/filter`);
                 expect(content).toMatchObject(filter);
@@ -993,11 +1113,15 @@ describe('MatrixClient', () => {
             http.flushAllExpected();
             await client.start(filter);
             expect(setFilterFn.callCount).toBe(1);
+            expect(dmsMock.callCount).toBe(1);
         });
 
         it('should create a filter when there is no stored filter', async () => {
             const storage = new MemoryStorageProvider();
             const {client, http, hsUrl} = createTestClient(storage);
+
+            const dmsMock = simple.stub();
+            client.dms.update = dmsMock;
 
             const userId = "@testuser:example.org";
             (<any>client).userId = userId; // to prevent calls to /whoami
@@ -1013,8 +1137,10 @@ describe('MatrixClient', () => {
             });
 
             // The sync handler checks which rooms it should ignore
+            // noinspection TypeScriptValidateJSTypes
             http.when("GET", "/_matrix/client/r0/joined_rooms").respond(200, {joined_rooms: []});
 
+            // noinspection TypeScriptValidateJSTypes
             http.when("POST", "/_matrix/client/r0/user").respond(200, (path, content) => {
                 expect(path).toEqual(`${hsUrl}/_matrix/client/r0/user/${encodeURIComponent(userId)}/filter`);
                 expect(content).toMatchObject(filter);
@@ -1026,11 +1152,15 @@ describe('MatrixClient', () => {
             await client.start(filter);
             expect(getFilterFn.callCount).toBe(1);
             expect(setFilterFn.callCount).toBe(1);
+            expect(dmsMock.callCount).toBe(1);
         });
 
         it('should use the filter ID when syncing', async () => {
             const storage = new MemoryStorageProvider();
             const {client, http} = createTestClient(storage);
+
+            const dmsMock = simple.stub();
+            client.dms.update = dmsMock;
 
             (<any>client).userId = "@notused:example.org"; // to prevent calls to /whoami
 
@@ -1040,8 +1170,10 @@ describe('MatrixClient', () => {
             simple.mock(storage, "getFilter").returnWith({id: filterId, filter: filter});
 
             // The sync handler checks which rooms it should ignore
+            // noinspection TypeScriptValidateJSTypes
             http.when("GET", "/_matrix/client/r0/joined_rooms").respond(200, {joined_rooms: []});
 
+            // noinspection TypeScriptValidateJSTypes
             http.when("GET", "/_matrix/client/r0/sync").respond(200, (path, content, req) => {
                 expect(req).toBeDefined();
                 expect(req.opts.qs.filter).toEqual(filterId);
@@ -1051,6 +1183,7 @@ describe('MatrixClient', () => {
 
             http.flushAllExpected();
             await client.start(filter);
+            expect(dmsMock.callCount).toBe(1);
         });
 
         it('should make sync requests with the new token', async () => {
@@ -1059,11 +1192,14 @@ describe('MatrixClient', () => {
 
             (<any>client).userId = "@notused:example.org"; // to prevent calls to /whoami
 
+            const dmsUpdate = simple.stub();
+            client.dms.update = dmsUpdate;
+
             const filter = {rooms: {limit: 12}};
             const filterId = "abc12345";
             const secondToken = "second";
 
-            const waitPromise = new Promise<void>(((resolve, reject) => {
+            const waitPromise = new Promise<void>(((resolve) => {
                 simple.mock(storage, "getFilter").returnWith({id: filterId, filter: filter});
                 const setSyncTokenFn = simple.mock(storage, "setSyncToken").callFn(newToken => {
                     expect(newToken).toEqual(secondToken);
@@ -1072,13 +1208,16 @@ describe('MatrixClient', () => {
             }));
 
             // The sync handler checks which rooms it should ignore
+            // noinspection TypeScriptValidateJSTypes
             http.when("GET", "/_matrix/client/r0/joined_rooms").respond(200, {joined_rooms: []});
 
+            // noinspection TypeScriptValidateJSTypes
             http.when("GET", "/_matrix/client/r0/sync").respond(200, (path, content, req) => {
                 expect(req).toBeDefined();
                 expect(req.opts.qs.since).toBeUndefined();
                 return {next_batch: secondToken};
             });
+            // noinspection TypeScriptValidateJSTypes
             http.when("GET", "/_matrix/client/r0/sync").respond(200, (path, content, req) => {
                 expect(req).toBeDefined();
                 expect(req.opts.qs.since).toEqual(secondToken);
@@ -1089,6 +1228,7 @@ describe('MatrixClient', () => {
             http.flushAllExpected();
             await client.start(filter);
             await waitPromise;
+            expect(dmsUpdate.callCount).toBe(1);
         });
 
         it('should read the sync token from the store', async () => {
@@ -1097,13 +1237,16 @@ describe('MatrixClient', () => {
 
             (<any>client).userId = "@notused:example.org"; // to prevent calls to /whoami
 
+            const dmsUpdate = simple.stub();
+            client.dms.update = dmsUpdate;
+
             const filter = {rooms: {limit: 12}};
             const filterId = "abc12345";
             const syncToken = "testing";
 
             simple.mock(storage, "getFilter").returnWith({id: filterId, filter: filter});
             const getSyncTokenFn = simple.mock(storage, "getSyncToken").returnWith(syncToken);
-            const waitPromise = new Promise<void>(((resolve, reject) => {
+            const waitPromise = new Promise<void>(((resolve) => {
                 simple.mock(storage, "setSyncToken").callFn(newToken => {
                     expect(newToken).toEqual(syncToken);
                     resolve();
@@ -1111,8 +1254,10 @@ describe('MatrixClient', () => {
             }));
 
             // The sync handler checks which rooms it should ignore
+            // noinspection TypeScriptValidateJSTypes
             http.when("GET", "/_matrix/client/r0/joined_rooms").respond(200, {joined_rooms: []});
 
+            // noinspection TypeScriptValidateJSTypes
             http.when("GET", "/_matrix/client/r0/sync").respond(200, (path, content, req) => {
                 expect(req).toBeDefined();
 
@@ -1126,6 +1271,7 @@ describe('MatrixClient', () => {
             await client.start(filter);
             expect(getSyncTokenFn.callCount).toBe(1);
             await waitPromise;
+            expect(dmsUpdate.callCount).toBe(1);
         });
 
         it('should use the syncing presence variable', async () => {
@@ -1134,6 +1280,9 @@ describe('MatrixClient', () => {
 
             (<any>client).userId = "@notused:example.org"; // to prevent calls to /whoami
 
+            const dmsUpdate = simple.stub();
+            client.dms.update = dmsUpdate;
+
             const filter = {rooms: {limit: 12}};
             const filterId = "abc12345";
             const presence = "online";
@@ -1141,14 +1290,17 @@ describe('MatrixClient', () => {
             simple.mock(storage, "getFilter").returnWith({id: filterId, filter: filter});
 
             // The sync handler checks which rooms it should ignore
+            // noinspection TypeScriptValidateJSTypes
             http.when("GET", "/_matrix/client/r0/joined_rooms").respond(200, {joined_rooms: []});
 
+            // noinspection TypeScriptValidateJSTypes
             http.when("GET", "/_matrix/client/r0/sync").respond(200, (path, content, req) => {
                 expect(req).toBeDefined();
                 expect(req.opts.qs.presence).toBeUndefined();
                 client.syncingPresence = presence;
                 return {next_batch: "testing"};
             });
+            // noinspection TypeScriptValidateJSTypes
             http.when("GET", "/_matrix/client/r0/sync").respond(200, (path, content, req) => {
                 expect(req).toBeDefined();
                 expect(req.opts.qs.presence).toEqual(presence);
@@ -1158,6 +1310,7 @@ describe('MatrixClient', () => {
 
             http.flushAllExpected();
             await client.start(filter);
+            expect(dmsUpdate.callCount).toBe(1);
         });
     });
 
@@ -1413,7 +1566,7 @@ describe('MatrixClient', () => {
 
             client.userId = userId;
 
-            const spy = simple.stub().callFn((rid, ev) => {
+            const spy = simple.stub().callFn((rid) => {
                 // expect(ev).toMatchObject(events[1]);
                 expect(rid).toEqual(roomId);
             });
@@ -1597,7 +1750,7 @@ describe('MatrixClient', () => {
 
             client.userId = userId;
 
-            const spy = simple.stub().callFn((rid, ev) => {
+            const spy = simple.stub().callFn((rid) => {
                 // expect(ev).toMatchObject(events[1]);
                 expect(rid).toEqual(roomId);
             });
@@ -2065,164 +2218,36 @@ describe('MatrixClient', () => {
             expect(eventSpy.callCount).toBe(5);
         });
 
-        it('should handle to_device messages', async () => {
-            const { client } = createTestClient(null, "@user:example.org", true);
-            const syncClient = <ProcessSyncClient>(<any>client);
-
-            // Override to fix test as we aren't testing this here.
-            client.crypto.updateFallbackKey = async () => null;
-
-            const deviceMessage = {
-                type: "m.room.encrypted",
-                content: {
-                    hello: "world",
-                },
-            };
-            const wrongMessage = {
-                type: "not-m.room.encrypted",
-                content: {
-                    wrong: true,
-                },
-            };
-
-            await client.cryptoStore.setDeviceId(TEST_DEVICE_ID);
-            await feedStaticOlmAccount(client);
-            client.uploadDeviceKeys = () => Promise.resolve({});
-            client.uploadDeviceOneTimeKeys = () => Promise.resolve({});
-            client.checkOneTimeKeyCounts = () => Promise.resolve({});
-
-            await client.crypto.prepare([]);
-
-            const processSpy = simple.stub().callFn(async (message) => {
-                expect(message).toMatchObject(deviceMessage);
-            });
-            client.crypto.processInboundDeviceMessage = processSpy;
-
-            await syncClient.processSync({
-                to_device: {
-                    events: [wrongMessage, deviceMessage],
-                },
-            });
-            expect(processSpy.callCount).toBe(1);
-        });
-
-        it('should handle fallback key updates', async () => {
-            const { client } = createTestClient(null, "@user:example.org", true);
-            const syncClient = <ProcessSyncClient>(<any>client);
-
-            await client.cryptoStore.setDeviceId(TEST_DEVICE_ID);
-            await feedStaticOlmAccount(client);
-            client.uploadDeviceKeys = () => Promise.resolve({});
-            client.uploadDeviceOneTimeKeys = () => Promise.resolve({});
-            client.checkOneTimeKeyCounts = () => Promise.resolve({});
-
-            await client.crypto.prepare([]);
-
-            const updateSpy = simple.stub();
-            client.crypto.updateFallbackKey = updateSpy;
-
-            // Test workaround for https://github.com/matrix-org/synapse/issues/10618
-            await syncClient.processSync({
-                // no content
-            });
-            expect(updateSpy.callCount).toBe(1);
-            updateSpy.reset();
-
-            // Test "no more fallback keys" state
-            await syncClient.processSync({
-                "org.matrix.msc2732.device_unused_fallback_key_types": [],
-                "device_unused_fallback_key_types": [],
-            });
-            expect(updateSpy.callCount).toBe(1);
-            updateSpy.reset();
-
-            // Test "has remaining fallback keys"
-            await syncClient.processSync({
-                "org.matrix.msc2732.device_unused_fallback_key_types": ["signed_curve25519"],
-                "device_unused_fallback_key_types": ["signed_curve25519"],
-            });
-            expect(updateSpy.callCount).toBe(0);
-        });
-
-        it('should decrypt timeline events', async () => {
-            const {client: realClient} = await createPreparedCryptoTestClient("@alice:example.org");
+        it('should process crypto if enabled', async () => {
+            const {client: realClient} = createTestClient(null, "@alice:example.org", true);
             const client = <ProcessSyncClient>(<any>realClient);
 
-            // Override to fix test as we aren't testing this here.
-            realClient.crypto.updateFallbackKey = async () => null;
-
-            const userId = "@syncing:example.org";
-            const roomId = "!testing:example.org";
-            const events = [
-                {
-                    type: "m.room.encrypted",
-                    content: {newType: "m.room.message"},
+            const sync = {
+                to_device: {events: [{type: "org.example", content: {hello: "world"}}]},
+                device_unused_fallback_key_types: [OTKAlgorithm.Signed],
+                device_one_time_keys_count: {
+                    [OTKAlgorithm.Signed]: 12,
+                    [OTKAlgorithm.Unsigned]: 14,
                 },
-                {
-                    type: "m.room.encrypted",
-                    content: {newType: "m.room.not_message"},
+                device_lists: {
+                    changed: ["@bob:example.org"],
+                    left: ["@charlie:example.org"],
                 },
-            ];
+            };
 
-            realClient.crypto.isRoomEncrypted = async () => true; // for the purposes of this test
-
-            const decryptSpy = simple.stub().callFn(async (ev, rid) => {
-                expect(events).toContain(ev.raw);
-                expect(rid).toEqual(roomId);
-                return new RoomEvent({
-                    ...ev.raw,
-                    type: ev.content.newType,
-                });
+            const spy = simple.stub().callFn((inbox, counts, unusedFallbacks, changed, left) => {
+                expect({
+                    to_device: {events: inbox},
+                    device_one_time_keys_count: counts,
+                    device_unused_fallback_key_types: unusedFallbacks,
+                    device_lists: {changed, left},
+                }).toMatchObject(sync);
+                return Promise.resolve();
             });
-            realClient.crypto.decryptRoomEvent = decryptSpy;
+            realClient.crypto.updateSyncData = spy;
 
-            const processSpy = simple.stub().callFn(async (ev) => {
-                if (ev['type'] === 'm.room.encrypted' && (processSpy.callCount%2 !== 0)) {
-                    expect(events).toContain(ev);
-                } else if (ev['type'] === 'm.room.message') {
-                    expect(ev.content).toMatchObject(events[0].content);
-                } else {
-                    expect(ev.content).toMatchObject(events[1].content);
-                }
-                return ev;
-            });
-            (<any>realClient).processEvent = processSpy;
-
-            client.userId = userId;
-
-            const encryptedSpy = simple.stub();
-            const decryptedSpy = simple.stub();
-            const failedSpy = simple.stub();
-            const messageSpy = simple.stub().callFn((rid, ev) => {
-                expect(rid).toEqual(roomId);
-                expect(ev["type"]).toEqual("m.room.message");
-                expect(ev.content).toMatchObject(events[0].content);
-            });
-            const eventSpy = simple.stub().callFn((rid, ev) => {
-                expect(rid).toEqual(roomId);
-
-                if (ev['type'] === 'm.room.message') {
-                    expect(ev.content).toMatchObject(events[0].content);
-                } else {
-                    expect(ev.content).toMatchObject(events[1].content);
-                }
-            });
-            realClient.on("room.encrypted_event", encryptedSpy);
-            realClient.on("room.decrypted_event", decryptedSpy);
-            realClient.on("room.failed_decryption", failedSpy);
-            realClient.on("room.message", messageSpy);
-            realClient.on("room.event", eventSpy);
-
-            const roomsObj = {};
-            roomsObj[roomId] = {timeline: {events: events}, invite_state: {events: events}};
-            await client.processSync({rooms: {join: roomsObj, leave: roomsObj, invite: roomsObj}});
-            expect(encryptedSpy.callCount).toBe(2);
-            expect(decryptedSpy.callCount).toBe(2);
-            expect(failedSpy.callCount).toBe(0);
-            expect(messageSpy.callCount).toBe(1);
-            expect(eventSpy.callCount).toBe(2);
-            expect(decryptSpy.callCount).toBe(2);
-            expect(processSpy.callCount).toBe(4); // 2 for encrypted, 2 for decrypted
+            await client.processSync(sync);
+            expect(spy.callCount).toBe(1);
         });
     });
 
@@ -2231,10 +2256,11 @@ describe('MatrixClient', () => {
             const {client, http, hsUrl} = createTestClient();
 
             const roomId = "!abc123:example.org";
-            const eventId = "$example:matrix.org";
+            const eventId = "$example:example.org";
             const event = {type: "m.room.message"};
 
-            http.when("GET", "/_matrix/client/r0/rooms").respond(200, (path, content) => {
+            // noinspection TypeScriptValidateJSTypes
+            http.when("GET", "/_matrix/client/r0/rooms").respond(200, (path) => {
                 expect(path).toEqual(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/event/${encodeURIComponent(eventId)}`);
                 return event;
             });
@@ -2248,7 +2274,7 @@ describe('MatrixClient', () => {
             const {client, http, hsUrl} = createTestClient();
 
             const roomId = "!abc123:example.org";
-            const eventId = "$example:matrix.org";
+            const eventId = "$example:example.org";
             const event = {type: "m.room.message"};
             const processor = <IPreprocessor>{
                 processEvent: (ev, procClient, kind?) => {
@@ -2260,7 +2286,8 @@ describe('MatrixClient', () => {
 
             client.addPreprocessor(processor);
 
-            http.when("GET", "/_matrix/client/r0/rooms").respond(200, (path, content) => {
+            // noinspection TypeScriptValidateJSTypes
+            http.when("GET", "/_matrix/client/r0/rooms").respond(200, (path) => {
                 expect(path).toEqual(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/event/${encodeURIComponent(eventId)}`);
                 return event;
             });
@@ -2272,10 +2299,10 @@ describe('MatrixClient', () => {
         });
 
         it('should try decryption', async () => {
-            const {client, http, hsUrl} = await createPreparedCryptoTestClient("@alice:example.org");
+            const {client, http, hsUrl} = createTestClient(null, "@alice:example.org", true);
 
             const roomId = "!abc123:example.org";
-            const eventId = "$example:matrix.org";
+            const eventId = "$example:example.org";
             const event = {type: "m.room.encrypted", content: {encrypted: true}};
             const decrypted = {type: "m.room.message", content: {hello: "world"}};
 
@@ -2302,7 +2329,8 @@ describe('MatrixClient', () => {
             });
             (<any>client).processEvent = processSpy;
 
-            http.when("GET", "/_matrix/client/r0/rooms").respond(200, (path, content) => {
+            // noinspection TypeScriptValidateJSTypes
+            http.when("GET", "/_matrix/client/r0/rooms").respond(200, (path) => {
                 expect(path).toEqual(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/event/${encodeURIComponent(eventId)}`);
                 return event;
             });
@@ -2316,10 +2344,10 @@ describe('MatrixClient', () => {
         });
 
         it('should not try decryption in unencrypted rooms', async () => {
-            const {client, http, hsUrl} = await createPreparedCryptoTestClient("@alice:example.org");
+            const {client, http, hsUrl} = createTestClient(null, "@alice:example.org", true);
 
             const roomId = "!abc123:example.org";
-            const eventId = "$example:matrix.org";
+            const eventId = "$example:example.org";
             const event = {type: "m.room.encrypted", content: {encrypted: true}};
             const decrypted = {type: "m.room.message", content: {hello: "world"}};
 
@@ -2346,7 +2374,8 @@ describe('MatrixClient', () => {
             });
             (<any>client).processEvent = processSpy;
 
-            http.when("GET", "/_matrix/client/r0/rooms").respond(200, (path, content) => {
+            // noinspection TypeScriptValidateJSTypes
+            http.when("GET", "/_matrix/client/r0/rooms").respond(200, (path) => {
                 expect(path).toEqual(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/event/${encodeURIComponent(eventId)}`);
                 return event;
             });
@@ -2365,10 +2394,11 @@ describe('MatrixClient', () => {
             const {client, http, hsUrl} = createTestClient();
 
             const roomId = "!abc123:example.org";
-            const eventId = "$example:matrix.org";
+            const eventId = "$example:example.org";
             const event = {type: "m.room.message"};
 
-            http.when("GET", "/_matrix/client/r0/rooms").respond(200, (path, content) => {
+            // noinspection TypeScriptValidateJSTypes
+            http.when("GET", "/_matrix/client/r0/rooms").respond(200, (path) => {
                 expect(path).toEqual(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/event/${encodeURIComponent(eventId)}`);
                 return event;
             });
@@ -2382,7 +2412,7 @@ describe('MatrixClient', () => {
             const {client, http, hsUrl} = createTestClient();
 
             const roomId = "!abc123:example.org";
-            const eventId = "$example:matrix.org";
+            const eventId = "$example:example.org";
             const event = {type: "m.room.message"};
             const processor = <IPreprocessor>{
                 processEvent: (ev, procClient, kind?) => {
@@ -2394,7 +2424,8 @@ describe('MatrixClient', () => {
 
             client.addPreprocessor(processor);
 
-            http.when("GET", "/_matrix/client/r0/rooms").respond(200, (path, content) => {
+            // noinspection TypeScriptValidateJSTypes
+            http.when("GET", "/_matrix/client/r0/rooms").respond(200, (path) => {
                 expect(path).toEqual(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/event/${encodeURIComponent(eventId)}`);
                 return event;
             });
@@ -2406,10 +2437,10 @@ describe('MatrixClient', () => {
         });
 
         it('should not try decryption in any rooms', async () => {
-            const {client, http, hsUrl} = await createPreparedCryptoTestClient("@alice:example.org");
+            const {client, http, hsUrl} = createTestClient(null, "@alice:example.org", true);
 
             const roomId = "!abc123:example.org";
-            const eventId = "$example:matrix.org";
+            const eventId = "$example:example.org";
             const event = {type: "m.room.encrypted", content: {encrypted: true}};
             const decrypted = {type: "m.room.message", content: {hello: "world"}};
 
@@ -2436,7 +2467,8 @@ describe('MatrixClient', () => {
             });
             (<any>client).processEvent = processSpy;
 
-            http.when("GET", "/_matrix/client/r0/rooms").respond(200, (path, content) => {
+            // noinspection TypeScriptValidateJSTypes
+            http.when("GET", "/_matrix/client/r0/rooms").respond(200, (path) => {
                 expect(path).toEqual(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/event/${encodeURIComponent(eventId)}`);
                 return event;
             });
@@ -2457,7 +2489,8 @@ describe('MatrixClient', () => {
             const roomId = "!abc123:example.org";
             const events = [{type: "m.room.message"}, {type: "m.room.not_message"}];
 
-            http.when("GET", "/_matrix/client/r0/rooms").respond(200, (path, content) => {
+            // noinspection TypeScriptValidateJSTypes
+            http.when("GET", "/_matrix/client/r0/rooms").respond(200, (path) => {
                 expect(path).toEqual(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/state`);
                 return events;
             });
@@ -2486,7 +2519,8 @@ describe('MatrixClient', () => {
 
             client.addPreprocessor(processor);
 
-            http.when("GET", "/_matrix/client/r0/rooms").respond(200, (path, content) => {
+            // noinspection TypeScriptValidateJSTypes
+            http.when("GET", "/_matrix/client/r0/rooms").respond(200, (path) => {
                 expect(path).toEqual(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/state`);
                 return events;
             });
@@ -2514,7 +2548,8 @@ describe('MatrixClient', () => {
             const eventType = "m.room.message";
             const event = {type: "m.room.message"};
 
-            http.when("GET", "/_matrix/client/r0/rooms").respond(200, (path, content) => {
+            // noinspection TypeScriptValidateJSTypes
+            http.when("GET", "/_matrix/client/r0/rooms").respond(200, (path) => {
                 expect(path).toEqual(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/state/${encodeURIComponent(eventType)}/`);
                 return event;
             });
@@ -2532,7 +2567,8 @@ describe('MatrixClient', () => {
             const event = {type: "m.room.message"};
             const stateKey = "testing";
 
-            http.when("GET", "/_matrix/client/r0/rooms").respond(200, (path, content) => {
+            // noinspection TypeScriptValidateJSTypes
+            http.when("GET", "/_matrix/client/r0/rooms").respond(200, (path) => {
                 expect(path).toEqual(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/state/${encodeURIComponent(eventType)}/${stateKey}`);
                 return event;
             });
@@ -2558,7 +2594,8 @@ describe('MatrixClient', () => {
 
             client.addPreprocessor(processor);
 
-            http.when("GET", "/_matrix/client/r0/rooms").respond(200, (path, content) => {
+            // noinspection TypeScriptValidateJSTypes
+            http.when("GET", "/_matrix/client/r0/rooms").respond(200, (path) => {
                 expect(path).toEqual(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/state/${encodeURIComponent(eventType)}/`);
                 return event;
             });
@@ -2586,7 +2623,8 @@ describe('MatrixClient', () => {
 
             client.addPreprocessor(processor);
 
-            http.when("GET", "/_matrix/client/r0/rooms").respond(200, (path, content) => {
+            // noinspection TypeScriptValidateJSTypes
+            http.when("GET", "/_matrix/client/r0/rooms").respond(200, (path) => {
                 expect(path).toEqual(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/state/${encodeURIComponent(eventType)}/${stateKey}`);
                 return event;
             });
@@ -2619,6 +2657,7 @@ describe('MatrixClient', () => {
             const roomId = "!abc123:example.org";
             const limit = 2;
 
+            // noinspection TypeScriptValidateJSTypes
             http.when("GET", "/_matrix/client/r0/rooms").respond(200, (path, content, req) => {
                 expect(path).toEqual(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/context/${encodeURIComponent(targetEvent.eventId)}`);
                 expect(req.opts.qs['limit']).toEqual(limit);
@@ -2663,7 +2702,8 @@ describe('MatrixClient', () => {
             const userId = "@testing:example.org";
             const profile = {displayname: "testing", avatar_url: "testing", extra: "testing"};
 
-            http.when("GET", "/_matrix/client/r0/profile").respond(200, (path, content) => {
+            // noinspection TypeScriptValidateJSTypes
+            http.when("GET", "/_matrix/client/r0/profile").respond(200, (path) => {
                 expect(path).toEqual(`${hsUrl}/_matrix/client/r0/profile/${encodeURIComponent(userId)}`);
                 return profile;
             });
@@ -2680,6 +2720,7 @@ describe('MatrixClient', () => {
 
             const roomId = "!something:example.org";
 
+            // noinspection TypeScriptValidateJSTypes
             http.when("POST", "/_matrix/client/r0/createRoom").respond(200, (path, content) => {
                 expect(content).toMatchObject({});
                 return {room_id: roomId};
@@ -2699,6 +2740,7 @@ describe('MatrixClient', () => {
                 preset: "public_chat",
             };
 
+            // noinspection TypeScriptValidateJSTypes
             http.when("POST", "/_matrix/client/r0/createRoom").respond(200, (path, content) => {
                 expect(content).toMatchObject(properties);
                 return {room_id: roomId};
@@ -2719,6 +2761,7 @@ describe('MatrixClient', () => {
 
             (<any>client).userId = userId; // avoid /whoami lookup
 
+            // noinspection TypeScriptValidateJSTypes
             http.when("PUT", "/_matrix/client/r0/profile").respond(200, (path, content) => {
                 expect(path).toEqual(`${hsUrl}/_matrix/client/r0/profile/${encodeURIComponent(userId)}/displayname`);
                 expect(content).toMatchObject({displayname: displayName});
@@ -2739,6 +2782,7 @@ describe('MatrixClient', () => {
 
             (<any>client).userId = userId; // avoid /whoami lookup
 
+            // noinspection TypeScriptValidateJSTypes
             http.when("PUT", "/_matrix/client/r0/profile").respond(200, (path, content) => {
                 expect(path).toEqual(`${hsUrl}/_matrix/client/r0/profile/${encodeURIComponent(userId)}/avatar_url`);
                 expect(content).toMatchObject({avatar_url: displayName});
@@ -2758,7 +2802,8 @@ describe('MatrixClient', () => {
 
             (<any>client).userId = "@joins:example.org"; // avoid /whoami lookup
 
-            http.when("POST", "/_matrix/client/r0/join").respond(200, (path, content) => {
+            // noinspection TypeScriptValidateJSTypes
+            http.when("POST", "/_matrix/client/r0/join").respond(200, (path) => {
                 expect(path).toEqual(`${hsUrl}/_matrix/client/r0/join/${encodeURIComponent(roomId)}`);
                 return {room_id: roomId};
             });
@@ -2776,6 +2821,7 @@ describe('MatrixClient', () => {
 
             (<any>client).userId = "@joins:example.org"; // avoid /whoami lookup
 
+            // noinspection TypeScriptValidateJSTypes
             http.when("POST", "/_matrix/client/r0/join").respond(200, (path, content, req) => {
                 expect(path).toEqual(`${hsUrl}/_matrix/client/r0/join/${encodeURIComponent(roomId)}`);
                 expect(req.opts.qs['server_name'].length).toEqual(serverNames.length);
@@ -2798,7 +2844,8 @@ describe('MatrixClient', () => {
 
             (<any>client).userId = "@joins:example.org"; // avoid /whoami lookup
 
-            http.when("POST", "/_matrix/client/r0/join").respond(200, (path, content) => {
+            // noinspection TypeScriptValidateJSTypes
+            http.when("POST", "/_matrix/client/r0/join").respond(200, (path) => {
                 expect(path).toEqual(`${hsUrl}/_matrix/client/r0/join/${encodeURIComponent(roomAlias)}`);
                 return {room_id: roomId};
             });
@@ -2826,7 +2873,8 @@ describe('MatrixClient', () => {
 
             const strategySpy = simple.mock(strategy, "joinRoom").callOriginal();
 
-            http.when("POST", "/_matrix/client/r0/join").respond(200, (path, content) => {
+            // noinspection TypeScriptValidateJSTypes
+            http.when("POST", "/_matrix/client/r0/join").respond(200, (path) => {
                 expect(path).toEqual(`${hsUrl}/_matrix/client/r0/join/${encodeURIComponent(roomId)}`);
                 return {room_id: roomId};
             });
@@ -2856,7 +2904,8 @@ describe('MatrixClient', () => {
 
             const strategySpy = simple.mock(strategy, "joinRoom").callOriginal();
 
-            http.when("POST", "/_matrix/client/r0/join").respond(200, (path, content) => {
+            // noinspection TypeScriptValidateJSTypes
+            http.when("POST", "/_matrix/client/r0/join").respond(200, (path) => {
                 expect(path).toEqual(`${hsUrl}/_matrix/client/r0/join/${encodeURIComponent(roomId)}`);
                 return {room_id: roomId};
             });
@@ -2874,7 +2923,8 @@ describe('MatrixClient', () => {
 
             const roomIds = ["!abc:example.org", "!123:example.org"];
 
-            http.when("GET", "/_matrix/client/r0/joined_rooms").respond(200, (path, content) => {
+            // noinspection TypeScriptValidateJSTypes
+            http.when("GET", "/_matrix/client/r0/joined_rooms").respond(200, (path) => {
                 expect(path).toEqual(`${hsUrl}/_matrix/client/r0/joined_rooms`);
                 return {joined_rooms: roomIds};
             });
@@ -2892,7 +2942,8 @@ describe('MatrixClient', () => {
             const roomId = "!testing:example.org";
             const members = ["@alice:example.org", "@bob:example.org"];
 
-            http.when("GET", "/_matrix/client/r0/rooms").respond(200, (path, content) => {
+            // noinspection TypeScriptValidateJSTypes
+            http.when("GET", "/_matrix/client/r0/rooms").respond(200, (path) => {
                 expect(path).toEqual(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/joined_members`);
                 const obj = {};
                 for (const member of members) obj[member] = {membership: "join"};
@@ -2920,6 +2971,7 @@ describe('MatrixClient', () => {
                 }
             };
 
+            // noinspection TypeScriptValidateJSTypes
             http.when("GET", "/_matrix/client/r0/rooms").respond(200, path => {
                 expect(path).toEqual(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/joined_members`);
                 return {joined: members};
@@ -2955,7 +3007,8 @@ describe('MatrixClient', () => {
                 },
             ];
 
-            http.when("GET", "/_matrix/client/r0/rooms").respond(200, (path, content) => {
+            // noinspection TypeScriptValidateJSTypes
+            http.when("GET", "/_matrix/client/r0/rooms").respond(200, (path) => {
                 expect(path).toEqual(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/members`);
                 return {chunk: memberEvents};
             });
@@ -2993,6 +3046,7 @@ describe('MatrixClient', () => {
             ];
             const atToken = "test_token";
 
+            // noinspection TypeScriptValidateJSTypes
             http.when("GET", "/_matrix/client/r0/rooms").respond(200, (path, content, req) => {
                 expect(path).toEqual(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/members`);
                 expect(req.opts.qs.at).toEqual(atToken);
@@ -3033,6 +3087,7 @@ describe('MatrixClient', () => {
             const forMemberships: Membership[] = ['join', 'leave'];
             const forNotMemberships: Membership[] = ['ban'];
 
+            // noinspection TypeScriptValidateJSTypes
             http.when("GET", "/_matrix/client/r0/rooms").respond(200, (path, content, req) => {
                 expect(path).toEqual(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/members`);
                 expectArrayEquals(forMemberships, req.opts.qs.membership);
@@ -3057,7 +3112,8 @@ describe('MatrixClient', () => {
 
             const roomId = "!testing:example.org";
 
-            http.when("POST", "/_matrix/client/r0/rooms").respond(200, (path, content) => {
+            // noinspection TypeScriptValidateJSTypes
+            http.when("POST", "/_matrix/client/r0/rooms").respond(200, (path) => {
                 expect(path).toEqual(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/leave`);
                 return {};
             });
@@ -3074,7 +3130,8 @@ describe('MatrixClient', () => {
             const roomId = "!testing:example.org";
             const eventId = "$something:example.org";
 
-            http.when("POST", "/_matrix/client/r0/rooms").respond(200, (path, content) => {
+            // noinspection TypeScriptValidateJSTypes
+            http.when("POST", "/_matrix/client/r0/rooms").respond(200, (path) => {
                 expect(path).toEqual(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/receipt/m.read/${encodeURIComponent(eventId)}`);
                 return {};
             });
@@ -3095,6 +3152,7 @@ describe('MatrixClient', () => {
 
             client.getUserId = () => Promise.resolve(userId);
 
+            // noinspection TypeScriptValidateJSTypes
             http.when("PUT", "/_matrix/client/r0/rooms").respond(200, (path, content) => {
                 expect(path).toEqual(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/typing/${encodeURIComponent(userId)}`);
                 expect(content).toMatchObject({typing: typing, timeout: timeout});
@@ -3135,6 +3193,7 @@ describe('MatrixClient', () => {
                 formatted_body: `<mx-reply><blockquote><a href="https://matrix.to/#/${roomId}/${originalEvent.event_id}">In reply to</a> <a href="https://matrix.to/#/${originalEvent.sender}">${originalEvent.sender}</a><br />${originalEvent.content.formatted_body}</blockquote></mx-reply>${replyHtml}`,
             };
 
+            // noinspection TypeScriptValidateJSTypes
             http.when("PUT", "/_matrix/client/r0/rooms").respond(200, (path, content) => {
                 const idx = path.indexOf(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/send/m.room.message/`);
                 expect(idx).toBe(0);
@@ -3148,7 +3207,7 @@ describe('MatrixClient', () => {
         });
 
         it('should try to encrypt in encrypted rooms', async () => {
-            const {client, http, hsUrl} = await createPreparedCryptoTestClient("@alice:example.org");
+            const {client, http, hsUrl} = createTestClient(null, "@alice:example.org", true);
 
             const roomId = "!testing:example.org";
             const eventId = "$something:example.org";
@@ -3187,6 +3246,7 @@ describe('MatrixClient', () => {
                 return expectedContent as any;
             };
 
+            // noinspection TypeScriptValidateJSTypes
             http.when("PUT", "/_matrix/client/r0/rooms").respond(200, (path, content) => {
                 const idx = path.indexOf(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/send/m.room.encrypted/`);
                 expect(idx).toBe(0);
@@ -3200,7 +3260,7 @@ describe('MatrixClient', () => {
         });
 
         it('should not try to encrypt in unencrypted rooms', async () => {
-            const {client, http, hsUrl} = await createPreparedCryptoTestClient("@alice:example.org");
+            const {client, http, hsUrl} = createTestClient(null, "@alice:example.org", true);
 
             const roomId = "!testing:example.org";
             const eventId = "$something:example.org";
@@ -3229,6 +3289,7 @@ describe('MatrixClient', () => {
 
             client.crypto.isRoomEncrypted = async () => false; // for this test
 
+            // noinspection TypeScriptValidateJSTypes
             http.when("PUT", "/_matrix/client/r0/rooms").respond(200, (path, content) => {
                 const idx = path.indexOf(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/send/m.room.message/`);
                 expect(idx).toBe(0);
@@ -3269,6 +3330,7 @@ describe('MatrixClient', () => {
                 formatted_body: `<mx-reply><blockquote><a href="https://matrix.to/#/${roomId}/${originalEvent.event_id}">In reply to</a> <a href="https://matrix.to/#/${originalEvent.sender}">${originalEvent.sender}</a><br />${originalEvent.content.formatted_body}</blockquote></mx-reply>${replyHtml}`,
             };
 
+            // noinspection TypeScriptValidateJSTypes
             http.when("PUT", "/_matrix/client/r0/rooms").respond(200, (path, content) => {
                 const idx = path.indexOf(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/send/m.room.message/`);
                 expect(idx).toBe(0);
@@ -3311,6 +3373,7 @@ describe('MatrixClient', () => {
                 formatted_body: `<mx-reply><blockquote><a href="https://matrix.to/#/${roomId}/${originalEvent.event_id}">In reply to</a> <a href="https://matrix.to/#/${originalEvent.sender}">${originalEvent.sender}</a><br />${originalEvent.content.formatted_body}</blockquote></mx-reply>${replyHtml}`,
             };
 
+            // noinspection TypeScriptValidateJSTypes
             http.when("PUT", "/_matrix/client/r0/rooms").respond(200, (path, content) => {
                 const idx = path.indexOf(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/send/m.room.message/`);
                 expect(idx).toBe(0);
@@ -3324,7 +3387,7 @@ describe('MatrixClient', () => {
         });
 
         it('should try to encrypt in encrypted rooms', async () => {
-            const {client, http, hsUrl} = await createPreparedCryptoTestClient("@alice:example.org");
+            const {client, http, hsUrl} = createTestClient(null, "@alice:example.org", true);
 
             const roomId = "!testing:example.org";
             const eventId = "$something:example.org";
@@ -3363,6 +3426,7 @@ describe('MatrixClient', () => {
                 return expectedContent as any;
             };
 
+            // noinspection TypeScriptValidateJSTypes
             http.when("PUT", "/_matrix/client/r0/rooms").respond(200, (path, content) => {
                 const idx = path.indexOf(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/send/m.room.encrypted/`);
                 expect(idx).toBe(0);
@@ -3376,7 +3440,7 @@ describe('MatrixClient', () => {
         });
 
         it('should not try to encrypt in unencrypted rooms', async () => {
-            const {client, http, hsUrl} = await createPreparedCryptoTestClient("@alice:example.org");
+            const {client, http, hsUrl} = createTestClient(null, "@alice:example.org", true);
 
             const roomId = "!testing:example.org";
             const eventId = "$something:example.org";
@@ -3405,6 +3469,7 @@ describe('MatrixClient', () => {
 
             client.crypto.isRoomEncrypted = async () => false; // for this test
 
+            // noinspection TypeScriptValidateJSTypes
             http.when("PUT", "/_matrix/client/r0/rooms").respond(200, (path, content) => {
                 const idx = path.indexOf(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/send/m.room.message/`);
                 expect(idx).toBe(0);
@@ -3447,6 +3512,7 @@ describe('MatrixClient', () => {
                 formatted_body: `<mx-reply><blockquote><a href="https://matrix.to/#/${roomId}/${originalEvent.event_id}">In reply to</a> <a href="https://matrix.to/#/${originalEvent.sender}">${originalEvent.sender}</a><br />${originalEvent.content.formatted_body}</blockquote></mx-reply>${replyHtml}`,
             };
 
+            // noinspection TypeScriptValidateJSTypes
             http.when("PUT", "/_matrix/client/r0/rooms").respond(200, (path, content) => {
                 const idx = path.indexOf(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/send/m.room.message/`);
                 expect(idx).toBe(0);
@@ -3460,7 +3526,7 @@ describe('MatrixClient', () => {
         });
 
         it('should try to encrypt in encrypted rooms', async () => {
-            const {client, http, hsUrl} = await createPreparedCryptoTestClient("@alice:example.org");
+            const {client, http, hsUrl} = createTestClient(null, "@alice:example.org", true);
 
             const roomId = "!testing:example.org";
             const eventId = "$something:example.org";
@@ -3499,6 +3565,7 @@ describe('MatrixClient', () => {
                 return expectedContent as any;
             };
 
+            // noinspection TypeScriptValidateJSTypes
             http.when("PUT", "/_matrix/client/r0/rooms").respond(200, (path, content) => {
                 const idx = path.indexOf(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/send/m.room.encrypted/`);
                 expect(idx).toBe(0);
@@ -3512,7 +3579,7 @@ describe('MatrixClient', () => {
         });
 
         it('should not try to encrypt in unencrypted rooms', async () => {
-            const {client, http, hsUrl} = await createPreparedCryptoTestClient("@alice:example.org");
+            const {client, http, hsUrl} = createTestClient(null, "@alice:example.org", true);
 
             const roomId = "!testing:example.org";
             const eventId = "$something:example.org";
@@ -3541,6 +3608,7 @@ describe('MatrixClient', () => {
 
             client.crypto.isRoomEncrypted = async () => false; // for this test
 
+            // noinspection TypeScriptValidateJSTypes
             http.when("PUT", "/_matrix/client/r0/rooms").respond(200, (path, content) => {
                 const idx = path.indexOf(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/send/m.room.message/`);
                 expect(idx).toBe(0);
@@ -3581,6 +3649,7 @@ describe('MatrixClient', () => {
                 formatted_body: `<mx-reply><blockquote><a href="https://matrix.to/#/${roomId}/${originalEvent.event_id}">In reply to</a> <a href="https://matrix.to/#/${originalEvent.sender}">${originalEvent.sender}</a><br />${originalEvent.content.formatted_body}</blockquote></mx-reply>${replyHtml}`,
             };
 
+            // noinspection TypeScriptValidateJSTypes
             http.when("PUT", "/_matrix/client/r0/rooms").respond(200, (path, content) => {
                 const idx = path.indexOf(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/send/m.room.message/`);
                 expect(idx).toBe(0);
@@ -3623,6 +3692,7 @@ describe('MatrixClient', () => {
                 formatted_body: `<mx-reply><blockquote><a href="https://matrix.to/#/${roomId}/${originalEvent.event_id}">In reply to</a> <a href="https://matrix.to/#/${originalEvent.sender}">${originalEvent.sender}</a><br />${originalEvent.content.formatted_body}</blockquote></mx-reply>${replyHtml}`,
             };
 
+            // noinspection TypeScriptValidateJSTypes
             http.when("PUT", "/_matrix/client/r0/rooms").respond(200, (path, content) => {
                 const idx = path.indexOf(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/send/m.room.message/`);
                 expect(idx).toBe(0);
@@ -3636,7 +3706,7 @@ describe('MatrixClient', () => {
         });
 
         it('should try to encrypt in encrypted rooms', async () => {
-            const {client, http, hsUrl} = await createPreparedCryptoTestClient("@alice:example.org");
+            const {client, http, hsUrl} = createTestClient(null, "@alice:example.org", true);
 
             const roomId = "!testing:example.org";
             const eventId = "$something:example.org";
@@ -3675,6 +3745,7 @@ describe('MatrixClient', () => {
                 return expectedContent as any;
             };
 
+            // noinspection TypeScriptValidateJSTypes
             http.when("PUT", "/_matrix/client/r0/rooms").respond(200, (path, content) => {
                 const idx = path.indexOf(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/send/m.room.encrypted/`);
                 expect(idx).toBe(0);
@@ -3688,7 +3759,7 @@ describe('MatrixClient', () => {
         });
 
         it('should not try to encrypt in unencrypted rooms', async () => {
-            const {client, http, hsUrl} = await createPreparedCryptoTestClient("@alice:example.org");
+            const {client, http, hsUrl} = createTestClient(null, "@alice:example.org", true);
 
             const roomId = "!testing:example.org";
             const eventId = "$something:example.org";
@@ -3717,6 +3788,7 @@ describe('MatrixClient', () => {
 
             client.crypto.isRoomEncrypted = async () => false; // for this test
 
+            // noinspection TypeScriptValidateJSTypes
             http.when("PUT", "/_matrix/client/r0/rooms").respond(200, (path, content) => {
                 const idx = path.indexOf(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/send/m.room.message/`);
                 expect(idx).toBe(0);
@@ -3741,6 +3813,7 @@ describe('MatrixClient', () => {
                 msgtype: "m.notice",
             };
 
+            // noinspection TypeScriptValidateJSTypes
             http.when("PUT", "/_matrix/client/r0/rooms").respond(200, (path, content) => {
                 const idx = path.indexOf(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/send/m.room.message/`);
                 expect(idx).toBe(0);
@@ -3754,7 +3827,7 @@ describe('MatrixClient', () => {
         });
 
         it('should try to encrypt in encrypted rooms', async () => {
-            const {client, http, hsUrl} = await createPreparedCryptoTestClient("@alice:example.org");
+            const {client, http, hsUrl} = createTestClient(null, "@alice:example.org", true);
 
             const roomId = "!testing:example.org";
             const eventId = "$something:example.org";
@@ -3776,6 +3849,7 @@ describe('MatrixClient', () => {
                 return eventContent as any;
             };
 
+            // noinspection TypeScriptValidateJSTypes
             http.when("PUT", "/_matrix/client/r0/rooms").respond(200, (path, content) => {
                 const idx = path.indexOf(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/send/m.room.encrypted/`);
                 expect(idx).toBe(0);
@@ -3789,7 +3863,7 @@ describe('MatrixClient', () => {
         });
 
         it('should not try to encrypt in unencrypted rooms', async () => {
-            const {client, http, hsUrl} = await createPreparedCryptoTestClient("@alice:example.org");
+            const {client, http, hsUrl} = createTestClient(null, "@alice:example.org", true);
 
             const roomId = "!testing:example.org";
             const eventId = "$something:example.org";
@@ -3800,6 +3874,7 @@ describe('MatrixClient', () => {
 
             client.crypto.isRoomEncrypted = async () => false; // for this test
 
+            // noinspection TypeScriptValidateJSTypes
             http.when("PUT", "/_matrix/client/r0/rooms").respond(200, (path, content) => {
                 const idx = path.indexOf(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/send/m.room.message/`);
                 expect(idx).toBe(0);
@@ -3826,6 +3901,7 @@ describe('MatrixClient', () => {
                 formatted_body: "<h1>Hello World</h1>",
             };
 
+            // noinspection TypeScriptValidateJSTypes
             http.when("PUT", "/_matrix/client/r0/rooms").respond(200, (path, content) => {
                 const idx = path.indexOf(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/send/m.room.message/`);
                 expect(idx).toBe(0);
@@ -3839,7 +3915,7 @@ describe('MatrixClient', () => {
         });
 
         it('should try to encrypt in encrypted rooms', async () => {
-            const {client, http, hsUrl} = await createPreparedCryptoTestClient("@alice:example.org");
+            const {client, http, hsUrl} = createTestClient(null, "@alice:example.org", true);
 
             const roomId = "!testing:example.org";
             const eventId = "$something:example.org";
@@ -3863,6 +3939,7 @@ describe('MatrixClient', () => {
                 return eventContent as any;
             };
 
+            // noinspection TypeScriptValidateJSTypes
             http.when("PUT", "/_matrix/client/r0/rooms").respond(200, (path, content) => {
                 const idx = path.indexOf(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/send/m.room.encrypted/`);
                 expect(idx).toBe(0);
@@ -3876,7 +3953,7 @@ describe('MatrixClient', () => {
         });
 
         it('should not try to encrypt in unencrypted rooms', async () => {
-            const {client, http, hsUrl} = await createPreparedCryptoTestClient("@alice:example.org");
+            const {client, http, hsUrl} = createTestClient(null, "@alice:example.org", true);
 
             const roomId = "!testing:example.org";
             const eventId = "$something:example.org";
@@ -3889,6 +3966,7 @@ describe('MatrixClient', () => {
 
             client.crypto.isRoomEncrypted = async () => false; // for this test
 
+            // noinspection TypeScriptValidateJSTypes
             http.when("PUT", "/_matrix/client/r0/rooms").respond(200, (path, content) => {
                 const idx = path.indexOf(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/send/m.room.message/`);
                 expect(idx).toBe(0);
@@ -3913,6 +3991,7 @@ describe('MatrixClient', () => {
                 msgtype: "m.text",
             };
 
+            // noinspection TypeScriptValidateJSTypes
             http.when("PUT", "/_matrix/client/r0/rooms").respond(200, (path, content) => {
                 const idx = path.indexOf(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/send/m.room.message/`);
                 expect(idx).toBe(0);
@@ -3926,7 +4005,7 @@ describe('MatrixClient', () => {
         });
 
         it('should try to encrypt in encrypted rooms', async () => {
-            const {client, http, hsUrl} = await createPreparedCryptoTestClient("@alice:example.org");
+            const {client, http, hsUrl} = createTestClient(null, "@alice:example.org", true);
 
             const roomId = "!testing:example.org";
             const eventId = "$something:example.org";
@@ -3948,6 +4027,7 @@ describe('MatrixClient', () => {
                 return eventContent as any;
             };
 
+            // noinspection TypeScriptValidateJSTypes
             http.when("PUT", "/_matrix/client/r0/rooms").respond(200, (path, content) => {
                 const idx = path.indexOf(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/send/m.room.encrypted/`);
                 expect(idx).toBe(0);
@@ -3961,7 +4041,7 @@ describe('MatrixClient', () => {
         });
 
         it('should not try to encrypt in unencrypted rooms', async () => {
-            const {client, http, hsUrl} = await createPreparedCryptoTestClient("@alice:example.org");
+            const {client, http, hsUrl} = createTestClient(null, "@alice:example.org", true);
 
             const roomId = "!testing:example.org";
             const eventId = "$something:example.org";
@@ -3972,6 +4052,7 @@ describe('MatrixClient', () => {
 
             client.crypto.isRoomEncrypted = async () => false; // for this test
 
+            // noinspection TypeScriptValidateJSTypes
             http.when("PUT", "/_matrix/client/r0/rooms").respond(200, (path, content) => {
                 const idx = path.indexOf(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/send/m.room.message/`);
                 expect(idx).toBe(0);
@@ -3998,6 +4079,7 @@ describe('MatrixClient', () => {
                 formatted_body: "<h1>Hello World</h1>",
             };
 
+            // noinspection TypeScriptValidateJSTypes
             http.when("PUT", "/_matrix/client/r0/rooms").respond(200, (path, content) => {
                 const idx = path.indexOf(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/send/m.room.message/`);
                 expect(idx).toBe(0);
@@ -4011,7 +4093,7 @@ describe('MatrixClient', () => {
         });
 
         it('should try to encrypt in encrypted rooms', async () => {
-            const {client, http, hsUrl} = await createPreparedCryptoTestClient("@alice:example.org");
+            const {client, http, hsUrl} = createTestClient(null, "@alice:example.org", true);
 
             const roomId = "!testing:example.org";
             const eventId = "$something:example.org";
@@ -4035,6 +4117,7 @@ describe('MatrixClient', () => {
                 return eventContent as any;
             };
 
+            // noinspection TypeScriptValidateJSTypes
             http.when("PUT", "/_matrix/client/r0/rooms").respond(200, (path, content) => {
                 const idx = path.indexOf(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/send/m.room.encrypted/`);
                 expect(idx).toBe(0);
@@ -4048,7 +4131,7 @@ describe('MatrixClient', () => {
         });
 
         it('should not try to encrypt in unencrypted rooms', async () => {
-            const {client, http, hsUrl} = await createPreparedCryptoTestClient("@alice:example.org");
+            const {client, http, hsUrl} = createTestClient(null, "@alice:example.org", true);
 
             const roomId = "!testing:example.org";
             const eventId = "$something:example.org";
@@ -4061,6 +4144,7 @@ describe('MatrixClient', () => {
 
             client.crypto.isRoomEncrypted = async () => false; // for this test
 
+            // noinspection TypeScriptValidateJSTypes
             http.when("PUT", "/_matrix/client/r0/rooms").respond(200, (path, content) => {
                 const idx = path.indexOf(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/send/m.room.message/`);
                 expect(idx).toBe(0);
@@ -4086,6 +4170,7 @@ describe('MatrixClient', () => {
                 sample: true,
             };
 
+            // noinspection TypeScriptValidateJSTypes
             http.when("PUT", "/_matrix/client/r0/rooms").respond(200, (path, content) => {
                 const idx = path.indexOf(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/send/m.room.message/`);
                 expect(idx).toBe(0);
@@ -4099,7 +4184,7 @@ describe('MatrixClient', () => {
         });
 
         it('should try to encrypt in encrypted rooms', async () => {
-            const {client, http, hsUrl} = await createPreparedCryptoTestClient("@alice:example.org");
+            const {client, http, hsUrl} = createTestClient(null, "@alice:example.org", true);
 
             const roomId = "!testing:example.org";
             const eventId = "$something:example.org";
@@ -4122,6 +4207,7 @@ describe('MatrixClient', () => {
                 return eventContent as any;
             };
 
+            // noinspection TypeScriptValidateJSTypes
             http.when("PUT", "/_matrix/client/r0/rooms").respond(200, (path, content) => {
                 const idx = path.indexOf(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/send/m.room.encrypted/`);
                 expect(idx).toBe(0);
@@ -4135,7 +4221,7 @@ describe('MatrixClient', () => {
         });
 
         it('should not try to encrypt in unencrypted rooms', async () => {
-            const {client, http, hsUrl} = await createPreparedCryptoTestClient("@alice:example.org");
+            const {client, http, hsUrl} = createTestClient(null, "@alice:example.org", true);
 
             const roomId = "!testing:example.org";
             const eventId = "$something:example.org";
@@ -4147,6 +4233,7 @@ describe('MatrixClient', () => {
 
             client.crypto.isRoomEncrypted = async () => false; // for this test
 
+            // noinspection TypeScriptValidateJSTypes
             http.when("PUT", "/_matrix/client/r0/rooms").respond(200, (path, content) => {
                 const idx = path.indexOf(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/send/m.room.message/`);
                 expect(idx).toBe(0);
@@ -4172,6 +4259,7 @@ describe('MatrixClient', () => {
                 sample: true,
             };
 
+            // noinspection TypeScriptValidateJSTypes
             http.when("PUT", "/_matrix/client/r0/rooms").respond(200, (path, content) => {
                 const idx = path.indexOf(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/send/${encodeURIComponent(eventType)}/`);
                 expect(idx).toBe(0);
@@ -4185,7 +4273,7 @@ describe('MatrixClient', () => {
         });
 
         it('should try to encrypt in encrypted rooms', async () => {
-            const {client, http, hsUrl} = await createPreparedCryptoTestClient("@alice:example.org");
+            const {client, http, hsUrl} = createTestClient(null, "@alice:example.org", true);
 
             const roomId = "!testing:example.org";
             const eventId = "$something:example.org";
@@ -4209,6 +4297,7 @@ describe('MatrixClient', () => {
                 return eventContent as any;
             };
 
+            // noinspection TypeScriptValidateJSTypes
             http.when("PUT", "/_matrix/client/r0/rooms").respond(200, (path, content) => {
                 const idx = path.indexOf(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/send/${encodeURIComponent(sEventType)}/`);
                 expect(idx).toBe(0);
@@ -4222,7 +4311,7 @@ describe('MatrixClient', () => {
         });
 
         it('should not try to encrypt in unencrypted rooms', async () => {
-            const {client, http, hsUrl} = await createPreparedCryptoTestClient("@alice:example.org");
+            const {client, http, hsUrl} = createTestClient(null, "@alice:example.org", true);
 
             const roomId = "!testing:example.org";
             const eventId = "$something:example.org";
@@ -4234,6 +4323,7 @@ describe('MatrixClient', () => {
 
             client.crypto.isRoomEncrypted = async () => false; // for this test
 
+            // noinspection TypeScriptValidateJSTypes
             http.when("PUT", "/_matrix/client/r0/rooms").respond(200, (path, content) => {
                 const idx = path.indexOf(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/send/${encodeURIComponent(eventType)}/`);
                 expect(idx).toBe(0);
@@ -4259,6 +4349,7 @@ describe('MatrixClient', () => {
                 sample: true,
             };
 
+            // noinspection TypeScriptValidateJSTypes
             http.when("PUT", "/_matrix/client/r0/rooms").respond(200, (path, content) => {
                 const idx = path.indexOf(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/send/${encodeURIComponent(eventType)}/`);
                 expect(idx).toBe(0);
@@ -4272,7 +4363,7 @@ describe('MatrixClient', () => {
         });
 
         it('should not try to encrypt in any rooms', async () => {
-            const {client, http, hsUrl} = await createPreparedCryptoTestClient("@alice:example.org");
+            const {client, http, hsUrl} = createTestClient(null, "@alice:example.org", true);
 
             const roomId = "!testing:example.org";
             const eventId = "$something:example.org";
@@ -4284,6 +4375,7 @@ describe('MatrixClient', () => {
 
             client.crypto.isRoomEncrypted = async () => true; // for this test
 
+            // noinspection TypeScriptValidateJSTypes
             http.when("PUT", "/_matrix/client/r0/rooms").respond(200, (path, content) => {
                 const idx = path.indexOf(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/send/${encodeURIComponent(eventType)}/`);
                 expect(idx).toBe(0);
@@ -4311,6 +4403,7 @@ describe('MatrixClient', () => {
                 sample: true,
             };
 
+            // noinspection TypeScriptValidateJSTypes
             http.when("PUT", "/_matrix/client/r0/rooms").respond(200, (path, content) => {
                 const idx = path.indexOf(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/state/${encodeURIComponent(eventType)}/`);
                 expect(idx).toBe(0);
@@ -4336,6 +4429,7 @@ describe('MatrixClient', () => {
                 sample: true,
             };
 
+            // noinspection TypeScriptValidateJSTypes
             http.when("PUT", "/_matrix/client/r0/rooms").respond(200, (path, content) => {
                 const idx = path.indexOf(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/state/${encodeURIComponent(eventType)}/`);
                 expect(idx).toBe(0);
@@ -4357,6 +4451,7 @@ describe('MatrixClient', () => {
             const eventId = "$something:example.org";
             const reason = "Zvarri!";
 
+            // noinspection TypeScriptValidateJSTypes
             http.when("PUT", "/_matrix/client/r0/rooms").respond(200, (path, content) => {
                 const idx = path.indexOf(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/redact/${encodeURIComponent(eventId)}/`);
                 expect(idx).toBe(0);
@@ -5252,7 +5347,7 @@ describe('MatrixClient', () => {
         });
 
         it('should error for non-MXC URIs', async () => {
-            const {client, hsUrl} = createTestClient();
+            const {client} = createTestClient();
 
             const domain = "example.org";
             const mediaId = "testing/val";
@@ -5285,7 +5380,7 @@ describe('MatrixClient', () => {
         });
 
         it('should error for non-MXC URIs', async () => {
-            const {client, hsUrl} = createTestClient();
+            const {client} = createTestClient();
 
             const domain = "example.org";
             const mediaId = "testing/val";
@@ -5316,6 +5411,7 @@ describe('MatrixClient', () => {
 
             Buffer.isBuffer = <any>(i => i === data);
 
+            // noinspection TypeScriptValidateJSTypes
             http.when("POST", "/_matrix/media/r0/upload").respond(200, (path, content, req) => {
                 expect(content).toBeDefined();
                 expect(req.opts.qs.filename).toEqual(filename);
@@ -5339,6 +5435,7 @@ describe('MatrixClient', () => {
 
             Buffer.isBuffer = <any>(i => i === data);
 
+            // noinspection TypeScriptValidateJSTypes
             http.when("POST", "/_matrix/media/r0/upload").respond(200, (path, content, req) => {
                 expect(content).toBeDefined();
                 expect(req.opts.qs.filename).toEqual(filename);
@@ -5358,8 +5455,9 @@ describe('MatrixClient', () => {
             const {client, http} = createTestClient();
             const urlPart = "example.org/testing";
             const mxcUrl = "mxc://" + urlPart;
-            const fileContents = new Buffer("12345");
+            // const fileContents = new Buffer("12345");
 
+            // noinspection TypeScriptValidateJSTypes
             http.when("GET", "/_matrix/media/r0/download/").respond(200, (path, _, req) => {
                 expect(path).toContain("/_matrix/media/r0/download/" + urlPart);
                 expect(req.opts.encoding).toEqual(null);
@@ -5391,11 +5489,13 @@ describe('MatrixClient', () => {
 
             Buffer.isBuffer = <any>(i => i === data);
 
-            http.when("GET", "/sample/download").respond(200, (path, content, req) => {
+            // noinspection TypeScriptValidateJSTypes
+            http.when("GET", "/sample/download").respond(200, () => {
                 // We can't override headers, so don't bother
                 return data;
             });
 
+            // noinspection TypeScriptValidateJSTypes
             http.when("POST", "/_matrix/media/r0/upload").respond(200, (path, content, req) => {
                 expect(content).toBeDefined();
                 // HACK: We know the mock library will return JSON
@@ -6213,6 +6313,7 @@ describe('MatrixClient', () => {
                 },
             };
 
+            // noinspection TypeScriptValidateJSTypes
             http.when("POST", "/_matrix/client/r0/createRoom").respond(200, (path, content) => {
                 expect(content).toMatchObject(expectedRequest);
                 return {room_id: roomId};
@@ -6261,6 +6362,7 @@ describe('MatrixClient', () => {
                 },
             };
 
+            // noinspection TypeScriptValidateJSTypes
             http.when("POST", "/_matrix/client/r0/createRoom").respond(200, (path, content) => {
                 expect(content).toMatchObject(expectedRequest);
                 return {room_id: roomId};
@@ -6334,6 +6436,8 @@ describe('MatrixClient', () => {
 
             try {
                 await client.getSpace(roomId);
+
+                // noinspection ExceptionCaughtLocallyJS
                 throw new Error("Failed to fail");
             } catch (e) {
                 expect(resolveSpy.callCount).toBe(1);
@@ -6358,12 +6462,20 @@ describe('MatrixClient', () => {
 
         it('should call the right endpoint', async () => {
             const userId = "@test:example.org";
+
+            InternalOlmMachineFactory.FACTORY_OVERRIDE = () => ({
+                identityKeys: {},
+                runEngine: () => Promise.resolve(),
+                sign: async (_) => ({
+                    [userId]: {
+                        [DeviceKeyAlgorithm.Ed25519 + ":" + TEST_DEVICE_ID]: "SIGNATURE_GOES_HERE",
+                    },
+                } as Signatures),
+            } as OlmMachine);
+
             const { client, http } = createTestClient(null, userId, true);
 
             client.getWhoAmI = () => Promise.resolve({ user_id: userId, device_id: TEST_DEVICE_ID });
-            client.crypto.updateCounts = () => Promise.resolve();
-            client.checkOneTimeKeyCounts = () => Promise.resolve({});
-            await feedOlmAccount(client);
             await client.crypto.prepare([]);
 
             const algorithms = [EncryptionAlgorithm.MegolmV1AesSha2, EncryptionAlgorithm.OlmV1Curve25519AesSha2];
@@ -6376,6 +6488,7 @@ describe('MatrixClient', () => {
                 [OTKAlgorithm.Unsigned]: 14,
             };
 
+            // noinspection TypeScriptValidateJSTypes
             http.when("POST", "/_matrix/client/r0/keys/upload").respond(200, (path, content) => {
                 expect(content).toMatchObject({
                     device_keys: {
@@ -6416,8 +6529,9 @@ describe('MatrixClient', () => {
             const userId = "@test:example.org";
             const { client, http } = createTestClient(null, userId, true);
 
+            // @ts-ignore
             const keys: OTKs = {
-                [OTKAlgorithm.Signed]: {
+                [`${OTKAlgorithm.Signed}:AAAAA`]: {
                     key: "test",
                     signatures: {
                         "entity": {
@@ -6425,13 +6539,14 @@ describe('MatrixClient', () => {
                         },
                     },
                 },
-                [OTKAlgorithm.Unsigned]: "unsigned",
+                [`${OTKAlgorithm.Unsigned}:AAAAA`]: "unsigned",
             };
             const counts: OTKCounts = {
                 [OTKAlgorithm.Signed]: 12,
                 [OTKAlgorithm.Unsigned]: 14,
             };
 
+            // noinspection TypeScriptValidateJSTypes
             http.when("POST", "/_matrix/client/r0/keys/upload").respond(200, (path, content) => {
                 expect(content).toMatchObject({
                     one_time_keys: keys,
@@ -6467,6 +6582,7 @@ describe('MatrixClient', () => {
                 [OTKAlgorithm.Unsigned]: 14,
             };
 
+            // noinspection TypeScriptValidateJSTypes
             http.when("POST", "/_matrix/client/r0/keys/upload").respond(200, (path, content) => {
                 expect(content).toMatchObject({});
                 return { one_time_key_counts: counts };
@@ -6502,7 +6618,8 @@ describe('MatrixClient', () => {
                 },
             };
 
-            http.when("POST", "/_matrix/client/r0/keys/query").respond(200, (path, content, req) => {
+            // noinspection TypeScriptValidateJSTypes
+            http.when("POST", "/_matrix/client/r0/keys/query").respond(200, (path, content) => {
                 expect(content).toMatchObject({ timeout, device_keys: requestBody });
                 return response;
             });
@@ -6535,7 +6652,8 @@ describe('MatrixClient', () => {
                 },
             };
 
-            http.when("POST", "/_matrix/client/r0/keys/query").respond(200, (path, content, req) => {
+            // noinspection TypeScriptValidateJSTypes
+            http.when("POST", "/_matrix/client/r0/keys/query").respond(200, (path, content) => {
                 expect(content).toMatchObject({ timeout: 10000, device_keys: requestBody });
                 return response;
             });
@@ -6586,6 +6704,7 @@ describe('MatrixClient', () => {
                 },
             };
 
+            // noinspection TypeScriptValidateJSTypes
             http.when("POST", "/_matrix/client/r0/keys/claim").respond(200, (path, content) => {
                 expect(content).toMatchObject({
                     timeout: 10000,
@@ -6628,6 +6747,7 @@ describe('MatrixClient', () => {
 
             const timeout = 60;
 
+            // noinspection TypeScriptValidateJSTypes
             http.when("POST", "/_matrix/client/r0/keys/claim").respond(200, (path, content) => {
                 expect(content).toMatchObject({
                     timeout: timeout,
@@ -6661,6 +6781,7 @@ describe('MatrixClient', () => {
                 },
             };
 
+            // noinspection TypeScriptValidateJSTypes
             http.when("PUT", "/_matrix/client/r0/sendToDevice").respond(200, (path, content) => {
                 const idx = path.indexOf(`${hsUrl}/_matrix/client/r0/sendToDevice/${encodeURIComponent(type)}/`);
                 expect(idx).toBe(0);
@@ -6670,6 +6791,24 @@ describe('MatrixClient', () => {
 
             http.flushAllExpected();
             await client.sendToDevices(type, messages);
+        });
+    });
+
+    describe('getOwnDevices', () => {
+        it('should call the right endpoint', async () => {
+            const userId = "@test:example.org";
+            const { client, http } = createTestClient(null, userId, true);
+
+            const devices = ["schema not followed for simplicity"];
+
+            // noinspection TypeScriptValidateJSTypes
+            http.when("GET", "/_matrix/client/r0/devices").respond(200, () => {
+                return {devices};
+            });
+
+            http.flushAllExpected();
+            const res = await client.getOwnDevices();
+            expect(res).toMatchObject(devices);
         });
     });
 

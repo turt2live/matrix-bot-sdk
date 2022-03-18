@@ -2,20 +2,30 @@ import * as express from "express";
 import { Intent } from "./Intent";
 import {
     AppserviceJoinRoomStrategy,
+    EncryptedRoomEvent,
     EventKind,
+    IAppserviceCryptoStorageProvider,
     IAppserviceStorageProvider,
     IJoinRoomStrategy,
     IPreprocessor,
     LogService,
     MatrixClient,
     MemoryStorageProvider,
-    Metrics
+    Metrics,
+    OTKAlgorithm,
 } from "..";
 import { EventEmitter } from "events";
 import * as morgan from "morgan";
 import { MatrixBridge } from "./MatrixBridge";
 import * as LRU from "lru-cache";
 import { IApplicationServiceProtocol } from "./http_responses";
+
+const EDU_ANNOTATION_KEY = "io.t2bot.sdk.bot.type";
+
+enum EduAnnotation {
+    ToDevice = "to_device",
+    Ephemeral = "ephemeral",
+}
 
 /**
  * Represents an application service's registration file. This is expected to be
@@ -158,6 +168,12 @@ export interface IAppserviceOptions {
     storage?: IAppserviceStorageProvider;
 
     /**
+     * The storage provider to use for setting up encryption. Encryption will be
+     * disabled for all intents and the appservice if not configured.
+     */
+    cryptoStorage?: IAppserviceCryptoStorageProvider;
+
+    /**
      * The registration for this application service.
      */
     registration: IAppserviceRegistration;
@@ -181,6 +197,17 @@ export interface IAppserviceOptions {
          * the maximum number of intents has been reached. Defaults to 60 minutes.
          */
         maxAgeMs?: number;
+
+        /**
+         * If false (default), crypto will not be automatically set up for all intent
+         * instances - it will need to be manually enabled with
+         * `await intent.enableEncryption()`.
+         *
+         * If true, crypto will be automatically set up.
+         *
+         * Note that the appservice bot account is considered an intent.
+         */
+        encryption?: boolean;
     };
 }
 
@@ -202,6 +229,7 @@ export class Appservice extends EventEmitter {
     private readonly aliasPrefix: string | null;
     private readonly registration: IAppserviceRegistration;
     private readonly storage: IAppserviceStorageProvider;
+    private readonly cryptoStorage: IAppserviceCryptoStorageProvider;
     private readonly bridgeInstance = new MatrixBridge(this);
 
     private app = express();
@@ -237,6 +265,7 @@ export class Appservice extends EventEmitter {
 
         this.storage = options.storage || new MemoryStorageProvider();
         options.storage = this.storage;
+        this.cryptoStorage = options.cryptoStorage;
 
         this.app.use(express.json({limit: Number.MAX_SAFE_INTEGER})); // disable limits, use a reverse proxy
         this.app.use(morgan("combined"));
@@ -333,7 +362,13 @@ export class Appservice extends EventEmitter {
     public begin(): Promise<void> {
         return new Promise<void>((resolve, reject) => {
             this.appServer = this.app.listen(this.options.port, this.options.bindAddress, () => resolve());
-        }).then(() => this.botIntent.ensureRegistered());
+        }).then(async () => {
+            if (this.options.intentOptions?.encryption) {
+                await this.botIntent.enableEncryption();
+            } else {
+                await this.botIntent.ensureRegistered();
+            }
+        });
     }
 
     /**
@@ -393,10 +428,16 @@ export class Appservice extends EventEmitter {
      * @returns {Intent} An Intent for the user.
      */
     public getIntentForUserId(userId: string): Intent {
-        let intent = this.intentsCache.get(userId);
+        let intent: Intent = this.intentsCache.get(userId);
         if (!intent) {
             intent = new Intent(this.options, userId, this);
             this.intentsCache.set(userId, intent);
+            if (this.options.intentOptions.encryption) {
+                intent.enableEncryption().catch(e => {
+                    LogService.error("Appservice", `Failed to set up crypto on intent ${userId}`, e);
+                    throw e; // re-throw to cause unhandled exception
+                });
+            }
         }
         return intent;
     }
@@ -623,9 +664,147 @@ export class Appservice extends EventEmitter {
 
         LogService.info("Appservice", "Processing transaction " + txnId);
         this.pendingTransactions[txnId] = new Promise<void>(async (resolve) => {
+            // Process all the crypto stuff first to ensure that future transactions (if not this one)
+            // will decrypt successfully. We start with EDUs because we need structures to put counts
+            // and such into in a later stage, and EDUs are independent of crypto.
+
+            const byUserId: {
+                [userId: string]: {
+                    counts: Record<string, Number>;
+                    toDevice: any[];
+                    unusedFallbacks: OTKAlgorithm[];
+                };
+            } = {};
+
+            const orderedEdus = [];
+            if (Array.isArray(req.body["de.sorunome.msc2409.to_device"])) {
+                orderedEdus.push(...req.body["de.sorunome.msc2409.to_device"].map(e => ({
+                    ...e,
+                    unsigned: {
+                        ...e['unsigned'],
+                        [EDU_ANNOTATION_KEY]: EduAnnotation.ToDevice,
+                    },
+                })));
+            }
+            if (Array.isArray(req.body["de.sorunome.msc2409.ephemeral"])) {
+                orderedEdus.push(...req.body["de.sorunome.msc2409.ephemeral"].map(e => ({
+                    ...e,
+                    unsigned: {
+                        ...e['unsigned'],
+                        [EDU_ANNOTATION_KEY]: EduAnnotation.Ephemeral,
+                    },
+                })));
+            }
+            for (let event of orderedEdus) {
+                if (event['edu_type']) event['type'] = event['edu_type']; // handle property change during MSC2409's course
+
+                LogService.info("Appservice", `Processing ${event['unsigned'][EDU_ANNOTATION_KEY]} event of type ${event["type"]}`);
+                event = await this.processEphemeralEvent(event);
+
+                // These events aren't tied to rooms, so just emit them generically
+                this.emit("ephemeral.event", event);
+
+                if (event["type"] === "m.room.encrypted" || event[EDU_ANNOTATION_KEY] === EduAnnotation.ToDevice) {
+                    const toUser = event["to_user_id"];
+                    const intent = this.getIntentForUserId(toUser);
+                    await intent.enableEncryption();
+
+                    if (!byUserId[toUser]) byUserId[toUser] = {counts: null, toDevice: null, unusedFallbacks: null};
+                    if (!byUserId[toUser].toDevice) byUserId[toUser].toDevice = [];
+                    byUserId[toUser].toDevice.push(event);
+                }
+            }
+
+            if (this.cryptoStorage) {
+                const deviceLists: {changed: string[], removed: string[]} = req.body["org.matrix.msc3202.device_lists"] ?? { changed: [], removed: [] };
+
+                const otks = req.body["org.matrix.msc3202.device_one_time_key_counts"];
+                if (otks) {
+                    for (const userId of Object.keys(otks)) {
+                        const intent = this.getIntentForUserId(userId);
+                        await intent.enableEncryption();
+                        const otksForUser = otks[userId][intent.underlyingClient.crypto.clientDeviceId];
+                        if (otksForUser) {
+                            if (!byUserId[userId]) byUserId[userId] = {counts: null, toDevice: null, unusedFallbacks: null};
+                            byUserId[userId].counts = otksForUser;
+                        }
+                    }
+                }
+
+                const fallbacks = req.body["org.matrix.msc3202.device_unused_fallback_key_types"];
+                if (fallbacks) {
+                    for (const userId of Object.keys(fallbacks)) {
+                        const intent = this.getIntentForUserId(userId);
+                        await intent.enableEncryption();
+                        const fallbacksForUser = fallbacks[userId][intent.underlyingClient.crypto.clientDeviceId];
+                        if (Array.isArray(fallbacksForUser) && !fallbacksForUser.includes(OTKAlgorithm.Signed)) {
+                            if (!byUserId[userId]) byUserId[userId] = {counts: null, toDevice: null, unusedFallbacks: null};
+                            byUserId[userId].unusedFallbacks = fallbacksForUser;
+                        }
+                    }
+                }
+
+                for (const userId of Object.keys(byUserId)) {
+                    const intent = this.getIntentForUserId(userId);
+                    await intent.enableEncryption();
+                    const info = byUserId[userId];
+                    const userStorage = this.storage.storageForUser(userId);
+
+                    if (!info.toDevice) info.toDevice = [];
+                    if (!info.unusedFallbacks) info.unusedFallbacks = JSON.parse(await userStorage.readValue("last_unused_fallbacks") || "[]");
+                    if (!info.counts) info.counts = JSON.parse(await userStorage.readValue("last_counts") || "{}");
+
+                    LogService.info("Appservice", `Updating crypto state for ${userId}`);
+                    await intent.underlyingClient.crypto.updateSyncData(info.toDevice, info.counts, info.unusedFallbacks, deviceLists.changed, deviceLists.removed);
+                }
+            }
+
             for (let event of req.body["events"]) {
                 LogService.info("Appservice", `Processing event of type ${event["type"]}`);
                 event = await this.processEvent(event);
+                if (event['type'] === 'm.room.encrypted' && this.cryptoStorage) {
+                    this.emit("room.encrypted_event", event["room_id"], event);
+                    try {
+                        const encrypted = new EncryptedRoomEvent(event);
+                        const roomId = event['room_id'];
+                        try {
+                            event = (await this.botClient.crypto.decryptRoomEvent(encrypted, roomId)).raw;
+                            event = await this.processEvent(event);
+                            this.emit("room.decrypted_event", roomId, event);
+
+                            // For logging purposes: show that the event was decrypted
+                            LogService.info("Appservice", `Processing decrypted event of type ${event["type"]}`);
+                        } catch (e1) {
+                            LogService.warn("Appservice", `Bot client was not able to decrypt ${roomId} ${event['event_id']} - trying other intents`);
+
+                            let tryUserId: string;
+                            try {
+                                // TODO: This could be more efficient
+                                const userIdsInRoom = await this.botClient.getJoinedRoomMembers(roomId);
+                                tryUserId = userIdsInRoom.find(u => this.isNamespacedUser(u));
+                            } catch (e) {
+                                LogService.error("Appservice", "Failed to get members of room - cannot decrypt message");
+                            }
+
+                            if (tryUserId) {
+                                const intent = this.getIntentForUserId(tryUserId);
+
+                                event = (await intent.underlyingClient.crypto.decryptRoomEvent(encrypted, roomId)).raw;
+                                event = await this.processEvent(event);
+                                this.emit("room.decrypted_event", roomId, event);
+
+                                // For logging purposes: show that the event was decrypted
+                                LogService.info("Appservice", `Processing decrypted event of type ${event["type"]}`);
+                            } else {
+                                // noinspection ExceptionCaughtLocallyJS
+                                throw e1;
+                            }
+                        }
+                    } catch (e) {
+                        LogService.error("Appservice", `Decryption error on ${event['room_id']} ${event['event_id']}`, e);
+                        this.emit("room.failed_decryption", event['room_id'], event, e);
+                    }
+                }
                 this.emit("room.event", event["room_id"], event);
                 if (event['type'] === 'm.room.message') {
                     this.emit("room.message", event["room_id"], event);
@@ -638,15 +817,6 @@ export class Appservice extends EventEmitter {
                 }
                 if (event['type'] === 'm.room.create' && event['state_key'] === '' && event['content'] && event['content']['predecessor']) {
                     this.emit("room.upgraded", event['room_id'], event);
-                }
-            }
-
-            if (this.registration["de.sorunome.msc2409.push_ephemeral"] && req.body["de.sorunome.msc2409.ephemeral"]) {
-                for (let event of req.body["de.sorunome.msc2409.ephemeral"]) {
-                    LogService.info("Appservice", `Processing ephemeral event of type ${event["type"]}`);
-                    event = await this.processEphemeralEvent(event);
-                    // These events aren't tied to rooms, so just emit them generically
-                    this.emit("ephemeral.event", event);
                 }
             }
 

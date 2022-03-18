@@ -3,11 +3,12 @@ import {
     FileMessageEventContent,
     LogLevel,
     LogService,
-    MatrixClient, MessageEvent,
+    MatrixClient,
+    MessageEvent,
     RichConsoleLogger,
+    RustSdkCryptoStorageProvider,
     SimpleFsStorageProvider,
 } from "../src";
-import { SqliteCryptoStorageProvider } from "../src/storage/SqliteCryptoStorageProvider";
 import * as fs from "fs";
 
 LogService.setLogger(new RichConsoleLogger());
@@ -26,7 +27,7 @@ const dmTarget = creds?.['dmTarget'] ?? "@admin:localhost";
 const homeserverUrl = creds?.['homeserverUrl'] ?? "http://localhost:8008";
 const accessToken = creds?.['accessToken'] ?? 'YOUR_TOKEN';
 const storage = new SimpleFsStorageProvider("./examples/storage/encryption_bot.json");
-const crypto = new SqliteCryptoStorageProvider("./examples/storage/encryption_bot.db");
+const crypto = new RustSdkCryptoStorageProvider("./examples/storage/encryption_bot_sled");
 const worksImage = fs.readFileSync("./examples/static/it-works.png");
 
 const client = new MatrixClient(homeserverUrl, accessToken, storage, crypto);

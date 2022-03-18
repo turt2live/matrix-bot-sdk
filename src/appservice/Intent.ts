@@ -1,4 +1,13 @@
-import { extractRequestError, IAppserviceStorageProvider, LogService, MatrixClient, Metrics } from "..";
+import {
+    DeviceKeyAlgorithm,
+    extractRequestError,
+    IAppserviceCryptoStorageProvider,
+    IAppserviceStorageProvider,
+    ICryptoStorageProvider,
+    LogService,
+    MatrixClient,
+    Metrics
+} from "..";
 import { Appservice, IAppserviceOptions } from "./Appservice";
 
 // noinspection TypeScriptPreferShortImport
@@ -21,11 +30,13 @@ export class Intent {
      */
     public readonly metrics: Metrics;
 
-    private readonly client: MatrixClient;
     private readonly storage: IAppserviceStorageProvider;
-    private readonly unstableApisInstance: UnstableAppserviceApis;
+    private readonly cryptoStorage: IAppserviceCryptoStorageProvider;
 
+    private client: MatrixClient;
+    private unstableApisInstance: UnstableAppserviceApis;
     private knownJoinedRooms: string[] = [];
+    private cryptoSetupPromise: Promise<void>;
 
     /**
      * Creates a new intent. Intended to be created by application services.
@@ -33,14 +44,34 @@ export class Intent {
      * @param {string} impersonateUserId The user ID to impersonate.
      * @param {Appservice} appservice The application service itself.
      */
-    constructor(options: IAppserviceOptions, private impersonateUserId: string, private appservice: Appservice) {
+    constructor(private options: IAppserviceOptions, private impersonateUserId: string, private appservice: Appservice) {
         this.metrics = new Metrics(appservice.metrics);
-        this.client = new MatrixClient(options.homeserverUrl, options.registration.as_token);
-        this.client.metrics = new Metrics(appservice.metrics); // Metrics only go up by one parent
-        this.unstableApisInstance = new UnstableAppserviceApis(this.client);
         this.storage = options.storage;
-        if (impersonateUserId !== appservice.botUserId) this.client.impersonateUserId(impersonateUserId);
-        if (options.joinStrategy) this.client.setJoinStrategy(options.joinStrategy);
+        this.cryptoStorage = options.cryptoStorage;
+        this.makeClient(false);
+    }
+
+    private makeClient(withCrypto: boolean, accessToken?: string) {
+        let cryptoStore: ICryptoStorageProvider;
+        const storage = this.storage?.storageForUser?.(this.userId);
+        if (withCrypto) {
+            cryptoStore = this.cryptoStorage?.storageForUser(this.userId);
+            if (!cryptoStore) {
+                throw new Error("Tried to set up client with crypto when not available");
+            }
+            if (!storage) {
+                throw new Error("Tried to set up client with crypto, but no persistent storage");
+            }
+        }
+        this.client = new MatrixClient(this.options.homeserverUrl, accessToken ?? this.options.registration.as_token, storage, cryptoStore);
+        this.client.metrics = new Metrics(this.appservice.metrics); // Metrics only go up by one parent
+        this.unstableApisInstance = new UnstableAppserviceApis(this.client);
+        if (this.impersonateUserId !== this.appservice.botUserId) {
+            this.client.impersonateUserId(this.impersonateUserId);
+        }
+        if (this.options.joinStrategy) {
+            this.client.setJoinStrategy(this.options.joinStrategy);
+        }
     }
 
     /**
@@ -64,6 +95,88 @@ export class Intent {
      */
     public get unstableApis(): UnstableAppserviceApis {
         return this.unstableApisInstance;
+    }
+
+    /**
+     * Sets up crypto on the client if it hasn't already been set up.
+     * @returns {Promise<void>} Resolves when complete.
+     */
+    @timedIntentFunctionCall()
+    public async enableEncryption(): Promise<void> {
+        if (!this.cryptoSetupPromise) {
+            this.cryptoSetupPromise = new Promise(async (resolve, reject) => {
+                try {
+                    // Prepare a client first
+                    await this.ensureRegistered();
+                    const storage = this.storage?.storageForUser?.(this.userId);
+                    this.client.impersonateUserId(this.userId); // make sure the devices call works
+
+                    const cryptoStore = this.cryptoStorage?.storageForUser(this.userId);
+                    if (!cryptoStore) {
+                        // noinspection ExceptionCaughtLocallyJS
+                        throw new Error("Failed to create crypto store");
+                    }
+
+                    // Try to impersonate a device ID
+                    const ownDevices = await this.client.getOwnDevices();
+                    let deviceId = await cryptoStore.getDeviceId();
+                    if (!deviceId || !ownDevices.some(d => d.device_id === deviceId)) {
+                        const deviceKeys = await this.client.getUserDevices([this.userId]);
+                        const userDeviceKeys = deviceKeys.device_keys[this.userId];
+                        if (userDeviceKeys) {
+                            // We really should be validating signatures here, but we're actively looking
+                            // for devices without keys to impersonate, so it should be fine. In theory,
+                            // those devices won't even be present but we're cautious.
+                            const devicesWithKeys = Array.from(Object.entries(userDeviceKeys))
+                                .filter(d => d[0] === d[1].device_id && !!d[1].keys?.[`${DeviceKeyAlgorithm.Curve25519}:${d[1].device_id}`])
+                            deviceId = devicesWithKeys[0]?.[1]?.device_id;
+                        }
+                    }
+                    let prepared = false;
+                    if (deviceId) {
+                        this.makeClient(true);
+                        this.client.impersonateUserId(this.userId, deviceId);
+
+                        // verify that the server supports impersonating the device
+                        const respDeviceId = (await this.client.getWhoAmI()).device_id;
+                        prepared = (respDeviceId === deviceId);
+                    }
+
+                    if (!prepared) {
+                        // XXX: We work around servers that don't support device_id impersonation
+                        const accessToken = await Promise.resolve(storage?.readValue("accessToken"));
+                        if (!accessToken) {
+                            const loginBody = {
+                                type: "uk.half-shot.msc2778.login.application_service",
+                                identifier: {
+                                    type: "m.id.user",
+                                    user: this.userId,
+                                },
+                            };
+                            this.client.impersonateUserId(null); // avoid confusing homeserver
+                            const res = await this.client.doRequest("POST", "/_matrix/client/r0/login", {}, loginBody);
+                            this.makeClient(true, res['access_token']);
+                            storage.storeValue("accessToken", this.client.accessToken);
+                            prepared = true;
+                        } else {
+                            this.makeClient(true, accessToken);
+                            prepared = true;
+                        }
+                    }
+
+                    if (!prepared) {// noinspection ExceptionCaughtLocallyJS
+                        throw new Error("Unable to establish a device ID");
+                    }
+
+                    // Now set up crypto
+                    await this.client.crypto.prepare(await this.client.getJoinedRooms());
+                    resolve();
+                } catch (e) {
+                    reject(e);
+                }
+            });
+        }
+        return this.cryptoSetupPromise;
     }
 
     /**
