@@ -1627,14 +1627,14 @@ export class MatrixClient extends EventEmitter {
             };
             getRequestFn()(params, (err, response, resBody) => {
                 if (err) {
-                    LogService.error("MatrixLiteClient (REQ-" + requestId + ")", extractRequestError(err));
+                    LogService.error("MatrixClientLite", "(REQ-" + requestId + ")", extractRequestError(err));
                     reject(err);
                 } else {
                     const contentType = response.headers['content-type'] || "application/octet-stream";
 
-                    LogService.trace("MatrixLiteClient (REQ-" + requestId + " RESP-H" + response.statusCode + ")", "&lt;data>");
+                    LogService.trace("MatrixClientLite", "(REQ-" + requestId + " RESP-H" + response.statusCode + ")", "&lt;data>");
                     if (response.statusCode &lt; 200 || response.statusCode >= 300) {
-                        LogService.error("MatrixLiteClient (REQ-" + requestId + ")", "&lt;data>");
+                        LogService.error("MatrixClientLite", "(REQ-" + requestId + ")", "&lt;data>");
                         reject(response);
                     } else resolve({body: resBody, contentType: contentType});
                 }
