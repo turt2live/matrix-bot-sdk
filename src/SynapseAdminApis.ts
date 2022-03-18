@@ -283,6 +283,16 @@ export class SynapseAdminApis {
      * @returns {Promise} Resolves when complete.
      */
     public async deleteRoom(roomId: string): Promise<void> {
-        return this.client.doRequest("POST", `/_synapse/admin/v1/rooms/${encodeURIComponent(roomId)}/delete`, {}, {purge: true});
+        return this.client.doRequest("DELETE", `/_synapse/admin/v2/rooms/${encodeURIComponent(roomId)}`, {}, {purge: true});
+    }
+
+    /**
+     * Gets the status of all active deletion tasks, and all those completed in the last 24h, for the given room_id.
+     * @param {string} roomId The room ID to get deletion state for.
+     * @returns {Promise<any[]>} Resolves to the room's deletion status results.
+     */
+    public async getDeleteRoomState(roomId: string): Promise<any[]> {
+        const r = await this.client.doRequest("GET", `/_synapse/admin/v2/rooms/${encodeURIComponent(roomId)}/delete_status`);
+        return r?.['results'] || [];
     }
 }

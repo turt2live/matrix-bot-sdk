@@ -293,14 +293,58 @@ describe('SynapseAdminApis', () => {
 
                 const roomId = "!room:example.org";
 
-                http.when("POST", "/_synapse/admin/v1/rooms").respond(200, (path, _content, req) => {
+                http.when("DELETE", "/_synapse/admin/v2/rooms").respond(200, (path, _content, req) => {
                     expect(JSON.parse(req.opts.body)).toMatchObject({purge: true});
-                    expect(path).toEqual(`${hsUrl}/_synapse/admin/v1/rooms/${encodeURIComponent(roomId)}/delete`);
+                    expect(path).toEqual(`${hsUrl}/_synapse/admin/v2/rooms/${encodeURIComponent(roomId)}`);
                     return {};
                 });
 
                 http.flushAllExpected();
                 await client.deleteRoom(roomId);
+            });
+        });
+
+        describe('getDeleteRoomState', () => {
+            it('should call the right endpoint', async () => {
+                const {client, http, hsUrl} = createTestSynapseAdminClient();
+
+                const roomId = "!room:example.org";
+                const state = [
+                    {
+                        "delete_id": "delete_id1",
+                        "status": "failed",
+                        "error": "error message",
+                        "shutdown_room": {
+                            "kicked_users": [],
+                            "failed_to_kick_users": [],
+                            "local_aliases": [],
+                            "new_room_id": null
+                        }
+                    }, {
+                        "delete_id": "delete_id2",
+                        "status": "purging",
+                        "shutdown_room": {
+                            "kicked_users": [
+                                "@foobar:example.com"
+                            ],
+                            "failed_to_kick_users": [],
+                            "local_aliases": [
+                                "#badroom:example.com",
+                                "#evilsaloon:example.com"
+                            ],
+                            "new_room_id": "!newroomid:example.com"
+                        }
+                    }
+                ];
+
+                http.when("GET", "/_synapse/admin/v2/rooms").respond(200, (path, _content, req) => {
+                    expect(path).toEqual(`${hsUrl}/_synapse/admin/v2/rooms/${encodeURIComponent(roomId)}/delete_status`);
+                    return { results: state };
+                });
+
+                http.flushAllExpected();
+                const result = await client.getDeleteRoomState(roomId);
+                expect(result).toMatchObject(state);
             });
         });
     });
