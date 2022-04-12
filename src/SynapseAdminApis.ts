@@ -353,18 +353,15 @@ export class SynapseAdminApis {
     }
 
     /**
-     * List all registration tokens on the homeserver.
-     * @param valid If true, only valid tokens are returned.
-     * If false, only tokens that have expired or have had all uses exhausted are returned.
-     * If omitted, all tokens are returned regardless of validity.
-
+     * Get details about a single token.
+     * @param token The token to fetch.
      * @returns A registration tokens, or null if not found.
      */
     public async getRegistrationToken(token: string): Promise<SynapseRegistrationToken|null> {
         try {
             return await this.client.doRequest("GET", `/_synapse/admin/v1/registration_tokens/${encodeURIComponent(token)}`);
         } catch (e) {
-            if (e?.body?.errcode === 'M_NOT_FOUND') {
+            if (e?.statusCode === 404) {
                 return null;
             }
             throw e;
