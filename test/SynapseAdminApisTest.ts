@@ -220,6 +220,67 @@ describe('SynapseAdminApis', () => {
         });
     });
 
+    describe('listAllUsers', () => {
+        it('should call the right endpoint', async () => {
+            const {client, http, hsUrl} = createTestSynapseAdminClient();
+
+            const user1 = {
+                name: "@someone:example.org",
+                displayname: "foobar",
+                avatar_url: "mxc://example.org/animage",
+                admin: 1,
+                deactivated: 0,
+                is_guest: 0,
+                user_type: null,
+                password_hash: "$hashbrown"
+            };
+
+            const user2 = {
+                name: "@else:example.org",
+                displayname: "barbaz",
+                avatar_url: "mxc://example.org/animage2",
+                admin: 1,
+                deactivated: 0,
+                is_guest: 0,
+                user_type: null,
+                password_hash: "$mmmm-hashbrown"
+            };
+
+            const request = {
+                limit: 1,
+                name: "bar",
+                guests: true,
+                deactivated: false,
+            }
+
+            http.when("GET", "/_synapse/admin/v2/users").respond(200, (path, _content, req) => {
+                expect(path).toEqual(`${hsUrl}/_synapse/admin/v2/users`);
+                expect(req.opts.qs).toEqual(request);
+                return {
+                    next_token: 'from-token',
+                    total: 2,
+                    users: [user1],
+                }
+            });
+            const iterable = await client.listAllUsers({ name: "bar", guests: true, deactivated: false, limit: 1});
+            http.flushAllExpected();
+            const resultUser1 = await iterable.next();
+            expect(resultUser1).toEqual({done: false, value: user1});
+            
+            http.when("GET", "/_synapse/admin/v2/users").respond(200, (path, _content, req) => {
+                expect(path).toEqual(`${hsUrl}/_synapse/admin/v2/users`);
+                expect(req.opts.qs).toEqual({...request, from: 'from-token'});
+                return {
+                    total: 2,
+                    users: [user2],
+                }
+            });
+            const resultUser2 = await iterable.next();
+            expect(resultUser2).toEqual({done: false, value: user2});
+            expect(await iterable.next()).toEqual({done: true});
+        });
+    });
+
     describe('listRooms', () => {
         it('should call the right endpoint', async () => {
             const {client, http, hsUrl} = createTestSynapseAdminClient();
