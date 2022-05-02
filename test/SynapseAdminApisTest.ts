@@ -3,6 +3,9 @@ import {
     IStorageProvider,
     MatrixClient,
     SynapseAdminApis,
+    SynapseRegistrationToken,
+    SynapseRegistrationTokenOptions,
+    SynapseRegistrationTokenUpdateOptions,
     SynapseRoomList,
     SynapseRoomProperty,
     SynapseUser,
@@ -345,6 +348,112 @@ describe('SynapseAdminApis', () => {
                 http.flushAllExpected();
                 const result = await client.getDeleteRoomState(roomId);
                 expect(result).toMatchObject(state);
+            });
+        });
+
+        describe('listRegistrationTokens', () => {
+            it('should call the right endpoint', async () => {
+                const {client, http, hsUrl} = createTestSynapseAdminClient();
+
+                const tokens: SynapseRegistrationToken[] = [
+                    {token: "foo", uses_allowed: null, pending: 5, completed: 25, expiry_time: null},
+                    {token: "bar", uses_allowed: 15, pending: 5, completed: 8, expiry_time: 10000000}
+                ];
+
+                http.when("GET", "/_synapse/admin/v1/registration_tokens").respond(200, () => {
+                    return {registration_tokens: tokens};
+                });
+
+                http.flushAllExpected();
+                const result = await client.listRegistrationTokens();
+                expect(result).toEqual(tokens);
+            });
+        });
+
+        describe('getRegistrationToken', () => {
+            it('should call the right endpoint', async () => {
+                const {client, http, hsUrl} = createTestSynapseAdminClient();
+
+                const token: SynapseRegistrationToken = {
+                    token: "foo", uses_allowed: null, pending: 5, completed: 25, expiry_time: null
+                };
+
+                http.when("GET", "/_synapse/admin/v1/registration_tokens/foo").respond(200, () => {
+                    return token;
+                });
+
+                http.when("GET", "/_synapse/admin/v1/registration_tokens/not-a-token").respond(404, (path) => {
+                    return {
+                        errcode: "M_NOT_FOUND",
+                        error: "No such registration token: not-a-token"
+                    }
+                });
+
+                http.flushAllExpected();
+                const result = await client.getRegistrationToken(token.token);
+                expect(result).toEqual(token);
+
+                const resultNull = await client.getRegistrationToken("not-a-token");
+                expect(resultNull).toEqual(null);
+            });
+        });
+
+        describe('createRegistrationToken', () => {
+            it('should call the right endpoint', async () => {
+                const {client, http, hsUrl} = createTestSynapseAdminClient();
+
+                const responseToken: SynapseRegistrationToken = {
+                    token: "foo", uses_allowed: null, pending: 5, completed: 25, expiry_time: null
+                };
+                const options: SynapseRegistrationTokenOptions = {
+                    token: "foo",
+                    uses_allowed: null,
+                }
+
+                http.when("POST", "/_synapse/admin/v1/registration_tokens/new").respond(200, (_path, content) => {
+                    expect(options).toMatchObject(content);
+                    return responseToken;
+                });
+
+                http.flushAllExpected();
+                const result = await client.createRegistrationToken(options);
+                expect(result).toEqual(responseToken);
+            });
+        });
+
+        describe('updateRegistrationToken', () => {
+            it('should call the right endpoint', async () => {
+                const {client, http, hsUrl} = createTestSynapseAdminClient();
+
+                const responseToken: SynapseRegistrationToken = {
+                    token: "foo", uses_allowed: null, pending: 5, completed: 25, expiry_time: null
+                };
+            
+                const options: SynapseRegistrationTokenUpdateOptions = {
+                    uses_allowed: null,
+                }
+
+                http.when("PUT", "/_synapse/admin/v1/registration_tokens/foo").respond(200, (_path, content) => {
+                    expect(options).toMatchObject(content);
+                    return responseToken;
+                });
+
+                http.flushAllExpected();
+                const result = await client.updateRegistrationToken("foo", options);
+                expect(result).toEqual(responseToken);
+            });
+        });
+
+        describe('deleteRegistrationToken', () => {
+            it('should call the right endpoint', async () => {
+                const {client, http, hsUrl} = createTestSynapseAdminClient();
+
+                http.when("DELETE", "/_synapse/admin/v1/registration_tokens/foo").respond(200, () => {
+                    return {};
+                });
+
+                http.flushAllExpected();
+                await client.deleteRegistrationToken("foo");
             });
         });
     });
