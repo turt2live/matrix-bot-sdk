@@ -118,10 +118,10 @@ export interface SynapseUserList {
  */
 export interface SynapseRegistrationToken {
     token: string;
-    uses_allowed: null|number;
+    uses_allowed: null | number;
     pending: number;
     completed: number;
-    expiry_time: null|number;
+    expiry_time: null | number;
 }
 
 export interface SynapseRegistrationTokenUpdateOptions {
@@ -130,13 +130,14 @@ export interface SynapseRegistrationTokenUpdateOptions {
      * If null the token will have an unlimited number of uses.
      * Default: unlimited uses.
      */
-    uses_allowed?: number|null;
+    uses_allowed?: number | null;
+
     /**
      * The latest time the token is valid. Given as the number of milliseconds since 1970-01-01 00:00:00 UTC (the start of the Unix epoch).
      * If null the token will not expire.
      * Default: token does not expire.
      */
-    expiry_time?: number|null;
+    expiry_time?: number | null;
 
 }
 
@@ -146,6 +147,7 @@ export interface SynapseRegistrationTokenOptions extends SynapseRegistrationToke
      * Default: randomly generated.
      */
     token?: string;
+
     /**
      * The length of the token randomly generated if token is not specified. Must be between 1 and 64 inclusive.
      * Default: 16.
@@ -251,7 +253,7 @@ export class SynapseAdminApis {
      * @returns {Promise<SynapseUserList>} A batch of user results.
      */
     public async listUsers(from?: string, limit?: number, name?: string, guests = true, deactivated = false): Promise<SynapseUserList> {
-        const qs = {guests, deactivated};
+        const qs = { guests, deactivated };
         if (from) qs['from'] = from;
         if (limit) qs['limit'] = limit;
         if (name) qs['name'] = name;
@@ -325,7 +327,7 @@ export class SynapseAdminApis {
      * @returns {Promise} Resolves when complete.
      */
     public async deleteRoom(roomId: string): Promise<void> {
-        return this.client.doRequest("DELETE", `/_synapse/admin/v2/rooms/${encodeURIComponent(roomId)}`, {}, {purge: true});
+        return this.client.doRequest("DELETE", `/_synapse/admin/v2/rooms/${encodeURIComponent(roomId)}`, {}, { purge: true });
     }
 
     /**
@@ -338,7 +340,6 @@ export class SynapseAdminApis {
         return r?.['results'] || [];
     }
 
-
     /**
      * List all registration tokens on the homeserver.
      * @param valid If true, only valid tokens are returned.
@@ -348,7 +349,7 @@ export class SynapseAdminApis {
      * @returns An array of registration tokens.
      */
     public async listRegistrationTokens(valid?: boolean): Promise<SynapseRegistrationToken[]> {
-        const res = await this.client.doRequest("GET", `/_synapse/admin/v1/registration_tokens`, {valid});
+        const res = await this.client.doRequest("GET", `/_synapse/admin/v1/registration_tokens`, { valid });
         return res.registration_tokens;
     }
 
@@ -357,7 +358,7 @@ export class SynapseAdminApis {
      * @param token The token to fetch.
      * @returns A registration tokens, or null if not found.
      */
-    public async getRegistrationToken(token: string): Promise<SynapseRegistrationToken|null> {
+    public async getRegistrationToken(token: string): Promise<SynapseRegistrationToken | null> {
         try {
             return await this.client.doRequest("GET", `/_synapse/admin/v1/registration_tokens/${encodeURIComponent(token)}`);
         } catch (e) {
