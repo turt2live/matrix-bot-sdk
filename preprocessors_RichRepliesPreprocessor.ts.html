@@ -172,7 +172,7 @@ export interface IRichReplyMetadata {
  * Processes rich replies found in events. This automatically strips
  * the fallback representation from events, providing the information
  * as a top level "mx_richreply" key. The "mx_richreply" property may
- * be casted to the type IRichReplyMetadata.
+ * be cast to the type IRichReplyMetadata.
  * @category Preprocessors
  */
 export class RichRepliesPreprocessor implements IPreprocessor {
@@ -272,7 +272,7 @@ export class RichRepliesPreprocessor implements IPreprocessor {
 
         event["mx_richreply"] = metadata;
         event["content"]["body"] = realText.trim();
-        event["content"]["formatted_body"] = realHtml.trim();
+        if (realHtml) event["content"]["formatted_body"] = realHtml.trim();
         return event;
     }
 }
