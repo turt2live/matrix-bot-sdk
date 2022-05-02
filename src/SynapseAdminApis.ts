@@ -1,4 +1,5 @@
 import { MatrixClient } from "./MatrixClient";
+import MatrixError from "./models/MatrixError";
 
 /**
  * Information about a user on Synapse.
@@ -342,11 +343,11 @@ export class SynapseAdminApis {
     public async isSelfAdmin(): Promise<boolean> {
         try {
             return await this.isAdmin(await this.client.getUserId());
-        } catch (e) {
-            if (e?.body?.errcode === 'M_FORBIDDEN') {
+        } catch (err) {
+            if (err instanceof MatrixError && err.errcode === 'M_FORBIDDEN') {
                 return false;
             }
-            throw e;
+            throw err;
         }
     }
 

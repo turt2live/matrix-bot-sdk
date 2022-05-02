@@ -1,6 +1,6 @@
 import { LogLevel, LogService } from "./logging/LogService";
 import { getRequestFn } from "./request";
-
+import MatrixError from './models/MatrixError';
 let lastRequestId = 0;
 
 /**
@@ -67,34 +67,45 @@ export function doHttpRequest(baseUrl: string, method: "GET"|"POST"|"PUT"|"DELET
             if (err) {
                 LogService.error("MatrixHttpClient", "(REQ-" + requestId + ")", err);
                 reject(err);
-            } else {
-                if (typeof (resBody) === 'string') {
-                    try {
-                        resBody = JSON.parse(resBody);
-                    } catch (e) {
-                    }
-                }
-
-                if (typeof (response.body) === 'string') {
-                    try {
-                        response.body = JSON.parse(response.body);
-                    } catch (e) {
-                    }
-                }
-
-                const respIsBuffer = (response.body instanceof Buffer);
-
-                // Don't log the body unless we're in debug mode. They can be large.
-                if (LogService.level.includes(LogLevel.TRACE)) {
-                    const redactedBody = respIsBuffer ? '<Buffer>' : redactObjectForLogging(response.body);
-                    LogService.trace("MatrixHttpClient", "(REQ-" + requestId + " RESP-H" + response.statusCode + ")", redactedBody);
-                }
-                if (response.statusCode < 200 || response.statusCode >= 300) {
-                    const redactedBody = respIsBuffer ? '<Buffer>' : redactObjectForLogging(response.body);
-                    LogService.error("MatrixHttpClient", "(REQ-" + requestId + ")", redactedBody);
-                    reject(response);
-                } else resolve(raw ? response : resBody);
+                return;
             }
+
+            if (typeof (resBody) === 'string') {
+                try {
+                    resBody = JSON.parse(resBody);
+                } catch (e) {
+                }
+            }
+
+            if (typeof (response.body) === 'string') {
+                try {
+                    response.body = JSON.parse(response.body);
+                } catch (e) {
+                }
+            }
+
+            const respIsBuffer = (response.body instanceof Buffer);
+
+            // Check for errors.
+            const errBody = response.body || resBody;
+            if (errBody && 'errcode' in errBody) {
+                const redactedBody = respIsBuffer ? '<Buffer>' : redactObjectForLogging(errBody);
+                LogService.error("MatrixHttpClient (REQ-" + requestId + ")", redactedBody);
+                reject(new MatrixError(errBody, response.statusCode));
+                return;
+            }
+
+            // Don't log the body unless we're in debug mode. They can be large.
+            if (LogService.level.includes(LogLevel.TRACE)) {
+                const redactedBody = respIsBuffer ? '<Buffer>' : redactObjectForLogging(response.body);
+                LogService.trace("MatrixHttpClient (REQ-" + requestId + " RESP-H" + response.statusCode + ")", redactedBody);
+            }
+
+            if (response.statusCode < 200 || response.statusCode >= 300) {
+                const redactedBody = respIsBuffer ? '<Buffer>' : redactObjectForLogging(response.body);
+                LogService.error("MatrixHttpClient (REQ-" + requestId + ")", redactedBody);
+                reject(response);
+            } else resolve(raw ? response : resBody);
         });
     });
 }
