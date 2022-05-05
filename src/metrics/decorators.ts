@@ -16,7 +16,7 @@ import { IdentityClientCallContext, IntentCallContext, MatrixClientCallContext }
  * @category Metrics
  */
 export function timedMatrixClientFunctionCall() {
-    return function (_target: never, functionName: string, descriptor: PropertyDescriptor) {
+    return function (_target: unknown, functionName: string, descriptor: PropertyDescriptor) {
         const originalMethod = descriptor.value;
         descriptor.value = async function (...args) {
             const context = this.metrics.assignUniqueContextId(<MatrixClientCallContext>{
@@ -46,9 +46,7 @@ export function timedIdentityClientFunctionCall() {
     return function (_target: never, functionName: string, descriptor: PropertyDescriptor) {
         const originalMethod = descriptor.value;
         descriptor.value = async function (...args: any[]) {
-            const metrics = this.metrics;
-
-            const context = metrics.assignUniqueContextId(<IdentityClientCallContext>{
+            const context = this.metrics.assignUniqueContextId(<IdentityClientCallContext>{
                 functionName,
                 client: this,
             });
@@ -75,9 +73,7 @@ export function timedIntentFunctionCall() {
     return function (_target: never, functionName: string, descriptor: PropertyDescriptor) {
         const originalMethod = descriptor.value;
         descriptor.value = async function (...args: any[]) {
-            const metrics = this.metrics;
-
-            const context = metrics.assignUniqueContextId(<IntentCallContext>{
+            const context = this.metrics.assignUniqueContextId(<IntentCallContext>{
                 functionName,
                 client: this.client,
                 intent: this,
