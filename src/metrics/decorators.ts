@@ -16,40 +16,25 @@ import { IdentityClientCallContext, IntentCallContext, MatrixClientCallContext }
  * @category Metrics
  */
 export function timedMatrixClientFunctionCall() {
-    return function (target: any, propertyKey: string, descriptor: PropertyDescriptor) {
+    return function (_target: never, functionName: string, descriptor: PropertyDescriptor) {
         const originalMethod = descriptor.value;
-        descriptor.value = function (...args: any[]) {
-            const metrics = this.metrics;
-
-            const context = metrics.assignUniqueContextId(<MatrixClientCallContext>{
-                functionName: propertyKey,
+        descriptor.value = async function (...args) {
+            const context = this.metrics.assignUniqueContextId(<MatrixClientCallContext>{
+                functionName,
                 client: this,
             });
-            metrics.start(METRIC_MATRIX_CLIENT_FUNCTION_CALL, context);
-
-            let result;
-            let exception;
-
+            this.metrics.start(METRIC_MATRIX_CLIENT_FUNCTION_CALL, context);
             try {
-                result = originalMethod.apply(this, args);
+                const result = await originalMethod.apply(this, args);
+                this.metrics.increment(METRIC_MATRIX_CLIENT_SUCCESSFUL_FUNCTION_CALL, context, 1);
+                return result;
             } catch (e) {
-                exception = e;
-                result = Promise.reject(e);
+                this.metrics.increment(METRIC_MATRIX_CLIENT_FAILED_FUNCTION_CALL, context, 1);
+                throw e;
+            } finally {
+                this.metrics.end(METRIC_MATRIX_CLIENT_FUNCTION_CALL, context)
             }
-
-            let promise = result;
-            if (!(result instanceof Promise) && result !== null && result !== undefined) {
-                promise = Promise.resolve(result);
-            }
-
-            promise
-                .then(() => metrics.increment(METRIC_MATRIX_CLIENT_SUCCESSFUL_FUNCTION_CALL, context, 1))
-                .catch(() => metrics.increment(METRIC_MATRIX_CLIENT_FAILED_FUNCTION_CALL, context, 1))
-                .finally(() => metrics.end(METRIC_MATRIX_CLIENT_FUNCTION_CALL, context));
-
-            if (exception) throw exception;
-            return result;
-        }
+        };
     };
 }
 
@@ -58,39 +43,26 @@ export function timedMatrixClientFunctionCall() {
  * @category Metrics
  */
 export function timedIdentityClientFunctionCall() {
-    return function (target: any, propertyKey: string, descriptor: PropertyDescriptor) {
+    return function (_target: never, functionName: string, descriptor: PropertyDescriptor) {
         const originalMethod = descriptor.value;
-        descriptor.value = function (...args: any[]) {
+        descriptor.value = async function (...args: any[]) {
             const metrics = this.metrics;
 
             const context = metrics.assignUniqueContextId(<IdentityClientCallContext>{
-                functionName: propertyKey,
+                functionName,
                 client: this,
             });
-            metrics.start(METRIC_IDENTITY_CLIENT_FUNCTION_CALL, context);
-
-            let result;
-            let exception;
-
+            this.metrics.start(METRIC_IDENTITY_CLIENT_FUNCTION_CALL, context);
             try {
-                result = originalMethod.apply(this, args);
+                const result = await originalMethod.apply(this, args);
+                this.metrics.increment(METRIC_IDENTITY_CLIENT_SUCCESSFUL_FUNCTION_CALL, context, 1);
+                return result;
             } catch (e) {
-                exception = e;
-                result = Promise.reject(e);
+                this.metrics.increment(METRIC_IDENTITY_CLIENT_FAILED_FUNCTION_CALL, context, 1);
+                throw e;
+            } finally {
+                this.metrics.end(METRIC_IDENTITY_CLIENT_FUNCTION_CALL, context)
             }
-
-            let promise = result;
-            if (!(result instanceof Promise) && result !== null && result !== undefined) {
-                promise = Promise.resolve(result);
-            }
-
-            promise
-                .then(() => metrics.increment(METRIC_IDENTITY_CLIENT_SUCCESSFUL_FUNCTION_CALL, context, 1))
-                .catch(() => metrics.increment(METRIC_IDENTITY_CLIENT_FAILED_FUNCTION_CALL, context, 1))
-                .finally(() => metrics.end(METRIC_IDENTITY_CLIENT_FUNCTION_CALL, context));
-
-            if (exception) throw exception;
-            return result;
         }
     };
 }
@@ -100,40 +72,27 @@ export function timedIdentityClientFunctionCall() {
  * @category Metrics
  */
 export function timedIntentFunctionCall() {
-    return function (target: any, propertyKey: string, descriptor: PropertyDescriptor) {
+    return function (_target: never, functionName: string, descriptor: PropertyDescriptor) {
         const originalMethod = descriptor.value;
-        descriptor.value = function (...args: any[]) {
+        descriptor.value = async function (...args: any[]) {
             const metrics = this.metrics;
 
             const context = metrics.assignUniqueContextId(<IntentCallContext>{
-                functionName: propertyKey,
+                functionName,
                 client: this.client,
                 intent: this,
             });
-            metrics.start(METRIC_INTENT_FUNCTION_CALL, context);
-
-            let result;
-            let exception;
-
+            this.metrics.start(METRIC_INTENT_FUNCTION_CALL, context);
             try {
-                result = originalMethod.apply(this, args);
+                const result = await originalMethod.apply(this, args);
+                this.metrics.increment(METRIC_INTENT_SUCCESSFUL_FUNCTION_CALL, context, 1);
+                return result;
             } catch (e) {
-                exception = e;
-                result = Promise.reject(e);
+                this.metrics.increment(METRIC_INTENT_FAILED_FUNCTION_CALL, context, 1);
+                throw e;
+            } finally {
+                this.metrics.end(METRIC_INTENT_FUNCTION_CALL, context)
             }
-
-            let promise = result;
-            if (!(result instanceof Promise) && result !== null && result !== undefined) {
-                promise = Promise.resolve(result);
-            }
-
-            promise
-                .then(() => metrics.increment(METRIC_INTENT_SUCCESSFUL_FUNCTION_CALL, context, 1))
-                .catch(() => metrics.increment(METRIC_INTENT_FAILED_FUNCTION_CALL, context, 1))
-                .finally(() => metrics.end(METRIC_INTENT_FUNCTION_CALL, context));
-
-            if (exception) throw exception;
-            return result;
         }
     };
 }
