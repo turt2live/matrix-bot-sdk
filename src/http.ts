@@ -96,7 +96,6 @@ export async function doHttpRequest(baseUrl: string, method: "GET"|"POST"|"PUT"|
         const redactedBody = respIsBuffer ? '<Buffer>' : redactObjectForLogging(errBody);
         LogService.error("MatrixHttpClient (REQ-" + requestId + ")", redactedBody);
         throw new MatrixError(errBody, response.statusCode);
-        return;
     }
 
     // Don't log the body unless we're in debug mode. They can be large.
