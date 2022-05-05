@@ -43,7 +43,7 @@ export function timedMatrixClientFunctionCall() {
  * @category Metrics
  */
 export function timedIdentityClientFunctionCall() {
-    return function (_target: never, functionName: string, descriptor: PropertyDescriptor) {
+    return function (_target: unknown, functionName: string, descriptor: PropertyDescriptor) {
         const originalMethod = descriptor.value;
         descriptor.value = async function (...args: any[]) {
             const context = this.metrics.assignUniqueContextId(<IdentityClientCallContext>{
@@ -70,7 +70,7 @@ export function timedIdentityClientFunctionCall() {
  * @category Metrics
  */
 export function timedIntentFunctionCall() {
-    return function (_target: never, functionName: string, descriptor: PropertyDescriptor) {
+    return function (_target: unknown, functionName: string, descriptor: PropertyDescriptor) {
         const originalMethod = descriptor.value;
         descriptor.value = async function (...args: any[]) {
             const context = this.metrics.assignUniqueContextId(<IntentCallContext>{
