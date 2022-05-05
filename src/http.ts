@@ -63,16 +63,16 @@ export async function doHttpRequest(baseUrl: string, method: "GET"|"POST"|"PUT"|
     }
 
     const {response, resBody} = await new Promise<{response: any, resBody: any}>((resolve, reject) => {
-        getRequestFn()(params, (err, res, resBody) => {
+        getRequestFn()(params, (err, res, rBody) => {
             if (err) {
                 LogService.error("MatrixHttpClient", "(REQ-" + requestId + ")", err);
                 reject(err);
                 return;
             }
 
-            if (typeof (resBody) === 'string') {
+            if (typeof (rBody) === 'string') {
                 try {
-                    resBody = JSON.parse(resBody);
+                    rBody = JSON.parse(resBody);
                 } catch (e) {
                 }
             }
@@ -84,7 +84,7 @@ export async function doHttpRequest(baseUrl: string, method: "GET"|"POST"|"PUT"|
                 }
             }
 
-            resolve({response: res, resBody});
+            resolve({response: res, resBody: rBody});
         });
     });
 
@@ -92,7 +92,7 @@ export async function doHttpRequest(baseUrl: string, method: "GET"|"POST"|"PUT"|
 
     // Check for errors.
     const errBody = response.body || resBody;
-    if (errBody && 'errcode' in errBody) {
+    if (typeof (errBody) === "object" && 'errcode' in errBody) {
         const redactedBody = respIsBuffer ? '<Buffer>' : redactObjectForLogging(errBody);
         LogService.error("MatrixHttpClient (REQ-" + requestId + ")", redactedBody);
         throw new MatrixError(errBody, response.statusCode);
