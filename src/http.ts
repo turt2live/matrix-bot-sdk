@@ -72,7 +72,7 @@ export async function doHttpRequest(baseUrl: string, method: "GET"|"POST"|"PUT"|
 
             if (typeof (rBody) === 'string') {
                 try {
-                    rBody = JSON.parse(resBody);
+                    rBody = JSON.parse(rBody);
                 } catch (e) {
                 }
             }
@@ -109,7 +109,7 @@ export async function doHttpRequest(baseUrl: string, method: "GET"|"POST"|"PUT"|
         LogService.error("MatrixHttpClient (REQ-" + requestId + ")", redactedBody);
         throw response;
     }
-    return (raw ? response : resBody);
+    return raw ? response : resBody;
 }
 
 export function redactObjectForLogging(input: any): any {
