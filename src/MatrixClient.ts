@@ -704,6 +704,11 @@ export class MatrixClient extends EventEmitter {
                 // TODO: Emit or do something with unknown messages?
             }
 
+            // TODO: Make this smarter
+            for (const msg of inbox) {
+                await emitFn("edu", msg);
+            }
+
             let unusedFallbacks: OTKAlgorithm[] = [];
             if (raw['org.matrix.msc2732.device_unused_fallback_key_types']) {
                 unusedFallbacks = raw['org.matrix.msc2732.device_unused_fallback_key_types'];
@@ -915,8 +920,8 @@ export class MatrixClient extends EventEmitter {
      * @returns {Promise<any>} resolves to the state event
      */
     @timedMatrixClientFunctionCall()
-    public getRoomStateEvent(roomId, type, stateKey): Promise<any> {
-        return this.doRequest("GET", "/_matrix/client/r0/rooms/" + encodeURIComponent(roomId) + "/state/" + encodeURIComponent(type) + "/" + encodeURIComponent(stateKey ? stateKey : ''))
+    public getRoomStateEvent(roomId, type, stateKey, format = "content"): Promise<any> {
+        return this.doRequest("GET", "/_matrix/client/r0/rooms/" + encodeURIComponent(roomId) + "/state/" + encodeURIComponent(type) + "/" + encodeURIComponent(stateKey ? stateKey : ''), { format })
             .then(ev => this.processEvent(ev));
     }
 

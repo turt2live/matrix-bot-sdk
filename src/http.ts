@@ -32,7 +32,7 @@ export function doHttpRequest(baseUrl: string, method: "GET"|"POST"|"PUT"|"DELET
     // Don't log the request unless we're in debug mode. It can be large.
     if (LogService.level.includes(LogLevel.TRACE)) {
         if (qs) LogService.trace("MatrixHttpClient", "(REQ-" + requestId + ")", "qs = " + JSON.stringify(qs));
-        if (body && !Buffer.isBuffer(body)) LogService.trace("MatrixHttpClient", "(REQ-" + requestId + ")", "body = " + JSON.stringify(this.redactObjectForLogging(body)));
+        if (body && !Buffer.isBuffer(body)) LogService.trace("MatrixHttpClient", "(REQ-" + requestId + ")", "body = " + JSON.stringify(redactObjectForLogging(body)));
         if (body && Buffer.isBuffer(body)) LogService.trace("MatrixHttpClient", "(REQ-" + requestId + ")", "body = <Buffer>");
     }
 

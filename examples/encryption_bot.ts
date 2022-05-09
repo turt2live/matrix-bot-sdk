@@ -103,7 +103,7 @@ const client = new MatrixClient(homeserverUrl, accessToken, storage, crypto);
     LogService.info("index", "Starting bot...");
     await client.start();
 
-    const callRoomId = await client.resolveRoom("#botsdk-test:call.ems.host");
+    const callRoomId = await client.joinRoom("#botsdk-test2:localhost");
     const calls = await client.unstableApis.getCallsInRoom(callRoomId);
     const activeCall = calls.find(c => !c.callEvent.isTerminated);
     if (!activeCall) {
