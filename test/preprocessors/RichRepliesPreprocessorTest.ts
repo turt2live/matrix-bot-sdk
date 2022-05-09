@@ -234,4 +234,35 @@ describe('RichRepliesPreprocessor', () => {
         expect(getEventSpy.callCount).toBe(1);
         expect(result["mx_richreply"]["realEvent"]).toMatchObject(realEvent);
     });
+
+    it('should parse MSC3676 replies', async () => {
+        const {client} = createTestClient();
+
+        const event = {
+            content: {
+                "m.relates_to": {
+                    "m.in_reply_to": {
+                        event_id: "$original",
+                    },
+                },
+                body: "image.png",
+                msgtype: "m.image",
+                url: "mxc://example.org/irrelevant",
+            },
+        };
+
+        const processor = new RichRepliesPreprocessor();
+        const result = await processor.processEvent(event, client);
+        expect(result).toMatchObject({
+            mx_richreply: {
+                wasLenient: true,
+                parentEventId: event.content["m.relates_to"]["m.in_reply_to"].event_id,
+                fallbackPlainBody: "",
+                fallbackHtmlBody: "",
+                fallbackSender: "",
+                realEvent: null,
+            },
+            content: event.content,
+        });
+    });
 });
