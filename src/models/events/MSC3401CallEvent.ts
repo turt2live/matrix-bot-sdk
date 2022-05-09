@@ -34,7 +34,7 @@ export class MSC3401CallEvent extends StateEvent<MSC3401CallEventContent> {
         return this.content["m.intent"];
     }
 
-    public get type(): MSC3401CallEventContent["m.type"] {
+    public get callType(): MSC3401CallEventContent["m.type"] {
         return this.content["m.type"];
     }
 

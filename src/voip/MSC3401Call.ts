@@ -52,6 +52,7 @@ export class MSC3401Call {
     }
 
     public async terminate() {
+        this.callEvent.content["m.terminated"] = true;
         return this.client.sendStateEvent(this.roomId, this.callEvent.type, this.callEvent.stateKey, this.callEvent.content);
     }
 
@@ -73,14 +74,33 @@ export class MSC3401Call {
             },
         });
         await this.client.sendStateEvent(this.roomId, ev.type, ev.stateKey, ev.content);
-        this.handleMember(ev);
+        await this.scanMembers();
+        await this.broadcastCallAnswer();
     }
 
-    public handleMember(member: MSC3401CallMemberEvent) {
+    public async scanMembers() {
+        this.members = [];
+        const members = await this.client.getJoinedRoomMembers(this.roomId);
+        for (const member of members) {
+            try {
+                const callMember = await this.client.getRoomStateEvent(this.roomId, "org.matrix.msc3401.call.member", member);
+                if (callMember) {
+                    await this.handleMember(callMember);
+                }
+            } catch (e) {
+                // ignore error - not joined to call
+            }
+        }
+    }
+
+    public async handleMember(member: MSC3401CallMemberEvent) {
         this.members = [
             ...this.members.filter(m => m.forUserId !== member.forUserId),
             member,
         ];
+
+        const myUserId = await this.client.getUserId();
+        this.inCall = this.members.some(m => m.forUserId === myUserId);
 
         if (this.inCall) {
             this.establishSessions();
@@ -90,5 +110,12 @@ export class MSC3401Call {
     private establishSessions() {
         // TODO: Establish call sessions with whoever we haven't yet
         // TODO: Establish olm sessions too
+    }
+
+    private async broadcastCallAnswer() {
+        const selfUserId = await this.client.getUserId();
+        const joinedMembers = this.members.filter(m => m.isInCall && m.forUserId !== selfUserId);
+
+        // TODO: Hook up to wrtc library somehow?
     }
 }

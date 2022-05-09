@@ -1,5 +1,7 @@
 import { MatrixClient } from "./MatrixClient";
 import { MSC2380MediaInfo } from "./models/unstable/MediaInfo";
+import { MSC3401Call } from "./voip/MSC3401Call";
+import { MSC3401CallEvent } from "./models/events/MSC3401CallEvent";
 
 /**
  * Represents a profile for a group
@@ -291,5 +293,68 @@ export class UnstableApis {
             throw Error('Missing mediaId');
         }
         return this.client.doRequest("GET", `/_matrix/media/unstable/info/${encodeURIComponent(domain)}/${encodeURIComponent(mediaId)}`);
+    }
+
+    /**
+     * Creates an MSC3401 call room (public). This is essentially a proxy to the createRoom
+     * function with a special template.
+     * @param {string} name The name of the call.
+     * @returns {Promise<string>} Resolves to the room ID.
+     */
+    public async createCallRoom(name: string): Promise<string> {
+        return this.client.createRoom({
+            // Template borrowed from Element Call
+            name: name,
+            preset: "public_chat",
+            room_alias_name: name,
+            visibility: "private",
+            power_level_content_override: {
+                users_default: 0,
+                events_default: 0,
+                state_default: 0,
+                invite: 100,
+                kick: 100,
+                redact: 50,
+                ban: 100,
+                events: {
+                    "m.room.encrypted": 50,
+                    "m.room.encryption": 100,
+                    "m.room.history_visibility": 100,
+                    "m.room.message": 0,
+                    "m.room.name": 50,
+                    "m.room.power_levels": 100,
+                    "m.room.tombstone": 100,
+                    "m.sticker": 50,
+                    "org.matrix.msc3401.call.member": 0,
+                },
+                users: {
+                    [await this.client.getUserId()]: 100,
+                },
+            },
+        });
+    }
+
+    /**
+     * Starts a call in the room.
+     * @param {string} roomId The room ID to start a call in.
+     * @returns {Promise<MSC3401Call>} Resolves to the call object.
+     */
+    public async startCallInRoom(roomId: string): Promise<MSC3401Call> {
+        const roomName = await this.client.getRoomStateEvent(roomId, "m.room.name", "");
+        const call = new MSC3401Call(this.client, roomId, roomName["name"]);
+        await this.client.sendStateEvent(roomId, call.callEvent.type, call.callEvent.stateKey, call.callEvent.content);
+        return call;
+    }
+
+    /**
+     * Get all the calls in a room.
+     * @param {string} roomId The room ID.
+     * @returns {Promise<MSC3401Call[]>} Resolves to an array of all known calls.
+     */
+    public async getCallsInRoom(roomId: string): Promise<MSC3401Call[]> {
+        const state = await this.client.getRoomState(roomId);
+        return state
+            .filter(s => s.type === 'org.matrix.msc3401.call')
+            .map(s => new MSC3401Call(this.client, roomId, new MSC3401CallEvent(s)));
     }
 }
