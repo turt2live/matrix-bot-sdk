@@ -268,7 +268,9 @@ export class Appservice extends EventEmitter {
         this.cryptoStorage = options.cryptoStorage;
 
         this.app.use(express.json({limit: Number.MAX_SAFE_INTEGER})); // disable limits, use a reverse proxy
-        this.app.use(morgan("combined"));
+        this.app.use(morgan("combined", {
+            stream: { write: LogService.info.bind(LogService, 'Appservice') }
+        }));
 
         // ETag headers break the tests sometimes, and we don't actually need them anyways for
         // appservices - none of this should be cached.
