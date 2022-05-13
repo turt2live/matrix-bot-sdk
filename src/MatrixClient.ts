@@ -43,6 +43,7 @@ import { EncryptedRoomEvent } from "./models/events/EncryptedRoomEvent";
 import { IWhoAmI } from "./models/Account";
 import { RustSdkCryptoStorageProvider } from "./storage/RustSdkCryptoStorageProvider";
 import { DMs } from "./DMs";
+import RoomStateCache from "./state/RoomStateCache";
 
 const SYNC_BACKOFF_MIN_MS = 5000;
 const SYNC_BACKOFF_MAX_MS = 15000;
@@ -67,6 +68,18 @@ export class MatrixClient extends EventEmitter {
      * Has no effect if the client is not syncing. Does not apply until the next sync request.
      */
     public syncingTimeout = 30000;
+
+    /**
+     * A cache for the state of all the rooms we encounter from `state` while processing `/sync`.
+     * If provided it will make the client perform a `full_state` sync when it first starts.
+     */
+    private roomStateCache: null|RoomStateCache = null;
+
+    /**
+     * Whether to cache the room state for all rooms encountered from `state` while processing `/sync`.
+     * See `roomStateCache`.
+     */
+    public cacheRoomState = false;
 
     /**
      * The crypto manager instance for this client. Generally speaking, this shouldn't
@@ -641,6 +654,7 @@ export class MatrixClient extends EventEmitter {
     protected async startSync(emitFn: (emitEventType: string, ...payload: any[]) => Promise<any> = null) {
         // noinspection ES6RedundantAwait
         let token = await Promise.resolve(this.storage.getSyncToken());
+        let full_state = this.cacheRoomState;
 
         const promiseWhile = async () => {
             if (this.stopSyncing) {
@@ -649,7 +663,8 @@ export class MatrixClient extends EventEmitter {
             }
 
             try {
-                const response = await this.doSync(token);
+                const response = await this.doSync(token, full_state);
+                full_state = false;
                 token = response["next_batch"];
 
                 if (!this.persistTokenAfterSync) {
@@ -676,10 +691,10 @@ export class MatrixClient extends EventEmitter {
     }
 
     @timedMatrixClientFunctionCall()
-    protected doSync(token: string): Promise<any> {
+    protected doSync(token: string, full_state = false): Promise<any> {
         LogService.debug("MatrixClientLite", "Performing sync with token " + token);
         const conf = {
-            full_state: false,
+            full_state,
             timeout: Math.max(0, this.syncingTimeout),
         };
         // synapse complains if the variables are null, so we have to have it unset instead
@@ -687,8 +702,8 @@ export class MatrixClient extends EventEmitter {
         if (this.filterId) conf['filter'] = this.filterId;
         if (this.syncingPresence) conf['presence'] = this.syncingPresence;
 
-        // timeout is 40s if we have a token, otherwise 10min
-        return this.doRequest("GET", "/_matrix/client/r0/sync", conf, null, (token ? 40000 : 600000));
+        // timeout is 10min if we require full_state or we do not have a token, otherwise 40s.
+        return this.doRequest("GET", "/_matrix/client/r0/sync", conf, null, (full_state || !token ?  600000 : 40000));
     }
 
     @timedMatrixClientFunctionCall()
@@ -697,6 +712,7 @@ export class MatrixClient extends EventEmitter {
 
         if (!raw) return; // nothing to process
 
+        // Always process device messages first to ensure there are decryption keys
         if (this.crypto) {
             const inbox: IToDeviceMessage[] = [];
             if (raw['to_device']?.['events']) {
@@ -719,7 +735,12 @@ export class MatrixClient extends EventEmitter {
             await this.crypto.updateSyncData(inbox, counts, unusedFallbacks, changed, left);
         }
 
-        // Always process device messages first to ensure there are decryption keys
+        // Initialize the roomStateCache as late as possible so if it is available then it is always complete consistent
+        if (this.cacheRoomState && this.roomStateCache === null) {
+            this.roomStateCache = new RoomStateCache(this);
+        }
+        // Always process room state as soon as possible to provide consistent state when processing other events.
+        this.roomStateCache?.processSync(raw);
 
         if (raw['groups']) {
             const leave = raw['groups']['leave'] || {};
@@ -889,9 +910,13 @@ export class MatrixClient extends EventEmitter {
      * @returns {Promise<any[]>} resolves to the room's state
      */
     @timedMatrixClientFunctionCall()
-    public getRoomState(roomId: string): Promise<any[]> {
-        return this.doRequest("GET", "/_matrix/client/r0/rooms/" + encodeURIComponent(roomId) + "/state")
-            .then(state => Promise.all(state.map(ev => this.processEvent(ev))));
+    public async getRoomState(roomId: string): Promise<any[]> {
+        if (Boolean(this.roomStateCache)) {
+            return this.roomStateCache.getRoomState(roomId);
+        } else {
+            return this.doRequest("GET", "/_matrix/client/r0/rooms/" + encodeURIComponent(roomId) + "/state")
+                .then(state => Promise.all(state.map(ev => this.processEvent(ev))));
+        }
     }
 
     /**
@@ -915,9 +940,13 @@ export class MatrixClient extends EventEmitter {
      * @returns {Promise<any>} resolves to the state event
      */
     @timedMatrixClientFunctionCall()
-    public getRoomStateEvent(roomId, type, stateKey): Promise<any> {
-        return this.doRequest("GET", "/_matrix/client/r0/rooms/" + encodeURIComponent(roomId) + "/state/" + encodeURIComponent(type) + "/" + encodeURIComponent(stateKey ? stateKey : ''))
-            .then(ev => this.processEvent(ev));
+    public async getRoomStateEvent(roomId, type, stateKey): Promise<any> {
+        if (Boolean(this.roomStateCache)) {
+            return this.roomStateCache.getRoomStateEvent(roomId, type, stateKey);
+        } else {
+            return this.doRequest("GET", "/_matrix/client/r0/rooms/" + encodeURIComponent(roomId) + "/state/" + encodeURIComponent(type) + "/" + encodeURIComponent(stateKey ? stateKey : ''))
+                .then(ev => this.processEvent(ev));
+        }
     }
 
     /**
