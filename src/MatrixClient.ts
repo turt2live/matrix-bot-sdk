@@ -1432,7 +1432,6 @@ export class MatrixClient extends EventEmitter {
      * @param {string} mxc The MXC URI to convert
      * @returns {string} The HTTP URL for the content.
      */
-    @timedMatrixClientFunctionCall()
     public mxcToHttp(mxc: string): string {
         if (!mxc.startsWith("mxc://")) throw new Error("Not a MXC URI");
         const parts = mxc.substring("mxc://".length).split('/');
@@ -1449,7 +1448,6 @@ export class MatrixClient extends EventEmitter {
      * @param {"crop"|"scale"} method Whether to crop or scale (preserve aspect ratio) the content.
      * @returns {string} The HTTP URL for the downsized content.
      */
-    @timedMatrixClientFunctionCall()
     public mxcToHttpThumbnail(mxc: string, width: number, height: number, method: "crop" | "scale"): string {
         const downloadUri = this.mxcToHttp(mxc);
         return downloadUri.replace("/_matrix/media/r0/download", "/_matrix/media/r0/thumbnail")
