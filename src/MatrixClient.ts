@@ -371,11 +371,11 @@ export class MatrixClient extends EventEmitter {
     /**
      * Sets the presence status for the current user.
      * @param {"online"|"offline"|"unavailable"} presence The new presence state for the user.
-     * @param {string} statusMessage Optional status message to include with the presence.
+     * @param {string?} statusMessage Optional status message to include with the presence.
      * @returns {Promise<any>} Resolves when complete.
      */
     @timedMatrixClientFunctionCall()
-    public async setPresenceStatus(presence: "online" | "offline" | "unavailable", statusMessage: string = null): Promise<any> {
+    public async setPresenceStatus(presence: "online" | "offline" | "unavailable", statusMessage: string | undefined): Promise<any> {
         return this.doRequest("PUT", "/_matrix/client/r0/presence/" + encodeURIComponent(await this.getUserId()) + "/status", null, {
             presence: presence,
             status_msg: statusMessage,
