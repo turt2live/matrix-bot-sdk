@@ -3,6 +3,8 @@ import { extractRequestError, LogService, MatrixClient, MatrixProfile } from "..
 import { MembershipEvent } from "../models/events/MembershipEvent";
 import { Appservice } from "../appservice/Appservice";
 
+type CacheKey = `${string}@${string | '<none>'}`;
+
 /**
  * Functions for avoiding calls to profile endpoints. Useful for bots when
  * people are mentioned often or bridges which need profile information
@@ -11,7 +13,7 @@ import { Appservice } from "../appservice/Appservice";
  */
 export class ProfileCache {
 
-    private cache: LRU;
+    private cache: LRU<CacheKey, MatrixProfile>;
 
     /**
      * Creates a new profile cache.
@@ -26,7 +28,7 @@ export class ProfileCache {
         });
     }
 
-    private getCacheKey(userId: string, roomId: string | null): string {
+    private getCacheKey(userId: string, roomId: string | null): CacheKey {
         return `${userId}@${roomId || '<none>'}`;
     }
 
