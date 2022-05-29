@@ -32,7 +32,7 @@ describe("Event Converter", () => {
         ev['type'] = 'm.room.member';
         const obj = <MembershipEvent>wrapRoomEvent(ev);
         expect(obj.membership).toEqual(ev['content']['membership']);
-        expectInstanceOf(MembershipEvent, obj)
+        expectInstanceOf(MembershipEvent, obj);
     });
 
     it("should return message events", () => {
@@ -40,6 +40,6 @@ describe("Event Converter", () => {
         ev['type'] = 'm.room.message';
         const obj = <MessageEvent<MessageEventContent>>wrapRoomEvent(ev);
         expect(obj.messageType).toEqual(ev['content']['msgtype']);
-        expectInstanceOf(MessageEvent, obj)
+        expectInstanceOf(MessageEvent, obj);
     });
 });

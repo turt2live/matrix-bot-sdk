@@ -1,5 +1,6 @@
-import { ConsoleLogger, LogLevel, LogService } from "../../src";
 import * as simple from "simple-mock";
+
+import { ConsoleLogger, LogLevel, LogService } from "../../src";
 
 describe('LogService', () => {
     afterEach(() => LogService.setLogger(new ConsoleLogger()));

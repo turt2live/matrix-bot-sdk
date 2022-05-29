@@ -1,6 +1,7 @@
-import { IStorageProvider, MatrixClient, setRequestFn, SynchronousMatrixClient } from "../src";
 import * as simple from "simple-mock";
 import * as MockHttpBackend from 'matrix-mock-request';
+
+import { IStorageProvider, MatrixClient, setRequestFn, SynchronousMatrixClient } from "../src";
 
 class TestSyncMatrixClient extends SynchronousMatrixClient {
     constructor(client: MatrixClient) {
@@ -9,7 +10,7 @@ class TestSyncMatrixClient extends SynchronousMatrixClient {
 
     public async doProcessSync(raw: any) {
         // HACK: We shouldn't have to do this, and should be testing the startSyncInterval function
-        const fn = (<any>this).handleEvent.bind(this);
+        const fn = (<any> this).handleEvent.bind(this);
         return super.processSync(raw, fn);
     }
 }

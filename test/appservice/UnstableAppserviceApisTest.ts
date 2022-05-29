@@ -1,8 +1,17 @@
-import { IStorageProvider, MatrixClient, MSC2716BatchSendResponse, UnstableAppserviceApis } from "../../src";
 import * as MockHttpBackend from 'matrix-mock-request';
+
+import { IStorageProvider, MatrixClient, MSC2716BatchSendResponse, UnstableAppserviceApis } from "../../src";
 import { createTestClient } from "../TestUtils";
 
-export function createTestUnstableClient(storage: IStorageProvider = null): { client: UnstableAppserviceApis, mxClient: MatrixClient, http: MockHttpBackend, hsUrl: string, accessToken: string } {
+export function createTestUnstableClient(
+    storage: IStorageProvider = null,
+): {
+    client: UnstableAppserviceApis;
+    mxClient: MatrixClient;
+    http: MockHttpBackend;
+    hsUrl: string;
+    accessToken: string;
+} {
     const result = createTestClient(storage);
     const mxClient = result.client;
     const client = new UnstableAppserviceApis(mxClient);
@@ -33,7 +42,7 @@ describe('UnstableAppserviceApis', () => {
                 expect(opts.qs).toMatchObject({
                     prev_event: prevEventId,
                     chunk_id: prevChunkId,
-                })
+                });
                 expect(content).toMatchObject({
                     events: events,
                     state_events_at_start: stateEvents,

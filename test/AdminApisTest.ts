@@ -1,5 +1,6 @@
-import { AdminApis, IStorageProvider, MatrixClient, WhoisInfo } from "../src";
 import * as MockHttpBackend from 'matrix-mock-request';
+
+import { AdminApis, IStorageProvider, MatrixClient, WhoisInfo } from "../src";
 import { createTestClient } from "./TestUtils";
 
 export function createTestAdminClient(storage: IStorageProvider = null): { client: AdminApis, mxClient: MatrixClient, http: MockHttpBackend, hsUrl: string, accessToken: string } {

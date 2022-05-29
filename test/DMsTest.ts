@@ -1,5 +1,6 @@
-import { DMs, EncryptionAlgorithm } from "../src";
 import * as simple from "simple-mock";
+
+import { EncryptionAlgorithm } from "../src";
 import { createTestClient, TEST_DEVICE_ID } from "./TestUtils";
 
 describe('DMs', () => {

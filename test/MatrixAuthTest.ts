@@ -1,5 +1,6 @@
-import { MatrixAuth } from "../src";
 import * as MockHttpBackend from 'matrix-mock-request';
+
+import { MatrixAuth } from "../src";
 import { createTestClient } from "./TestUtils";
 
 export function createTestAuth(): { auth: MatrixAuth, http: MockHttpBackend, hsUrl: string } {

@@ -1,6 +1,7 @@
-import { IdentityClient, MatrixClient, setRequestFn, Threepid } from "../src";
 import * as MockHttpBackend from 'matrix-mock-request';
 import * as simple from "simple-mock";
+
+import { IdentityClient, MatrixClient, setRequestFn, Threepid } from "../src";
 import { createTestClient } from "./TestUtils";
 
 export async function createTestIdentityClient(): Promise<{ client: IdentityClient, mxClient: MatrixClient, http: MockHttpBackend, identityUrl: string, accessToken: string }> {
@@ -593,7 +594,7 @@ describe('IdentityClient', () => {
 
     describe('makeEmailInvite', () => {
         it('should call the right endpoint', async () => {
-            const { client, http, identityUrl } = await createTestIdentityClient();
+            const { client, http } = await createTestIdentityClient();
 
             const mxUserId = "@bob:example.org";
             client.matrixClient.getUserId = () => Promise.resolve(mxUserId);
@@ -628,7 +629,7 @@ describe('IdentityClient', () => {
         });
 
         it('should request room state events and user profile', async () => {
-            const { client, http, identityUrl } = await createTestIdentityClient();
+            const { client, http } = await createTestIdentityClient();
 
             const mxUserId = "@bob:example.org";
             client.matrixClient.getUserId = () => Promise.resolve(mxUserId);
@@ -679,7 +680,7 @@ describe('IdentityClient', () => {
             client.matrixClient.getRoomStateEvent = stateStub;
             const profileSpy = simple.mock(client.matrixClient, "getUserProfile").callFn(() => {
                 return Promise.resolve({ displayname: senderDisplayName, avatar_url: senderAvatarUrl });
-            })
+            });
 
             http.when("POST", "/_matrix/identity/v2/store-invite").respond(200, (path, content) => {
                 expect(content).toMatchObject({
@@ -704,7 +705,7 @@ describe('IdentityClient', () => {
         });
 
         it('should use the canonical alias when no explicit name is present', async () => {
-            const { client, http, identityUrl } = await createTestIdentityClient();
+            const { client, http } = await createTestIdentityClient();
 
             const mxUserId = "@bob:example.org";
             client.matrixClient.getUserId = () => Promise.resolve(mxUserId);
@@ -754,7 +755,7 @@ describe('IdentityClient', () => {
             client.matrixClient.getRoomStateEvent = stateStub;
             const profileSpy = simple.mock(client.matrixClient, "getUserProfile").callFn(() => {
                 return Promise.resolve({ displayname: senderDisplayName, avatar_url: senderAvatarUrl });
-            })
+            });
 
             http.when("POST", "/_matrix/identity/v2/store-invite").respond(200, (path, content) => {
                 expect(content).toMatchObject({

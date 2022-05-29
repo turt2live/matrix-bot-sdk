@@ -1,3 +1,5 @@
+import * as simple from "simple-mock";
+
 import {
     Appservice,
     IAppserviceOptions,
@@ -8,7 +10,6 @@ import {
     REMOTE_USER_INFO_ACCOUNT_DATA_EVENT_TYPE,
     REMOTE_USER_MAP_ACCOUNT_DATA_EVENT_TYPE_PREFIX,
 } from "../../src";
-import * as simple from "simple-mock";
 
 describe('MatrixBridge', () => {
     describe('getRemoteUserInfo', () => {

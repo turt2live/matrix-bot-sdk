@@ -1,3 +1,7 @@
+import * as tmp from "tmp";
+import * as simple from "simple-mock";
+import { OlmMachine, Signatures } from "@turt2live/matrix-sdk-crypto-nodejs";
+
 import {
     DeviceKeyAlgorithm,
     DeviceKeyLabel,
@@ -19,11 +23,8 @@ import {
     RustSdkCryptoStorageProvider,
     setRequestFn,
 } from "../src";
-import * as tmp from "tmp";
-import * as simple from "simple-mock";
 import { createTestClient, expectArrayEquals, TEST_DEVICE_ID } from "./TestUtils";
 import { InternalOlmMachineFactory } from "../src/e2ee/InternalOlmMachineFactory";
-import { OlmMachine, Signatures } from "@turt2live/matrix-sdk-crypto-nodejs";
 
 tmp.setGracefulCleanup();
 
@@ -521,6 +522,7 @@ describe('MatrixClient', () => {
 
             // noinspection TypeScriptValidateJSTypes
             http.when("GET", "/_matrix/client/r0/user").respond(200, (path) => {
+                // eslint-disable-next-line max-len
                 expect(path).toEqual(`${hsUrl}/_matrix/client/r0/user/${encodeURIComponent(userId)}/rooms/${encodeURIComponent(roomId)}/account_data/${encodeURIComponent(eventType)}`);
                 return {};
             });
@@ -541,6 +543,7 @@ describe('MatrixClient', () => {
 
             // noinspection TypeScriptValidateJSTypes
             http.when("GET", "/_matrix/client/r0/user").respond(200, (path) => {
+                // eslint-disable-next-line max-len
                 expect(path).toEqual(`${hsUrl}/_matrix/client/r0/user/${encodeURIComponent(userId)}/rooms/${encodeURIComponent(roomId)}/account_data/${encodeURIComponent(eventType)}`);
                 return {};
             });
@@ -600,6 +603,7 @@ describe('MatrixClient', () => {
 
             // noinspection TypeScriptValidateJSTypes
             http.when("PUT", "/_matrix/client/r0/user").respond(200, (path, content) => {
+                // eslint-disable-next-line max-len
                 expect(path).toEqual(`${hsUrl}/_matrix/client/r0/user/${encodeURIComponent(userId)}/rooms/${encodeURIComponent(roomId)}/account_data/${encodeURIComponent(eventType)}`);
                 expect(content).toMatchObject(eventContent);
                 return {};
@@ -1319,7 +1323,7 @@ describe('MatrixClient', () => {
 
             const userId = "@syncing:example.org";
             const testGroup = { profile: { name: "Test Group" } };
-            const testGroupId = "+test:example.org"
+            const testGroupId = "+test:example.org";
 
             client.userId = userId;
 
@@ -1339,7 +1343,7 @@ describe('MatrixClient', () => {
 
             const userId = "@syncing:example.org";
             const testGroup = { profile: { name: "Test Group" } };
-            const testGroupId = "+test:example.org"
+            const testGroupId = "+test:example.org";
 
             client.userId = userId;
 
@@ -1359,7 +1363,7 @@ describe('MatrixClient', () => {
 
             const userId = "@syncing:example.org";
             const testGroup = { profile: { name: "Test Group" } };
-            const testGroupId = "+test:example.org"
+            const testGroupId = "+test:example.org";
 
             client.userId = userId;
 
@@ -2617,7 +2621,7 @@ describe('MatrixClient', () => {
                 type: "m.room.member",
                 state_key: "@alice:example.org",
                 content: { body: "3", msgtype: "m.text" },
-            }, { type: "m.room.member", state_key: "@alice:example.org", content: { body: "4", msgtype: "m.text" } }]
+            }, { type: "m.room.member", state_key: "@alice:example.org", content: { body: "4", msgtype: "m.text" } }];
             const roomId = "!abc123:example.org";
             const limit = 2;
 
@@ -2933,7 +2937,6 @@ describe('MatrixClient', () => {
         });
     });
 
-
     describe('getRoomMembers', () => {
         it('should call the right endpoint', async () => {
             const { client, http, hsUrl } = createTestClient();
@@ -3131,10 +3134,11 @@ describe('MatrixClient', () => {
                         "event_id": originalEvent.event_id,
                     },
                 },
-                msgtype: "m.text",
-                format: "org.matrix.custom.html",
-                body: `> <${originalEvent.sender}> ${originalEvent.content.body}\n\n${replyText}`,
-                formatted_body: `<mx-reply><blockquote><a href="https://matrix.to/#/${roomId}/${originalEvent.event_id}">In reply to</a> <a href="https://matrix.to/#/${originalEvent.sender}">${originalEvent.sender}</a><br />${originalEvent.content.formatted_body}</blockquote></mx-reply>${replyHtml}`,
+                "msgtype": "m.text",
+                "format": "org.matrix.custom.html",
+                "body": `> <${originalEvent.sender}> ${originalEvent.content.body}\n\n${replyText}`,
+                // eslint-disable-next-line max-len
+                "formatted_body": `<mx-reply><blockquote><a href="https://matrix.to/#/${roomId}/${originalEvent.event_id}">In reply to</a> <a href="https://matrix.to/#/${originalEvent.sender}">${originalEvent.sender}</a><br />${originalEvent.content.formatted_body}</blockquote></mx-reply>${replyHtml}`,
             };
 
             // noinspection TypeScriptValidateJSTypes
@@ -3171,10 +3175,11 @@ describe('MatrixClient', () => {
                         "event_id": originalEvent.event_id,
                     },
                 },
-                msgtype: "m.text",
-                format: "org.matrix.custom.html",
-                body: `> <${originalEvent.sender}> ${originalEvent.content.body}\n\n${replyText}`,
-                formatted_body: `<mx-reply><blockquote><a href="https://matrix.to/#/${roomId}/${originalEvent.event_id}">In reply to</a> <a href="https://matrix.to/#/${originalEvent.sender}">${originalEvent.sender}</a><br />${originalEvent.content.formatted_body}</blockquote></mx-reply>${replyHtml}`,
+                "msgtype": "m.text",
+                "format": "org.matrix.custom.html",
+                "body": `> <${originalEvent.sender}> ${originalEvent.content.body}\n\n${replyText}`,
+                // eslint-disable-next-line max-len
+                "formatted_body": `<mx-reply><blockquote><a href="https://matrix.to/#/${roomId}/${originalEvent.event_id}">In reply to</a> <a href="https://matrix.to/#/${originalEvent.sender}">${originalEvent.sender}</a><br />${originalEvent.content.formatted_body}</blockquote></mx-reply>${replyHtml}`,
             };
 
             const expectedContent = {
@@ -3223,10 +3228,11 @@ describe('MatrixClient', () => {
                         "event_id": originalEvent.event_id,
                     },
                 },
-                msgtype: "m.text",
-                format: "org.matrix.custom.html",
-                body: `> <${originalEvent.sender}> ${originalEvent.content.body}\n\n${replyText}`,
-                formatted_body: `<mx-reply><blockquote><a href="https://matrix.to/#/${roomId}/${originalEvent.event_id}">In reply to</a> <a href="https://matrix.to/#/${originalEvent.sender}">${originalEvent.sender}</a><br />${originalEvent.content.formatted_body}</blockquote></mx-reply>${replyHtml}`,
+                "msgtype": "m.text",
+                "format": "org.matrix.custom.html",
+                "body": `> <${originalEvent.sender}> ${originalEvent.content.body}\n\n${replyText}`,
+                // eslint-disable-next-line max-len
+                "formatted_body": `<mx-reply><blockquote><a href="https://matrix.to/#/${roomId}/${originalEvent.event_id}">In reply to</a> <a href="https://matrix.to/#/${originalEvent.sender}">${originalEvent.sender}</a><br />${originalEvent.content.formatted_body}</blockquote></mx-reply>${replyHtml}`,
             };
 
             client.crypto.isRoomEncrypted = async () => false; // for this test
@@ -3265,10 +3271,11 @@ describe('MatrixClient', () => {
                         "event_id": originalEvent.event_id,
                     },
                 },
-                msgtype: "m.text",
-                format: "org.matrix.custom.html",
-                body: `> <${originalEvent.sender}> ${originalEvent.content.body}\n\n${replyText}`,
-                formatted_body: `<mx-reply><blockquote><a href="https://matrix.to/#/${roomId}/${originalEvent.event_id}">In reply to</a> <a href="https://matrix.to/#/${originalEvent.sender}">${originalEvent.sender}</a><br />${originalEvent.content.formatted_body}</blockquote></mx-reply>${replyHtml}`,
+                "msgtype": "m.text",
+                "format": "org.matrix.custom.html",
+                "body": `> <${originalEvent.sender}> ${originalEvent.content.body}\n\n${replyText}`,
+                // eslint-disable-next-line max-len
+                "formatted_body": `<mx-reply><blockquote><a href="https://matrix.to/#/${roomId}/${originalEvent.event_id}">In reply to</a> <a href="https://matrix.to/#/${originalEvent.sender}">${originalEvent.sender}</a><br />${originalEvent.content.formatted_body}</blockquote></mx-reply>${replyHtml}`,
             };
 
             // noinspection TypeScriptValidateJSTypes
@@ -3307,10 +3314,11 @@ describe('MatrixClient', () => {
                         "event_id": originalEvent.event_id,
                     },
                 },
-                msgtype: "m.text",
-                format: "org.matrix.custom.html",
-                body: `> <${originalEvent.sender}> ${originalEvent.content.body}\n\n${replyText}`,
-                formatted_body: `<mx-reply><blockquote><a href="https://matrix.to/#/${roomId}/${originalEvent.event_id}">In reply to</a> <a href="https://matrix.to/#/${originalEvent.sender}">${originalEvent.sender}</a><br />${originalEvent.content.formatted_body}</blockquote></mx-reply>${replyHtml}`,
+                "msgtype": "m.text",
+                "format": "org.matrix.custom.html",
+                "body": `> <${originalEvent.sender}> ${originalEvent.content.body}\n\n${replyText}`,
+                // eslint-disable-next-line max-len
+                "formatted_body": `<mx-reply><blockquote><a href="https://matrix.to/#/${roomId}/${originalEvent.event_id}">In reply to</a> <a href="https://matrix.to/#/${originalEvent.sender}">${originalEvent.sender}</a><br />${originalEvent.content.formatted_body}</blockquote></mx-reply>${replyHtml}`,
             };
 
             // noinspection TypeScriptValidateJSTypes
@@ -3347,10 +3355,11 @@ describe('MatrixClient', () => {
                         "event_id": originalEvent.event_id,
                     },
                 },
-                msgtype: "m.text",
-                format: "org.matrix.custom.html",
-                body: `> <${originalEvent.sender}> ${originalEvent.content.body}\n\n${replyText}`,
-                formatted_body: `<mx-reply><blockquote><a href="https://matrix.to/#/${roomId}/${originalEvent.event_id}">In reply to</a> <a href="https://matrix.to/#/${originalEvent.sender}">${originalEvent.sender}</a><br />${originalEvent.content.formatted_body}</blockquote></mx-reply>${replyHtml}`,
+                "msgtype": "m.text",
+                "format": "org.matrix.custom.html",
+                "body": `> <${originalEvent.sender}> ${originalEvent.content.body}\n\n${replyText}`,
+                // eslint-disable-next-line max-len
+                "formatted_body": `<mx-reply><blockquote><a href="https://matrix.to/#/${roomId}/${originalEvent.event_id}">In reply to</a> <a href="https://matrix.to/#/${originalEvent.sender}">${originalEvent.sender}</a><br />${originalEvent.content.formatted_body}</blockquote></mx-reply>${replyHtml}`,
             };
 
             const expectedContent = {
@@ -3399,10 +3408,11 @@ describe('MatrixClient', () => {
                         "event_id": originalEvent.event_id,
                     },
                 },
-                msgtype: "m.text",
-                format: "org.matrix.custom.html",
-                body: `> <${originalEvent.sender}> ${originalEvent.content.body}\n\n${replyText}`,
-                formatted_body: `<mx-reply><blockquote><a href="https://matrix.to/#/${roomId}/${originalEvent.event_id}">In reply to</a> <a href="https://matrix.to/#/${originalEvent.sender}">${originalEvent.sender}</a><br />${originalEvent.content.formatted_body}</blockquote></mx-reply>${replyHtml}`,
+                "msgtype": "m.text",
+                "format": "org.matrix.custom.html",
+                "body": `> <${originalEvent.sender}> ${originalEvent.content.body}\n\n${replyText}`,
+                // eslint-disable-next-line max-len
+                "formatted_body": `<mx-reply><blockquote><a href="https://matrix.to/#/${roomId}/${originalEvent.event_id}">In reply to</a> <a href="https://matrix.to/#/${originalEvent.sender}">${originalEvent.sender}</a><br />${originalEvent.content.formatted_body}</blockquote></mx-reply>${replyHtml}`,
             };
 
             client.crypto.isRoomEncrypted = async () => false; // for this test
@@ -3443,10 +3453,11 @@ describe('MatrixClient', () => {
                         "event_id": originalEvent.event_id,
                     },
                 },
-                msgtype: "m.notice",
-                format: "org.matrix.custom.html",
-                body: `> <${originalEvent.sender}> ${originalEvent.content.body}\n\n${replyText}`,
-                formatted_body: `<mx-reply><blockquote><a href="https://matrix.to/#/${roomId}/${originalEvent.event_id}">In reply to</a> <a href="https://matrix.to/#/${originalEvent.sender}">${originalEvent.sender}</a><br />${originalEvent.content.formatted_body}</blockquote></mx-reply>${replyHtml}`,
+                "msgtype": "m.notice",
+                "format": "org.matrix.custom.html",
+                "body": `> <${originalEvent.sender}> ${originalEvent.content.body}\n\n${replyText}`,
+                // eslint-disable-next-line max-len
+                "formatted_body": `<mx-reply><blockquote><a href="https://matrix.to/#/${roomId}/${originalEvent.event_id}">In reply to</a> <a href="https://matrix.to/#/${originalEvent.sender}">${originalEvent.sender}</a><br />${originalEvent.content.formatted_body}</blockquote></mx-reply>${replyHtml}`,
             };
 
             // noinspection TypeScriptValidateJSTypes
@@ -3483,10 +3494,11 @@ describe('MatrixClient', () => {
                         "event_id": originalEvent.event_id,
                     },
                 },
-                msgtype: "m.notice",
-                format: "org.matrix.custom.html",
-                body: `> <${originalEvent.sender}> ${originalEvent.content.body}\n\n${replyText}`,
-                formatted_body: `<mx-reply><blockquote><a href="https://matrix.to/#/${roomId}/${originalEvent.event_id}">In reply to</a> <a href="https://matrix.to/#/${originalEvent.sender}">${originalEvent.sender}</a><br />${originalEvent.content.formatted_body}</blockquote></mx-reply>${replyHtml}`,
+                "msgtype": "m.notice",
+                "format": "org.matrix.custom.html",
+                "body": `> <${originalEvent.sender}> ${originalEvent.content.body}\n\n${replyText}`,
+                // eslint-disable-next-line max-len
+                "formatted_body": `<mx-reply><blockquote><a href="https://matrix.to/#/${roomId}/${originalEvent.event_id}">In reply to</a> <a href="https://matrix.to/#/${originalEvent.sender}">${originalEvent.sender}</a><br />${originalEvent.content.formatted_body}</blockquote></mx-reply>${replyHtml}`,
             };
 
             const expectedContent = {
@@ -3535,10 +3547,11 @@ describe('MatrixClient', () => {
                         "event_id": originalEvent.event_id,
                     },
                 },
-                msgtype: "m.notice",
-                format: "org.matrix.custom.html",
-                body: `> <${originalEvent.sender}> ${originalEvent.content.body}\n\n${replyText}`,
-                formatted_body: `<mx-reply><blockquote><a href="https://matrix.to/#/${roomId}/${originalEvent.event_id}">In reply to</a> <a href="https://matrix.to/#/${originalEvent.sender}">${originalEvent.sender}</a><br />${originalEvent.content.formatted_body}</blockquote></mx-reply>${replyHtml}`,
+                "msgtype": "m.notice",
+                "format": "org.matrix.custom.html",
+                "body": `> <${originalEvent.sender}> ${originalEvent.content.body}\n\n${replyText}`,
+                // eslint-disable-next-line max-len
+                "formatted_body": `<mx-reply><blockquote><a href="https://matrix.to/#/${roomId}/${originalEvent.event_id}">In reply to</a> <a href="https://matrix.to/#/${originalEvent.sender}">${originalEvent.sender}</a><br />${originalEvent.content.formatted_body}</blockquote></mx-reply>${replyHtml}`,
             };
 
             client.crypto.isRoomEncrypted = async () => false; // for this test
@@ -3577,10 +3590,11 @@ describe('MatrixClient', () => {
                         "event_id": originalEvent.event_id,
                     },
                 },
-                msgtype: "m.notice",
-                format: "org.matrix.custom.html",
-                body: `> <${originalEvent.sender}> ${originalEvent.content.body}\n\n${replyText}`,
-                formatted_body: `<mx-reply><blockquote><a href="https://matrix.to/#/${roomId}/${originalEvent.event_id}">In reply to</a> <a href="https://matrix.to/#/${originalEvent.sender}">${originalEvent.sender}</a><br />${originalEvent.content.formatted_body}</blockquote></mx-reply>${replyHtml}`,
+                "msgtype": "m.notice",
+                "format": "org.matrix.custom.html",
+                "body": `> <${originalEvent.sender}> ${originalEvent.content.body}\n\n${replyText}`,
+                // eslint-disable-next-line max-len
+                "formatted_body": `<mx-reply><blockquote><a href="https://matrix.to/#/${roomId}/${originalEvent.event_id}">In reply to</a> <a href="https://matrix.to/#/${originalEvent.sender}">${originalEvent.sender}</a><br />${originalEvent.content.formatted_body}</blockquote></mx-reply>${replyHtml}`,
             };
 
             // noinspection TypeScriptValidateJSTypes
@@ -3619,10 +3633,11 @@ describe('MatrixClient', () => {
                         "event_id": originalEvent.event_id,
                     },
                 },
-                msgtype: "m.notice",
-                format: "org.matrix.custom.html",
-                body: `> <${originalEvent.sender}> ${originalEvent.content.body}\n\n${replyText}`,
-                formatted_body: `<mx-reply><blockquote><a href="https://matrix.to/#/${roomId}/${originalEvent.event_id}">In reply to</a> <a href="https://matrix.to/#/${originalEvent.sender}">${originalEvent.sender}</a><br />${originalEvent.content.formatted_body}</blockquote></mx-reply>${replyHtml}`,
+                "msgtype": "m.notice",
+                "format": "org.matrix.custom.html",
+                "body": `> <${originalEvent.sender}> ${originalEvent.content.body}\n\n${replyText}`,
+                // eslint-disable-next-line max-len
+                "formatted_body": `<mx-reply><blockquote><a href="https://matrix.to/#/${roomId}/${originalEvent.event_id}">In reply to</a> <a href="https://matrix.to/#/${originalEvent.sender}">${originalEvent.sender}</a><br />${originalEvent.content.formatted_body}</blockquote></mx-reply>${replyHtml}`,
             };
 
             // noinspection TypeScriptValidateJSTypes
@@ -3659,10 +3674,11 @@ describe('MatrixClient', () => {
                         "event_id": originalEvent.event_id,
                     },
                 },
-                msgtype: "m.notice",
-                format: "org.matrix.custom.html",
-                body: `> <${originalEvent.sender}> ${originalEvent.content.body}\n\n${replyText}`,
-                formatted_body: `<mx-reply><blockquote><a href="https://matrix.to/#/${roomId}/${originalEvent.event_id}">In reply to</a> <a href="https://matrix.to/#/${originalEvent.sender}">${originalEvent.sender}</a><br />${originalEvent.content.formatted_body}</blockquote></mx-reply>${replyHtml}`,
+                "msgtype": "m.notice",
+                "format": "org.matrix.custom.html",
+                "body": `> <${originalEvent.sender}> ${originalEvent.content.body}\n\n${replyText}`,
+                // eslint-disable-next-line max-len
+                "formatted_body": `<mx-reply><blockquote><a href="https://matrix.to/#/${roomId}/${originalEvent.event_id}">In reply to</a> <a href="https://matrix.to/#/${originalEvent.sender}">${originalEvent.sender}</a><br />${originalEvent.content.formatted_body}</blockquote></mx-reply>${replyHtml}`,
             };
 
             const expectedContent = {
@@ -3711,10 +3727,11 @@ describe('MatrixClient', () => {
                         "event_id": originalEvent.event_id,
                     },
                 },
-                msgtype: "m.notice",
-                format: "org.matrix.custom.html",
-                body: `> <${originalEvent.sender}> ${originalEvent.content.body}\n\n${replyText}`,
-                formatted_body: `<mx-reply><blockquote><a href="https://matrix.to/#/${roomId}/${originalEvent.event_id}">In reply to</a> <a href="https://matrix.to/#/${originalEvent.sender}">${originalEvent.sender}</a><br />${originalEvent.content.formatted_body}</blockquote></mx-reply>${replyHtml}`,
+                "msgtype": "m.notice",
+                "format": "org.matrix.custom.html",
+                "body": `> <${originalEvent.sender}> ${originalEvent.content.body}\n\n${replyText}`,
+                // eslint-disable-next-line max-len
+                "formatted_body": `<mx-reply><blockquote><a href="https://matrix.to/#/${roomId}/${originalEvent.event_id}">In reply to</a> <a href="https://matrix.to/#/${originalEvent.sender}">${originalEvent.sender}</a><br />${originalEvent.content.formatted_body}</blockquote></mx-reply>${replyHtml}`,
             };
 
             client.crypto.isRoomEncrypted = async () => false; // for this test
@@ -4471,7 +4488,7 @@ describe('MatrixClient', () => {
             const userId = "@testing:example.org";
             const eventType = "m.room.message";
             const isState = true;
-            let plEvent = { users: {} };
+            const plEvent = { users: {} };
 
             const getStateEventSpy = simple.mock(client, "getRoomStateEvent").callFn((rid, evType, stateKey) => {
                 expect(rid).toEqual(roomId);
@@ -4505,7 +4522,7 @@ describe('MatrixClient', () => {
             const userId = "@testing:example.org";
             const eventType = "m.room.message";
             const isState = false;
-            let plEvent = { users: {} };
+            const plEvent = { users: {} };
 
             const getStateEventSpy = simple.mock(client, "getRoomStateEvent").callFn((rid, evType, stateKey) => {
                 expect(rid).toEqual(roomId);
@@ -4544,7 +4561,7 @@ describe('MatrixClient', () => {
             const userId = "@testing:example.org";
             const eventType = "m.room.message";
             const isState = true;
-            let plEvent = { state_default: 75, events_default: 99, users: {} };
+            const plEvent = { state_default: 75, events_default: 99, users: {} };
 
             const getStateEventSpy = simple.mock(client, "getRoomStateEvent").callFn((rid, evType, stateKey) => {
                 expect(rid).toEqual(roomId);
@@ -4578,7 +4595,7 @@ describe('MatrixClient', () => {
             const userId = "@testing:example.org";
             const eventType = "m.room.message";
             const isState = false;
-            let plEvent = { state_default: 99, events_default: 75, users: {} };
+            const plEvent = { state_default: 99, events_default: 75, users: {} };
 
             const getStateEventSpy = simple.mock(client, "getRoomStateEvent").callFn((rid, evType, stateKey) => {
                 expect(rid).toEqual(roomId);
@@ -4612,7 +4629,7 @@ describe('MatrixClient', () => {
             const userId = "@testing:example.org";
             const eventType = "m.room.message";
             const isState = false;
-            let plEvent = { events_default: 75, users_default: 15 };
+            const plEvent = { events_default: 75, users_default: 15 };
 
             const getStateEventSpy = simple.mock(client, "getRoomStateEvent").callFn((rid, evType, stateKey) => {
                 expect(rid).toEqual(roomId);
@@ -4640,7 +4657,7 @@ describe('MatrixClient', () => {
             const userId = "@testing:example.org";
             const eventType = "m.room.message";
             const isState = false;
-            let plEvent = { state_default: 99, events_default: 99, events: {}, users: {} };
+            const plEvent = { state_default: 99, events_default: 99, events: {}, users: {} };
             plEvent["events"][eventType] = 75;
 
             const getStateEventSpy = simple.mock(client, "getRoomStateEvent").callFn((rid, evType, stateKey) => {
@@ -4675,7 +4692,7 @@ describe('MatrixClient', () => {
             const userId = "@testing:example.org";
             const eventType = "m.room.message";
             const isState = true;
-            let plEvent = { state_default: 99, events_default: 99, events: {}, users: {} };
+            const plEvent = { state_default: 99, events_default: 99, events: {}, users: {} };
             plEvent["events"][eventType] = 75;
 
             const getStateEventSpy = simple.mock(client, "getRoomStateEvent").callFn((rid, evType, stateKey) => {
@@ -4710,7 +4727,7 @@ describe('MatrixClient', () => {
             const userId = "@testing:example.org";
             const eventType = "m.room.message";
             const isState = false;
-            let plEvent = { state_default: 99, events_default: 75, events: {}, users: {} };
+            const plEvent = { state_default: 99, events_default: 75, events: {}, users: {} };
             plEvent["events"][eventType + "_wrong"] = 99;
 
             const getStateEventSpy = simple.mock(client, "getRoomStateEvent").callFn((rid, evType, stateKey) => {
@@ -4745,7 +4762,7 @@ describe('MatrixClient', () => {
             const userId = "@testing:example.org";
             const eventType = "m.room.message";
             const isState = false;
-            let plEvent = { events: {} };
+            const plEvent = { events: {} };
 
             const getStateEventSpy = simple.mock(client, "getRoomStateEvent").callFn((rid, evType, stateKey) => {
                 expect(rid).toEqual(roomId);
@@ -4779,7 +4796,7 @@ describe('MatrixClient', () => {
             const userId = "@testing:example.org";
             const eventType = "m.room.message";
             const isState = false;
-            let plEvent = { events: {}, users: {} };
+            const plEvent = { events: {}, users: {} };
 
             const getStateEventSpy = simple.mock(client, "getRoomStateEvent").callFn((rid, evType, stateKey) => {
                 expect(rid).toEqual(roomId);
@@ -4813,7 +4830,7 @@ describe('MatrixClient', () => {
             const userId = "@testing:example.org";
             const eventType = "m.room.message";
             const isState = false;
-            let plEvent = { events: { [eventType]: "10" }, users_default: 0 };
+            const plEvent = { events: { [eventType]: "10" }, users_default: 0 };
 
             const getStateEventSpy = simple.mock(client, "getRoomStateEvent").callFn((rid, evType, stateKey) => {
                 expect(rid).toEqual(roomId);
@@ -4822,9 +4839,7 @@ describe('MatrixClient', () => {
                 return plEvent;
             });
 
-            let result;
-
-            result = await client.userHasPowerLevelFor(userId, roomId, eventType, isState);
+            const result = await client.userHasPowerLevelFor(userId, roomId, eventType, isState);
             expect(result).toBe(true);
             expect(getStateEventSpy.callCount).toBe(1);
         });
@@ -4864,7 +4879,7 @@ describe('MatrixClient', () => {
             const roomId = "!testing:example.org";
             const userId = "@testing:example.org";
             const action = PowerLevelAction.Ban;
-            let plEvent = { [action]: 75, users_default: 15 };
+            const plEvent = { [action]: 75, users_default: 15 };
 
             const getStateEventSpy = simple.mock(client, "getRoomStateEvent").callFn((rid, evType, stateKey) => {
                 expect(rid).toEqual(roomId);
@@ -4891,7 +4906,7 @@ describe('MatrixClient', () => {
             const roomId = "!testing:example.org";
             const userId = "@testing:example.org";
             const action = PowerLevelAction.NotifyRoom;
-            let plEvent = { notifications: { room: 75 }, users_default: 15 };
+            const plEvent = { notifications: { room: 75 }, users_default: 15 };
 
             const getStateEventSpy = simple.mock(client, "getRoomStateEvent").callFn((rid, evType, stateKey) => {
                 expect(rid).toEqual(roomId);
@@ -4918,7 +4933,7 @@ describe('MatrixClient', () => {
             const roomId = "!testing:example.org";
             const userId = "@testing:example.org";
             const action = PowerLevelAction.NotifyRoom;
-            let plEvent = { users_default: 15 }; // deliberately left out action level
+            const plEvent = { users_default: 15 }; // deliberately left out action level
 
             const getStateEventSpy = simple.mock(client, "getRoomStateEvent").callFn((rid, evType, stateKey) => {
                 expect(rid).toEqual(roomId);
@@ -4927,9 +4942,7 @@ describe('MatrixClient', () => {
                 return plEvent;
             });
 
-            let result;
-
-            result = await client.userHasPowerLevelForAction(userId, roomId, action);
+            const result = await client.userHasPowerLevelForAction(userId, roomId, action);
             expect(result).toBe(false);
             expect(getStateEventSpy.callCount).toBe(1);
         });
@@ -4940,7 +4953,7 @@ describe('MatrixClient', () => {
             const roomId = "!testing:example.org";
             const userId = "@testing:example.org";
             const action = PowerLevelAction.Ban;
-            let plEvent = { events: {} };
+            const plEvent = { events: {} };
 
             const getStateEventSpy = simple.mock(client, "getRoomStateEvent").callFn((rid, evType, stateKey) => {
                 expect(rid).toEqual(roomId);
@@ -4973,7 +4986,7 @@ describe('MatrixClient', () => {
             const roomId = "!testing:example.org";
             const userId = "@testing:example.org";
             const action = PowerLevelAction.Ban;
-            let plEvent = { events: {}, users: {}, [action]: 50 };
+            const plEvent = { events: {}, users: {}, [action]: 50 };
 
             const getStateEventSpy = simple.mock(client, "getRoomStateEvent").callFn((rid, evType, stateKey) => {
                 expect(rid).toEqual(roomId);
@@ -5006,7 +5019,7 @@ describe('MatrixClient', () => {
             const roomId = "!testing:example.org";
             const userId = "@testing:example.org";
             const action = PowerLevelAction.Ban;
-            let plEvent = { [action]: "40", users_default: 45 };
+            const plEvent = { [action]: "40", users_default: 45 };
 
             const getStateEventSpy = simple.mock(client, "getRoomStateEvent").callFn((rid, evType, stateKey) => {
                 expect(rid).toEqual(roomId);
@@ -5283,6 +5296,7 @@ describe('MatrixClient', () => {
             const mxc = `mxc://${domain}/${mediaId}`;
 
             const http = client.mxcToHttpThumbnail(mxc, width, height, method);
+            // eslint-disable-next-line max-len
             expect(http).toBe(`${hsUrl}/_matrix/media/r0/thumbnail/${encodeURIComponent(domain)}/${encodeURIComponent(mediaId)}?width=${width}&height=${height}&method=${encodeURIComponent(method)}`);
         });
 
@@ -6174,7 +6188,6 @@ describe('MatrixClient', () => {
             expect(result).toMatchObject(expected);
         });
     });
-
 
     describe('createSpace', () => {
         it('should create a typed private room', async () => {

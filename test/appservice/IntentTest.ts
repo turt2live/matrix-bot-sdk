@@ -1,3 +1,8 @@
+import * as simple from "simple-mock";
+import * as MockHttpBackend from 'matrix-mock-request';
+import * as tmp from "tmp";
+
+import { expectArrayEquals } from "../TestUtils";
 import {
     Appservice,
     IAppserviceCryptoStorageProvider,
@@ -9,10 +14,6 @@ import {
     RustSdkAppserviceCryptoStorageProvider,
     setRequestFn,
 } from "../../src";
-import * as simple from "simple-mock";
-import * as MockHttpBackend from 'matrix-mock-request';
-import { expectArrayEquals } from "../TestUtils";
-import * as tmp from "tmp";
 
 tmp.setGracefulCleanup();
 
@@ -482,10 +483,6 @@ describe('Intent', () => {
             const getJoinedRooms = () => (<any>intent).knownJoinedRooms;
             const setJoinedRooms = (rooms) => (<any>intent).knownJoinedRooms = rooms;
 
-            const registeredSpy = simple.mock(intent, "ensureRegistered").callFn(() => {
-                return Promise.resolve();
-            });
-
             const getJoinedSpy = simple.stub().callFn(() => {
                 return Promise.resolve(roomsPartB);
             });
@@ -618,7 +615,6 @@ describe('Intent', () => {
             const botUserId = "@bot:example.org";
             const asToken = "s3cret";
             const hsUrl = "https://localhost";
-            const roomIds = ["!a:example.org", "!b:example.org"];
             const targetRoomId = "!c:example.org";
             const appservice = <Appservice>{ botUserId: botUserId };
             const storage = new MemoryStorageProvider();
@@ -1163,7 +1159,7 @@ describe('Intent', () => {
                     },
                 },
             };
-            intent = new Intent(options, userId, appservice);
+            intent = new Intent(options, userId, appservice); // eslint-disable-line @typescript-eslint/no-unused-vars
         });
 
         // TODO: Test once device_id impersonation set up

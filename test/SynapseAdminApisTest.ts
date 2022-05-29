@@ -1,3 +1,5 @@
+import * as MockHttpBackend from 'matrix-mock-request';
+
 import {
     IStorageProvider,
     MatrixClient,
@@ -11,10 +13,17 @@ import {
     SynapseUserList,
     SynapseUserProperties,
 } from "../src";
-import * as MockHttpBackend from 'matrix-mock-request';
 import { createTestClient } from "./TestUtils";
 
-export function createTestSynapseAdminClient(storage: IStorageProvider = null): { client: SynapseAdminApis, mxClient: MatrixClient, http: MockHttpBackend, hsUrl: string, accessToken: string } {
+export function createTestSynapseAdminClient(
+    storage: IStorageProvider = null,
+): {
+    client: SynapseAdminApis;
+    mxClient: MatrixClient;
+    http: MockHttpBackend;
+    hsUrl: string;
+    accessToken: string;
+} {
     const result = createTestClient(storage);
     const mxClient = result.client;
     const client = new SynapseAdminApis(mxClient);
@@ -158,7 +167,7 @@ describe('SynapseAdminApis', () => {
             const request: SynapseUserProperties = {
                 ...response,
                 password: "foobar",
-            }
+            };
 
             http.when("PUT", "/_synapse/admin/v2/users").respond(200, (path, content) => {
                 expect(path).toEqual(`${hsUrl}/_synapse/admin/v2/users/${encodeURIComponent(userId)}`);
@@ -196,7 +205,7 @@ describe('SynapseAdminApis', () => {
                 name: "bar",
                 guests: true,
                 deactivated: false,
-            }
+            };
 
             http.when("GET", "/_synapse/admin/v2/users").respond(200, (path, _content, req) => {
                 expect(req.opts.qs).toEqual(request);
@@ -242,7 +251,7 @@ describe('SynapseAdminApis', () => {
                 name: "bar",
                 guests: true,
                 deactivated: false,
-            }
+            };
 
             http.when("GET", "/_synapse/admin/v2/users").respond(200, (path, _content, req) => {
                 expect(path).toEqual(`${hsUrl}/_synapse/admin/v2/users`);
@@ -251,7 +260,7 @@ describe('SynapseAdminApis', () => {
                     next_token: 'from-token',
                     total: 2,
                     users: [user1],
-                }
+                };
             });
             const iterable = await client.listAllUsers({ name: "bar", guests: true, deactivated: false, limit: 1 });
             const flush = http.flushAllExpected();
@@ -264,7 +273,7 @@ describe('SynapseAdminApis', () => {
                 return {
                     total: 2,
                     users: [user2],
-                }
+                };
             });
             const resultUser2 = await iterable.next();
             expect(resultUser2).toEqual({ done: false, value: user2 });
@@ -403,7 +412,7 @@ describe('SynapseAdminApis', () => {
 
         describe('listRegistrationTokens', () => {
             it('should call the right endpoint', async () => {
-                const { client, http, hsUrl } = createTestSynapseAdminClient();
+                const { client, http } = createTestSynapseAdminClient();
 
                 const tokens: SynapseRegistrationToken[] = [
                     { token: "foo", uses_allowed: null, pending: 5, completed: 25, expiry_time: null },
@@ -421,7 +430,7 @@ describe('SynapseAdminApis', () => {
 
         describe('getRegistrationToken', () => {
             it('should call the right endpoint', async () => {
-                const { client, http, hsUrl } = createTestSynapseAdminClient();
+                const { client, http } = createTestSynapseAdminClient();
 
                 const token: SynapseRegistrationToken = {
                     token: "foo", uses_allowed: null, pending: 5, completed: 25, expiry_time: null,
@@ -435,7 +444,7 @@ describe('SynapseAdminApis', () => {
                     return {
                         errcode: "M_NOT_FOUND",
                         error: "No such registration token: not-a-token",
-                    }
+                    };
                 });
 
                 const flush = http.flushAllExpected();
@@ -452,7 +461,7 @@ describe('SynapseAdminApis', () => {
 
         describe('createRegistrationToken', () => {
             it('should call the right endpoint', async () => {
-                const { client, http, hsUrl } = createTestSynapseAdminClient();
+                const { client, http } = createTestSynapseAdminClient();
 
                 const responseToken: SynapseRegistrationToken = {
                     token: "foo", uses_allowed: null, pending: 5, completed: 25, expiry_time: null,
@@ -460,7 +469,7 @@ describe('SynapseAdminApis', () => {
                 const options: SynapseRegistrationTokenOptions = {
                     token: "foo",
                     uses_allowed: null,
-                }
+                };
 
                 http.when("POST", "/_synapse/admin/v1/registration_tokens/new").respond(200, (_path, content) => {
                     expect(options).toMatchObject(content);
@@ -474,7 +483,7 @@ describe('SynapseAdminApis', () => {
 
         describe('updateRegistrationToken', () => {
             it('should call the right endpoint', async () => {
-                const { client, http, hsUrl } = createTestSynapseAdminClient();
+                const { client, http } = createTestSynapseAdminClient();
 
                 const responseToken: SynapseRegistrationToken = {
                     token: "foo", uses_allowed: null, pending: 5, completed: 25, expiry_time: null,
@@ -482,7 +491,7 @@ describe('SynapseAdminApis', () => {
 
                 const options: SynapseRegistrationTokenUpdateOptions = {
                     uses_allowed: null,
-                }
+                };
 
                 http.when("PUT", "/_synapse/admin/v1/registration_tokens/foo").respond(200, (_path, content) => {
                     expect(options).toMatchObject(content);
@@ -496,7 +505,7 @@ describe('SynapseAdminApis', () => {
 
         describe('deleteRegistrationToken', () => {
             it('should call the right endpoint', async () => {
-                const { client, http, hsUrl } = createTestSynapseAdminClient();
+                const { client, http } = createTestSynapseAdminClient();
 
                 http.when("DELETE", "/_synapse/admin/v1/registration_tokens/foo").respond(200, () => {
                     return {};

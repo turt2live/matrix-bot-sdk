@@ -1,5 +1,6 @@
-import { IFilterInfo, SimpleFsStorageProvider } from "../../src";
 import * as tmp from "tmp";
+
+import { IFilterInfo, SimpleFsStorageProvider } from "../../src";
 
 tmp.setGracefulCleanup();
 

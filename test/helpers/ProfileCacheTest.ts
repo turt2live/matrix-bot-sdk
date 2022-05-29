@@ -1,5 +1,6 @@
-import { Appservice, ProfileCache } from "../../src";
 import * as simple from "simple-mock";
+
+import { Appservice, ProfileCache } from "../../src";
 import { createTestClient, testDelay } from "../TestUtils";
 
 describe('ProfileCache', () => {

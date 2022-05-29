@@ -1,8 +1,17 @@
-import { GroupProfile, IStorageProvider, MatrixClient, MSC2380MediaInfo, UnstableApis } from "../src";
 import * as MockHttpBackend from 'matrix-mock-request';
+
+import { GroupProfile, IStorageProvider, MatrixClient, MSC2380MediaInfo, UnstableApis } from "../src";
 import { createTestClient } from "./TestUtils";
 
-export function createTestUnstableClient(storage: IStorageProvider = null): { client: UnstableApis, mxClient: MatrixClient, http: MockHttpBackend, hsUrl: string, accessToken: string } {
+export function createTestUnstableClient(
+    storage: IStorageProvider = null,
+): {
+    client: UnstableApis;
+    mxClient: MatrixClient;
+    http: MockHttpBackend;
+    hsUrl: string;
+    accessToken: string;
+} {
     const result = createTestClient(storage);
     const mxClient = result.client;
     const client = new UnstableApis(mxClient);
@@ -355,7 +364,7 @@ describe('UnstableApis', () => {
 
     describe('getJoinedGroups', () => {
         it('should call the right endpoint', async () => {
-            const { client, http, hsUrl } = createTestUnstableClient();
+            const { client, http } = createTestUnstableClient();
 
             const groupId = "+testing:example.org";
 
@@ -441,6 +450,7 @@ describe('UnstableApis', () => {
             http.when("GET", "/_matrix/client/unstable/rooms").respond(200, (path, content) => {
                 const relTypeComponent = relType ? `/${encodeURIComponent(relType)}` : '';
                 const eventTypeComponent = eventType ? `/${encodeURIComponent(eventType)}` : '';
+                // eslint-disable-next-line max-len
                 const idx = path.indexOf(`${hsUrl}/_matrix/client/unstable/rooms/${encodeURIComponent(roomId)}/relations/${encodeURIComponent(eventId)}${relTypeComponent}${eventTypeComponent}`);
                 expect(idx).toBe(0);
                 return response;

@@ -1,5 +1,6 @@
-import { MentionPill } from "../../src";
 import * as simple from "simple-mock";
+
+import { MentionPill } from "../../src";
 import { createTestClient } from "../TestUtils";
 
 describe('MentionPill', () => {
@@ -83,8 +84,6 @@ describe('MentionPill', () => {
             const { client } = createTestClient();
 
             const userId = "@test:example.org";
-            const roomId = "!somewhere:example.org";
-            const displayName = "John Doe";
             const expectedHtml = `<a href="https://matrix.to/#/${userId}">${userId}</a>`;
             const expectedText = userId;
 
@@ -108,7 +107,6 @@ describe('MentionPill', () => {
 
             const userId = "@test:example.org";
             const roomId = "!somewhere:example.org";
-            const displayName = "John Doe";
             const expectedHtml = `<a href="https://matrix.to/#/${userId}">${userId}</a>`;
             const expectedText = userId;
 
@@ -175,6 +173,8 @@ describe('MentionPill', () => {
             expect(mention).toBeDefined();
             expect(mention.html).toBe(expectedHtml);
             expect(mention.text).toBe(expectedText);
+            expect(getStateSpy.callCount).toBe(1);
+            expect(resolveSpy.callCount).toBe(1);
         });
     });
 });

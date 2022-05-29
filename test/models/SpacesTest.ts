@@ -1,4 +1,5 @@
 import * as simple from "simple-mock";
+
 import { Space } from "../../src";
 import { createTestClient } from "../TestUtils";
 

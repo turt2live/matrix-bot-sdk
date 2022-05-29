@@ -1,4 +1,5 @@
 import * as simple from "simple-mock";
+
 import { IMetricContext, IMetricListener, Metrics } from "../../src";
 
 function createTestMetricListener(expectedName: string, expectedContext: IMetricContext, validateNumberFn: (i: number) => void): IMetricListener {

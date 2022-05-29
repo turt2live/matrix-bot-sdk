@@ -1,5 +1,6 @@
-import { Appservice, AppserviceJoinRoomStrategy, IJoinRoomStrategy } from "../../src";
 import * as simple from "simple-mock";
+
+import { Appservice, AppserviceJoinRoomStrategy, IJoinRoomStrategy } from "../../src";
 
 describe('AppserviceJoinRoomStrategy', () => {
     it('should be able to join the room normally', async () => {

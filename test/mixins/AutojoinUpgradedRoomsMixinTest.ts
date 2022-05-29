@@ -1,5 +1,6 @@
-import { Appservice, AutojoinUpgradedRoomsMixin, Intent } from "../../src";
 import * as simple from "simple-mock";
+
+import { Appservice, AutojoinUpgradedRoomsMixin, Intent } from "../../src";
 import { createTestClient } from "../TestUtils";
 
 describe('AutojoinUpgradedRoomsMixin', () => {

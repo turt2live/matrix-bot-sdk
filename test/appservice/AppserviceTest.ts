@@ -1,8 +1,9 @@
-import { Appservice, EventKind, IPreprocessor, setRequestFn } from "../../src";
 import * as getPort from "get-port";
 import * as requestPromise from "request-promise";
 import * as simple from "simple-mock";
 import * as MockHttpBackend from 'matrix-mock-request';
+
+import { Appservice, EventKind, Intent, IPreprocessor, setRequestFn } from "../../src";
 
 async function beginAppserviceWithProtocols(protocols: string[]) {
     const port = await getPort();
@@ -360,7 +361,8 @@ describe('Appservice', () => {
             },
         });
 
-        let intent, userId;
+        let intent: Intent;
+        let userId: string;
 
         userId = "@alice:example.org";
         intent = appservice.getIntentForUserId(userId);
@@ -762,6 +764,7 @@ describe('Appservice', () => {
         await appservice.begin();
 
         try {
+            // eslint-disable-next-line no-inner-declarations
             async function verifyAuth(method: string, route: string) {
                 async function doCall(opts: any = {}) {
                     try {
@@ -831,6 +834,7 @@ describe('Appservice', () => {
         await appservice.begin();
 
         try {
+            // eslint-disable-next-line no-inner-declarations
             async function doCall(route: string, opts: any = {}, err: any) {
                 try {
                     await requestPromise({
@@ -906,6 +910,7 @@ describe('Appservice', () => {
             appservice.on("room.event", eventSpy);
             appservice.on("room.message", messageSpy);
 
+            // eslint-disable-next-line no-inner-declarations
             async function doCall(route: string, opts: any = {}) {
                 const res = await requestPromise({
                     uri: `http://localhost:${port}${route}`,
@@ -956,7 +961,7 @@ describe('Appservice', () => {
 
         try {
             const txnBody = {
-                events: [
+                "events": [
                     { type: "m.room.message", roomId: "!somewhere:example.org" },
                     { type: "m.room.not_message", roomId: "!elsewhere:example.org" },
                 ],
@@ -972,6 +977,7 @@ describe('Appservice', () => {
             });
             appservice.on("ephemeral.event", eventSpy);
 
+            // eslint-disable-next-line no-inner-declarations
             async function doCall(route: string, opts: any = {}) {
                 const res = await requestPromise({
                     uri: `http://localhost:${port}${route}`,
@@ -1037,6 +1043,7 @@ describe('Appservice', () => {
             appservice.on("room.event", eventSpy);
             appservice.on("room.message", messageSpy);
 
+            // eslint-disable-next-line no-inner-declarations
             async function doCall(route: string, opts: any = {}) {
                 const res = await requestPromise({
                     uri: `http://localhost:${port}${route}`,
@@ -1112,6 +1119,7 @@ describe('Appservice', () => {
             appservice.on("room.event", eventSpy);
             appservice.on("room.message", messageSpy);
 
+            // eslint-disable-next-line no-inner-declarations
             async function doCall(route: string, opts: any = {}) {
                 const res = await requestPromise({
                     uri: `http://localhost:${port}${route}`,
@@ -1145,10 +1153,10 @@ describe('Appservice', () => {
             homeserverName: 'example.org',
             homeserverUrl: 'https://localhost',
             registration: {
-                as_token: "",
-                hs_token: hsToken,
-                sender_localpart: "_bot_",
-                namespaces: {
+                "as_token": "",
+                "hs_token": hsToken,
+                "sender_localpart": "_bot_",
+                "namespaces": {
                     users: [{ exclusive: true, regex: "@_prefix_.*:.+" }],
                     rooms: [],
                     aliases: [],
@@ -1164,7 +1172,7 @@ describe('Appservice', () => {
 
         try {
             const txnBody = {
-                events: [],
+                "events": [],
                 "de.sorunome.msc2409.ephemeral": [
                     { type: "m.typing", userId: "@someone:example.org" },
                     { type: "m.not_typing", userId: "@someone_else:example.org" },
@@ -1187,6 +1195,7 @@ describe('Appservice', () => {
             });
             appservice.on("ephemeral.event", eventSpy);
 
+            // eslint-disable-next-line no-inner-declarations
             async function doCall(route: string, opts: any = {}) {
                 const res = await requestPromise({
                     uri: `http://localhost:${port}${route}`,
@@ -1283,6 +1292,7 @@ describe('Appservice', () => {
             appservice.on("room.event", eventSpy);
             appservice.on("room.message", messageSpy);
 
+            // eslint-disable-next-line no-inner-declarations
             async function doCall(route: string, opts: any = {}) {
                 const res = await requestPromise({
                     uri: `http://localhost:${port}${route}`,
@@ -1318,10 +1328,10 @@ describe('Appservice', () => {
             homeserverName: 'example.org',
             homeserverUrl: 'https://localhost',
             registration: {
-                as_token: "",
-                hs_token: hsToken,
-                sender_localpart: "_bot_",
-                namespaces: {
+                "as_token": "",
+                "hs_token": hsToken,
+                "sender_localpart": "_bot_",
+                "namespaces": {
                     users: [{ exclusive: true, regex: "@_prefix_.*:.+" }],
                     rooms: [],
                     aliases: [],
@@ -1337,7 +1347,7 @@ describe('Appservice', () => {
 
         try {
             const txnBody = {
-                events: [],
+                "events": [],
                 "de.sorunome.msc2409.ephemeral": [
                     { type: "m.typing", userId: "@someone:example.org" },
                     { type: "m.not_typing", userId: "@someone_else:example.org" },
@@ -1371,6 +1381,7 @@ describe('Appservice', () => {
             });
             appservice.on("ephemeral.event", eventSpy);
 
+            // eslint-disable-next-line no-inner-declarations
             async function doCall(route: string, opts: any = {}) {
                 const res = await requestPromise({
                     uri: `http://localhost:${port}${route}`,
@@ -1496,6 +1507,7 @@ describe('Appservice', () => {
             appservice.on("room.leave", leaveSpy);
             appservice.on("room.invite", inviteSpy);
 
+            // eslint-disable-next-line no-inner-declarations
             async function doCall(route: string, opts: any = {}) {
                 const res = await requestPromise({
                     uri: `http://localhost:${port}${route}`,
@@ -1585,6 +1597,7 @@ describe('Appservice', () => {
             appservice.on("room.upgraded", upgradeSpy);
             appservice.on("room.event", eventSpy);
 
+            // eslint-disable-next-line no-inner-declarations
             async function doCall(route: string, opts: any = {}) {
                 const res = await requestPromise({
                     uri: `http://localhost:${port}${route}`,
@@ -1682,6 +1695,7 @@ describe('Appservice', () => {
 
             appservice.on("query.user", userSpy);
 
+            // eslint-disable-next-line no-inner-declarations
             async function doCall(route: string, opts: any = {}) {
                 const res = await requestPromise({
                     uri: `http://localhost:${port}${route}`,
@@ -1758,6 +1772,7 @@ describe('Appservice', () => {
 
             appservice.on("query.user", userSpy);
 
+            // eslint-disable-next-line no-inner-declarations
             async function doCall(route: string, opts: any = {}) {
                 http.when("PUT", "/_matrix/client/r0/profile").respond(200, (path, content) => {
                     expect(path).toEqual(`${hsUrl}/_matrix/client/r0/profile/${encodeURIComponent(userId)}/displayname`);
@@ -1841,6 +1856,7 @@ describe('Appservice', () => {
 
             appservice.on("query.user", userSpy);
 
+            // eslint-disable-next-line no-inner-declarations
             async function doCall(route: string, opts: any = {}) {
                 http.when("PUT", "/_matrix/client/r0/profile").respond(200, (path, content) => {
                     expect(path).toEqual(`${hsUrl}/_matrix/client/r0/profile/${encodeURIComponent(userId)}/displayname`);
@@ -1920,6 +1936,7 @@ describe('Appservice', () => {
 
             appservice.on("query.user", userSpy);
 
+            // eslint-disable-next-line no-inner-declarations
             async function doCall(route: string, opts: any = {}) {
                 try {
                     await requestPromise({
@@ -2002,6 +2019,7 @@ describe('Appservice', () => {
 
             appservice.on("query.user", userSpy);
 
+            // eslint-disable-next-line no-inner-declarations
             async function doCall(route: string, opts: any = {}) {
                 try {
                     await requestPromise({
@@ -2084,6 +2102,7 @@ describe('Appservice', () => {
 
             appservice.on("query.room", roomSpy);
 
+            // eslint-disable-next-line no-inner-declarations
             async function doCall(route: string, opts: any = {}) {
                 const res = await requestPromise({
                     uri: `http://localhost:${port}${route}`,
@@ -2154,6 +2173,7 @@ describe('Appservice', () => {
 
             appservice.on("query.room", roomSpy);
 
+            // eslint-disable-next-line no-inner-declarations
             async function doCall(route: string, opts: any = {}) {
                 const res = await requestPromise({
                     uri: `http://localhost:${port}${route}`,
@@ -2224,6 +2244,7 @@ describe('Appservice', () => {
 
             appservice.on("query.room", roomSpy);
 
+            // eslint-disable-next-line no-inner-declarations
             async function doCall(route: string, opts: any = {}) {
                 const res = await requestPromise({
                     uri: `http://localhost:${port}${route}`,
@@ -2277,11 +2298,6 @@ describe('Appservice', () => {
             const roomAlias = "#_prefix_test:example.org";
             const roomId = "!something:example.org";
 
-            const expected = Object.assign({}, roomOptions, {
-                __roomId: roomId,
-                room_alias_name: roomAlias.substring(1).split(':')[0],
-            });
-
             const createRoomSpy = simple.mock(appservice.botIntent.underlyingClient, "createRoom").callFn((opts) => {
                 expect(opts).toMatchObject(roomOptions);
                 return Promise.resolve(roomId);
@@ -2294,6 +2310,7 @@ describe('Appservice', () => {
 
             appservice.on("query.room", roomSpy);
 
+            // eslint-disable-next-line no-inner-declarations
             async function doCall(route: string, opts: any = {}) {
                 try {
                     await requestPromise({
@@ -2357,11 +2374,6 @@ describe('Appservice', () => {
             const roomAlias = "#_prefix_test:example.org";
             const roomId = "!something:example.org";
 
-            const expected = Object.assign({}, roomOptions, {
-                __roomId: roomId,
-                room_alias_name: roomAlias.substring(1).split(':')[0],
-            });
-
             const createRoomSpy = simple.mock(appservice.botIntent.underlyingClient, "createRoom").callFn((opts) => {
                 expect(opts).toMatchObject(roomOptions);
                 return Promise.resolve(roomId);
@@ -2374,6 +2386,7 @@ describe('Appservice', () => {
 
             appservice.on("query.room", roomSpy);
 
+            // eslint-disable-next-line no-inner-declarations
             async function doCall(route: string, opts: any = {}) {
                 try {
                     await requestPromise({
