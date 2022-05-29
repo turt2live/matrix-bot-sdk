@@ -1,5 +1,6 @@
-import { AdminApis, IStorageProvider, MatrixClient, WhoisInfo } from "../src";
 import * as MockHttpBackend from 'matrix-mock-request';
+
+import { AdminApis, IStorageProvider, MatrixClient, WhoisInfo } from "../src";
 import { createTestClient } from "./TestUtils";
 
 export function createTestAdminClient(storage: IStorageProvider = null): { client: AdminApis, mxClient: MatrixClient, http: MockHttpBackend, hsUrl: string, accessToken: string } {
@@ -9,13 +10,13 @@ export function createTestAdminClient(storage: IStorageProvider = null): { clien
 
     delete result.client;
 
-    return {...result, client, mxClient};
+    return { ...result, client, mxClient };
 }
 
 describe('AdminApis', () => {
     describe('whoisUser', () => {
         it('should call the right endpoint', async () => {
-            const {client, http, hsUrl} = createTestAdminClient();
+            const { client, http, hsUrl } = createTestAdminClient();
 
             const userId = "@someone:example.org";
             const response: WhoisInfo = {

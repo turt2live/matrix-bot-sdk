@@ -76,7 +76,7 @@ describe('Permalinks', () => {
                 userId,
                 roomIdOrAlias: undefined,
                 viaServers: undefined,
-                eventId: undefined
+                eventId: undefined,
             };
             const parsed = Permalinks.parseUrl(`https://matrix.to/#/${userId}`);
 
@@ -89,7 +89,7 @@ describe('Permalinks', () => {
                 userId: undefined,
                 roomIdOrAlias: roomId,
                 viaServers: [],
-                eventId: undefined
+                eventId: undefined,
             };
             const parsed = Permalinks.parseUrl(`https://matrix.to/#/${roomId}`);
 
@@ -102,7 +102,7 @@ describe('Permalinks', () => {
                 userId: undefined,
                 roomIdOrAlias: roomId,
                 viaServers: [],
-                eventId: undefined
+                eventId: undefined,
             };
             const parsed = Permalinks.parseUrl(`https://matrix.to/#/${roomId}`);
 
@@ -112,7 +112,7 @@ describe('Permalinks', () => {
         it('should parse room alias permalink URLs', () => {
             const roomId = "#test:example.org";
             const eventId = "$ev:example.org";
-            const expected: PermalinkParts = {userId: undefined, roomIdOrAlias: roomId, viaServers: [], eventId};
+            const expected: PermalinkParts = { userId: undefined, roomIdOrAlias: roomId, viaServers: [], eventId };
             const parsed = Permalinks.parseUrl(`https://matrix.to/#/${roomId}/${eventId}`);
 
             expect(parsed).toMatchObject(<any>expected);
@@ -121,7 +121,7 @@ describe('Permalinks', () => {
         it('should parse room ID permalink URLs', () => {
             const roomId = "!test:example.org";
             const eventId = "$ev:example.org";
-            const expected: PermalinkParts = {userId: undefined, roomIdOrAlias: roomId, viaServers: [], eventId};
+            const expected: PermalinkParts = { userId: undefined, roomIdOrAlias: roomId, viaServers: [], eventId };
             const parsed = Permalinks.parseUrl(`https://matrix.to/#/${roomId}/${eventId}`);
 
             expect(parsed).toMatchObject(<any>expected);
@@ -131,7 +131,7 @@ describe('Permalinks', () => {
             const roomId = "#test:example.org";
             const eventId = "$ev:example.org";
             const via = ["one.example.org", "two.example.org"];
-            const expected: PermalinkParts = {userId: undefined, roomIdOrAlias: roomId, viaServers: via, eventId};
+            const expected: PermalinkParts = { userId: undefined, roomIdOrAlias: roomId, viaServers: via, eventId };
             const parsed = Permalinks.parseUrl(`https://matrix.to/#/${roomId}/${eventId}?via=${via.join("via=")}`);
 
             expect(parsed).toMatchObject(<any>expected);
@@ -141,7 +141,7 @@ describe('Permalinks', () => {
             const roomId = "!test:example.org";
             const eventId = "$ev:example.org";
             const via = ["one.example.org", "two.example.org"];
-            const expected: PermalinkParts = {userId: undefined, roomIdOrAlias: roomId, viaServers: via, eventId};
+            const expected: PermalinkParts = { userId: undefined, roomIdOrAlias: roomId, viaServers: via, eventId };
             const parsed = Permalinks.parseUrl(`https://matrix.to/#/${roomId}/${eventId}?via=${via.join("via=")}`);
 
             expect(parsed).toMatchObject(<any>expected);

@@ -13,7 +13,7 @@ describe('MemoryStorageProvider', () => {
     it('should return the right filter object', async () => {
         const provider = new MemoryStorageProvider();
 
-        const value: IFilterInfo = {id: 12, filter: {hello: "world"}};
+        const value: IFilterInfo = { id: 12, filter: { hello: "world" } };
         expect(await provider.getFilter()).toBeFalsy();
         await provider.setFilter(value);
         expect(await provider.getFilter()).toMatchObject(<any>value);
@@ -88,7 +88,7 @@ describe('MemoryStorageProvider', () => {
         it('should return the right filter object', async () => {
             const provider = new MemoryStorageProvider();
 
-            const value: IFilterInfo = {id: 12, filter: {hello: "world"}};
+            const value: IFilterInfo = { id: 12, filter: { hello: "world" } };
             const namespace = "@user:example.org";
 
             const nsProvider = provider.storageForUser(namespace);

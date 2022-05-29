@@ -1,5 +1,6 @@
-import { SimpleRetryJoinStrategy } from "../../src";
 import * as simple from "simple-mock";
+
+import { SimpleRetryJoinStrategy } from "../../src";
 
 describe('SimpleRetryJoinStrategy', () => {
     it('should retry joins when they fail', async () => {

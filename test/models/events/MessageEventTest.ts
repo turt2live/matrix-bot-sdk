@@ -22,7 +22,8 @@ describe("MessageEvent", () => {
         expect(obj.isRedacted).toEqual(true);
 
         try {
-            let _ = obj.messageType;
+            console.log(obj.messageType); // eslint-disable-line no-console
+            // noinspection ExceptionCaughtLocallyJS
             throw new Error("Expected a throw but there was none");
         } catch (e) {
             if (!(e instanceof EventRedactedError)) {
@@ -31,7 +32,8 @@ describe("MessageEvent", () => {
         }
 
         try {
-            let _ = obj.textBody;
+            console.log(obj.textBody); // eslint-disable-line no-console
+            // noinspection ExceptionCaughtLocallyJS
             throw new Error("Expected a throw but there was none");
         } catch (e) {
             if (!(e instanceof EventRedactedError)) {

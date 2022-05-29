@@ -1,5 +1,4 @@
-import { UserID } from "../../src";
-import { MatrixProfile, MatrixProfileInfo } from "../../src";
+import { MatrixProfile, MatrixProfileInfo, UserID } from "../../src";
 
 describe("MatrixProfile", () => {
     it("should return the right fields", () => {

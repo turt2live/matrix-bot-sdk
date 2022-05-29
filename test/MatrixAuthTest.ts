@@ -1,5 +1,6 @@
-import { MatrixAuth } from "../src";
 import * as MockHttpBackend from 'matrix-mock-request';
+
+import { MatrixAuth } from "../src";
 import { createTestClient } from "./TestUtils";
 
 export function createTestAuth(): { auth: MatrixAuth, http: MockHttpBackend, hsUrl: string } {
@@ -15,21 +16,21 @@ export function createTestAuth(): { auth: MatrixAuth, http: MockHttpBackend, hsU
     // one which uses our http thing.
     auth['createTemplateClient'] = () => mxClient;
 
-    return {hsUrl, http, auth};
+    return { hsUrl, http, auth };
 }
 
 describe('MatrixAuth', () => {
     describe('passwordRegister', () => {
         it('should call the right endpoint', async () => {
-            const {auth, http, hsUrl} = createTestAuth();
+            const { auth, http, hsUrl } = createTestAuth();
 
             const username = "testing_username";
             const password = "P@ssw0rd";
             const accessToken = "1234";
 
             http.when("POST", "/_matrix/client/r0/register").respond(200, (path, content) => {
-                expect(content).toMatchObject({username, password});
-                return {access_token: accessToken};
+                expect(content).toMatchObject({ username, password });
+                return { access_token: accessToken };
             });
 
             const [client] = await Promise.all([auth.passwordRegister(username, password), http.flushAllExpected()]);
@@ -42,7 +43,7 @@ describe('MatrixAuth', () => {
         // object for errors.
 
         xit('should support UIA', async () => {
-            const {auth, http, hsUrl} = createTestAuth();
+            const { auth, http, hsUrl } = createTestAuth();
 
             const username = "testing_username";
             const password = "P@ssw0rd";
@@ -51,11 +52,11 @@ describe('MatrixAuth', () => {
 
             // First is UIA
             http.when("POST", "/_matrix/client/r0/register").respond(401, (path, content) => {
-                expect(content).toMatchObject({username, password});
+                expect(content).toMatchObject({ username, password });
                 return {
                     session: sessionId,
                     flows: [
-                        {stages: ["m.login.dummy"]},
+                        { stages: ["m.login.dummy"] },
                     ],
                     params: {},
                 };
@@ -69,7 +70,7 @@ describe('MatrixAuth', () => {
                         session: sessionId,
                     },
                 });
-                return {access_token: accessToken};
+                return { access_token: accessToken };
             });
 
             const [client] = await Promise.all([auth.passwordRegister(username, password), http.flushAllExpected()]);
@@ -80,7 +81,7 @@ describe('MatrixAuth', () => {
 
     describe('passwordLogin', () => {
         it('should call the right endpoint', async () => {
-            const {auth, http, hsUrl} = createTestAuth();
+            const { auth, http, hsUrl } = createTestAuth();
 
             const username = "testing_username";
             const password = "P@ssw0rd";
@@ -95,7 +96,7 @@ describe('MatrixAuth', () => {
                     },
                     password,
                 });
-                return {access_token: accessToken};
+                return { access_token: accessToken };
             });
 
             const [client] = await Promise.all([auth.passwordLogin(username, password), http.flushAllExpected()]);

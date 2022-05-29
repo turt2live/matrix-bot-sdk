@@ -1,8 +1,9 @@
-import { Appservice, EventKind, IPreprocessor, setRequestFn } from "../../src";
 import * as getPort from "get-port";
 import * as requestPromise from "request-promise";
 import * as simple from "simple-mock";
 import * as MockHttpBackend from 'matrix-mock-request';
+
+import { Appservice, EventKind, Intent, IPreprocessor, setRequestFn } from "../../src";
 
 async function beginAppserviceWithProtocols(protocols: string[]) {
     const port = await getPort();
@@ -17,7 +18,7 @@ async function beginAppserviceWithProtocols(protocols: string[]) {
             hs_token: hsToken,
             sender_localpart: "_bot_",
             namespaces: {
-                users: [{exclusive: true, regex: "@_prefix_.*:.+"}],
+                users: [{ exclusive: true, regex: "@_prefix_.*:.+" }],
                 rooms: [],
                 aliases: [],
             },
@@ -32,14 +33,14 @@ async function beginAppserviceWithProtocols(protocols: string[]) {
         return await requestPromise({
             uri: `http://localhost:${port}${route}`,
             method: "GET",
-            qs: {access_token: hsToken, ...qs},
+            qs: { access_token: hsToken, ...qs },
             json: true,
             ...opts,
         });
     }
 
     await appservice.begin();
-    return {appservice, doCall};
+    return { appservice, doCall };
 }
 
 describe('Appservice', () => {
@@ -82,8 +83,8 @@ describe('Appservice', () => {
                     sender_localpart: "",
                     namespaces: {
                         users: [
-                            {exclusive: true, regex: "@.+:.+"},
-                            {exclusive: true, regex: "@.+:.+"},
+                            { exclusive: true, regex: "@.+:.+" },
+                            { exclusive: true, regex: "@.+:.+" },
                         ],
                         rooms: [],
                         aliases: [],
@@ -109,7 +110,7 @@ describe('Appservice', () => {
                 hs_token: "",
                 sender_localpart: "",
                 namespaces: {
-                    users: [{exclusive: true, regex: "@prefix_.+:localhost"}],
+                    users: [{ exclusive: true, regex: "@prefix_.+:localhost" }],
                     rooms: [],
                     aliases: [],
                 },
@@ -129,7 +130,7 @@ describe('Appservice', () => {
                 hs_token: "",
                 sender_localpart: "",
                 namespaces: {
-                    users: [{exclusive: true, regex: "@prefix_.*:localhost"}],
+                    users: [{ exclusive: true, regex: "@prefix_.*:localhost" }],
                     rooms: [],
                     aliases: [],
                 },
@@ -149,7 +150,7 @@ describe('Appservice', () => {
                 hs_token: "",
                 sender_localpart: "",
                 namespaces: {
-                    users: [{exclusive: true, regex: "@prefix_foo:localhost"}],
+                    users: [{ exclusive: true, regex: "@prefix_foo:localhost" }],
                     rooms: [],
                     aliases: [],
                 },
@@ -171,7 +172,7 @@ describe('Appservice', () => {
                 hs_token: "",
                 sender_localpart: "_bot_",
                 namespaces: {
-                    users: [{exclusive: true, regex: "@_prefix_.*:.+"}],
+                    users: [{ exclusive: true, regex: "@_prefix_.*:.+" }],
                     rooms: [],
                     aliases: [],
                 },
@@ -192,7 +193,7 @@ describe('Appservice', () => {
                 hs_token: "",
                 sender_localpart: "_bot_",
                 namespaces: {
-                    users: [{exclusive: true, regex: "@_prefix_.*:.+"}],
+                    users: [{ exclusive: true, regex: "@_prefix_.*:.+" }],
                     rooms: [],
                     aliases: [],
                 },
@@ -214,7 +215,7 @@ describe('Appservice', () => {
                 hs_token: "",
                 sender_localpart: "_bot_",
                 namespaces: {
-                    users: [{exclusive: true, regex: "@_prefix_.*:.+"}],
+                    users: [{ exclusive: true, regex: "@_prefix_.*:.+" }],
                     rooms: [],
                     aliases: [],
                 },
@@ -236,7 +237,7 @@ describe('Appservice', () => {
                 hs_token: "",
                 sender_localpart: "_bot_",
                 namespaces: {
-                    users: [{exclusive: true, regex: "@_prefix_.*:.+"}],
+                    users: [{ exclusive: true, regex: "@_prefix_.*:.+" }],
                     rooms: [],
                     aliases: [],
                 },
@@ -259,7 +260,7 @@ describe('Appservice', () => {
                 hs_token: "",
                 sender_localpart: "_bot_",
                 namespaces: {
-                    users: [{exclusive: true, regex: "@_prefix_.*:.+"}],
+                    users: [{ exclusive: true, regex: "@_prefix_.*:.+" }],
                     rooms: [],
                     aliases: [],
                 },
@@ -281,7 +282,7 @@ describe('Appservice', () => {
                 hs_token: "",
                 sender_localpart: "_bot_",
                 namespaces: {
-                    users: [{exclusive: true, regex: "@_prefix_.*:.+"}],
+                    users: [{ exclusive: true, regex: "@_prefix_.*:.+" }],
                     rooms: [],
                     aliases: [],
                 },
@@ -307,7 +308,7 @@ describe('Appservice', () => {
                 hs_token: "",
                 sender_localpart: "_bot_",
                 namespaces: {
-                    users: [{exclusive: true, regex: "@_prefix_.*:.+"}],
+                    users: [{ exclusive: true, regex: "@_prefix_.*:.+" }],
                     rooms: [],
                     aliases: [],
                 },
@@ -330,7 +331,7 @@ describe('Appservice', () => {
                 hs_token: "",
                 sender_localpart: "_bot_",
                 namespaces: {
-                    users: [{exclusive: true, regex: "@_prefix_.*:.+"}],
+                    users: [{ exclusive: true, regex: "@_prefix_.*:.+" }],
                     rooms: [],
                     aliases: [],
                 },
@@ -353,14 +354,15 @@ describe('Appservice', () => {
                 hs_token: "",
                 sender_localpart: "_bot_",
                 namespaces: {
-                    users: [{exclusive: true, regex: "@_prefix_.*:.+"}],
+                    users: [{ exclusive: true, regex: "@_prefix_.*:.+" }],
                     rooms: [],
                     aliases: [],
                 },
             },
         });
 
-        let intent, userId;
+        let intent: Intent;
+        let userId: string;
 
         userId = "@alice:example.org";
         intent = appservice.getIntentForUserId(userId);
@@ -394,7 +396,7 @@ describe('Appservice', () => {
                 hs_token: "",
                 sender_localpart: "_bot_",
                 namespaces: {
-                    users: [{exclusive: true, regex: "@_prefix_.*:.+"}],
+                    users: [{ exclusive: true, regex: "@_prefix_.*:.+" }],
                     rooms: [],
                     aliases: [],
                 },
@@ -415,7 +417,7 @@ describe('Appservice', () => {
                 hs_token: "",
                 sender_localpart: "_bot_",
                 namespaces: {
-                    users: [{exclusive: true, regex: "@_prefix_.*:.+"}],
+                    users: [{ exclusive: true, regex: "@_prefix_.*:.+" }],
                     rooms: [],
                     aliases: [],
                 },
@@ -437,7 +439,7 @@ describe('Appservice', () => {
                     hs_token: "",
                     sender_localpart: "_bot_",
                     namespaces: {
-                        users: [{exclusive: true, regex: "@_prefix_.*:.+"}],
+                        users: [{ exclusive: true, regex: "@_prefix_.*:.+" }],
                         rooms: [],
                         aliases: [],
                     },
@@ -461,7 +463,7 @@ describe('Appservice', () => {
                     hs_token: "",
                     sender_localpart: "_bot_",
                     namespaces: {
-                        users: [{exclusive: true, regex: "@_prefix_.*:.+"}],
+                        users: [{ exclusive: true, regex: "@_prefix_.*:.+" }],
                         rooms: [],
                         aliases: [],
                     },
@@ -491,7 +493,7 @@ describe('Appservice', () => {
                         hs_token: "",
                         sender_localpart: "_bot_",
                         namespaces: {
-                            users: [{exclusive: true, regex: "@_prefix_.*:.+"}],
+                            users: [{ exclusive: true, regex: "@_prefix_.*:.+" }],
                             rooms: [],
                             aliases: [],
                         },
@@ -520,9 +522,9 @@ describe('Appservice', () => {
                     hs_token: "",
                     sender_localpart: "_bot_",
                     namespaces: {
-                        users: [{exclusive: true, regex: "@_prefix_.*:.+"}],
+                        users: [{ exclusive: true, regex: "@_prefix_.*:.+" }],
                         rooms: [],
-                        aliases: [{exclusive: true, regex: "#_prefix_.*:.+"}],
+                        aliases: [{ exclusive: true, regex: "#_prefix_.*:.+" }],
                     },
                 },
             });
@@ -546,7 +548,7 @@ describe('Appservice', () => {
                 hs_token: "",
                 sender_localpart: "_bot_",
                 namespaces: {
-                    users: [{exclusive: true, regex: "@_prefix_.*:.+"}],
+                    users: [{ exclusive: true, regex: "@_prefix_.*:.+" }],
                     rooms: [],
                     aliases: [],
                 },
@@ -569,7 +571,7 @@ describe('Appservice', () => {
                         hs_token: "",
                         sender_localpart: "_bot_",
                         namespaces: {
-                            users: [{exclusive: true, regex: "@_prefix_.*:.+"}],
+                            users: [{ exclusive: true, regex: "@_prefix_.*:.+" }],
                             rooms: [],
                             aliases: [],
                         },
@@ -594,9 +596,9 @@ describe('Appservice', () => {
                     hs_token: "",
                     sender_localpart: "_bot_",
                     namespaces: {
-                        users: [{exclusive: true, regex: "@_prefix_.*:.+"}],
+                        users: [{ exclusive: true, regex: "@_prefix_.*:.+" }],
                         rooms: [],
-                        aliases: [{exclusive: true, regex: "#_prefix_.*:.+"}],
+                        aliases: [{ exclusive: true, regex: "#_prefix_.*:.+" }],
                     },
                 },
             });
@@ -618,7 +620,7 @@ describe('Appservice', () => {
                         hs_token: "",
                         sender_localpart: "_bot_",
                         namespaces: {
-                            users: [{exclusive: true, regex: "@_prefix_.*:.+"}],
+                            users: [{ exclusive: true, regex: "@_prefix_.*:.+" }],
                             rooms: [],
                             aliases: [],
                         },
@@ -643,9 +645,9 @@ describe('Appservice', () => {
                     hs_token: "",
                     sender_localpart: "_bot_",
                     namespaces: {
-                        users: [{exclusive: true, regex: "@_prefix_.*:.+"}],
+                        users: [{ exclusive: true, regex: "@_prefix_.*:.+" }],
                         rooms: [],
-                        aliases: [{exclusive: true, regex: "#_prefix_.*:.+"}],
+                        aliases: [{ exclusive: true, regex: "#_prefix_.*:.+" }],
                     },
                 },
             });
@@ -667,7 +669,7 @@ describe('Appservice', () => {
                         hs_token: "",
                         sender_localpart: "_bot_",
                         namespaces: {
-                            users: [{exclusive: true, regex: "@_prefix_.*:.+"}],
+                            users: [{ exclusive: true, regex: "@_prefix_.*:.+" }],
                             rooms: [],
                             aliases: [],
                         },
@@ -695,9 +697,9 @@ describe('Appservice', () => {
                     hs_token: "",
                     sender_localpart: "_bot_",
                     namespaces: {
-                        users: [{exclusive: true, regex: "@_prefix_.*:.+"}],
+                        users: [{ exclusive: true, regex: "@_prefix_.*:.+" }],
                         rooms: [],
-                        aliases: [{exclusive: true, regex: "#_prefix_.*:.+"}],
+                        aliases: [{ exclusive: true, regex: "#_prefix_.*:.+" }],
                     },
                 },
             });
@@ -719,9 +721,9 @@ describe('Appservice', () => {
                     hs_token: "",
                     sender_localpart: "_bot_",
                     namespaces: {
-                        users: [{exclusive: true, regex: "@_prefix_.*:.+"}],
+                        users: [{ exclusive: true, regex: "@_prefix_.*:.+" }],
                         rooms: [],
-                        aliases: [{exclusive: true, regex: "#_prefix_.*:.+"}],
+                        aliases: [{ exclusive: true, regex: "#_prefix_.*:.+" }],
                     },
                 },
             });
@@ -749,7 +751,7 @@ describe('Appservice', () => {
                 hs_token: hsToken,
                 sender_localpart: "_bot_",
                 namespaces: {
-                    users: [{exclusive: true, regex: "@_prefix_.*:.+"}],
+                    users: [{ exclusive: true, regex: "@_prefix_.*:.+" }],
                     rooms: [],
                     aliases: [],
                 },
@@ -762,6 +764,7 @@ describe('Appservice', () => {
         await appservice.begin();
 
         try {
+            // eslint-disable-next-line no-inner-declarations
             async function verifyAuth(method: string, route: string) {
                 async function doCall(opts: any = {}) {
                     try {
@@ -784,9 +787,9 @@ describe('Appservice', () => {
                 }
 
                 await doCall();
-                await doCall({qs: {access_token: "WRONG_TOKEN"}});
-                await doCall({headers: {Authorization: "Bearer WRONG_TOKEN"}});
-                await doCall({headers: {Authorization: "NotBearer WRONG_TOKEN"}});
+                await doCall({ qs: { access_token: "WRONG_TOKEN" } });
+                await doCall({ headers: { Authorization: "Bearer WRONG_TOKEN" } });
+                await doCall({ headers: { Authorization: "NotBearer WRONG_TOKEN" } });
             }
 
             await verifyAuth("GET", "/users/@_prefix_sample:example.org");
@@ -818,7 +821,7 @@ describe('Appservice', () => {
                 hs_token: hsToken,
                 sender_localpart: "_bot_",
                 namespaces: {
-                    users: [{exclusive: true, regex: "@_prefix_.*:.+"}],
+                    users: [{ exclusive: true, regex: "@_prefix_.*:.+" }],
                     rooms: [],
                     aliases: [],
                 },
@@ -831,12 +834,13 @@ describe('Appservice', () => {
         await appservice.begin();
 
         try {
+            // eslint-disable-next-line no-inner-declarations
             async function doCall(route: string, opts: any = {}, err: any) {
                 try {
                     await requestPromise({
                         uri: `http://localhost:${port}${route}`,
                         method: "PUT",
-                        qs: {access_token: hsToken},
+                        qs: { access_token: hsToken },
                         ...opts,
                     });
 
@@ -848,11 +852,11 @@ describe('Appservice', () => {
                 }
             }
 
-            await doCall("/transactions/1", {json: {hello: "world"}}, {
+            await doCall("/transactions/1", { json: { hello: "world" } }, {
                 errcode: "BAD_REQUEST",
                 error: "Invalid JSON: expected events",
             });
-            await doCall("/_matrix/app/v1/transactions/1", {json: {hello: "world"}}, {
+            await doCall("/_matrix/app/v1/transactions/1", { json: { hello: "world" } }, {
                 errcode: "BAD_REQUEST",
                 error: "Invalid JSON: expected events",
             });
@@ -874,7 +878,7 @@ describe('Appservice', () => {
                 hs_token: hsToken,
                 sender_localpart: "_bot_",
                 namespaces: {
-                    users: [{exclusive: true, regex: "@_prefix_.*:.+"}],
+                    users: [{ exclusive: true, regex: "@_prefix_.*:.+" }],
                     rooms: [],
                     aliases: [],
                 },
@@ -889,8 +893,8 @@ describe('Appservice', () => {
         try {
             const txnBody = {
                 events: [
-                    {type: "m.room.message", roomId: "!somewhere:example.org"},
-                    {type: "m.room.not_message", roomId: "!elsewhere:example.org"},
+                    { type: "m.room.message", roomId: "!somewhere:example.org" },
+                    { type: "m.room.not_message", roomId: "!elsewhere:example.org" },
                 ],
             };
 
@@ -906,11 +910,12 @@ describe('Appservice', () => {
             appservice.on("room.event", eventSpy);
             appservice.on("room.message", messageSpy);
 
+            // eslint-disable-next-line no-inner-declarations
             async function doCall(route: string, opts: any = {}) {
                 const res = await requestPromise({
                     uri: `http://localhost:${port}${route}`,
                     method: "PUT",
-                    qs: {access_token: hsToken},
+                    qs: { access_token: hsToken },
                     ...opts,
                 });
                 expect(res).toMatchObject({});
@@ -921,8 +926,8 @@ describe('Appservice', () => {
                 messageSpy.callCount = 0;
             }
 
-            await doCall("/transactions/1", {json: txnBody});
-            await doCall("/_matrix/app/v1/transactions/2", {json: txnBody});
+            await doCall("/transactions/1", { json: txnBody });
+            await doCall("/_matrix/app/v1/transactions/2", { json: txnBody });
         } finally {
             appservice.stop();
         }
@@ -941,7 +946,7 @@ describe('Appservice', () => {
                 hs_token: hsToken,
                 sender_localpart: "_bot_",
                 namespaces: {
-                    users: [{exclusive: true, regex: "@_prefix_.*:.+"}],
+                    users: [{ exclusive: true, regex: "@_prefix_.*:.+" }],
                     rooms: [],
                     aliases: [],
                 },
@@ -956,14 +961,14 @@ describe('Appservice', () => {
 
         try {
             const txnBody = {
-                events: [
-                    {type: "m.room.message", roomId: "!somewhere:example.org"},
-                    {type: "m.room.not_message", roomId: "!elsewhere:example.org"},
+                "events": [
+                    { type: "m.room.message", roomId: "!somewhere:example.org" },
+                    { type: "m.room.not_message", roomId: "!elsewhere:example.org" },
                 ],
                 "de.sorunome.msc2409.ephemeral": [
-                    {type: "m.typing", userId: "@someone:example.org"},
-                    {type: "m.not_typing", userId: "@someone_else:example.org"},
-                ]
+                    { type: "m.typing", userId: "@someone:example.org" },
+                    { type: "m.not_typing", userId: "@someone_else:example.org" },
+                ],
             };
 
             const eventSpy = simple.stub().callFn((ev) => {
@@ -972,11 +977,12 @@ describe('Appservice', () => {
             });
             appservice.on("ephemeral.event", eventSpy);
 
+            // eslint-disable-next-line no-inner-declarations
             async function doCall(route: string, opts: any = {}) {
                 const res = await requestPromise({
                     uri: `http://localhost:${port}${route}`,
                     method: "PUT",
-                    qs: {access_token: hsToken},
+                    qs: { access_token: hsToken },
                     ...opts,
                 });
                 expect(res).toMatchObject({});
@@ -985,8 +991,8 @@ describe('Appservice', () => {
                 eventSpy.callCount = 0;
             }
 
-            await doCall("/transactions/1", {json: txnBody});
-            await doCall("/_matrix/app/v1/transactions/2", {json: txnBody});
+            await doCall("/transactions/1", { json: txnBody });
+            await doCall("/_matrix/app/v1/transactions/2", { json: txnBody });
         } finally {
             appservice.stop();
         }
@@ -1005,7 +1011,7 @@ describe('Appservice', () => {
                 hs_token: hsToken,
                 sender_localpart: "_bot_",
                 namespaces: {
-                    users: [{exclusive: true, regex: "@_prefix_.*:.+"}],
+                    users: [{ exclusive: true, regex: "@_prefix_.*:.+" }],
                     rooms: [],
                     aliases: [],
                 },
@@ -1020,8 +1026,8 @@ describe('Appservice', () => {
         try {
             const txnBody = {
                 events: [
-                    {type: "m.room.message", roomId: "!somewhere:example.org"},
-                    {type: "m.room.not_message", roomId: "!elsewhere:example.org"},
+                    { type: "m.room.message", roomId: "!somewhere:example.org" },
+                    { type: "m.room.not_message", roomId: "!elsewhere:example.org" },
                 ],
             };
 
@@ -1037,11 +1043,12 @@ describe('Appservice', () => {
             appservice.on("room.event", eventSpy);
             appservice.on("room.message", messageSpy);
 
+            // eslint-disable-next-line no-inner-declarations
             async function doCall(route: string, opts: any = {}) {
                 const res = await requestPromise({
                     uri: `http://localhost:${port}${route}`,
                     method: "PUT",
-                    qs: {access_token: hsToken},
+                    qs: { access_token: hsToken },
                     ...opts,
                 });
                 expect(res).toMatchObject({});
@@ -1050,8 +1057,8 @@ describe('Appservice', () => {
                 expect(messageSpy.callCount).toBe(1);
             }
 
-            await doCall("/transactions/1", {json: txnBody});
-            await doCall("/_matrix/app/v1/transactions/1", {json: txnBody});
+            await doCall("/transactions/1", { json: txnBody });
+            await doCall("/_matrix/app/v1/transactions/1", { json: txnBody });
         } finally {
             appservice.stop();
         }
@@ -1070,7 +1077,7 @@ describe('Appservice', () => {
                 hs_token: hsToken,
                 sender_localpart: "_bot_",
                 namespaces: {
-                    users: [{exclusive: true, regex: "@_prefix_.*:.+"}],
+                    users: [{ exclusive: true, regex: "@_prefix_.*:.+" }],
                     rooms: [],
                     aliases: [],
                 },
@@ -1085,8 +1092,8 @@ describe('Appservice', () => {
         try {
             const txnBody = {
                 events: [
-                    {type: "m.room.message", roomId: "!somewhere:example.org"},
-                    {type: "m.room.not_message", roomId: "!elsewhere:example.org"},
+                    { type: "m.room.message", roomId: "!somewhere:example.org" },
+                    { type: "m.room.not_message", roomId: "!elsewhere:example.org" },
                 ],
             };
 
@@ -1112,11 +1119,12 @@ describe('Appservice', () => {
             appservice.on("room.event", eventSpy);
             appservice.on("room.message", messageSpy);
 
+            // eslint-disable-next-line no-inner-declarations
             async function doCall(route: string, opts: any = {}) {
                 const res = await requestPromise({
                     uri: `http://localhost:${port}${route}`,
                     method: "PUT",
-                    qs: {access_token: hsToken},
+                    qs: { access_token: hsToken },
                     ...opts,
                 });
                 expect(res).toMatchObject({});
@@ -1129,8 +1137,8 @@ describe('Appservice', () => {
                 processorSpy.callCount = 0;
             }
 
-            await doCall("/transactions/1", {json: txnBody});
-            await doCall("/_matrix/app/v1/transactions/2", {json: txnBody});
+            await doCall("/transactions/1", { json: txnBody });
+            await doCall("/_matrix/app/v1/transactions/2", { json: txnBody });
         } finally {
             appservice.stop();
         }
@@ -1145,11 +1153,11 @@ describe('Appservice', () => {
             homeserverName: 'example.org',
             homeserverUrl: 'https://localhost',
             registration: {
-                as_token: "",
-                hs_token: hsToken,
-                sender_localpart: "_bot_",
-                namespaces: {
-                    users: [{exclusive: true, regex: "@_prefix_.*:.+"}],
+                "as_token": "",
+                "hs_token": hsToken,
+                "sender_localpart": "_bot_",
+                "namespaces": {
+                    users: [{ exclusive: true, regex: "@_prefix_.*:.+" }],
                     rooms: [],
                     aliases: [],
                 },
@@ -1164,10 +1172,10 @@ describe('Appservice', () => {
 
         try {
             const txnBody = {
-                events: [],
+                "events": [],
                 "de.sorunome.msc2409.ephemeral": [
-                    {type: "m.typing", userId: "@someone:example.org"},
-                    {type: "m.not_typing", userId: "@someone_else:example.org"},
+                    { type: "m.typing", userId: "@someone:example.org" },
+                    { type: "m.not_typing", userId: "@someone_else:example.org" },
                 ],
             };
 
@@ -1187,11 +1195,12 @@ describe('Appservice', () => {
             });
             appservice.on("ephemeral.event", eventSpy);
 
+            // eslint-disable-next-line no-inner-declarations
             async function doCall(route: string, opts: any = {}) {
                 const res = await requestPromise({
                     uri: `http://localhost:${port}${route}`,
                     method: "PUT",
-                    qs: {access_token: hsToken},
+                    qs: { access_token: hsToken },
                     ...opts,
                 });
                 expect(res).toMatchObject({});
@@ -1202,8 +1211,8 @@ describe('Appservice', () => {
                 processorSpy.callCount = 0;
             }
 
-            await doCall("/transactions/1", {json: txnBody});
-            await doCall("/_matrix/app/v1/transactions/2", {json: txnBody});
+            await doCall("/transactions/1", { json: txnBody });
+            await doCall("/_matrix/app/v1/transactions/2", { json: txnBody });
         } finally {
             appservice.stop();
         }
@@ -1222,7 +1231,7 @@ describe('Appservice', () => {
                 hs_token: hsToken,
                 sender_localpart: "_bot_",
                 namespaces: {
-                    users: [{exclusive: true, regex: "@_prefix_.*:.+"}],
+                    users: [{ exclusive: true, regex: "@_prefix_.*:.+" }],
                     rooms: [],
                     aliases: [],
                 },
@@ -1237,9 +1246,9 @@ describe('Appservice', () => {
         try {
             const txnBody = {
                 events: [
-                    {type: "m.room.message", roomId: "!somewhere:example.org"},
-                    {type: "m.room.not_message", roomId: "!elsewhere:example.org"},
-                    {type: "m.room.unknown", roomId: "!elsewhere:example.org"},
+                    { type: "m.room.message", roomId: "!somewhere:example.org" },
+                    { type: "m.room.not_message", roomId: "!elsewhere:example.org" },
+                    { type: "m.room.unknown", roomId: "!elsewhere:example.org" },
                 ],
             };
 
@@ -1283,11 +1292,12 @@ describe('Appservice', () => {
             appservice.on("room.event", eventSpy);
             appservice.on("room.message", messageSpy);
 
+            // eslint-disable-next-line no-inner-declarations
             async function doCall(route: string, opts: any = {}) {
                 const res = await requestPromise({
                     uri: `http://localhost:${port}${route}`,
                     method: "PUT",
-                    qs: {access_token: hsToken},
+                    qs: { access_token: hsToken },
                     ...opts,
                 });
                 expect(res).toMatchObject({});
@@ -1302,8 +1312,8 @@ describe('Appservice', () => {
                 processorSpyB.callCount = 0;
             }
 
-            await doCall("/transactions/1", {json: txnBody});
-            await doCall("/_matrix/app/v1/transactions/2", {json: txnBody});
+            await doCall("/transactions/1", { json: txnBody });
+            await doCall("/_matrix/app/v1/transactions/2", { json: txnBody });
         } finally {
             appservice.stop();
         }
@@ -1318,11 +1328,11 @@ describe('Appservice', () => {
             homeserverName: 'example.org',
             homeserverUrl: 'https://localhost',
             registration: {
-                as_token: "",
-                hs_token: hsToken,
-                sender_localpart: "_bot_",
-                namespaces: {
-                    users: [{exclusive: true, regex: "@_prefix_.*:.+"}],
+                "as_token": "",
+                "hs_token": hsToken,
+                "sender_localpart": "_bot_",
+                "namespaces": {
+                    users: [{ exclusive: true, regex: "@_prefix_.*:.+" }],
                     rooms: [],
                     aliases: [],
                 },
@@ -1337,10 +1347,10 @@ describe('Appservice', () => {
 
         try {
             const txnBody = {
-                events: [],
+                "events": [],
                 "de.sorunome.msc2409.ephemeral": [
-                    {type: "m.typing", userId: "@someone:example.org"},
-                    {type: "m.not_typing", userId: "@someone_else:example.org"},
+                    { type: "m.typing", userId: "@someone:example.org" },
+                    { type: "m.not_typing", userId: "@someone_else:example.org" },
                 ],
             };
 
@@ -1371,11 +1381,12 @@ describe('Appservice', () => {
             });
             appservice.on("ephemeral.event", eventSpy);
 
+            // eslint-disable-next-line no-inner-declarations
             async function doCall(route: string, opts: any = {}) {
                 const res = await requestPromise({
                     uri: `http://localhost:${port}${route}`,
                     method: "PUT",
-                    qs: {access_token: hsToken},
+                    qs: { access_token: hsToken },
                     ...opts,
                 });
                 expect(res).toMatchObject({});
@@ -1388,8 +1399,8 @@ describe('Appservice', () => {
                 processorSpyB.callCount = 0;
             }
 
-            await doCall("/transactions/1", {json: txnBody});
-            await doCall("/_matrix/app/v1/transactions/2", {json: txnBody});
+            await doCall("/transactions/1", { json: txnBody });
+            await doCall("/_matrix/app/v1/transactions/2", { json: txnBody });
         } finally {
             appservice.stop();
         }
@@ -1408,7 +1419,7 @@ describe('Appservice', () => {
                 hs_token: hsToken,
                 sender_localpart: "_bot_",
                 namespaces: {
-                    users: [{exclusive: true, regex: "@_prefix_.*:.+"}],
+                    users: [{ exclusive: true, regex: "@_prefix_.*:.+" }],
                     rooms: [],
                     aliases: [],
                 },
@@ -1426,49 +1437,49 @@ describe('Appservice', () => {
                     {
                         type: "m.room.member",
                         room_id: "!AAA:example.org",
-                        content: {membership: "join"},
+                        content: { membership: "join" },
                         state_key: "@_prefix_test:example.org",
                     },
                     {
                         type: "m.room.member",
                         room_id: "!BBB:example.org",
-                        content: {membership: "leave"},
+                        content: { membership: "leave" },
                         state_key: "@_prefix_test:example.org",
                     },
                     {
                         type: "m.room.member",
                         room_id: "!CCC:example.org",
-                        content: {membership: "ban"},
+                        content: { membership: "ban" },
                         state_key: "@_prefix_test:example.org",
                     },
                     {
                         type: "m.room.member",
                         room_id: "!DDD:example.org",
-                        content: {membership: "invite"},
+                        content: { membership: "invite" },
                         state_key: "@_prefix_test:example.org",
                     },
                     {
                         type: "m.room.member",
                         room_id: "!AAA:example.org",
-                        content: {membership: "join"},
+                        content: { membership: "join" },
                         state_key: "@INVALID_USER:example.org",
                     },
                     {
                         type: "m.room.member",
                         room_id: "!BBB:example.org",
-                        content: {membership: "leave"},
+                        content: { membership: "leave" },
                         state_key: "@INVALID_USER:example.org",
                     },
                     {
                         type: "m.room.member",
                         room_id: "!CCC:example.org",
-                        content: {membership: "ban"},
+                        content: { membership: "ban" },
                         state_key: "@INVALID_USER:example.org",
                     },
                     {
                         type: "m.room.member",
                         room_id: "!DDD:example.org",
-                        content: {membership: "invite"},
+                        content: { membership: "invite" },
                         state_key: "@INVALID_USER:example.org",
                     },
                 ],
@@ -1496,11 +1507,12 @@ describe('Appservice', () => {
             appservice.on("room.leave", leaveSpy);
             appservice.on("room.invite", inviteSpy);
 
+            // eslint-disable-next-line no-inner-declarations
             async function doCall(route: string, opts: any = {}) {
                 const res = await requestPromise({
                     uri: `http://localhost:${port}${route}`,
                     method: "PUT",
-                    qs: {access_token: hsToken},
+                    qs: { access_token: hsToken },
                     ...opts,
                 });
                 expect(res).toMatchObject({});
@@ -1513,8 +1525,8 @@ describe('Appservice', () => {
                 inviteSpy.callCount = 0;
             }
 
-            await doCall("/transactions/1", {json: txnBody});
-            await doCall("/_matrix/app/v1/transactions/2", {json: txnBody});
+            await doCall("/transactions/1", { json: txnBody });
+            await doCall("/_matrix/app/v1/transactions/2", { json: txnBody });
         } finally {
             appservice.stop();
         }
@@ -1533,7 +1545,7 @@ describe('Appservice', () => {
                 hs_token: hsToken,
                 sender_localpart: "_bot_",
                 namespaces: {
-                    users: [{exclusive: true, regex: "@_prefix_.*:.+"}],
+                    users: [{ exclusive: true, regex: "@_prefix_.*:.+" }],
                     rooms: [],
                     aliases: [],
                 },
@@ -1550,13 +1562,13 @@ describe('Appservice', () => {
                 events: [
                     {
                         type: "m.room.tombstone",
-                        content: {body: "hello world 1"},
+                        content: { body: "hello world 1" },
                         state_key: "",
                         room_id: "!a:example.org",
                     },
                     {
                         type: "m.room.create",
-                        content: {predecessor: {room_id: "!old:example.org"}},
+                        content: { predecessor: { room_id: "!old:example.org" } },
                         state_key: "",
                         room_id: "!b:example.org",
                     },
@@ -1585,11 +1597,12 @@ describe('Appservice', () => {
             appservice.on("room.upgraded", upgradeSpy);
             appservice.on("room.event", eventSpy);
 
+            // eslint-disable-next-line no-inner-declarations
             async function doCall(route: string, opts: any = {}) {
                 const res = await requestPromise({
                     uri: `http://localhost:${port}${route}`,
                     method: "PUT",
-                    qs: {access_token: hsToken},
+                    qs: { access_token: hsToken },
                     ...opts,
                 });
                 expect(res).toMatchObject({});
@@ -1602,8 +1615,8 @@ describe('Appservice', () => {
                 eventSpy.callCount = 0;
             }
 
-            await doCall("/transactions/1", {json: txnBody});
-            await doCall("/_matrix/app/v1/transactions/2", {json: txnBody});
+            await doCall("/transactions/1", { json: txnBody });
+            await doCall("/_matrix/app/v1/transactions/2", { json: txnBody });
         } finally {
             appservice.stop();
         }
@@ -1648,7 +1661,7 @@ describe('Appservice', () => {
                 hs_token: hsToken,
                 sender_localpart: "_bot_",
                 namespaces: {
-                    users: [{exclusive: true, regex: "@_prefix_.*:.+"}],
+                    users: [{ exclusive: true, regex: "@_prefix_.*:.+" }],
                     rooms: [],
                     aliases: [],
                 },
@@ -1682,11 +1695,12 @@ describe('Appservice', () => {
 
             appservice.on("query.user", userSpy);
 
+            // eslint-disable-next-line no-inner-declarations
             async function doCall(route: string, opts: any = {}) {
                 const res = await requestPromise({
                     uri: `http://localhost:${port}${route}`,
                     method: "GET",
-                    qs: {access_token: hsToken},
+                    qs: { access_token: hsToken },
                     json: true,
                     ...opts,
                 });
@@ -1721,7 +1735,7 @@ describe('Appservice', () => {
                 hs_token: hsToken,
                 sender_localpart: "_bot_",
                 namespaces: {
-                    users: [{exclusive: true, regex: "@_prefix_.*:.+"}],
+                    users: [{ exclusive: true, regex: "@_prefix_.*:.+" }],
                     rooms: [],
                     aliases: [],
                 },
@@ -1758,22 +1772,23 @@ describe('Appservice', () => {
 
             appservice.on("query.user", userSpy);
 
+            // eslint-disable-next-line no-inner-declarations
             async function doCall(route: string, opts: any = {}) {
                 http.when("PUT", "/_matrix/client/r0/profile").respond(200, (path, content) => {
                     expect(path).toEqual(`${hsUrl}/_matrix/client/r0/profile/${encodeURIComponent(userId)}/displayname`);
-                    expect(content).toMatchObject({displayname: displayName});
+                    expect(content).toMatchObject({ displayname: displayName });
                     return {};
                 });
                 http.when("PUT", "/_matrix/client/r0/profile").respond(200, (path, content) => {
                     expect(path).toEqual(`${hsUrl}/_matrix/client/r0/profile/${encodeURIComponent(userId)}/avatar_url`);
-                    expect(content).toMatchObject({avatar_url: avatarUrl});
+                    expect(content).toMatchObject({ avatar_url: avatarUrl });
                     return {};
                 });
 
                 const [res] = await Promise.all([requestPromise({
                     uri: `http://localhost:${port}${route}`,
                     method: "GET",
-                    qs: {access_token: hsToken},
+                    qs: { access_token: hsToken },
                     json: true,
                     ...opts,
                 }), http.flushAllExpected()]);
@@ -1804,7 +1819,7 @@ describe('Appservice', () => {
                 hs_token: hsToken,
                 sender_localpart: "_bot_",
                 namespaces: {
-                    users: [{exclusive: true, regex: "@_prefix_.*:.+"}],
+                    users: [{ exclusive: true, regex: "@_prefix_.*:.+" }],
                     rooms: [],
                     aliases: [],
                 },
@@ -1841,22 +1856,23 @@ describe('Appservice', () => {
 
             appservice.on("query.user", userSpy);
 
+            // eslint-disable-next-line no-inner-declarations
             async function doCall(route: string, opts: any = {}) {
                 http.when("PUT", "/_matrix/client/r0/profile").respond(200, (path, content) => {
                     expect(path).toEqual(`${hsUrl}/_matrix/client/r0/profile/${encodeURIComponent(userId)}/displayname`);
-                    expect(content).toMatchObject({displayname: displayName});
+                    expect(content).toMatchObject({ displayname: displayName });
                     return {};
                 });
                 http.when("PUT", "/_matrix/client/r0/profile").respond(200, (path, content) => {
                     expect(path).toEqual(`${hsUrl}/_matrix/client/r0/profile/${encodeURIComponent(userId)}/avatar_url`);
-                    expect(content).toMatchObject({avatar_url: avatarUrl});
+                    expect(content).toMatchObject({ avatar_url: avatarUrl });
                     return {};
                 });
 
                 const [res] = await Promise.all([requestPromise({
                     uri: `http://localhost:${port}${route}`,
                     method: "GET",
-                    qs: {access_token: hsToken},
+                    qs: { access_token: hsToken },
                     json: true,
                     ...opts,
                 }), http.flushAllExpected()]);
@@ -1886,7 +1902,7 @@ describe('Appservice', () => {
                 hs_token: hsToken,
                 sender_localpart: "_bot_",
                 namespaces: {
-                    users: [{exclusive: true, regex: "@_prefix_.*:.+"}],
+                    users: [{ exclusive: true, regex: "@_prefix_.*:.+" }],
                     rooms: [],
                     aliases: [],
                 },
@@ -1920,12 +1936,13 @@ describe('Appservice', () => {
 
             appservice.on("query.user", userSpy);
 
+            // eslint-disable-next-line no-inner-declarations
             async function doCall(route: string, opts: any = {}) {
                 try {
                     await requestPromise({
                         uri: `http://localhost:${port}${route}`,
                         method: "GET",
-                        qs: {access_token: hsToken},
+                        qs: { access_token: hsToken },
                         json: true,
                         ...opts,
                     });
@@ -1968,7 +1985,7 @@ describe('Appservice', () => {
                 hs_token: hsToken,
                 sender_localpart: "_bot_",
                 namespaces: {
-                    users: [{exclusive: true, regex: "@_prefix_.*:.+"}],
+                    users: [{ exclusive: true, regex: "@_prefix_.*:.+" }],
                     rooms: [],
                     aliases: [],
                 },
@@ -2002,12 +2019,13 @@ describe('Appservice', () => {
 
             appservice.on("query.user", userSpy);
 
+            // eslint-disable-next-line no-inner-declarations
             async function doCall(route: string, opts: any = {}) {
                 try {
                     await requestPromise({
                         uri: `http://localhost:${port}${route}`,
                         method: "GET",
-                        qs: {access_token: hsToken},
+                        qs: { access_token: hsToken },
                         json: true,
                         ...opts,
                     });
@@ -2050,7 +2068,7 @@ describe('Appservice', () => {
                 hs_token: hsToken,
                 sender_localpart: "_bot_",
                 namespaces: {
-                    users: [{exclusive: true, regex: "@_prefix_.*:.+"}],
+                    users: [{ exclusive: true, regex: "@_prefix_.*:.+" }],
                     rooms: [],
                     aliases: [],
                 },
@@ -2084,11 +2102,12 @@ describe('Appservice', () => {
 
             appservice.on("query.room", roomSpy);
 
+            // eslint-disable-next-line no-inner-declarations
             async function doCall(route: string, opts: any = {}) {
                 const res = await requestPromise({
                     uri: `http://localhost:${port}${route}`,
                     method: "GET",
-                    qs: {access_token: hsToken},
+                    qs: { access_token: hsToken },
                     json: true,
                     ...opts,
                 });
@@ -2120,7 +2139,7 @@ describe('Appservice', () => {
                 hs_token: hsToken,
                 sender_localpart: "_bot_",
                 namespaces: {
-                    users: [{exclusive: true, regex: "@_prefix_.*:.+"}],
+                    users: [{ exclusive: true, regex: "@_prefix_.*:.+" }],
                     rooms: [],
                     aliases: [],
                 },
@@ -2133,7 +2152,7 @@ describe('Appservice', () => {
         await appservice.begin();
 
         try {
-            const roomOptions = {preset: "public_chat"};
+            const roomOptions = { preset: "public_chat" };
             const roomAlias = "#_prefix_test:example.org";
             const roomId = "!something:example.org";
 
@@ -2154,11 +2173,12 @@ describe('Appservice', () => {
 
             appservice.on("query.room", roomSpy);
 
+            // eslint-disable-next-line no-inner-declarations
             async function doCall(route: string, opts: any = {}) {
                 const res = await requestPromise({
                     uri: `http://localhost:${port}${route}`,
                     method: "GET",
-                    qs: {access_token: hsToken},
+                    qs: { access_token: hsToken },
                     json: true,
                     ...opts,
                 });
@@ -2190,7 +2210,7 @@ describe('Appservice', () => {
                 hs_token: hsToken,
                 sender_localpart: "_bot_",
                 namespaces: {
-                    users: [{exclusive: true, regex: "@_prefix_.*:.+"}],
+                    users: [{ exclusive: true, regex: "@_prefix_.*:.+" }],
                     rooms: [],
                     aliases: [],
                 },
@@ -2203,7 +2223,7 @@ describe('Appservice', () => {
         await appservice.begin();
 
         try {
-            const roomOptions = {preset: "public_chat"};
+            const roomOptions = { preset: "public_chat" };
             const roomAlias = "#_prefix_test:example.org";
             const roomId = "!something:example.org";
 
@@ -2224,11 +2244,12 @@ describe('Appservice', () => {
 
             appservice.on("query.room", roomSpy);
 
+            // eslint-disable-next-line no-inner-declarations
             async function doCall(route: string, opts: any = {}) {
                 const res = await requestPromise({
                     uri: `http://localhost:${port}${route}`,
                     method: "GET",
-                    qs: {access_token: hsToken},
+                    qs: { access_token: hsToken },
                     json: true,
                     ...opts,
                 });
@@ -2260,7 +2281,7 @@ describe('Appservice', () => {
                 hs_token: hsToken,
                 sender_localpart: "_bot_",
                 namespaces: {
-                    users: [{exclusive: true, regex: "@_prefix_.*:.+"}],
+                    users: [{ exclusive: true, regex: "@_prefix_.*:.+" }],
                     rooms: [],
                     aliases: [],
                 },
@@ -2273,14 +2294,9 @@ describe('Appservice', () => {
         await appservice.begin();
 
         try {
-            const roomOptions = {preset: "public_chat"};
+            const roomOptions = { preset: "public_chat" };
             const roomAlias = "#_prefix_test:example.org";
             const roomId = "!something:example.org";
-
-            const expected = Object.assign({}, roomOptions, {
-                __roomId: roomId,
-                room_alias_name: roomAlias.substring(1).split(':')[0],
-            });
 
             const createRoomSpy = simple.mock(appservice.botIntent.underlyingClient, "createRoom").callFn((opts) => {
                 expect(opts).toMatchObject(roomOptions);
@@ -2294,12 +2310,13 @@ describe('Appservice', () => {
 
             appservice.on("query.room", roomSpy);
 
+            // eslint-disable-next-line no-inner-declarations
             async function doCall(route: string, opts: any = {}) {
                 try {
                     await requestPromise({
                         uri: `http://localhost:${port}${route}`,
                         method: "GET",
-                        qs: {access_token: hsToken},
+                        qs: { access_token: hsToken },
                         json: true,
                         ...opts,
                     });
@@ -2340,7 +2357,7 @@ describe('Appservice', () => {
                 hs_token: hsToken,
                 sender_localpart: "_bot_",
                 namespaces: {
-                    users: [{exclusive: true, regex: "@_prefix_.*:.+"}],
+                    users: [{ exclusive: true, regex: "@_prefix_.*:.+" }],
                     rooms: [],
                     aliases: [],
                 },
@@ -2353,14 +2370,9 @@ describe('Appservice', () => {
         await appservice.begin();
 
         try {
-            const roomOptions = {preset: "public_chat"};
+            const roomOptions = { preset: "public_chat" };
             const roomAlias = "#_prefix_test:example.org";
             const roomId = "!something:example.org";
-
-            const expected = Object.assign({}, roomOptions, {
-                __roomId: roomId,
-                room_alias_name: roomAlias.substring(1).split(':')[0],
-            });
 
             const createRoomSpy = simple.mock(appservice.botIntent.underlyingClient, "createRoom").callFn((opts) => {
                 expect(opts).toMatchObject(roomOptions);
@@ -2374,12 +2386,13 @@ describe('Appservice', () => {
 
             appservice.on("query.room", roomSpy);
 
+            // eslint-disable-next-line no-inner-declarations
             async function doCall(route: string, opts: any = {}) {
                 try {
                     await requestPromise({
                         uri: `http://localhost:${port}${route}`,
                         method: "GET",
-                        qs: {access_token: hsToken},
+                        qs: { access_token: hsToken },
                         json: true,
                         ...opts,
                     });
@@ -2409,8 +2422,8 @@ describe('Appservice', () => {
 
     it("should handle third party protocol requests", async () => {
         const protos = ["fakeproto", "anotherproto"];
-        const {appservice, doCall} = await beginAppserviceWithProtocols(protos);
-        const responseObj = {notarealresponse: true};
+        const { appservice, doCall } = await beginAppserviceWithProtocols(protos);
+        const responseObj = { notarealresponse: true };
         const getProtoSpy = simple.stub().callFn((protocol, fn) => {
             expect(protos).toContain(protocol);
             fn(responseObj);
@@ -2427,7 +2440,7 @@ describe('Appservice', () => {
     });
 
     it("should reject unknown protocols when handling third party protocol requests", async () => {
-        const {appservice, doCall} = await beginAppserviceWithProtocols(["fakeproto"]);
+        const { appservice, doCall } = await beginAppserviceWithProtocols(["fakeproto"]);
         const expectedError = {
             errcode: "PROTOCOL_NOT_HANDLED",
             error: "Protocol is not handled by this appservice",
@@ -2447,11 +2460,11 @@ describe('Appservice', () => {
 
     it("should lookup a remote user by given fields and respond with it", async () => {
         const protocolId = "fakeproto";
-        const {appservice, doCall} = await beginAppserviceWithProtocols([protocolId]);
+        const { appservice, doCall } = await beginAppserviceWithProtocols([protocolId]);
         const responseObj = ["user1", "user2"];
         const userFields = {
             "foo": "bar",
-            "bar": "baz"
+            "bar": "baz",
         };
         const getUserSpy = simple.stub().callFn((protocol, fields, fn) => {
             expect(protocol).toEqual(protocolId);
@@ -2468,7 +2481,7 @@ describe('Appservice', () => {
     });
 
     it("should lookup a matrix user by given fields and respond with it", async () => {
-        const {appservice, doCall} = await beginAppserviceWithProtocols(["fakeproto"]);
+        const { appservice, doCall } = await beginAppserviceWithProtocols(["fakeproto"]);
         const responseObj = ["user1", "user2"];
         const expectedUserId = "@foobar:localhost";
         const getUserSpy = simple.stub().callFn((userid, fn) => {
@@ -2477,7 +2490,7 @@ describe('Appservice', () => {
         });
         appservice.on("thirdparty.user.matrix", getUserSpy);
         try {
-            const result = await doCall("/_matrix/app/v1/thirdparty/user", {}, {userid: expectedUserId});
+            const result = await doCall("/_matrix/app/v1/thirdparty/user", {}, { userid: expectedUserId });
             expect(result).toEqual(responseObj);
         } finally {
             appservice.stop();
@@ -2485,7 +2498,7 @@ describe('Appservice', () => {
     });
 
     it("should fail to lookup a remote user if the protocol is wrong", async () => {
-        const {appservice, doCall} = await beginAppserviceWithProtocols(["fakeproto"]);
+        const { appservice, doCall } = await beginAppserviceWithProtocols(["fakeproto"]);
         try {
             await doCall("/_matrix/app/v1/thirdparty/user/pr0tocol");
             // noinspection ExceptionCaughtLocallyJS
@@ -2502,7 +2515,7 @@ describe('Appservice', () => {
     });
 
     it("should return 404 if no matrix users are found when handling a third party user request", async () => {
-        const {appservice, doCall} = await beginAppserviceWithProtocols(["fakeproto"]);
+        const { appservice, doCall } = await beginAppserviceWithProtocols(["fakeproto"]);
         const expectedUserId = "@foobar:localhost";
         const getUserSpy = simple.stub().callFn((userid, fn) => {
             expect(userid).toEqual(expectedUserId);
@@ -2510,11 +2523,11 @@ describe('Appservice', () => {
         });
         appservice.on("thirdparty.user.matrix", getUserSpy);
         try {
-            await doCall("/_matrix/app/v1/thirdparty/user", {}, {userid: expectedUserId});
+            await doCall("/_matrix/app/v1/thirdparty/user", {}, { userid: expectedUserId });
         } catch (e) {
             expect(e.error).toMatchObject({
                 errcode: "NO_MAPPING_FOUND",
-                error: "No mappings found"
+                error: "No mappings found",
             });
             expect(e.statusCode).toBe(404);
         } finally {
@@ -2524,10 +2537,10 @@ describe('Appservice', () => {
 
     it("should return 404 if no remote users are found when handling a thirdparty user request", async () => {
         const protocolId = "fakeproto";
-        const {appservice, doCall} = await beginAppserviceWithProtocols([protocolId]);
+        const { appservice, doCall } = await beginAppserviceWithProtocols([protocolId]);
         const userFields = {
             "foo": "bar",
-            "bar": "baz"
+            "bar": "baz",
         };
         const getUserSpy = simple.stub().callFn((proto, fields, fn) => {
             expect(proto).toEqual(protocolId);
@@ -2540,7 +2553,7 @@ describe('Appservice', () => {
         } catch (e) {
             expect(e.error).toMatchObject({
                 errcode: "NO_MAPPING_FOUND",
-                error: "No mappings found"
+                error: "No mappings found",
             });
             expect(e.statusCode).toBe(404);
         } finally {
@@ -2549,7 +2562,7 @@ describe('Appservice', () => {
     });
 
     it("should fail to lookup a remote user if the mxid is empty", async () => {
-        const {appservice, doCall} = await beginAppserviceWithProtocols(["fakeproto"]);
+        const { appservice, doCall } = await beginAppserviceWithProtocols(["fakeproto"]);
         try {
             await doCall("/_matrix/app/v1/thirdparty/user");
             // noinspection ExceptionCaughtLocallyJS
@@ -2567,11 +2580,11 @@ describe('Appservice', () => {
 
     it("should lookup a remote location by given fields", async () => {
         const protocolId = "fakeproto";
-        const {appservice, doCall} = await beginAppserviceWithProtocols([protocolId]);
+        const { appservice, doCall } = await beginAppserviceWithProtocols([protocolId]);
         const responseObj = ["loc1", "loc2"];
         const locationFields = {
             "foo": "bar",
-            "bar": "baz"
+            "bar": "baz",
         };
         const getLocationSpy = simple.stub().callFn((protocol, fields, fn) => {
             expect(protocol).toEqual(protocolId);
@@ -2588,7 +2601,7 @@ describe('Appservice', () => {
     });
 
     it("should lookup a matrix location by given fields", async () => {
-        const {appservice, doCall} = await beginAppserviceWithProtocols(["fakeproto"]);
+        const { appservice, doCall } = await beginAppserviceWithProtocols(["fakeproto"]);
         const responseObj = ["loc1", "loc2"];
         const expectedAlias = "#alias:localhost";
         const getLocationSpy = simple.stub().callFn((alias, fn) => {
@@ -2597,7 +2610,7 @@ describe('Appservice', () => {
         });
         appservice.on("thirdparty.location.matrix", getLocationSpy);
         try {
-            const result = await doCall("/_matrix/app/v1/thirdparty/location", {}, {alias: expectedAlias});
+            const result = await doCall("/_matrix/app/v1/thirdparty/location", {}, { alias: expectedAlias });
             expect(result).toEqual(responseObj);
         } finally {
             appservice.stop();
@@ -2605,7 +2618,7 @@ describe('Appservice', () => {
     });
 
     it("should fail to lookup a remote location if the protocol is wrong", async () => {
-        const {appservice, doCall} = await beginAppserviceWithProtocols(["fakeproto"]);
+        const { appservice, doCall } = await beginAppserviceWithProtocols(["fakeproto"]);
         try {
             await doCall("/_matrix/app/v1/thirdparty/location/pr0tocol");
             // noinspection ExceptionCaughtLocallyJS
@@ -2622,7 +2635,7 @@ describe('Appservice', () => {
     });
 
     it("should return 404 if no matrix locations are found", async () => {
-        const {appservice, doCall} = await beginAppserviceWithProtocols(["fakeproto"]);
+        const { appservice, doCall } = await beginAppserviceWithProtocols(["fakeproto"]);
         const expectedAlias = "#alias:localhost";
         const getUserSpy = simple.stub().callFn((alias, fn) => {
             expect(alias).toEqual(expectedAlias);
@@ -2630,11 +2643,11 @@ describe('Appservice', () => {
         });
         appservice.on("thirdparty.location.matrix", getUserSpy);
         try {
-            await doCall("/_matrix/app/v1/thirdparty/location", {}, {alias: expectedAlias});
+            await doCall("/_matrix/app/v1/thirdparty/location", {}, { alias: expectedAlias });
         } catch (e) {
             expect(e.error).toMatchObject({
                 errcode: "NO_MAPPING_FOUND",
-                error: "No mappings found"
+                error: "No mappings found",
             });
             expect(e.statusCode).toBe(404);
         } finally {
@@ -2644,10 +2657,10 @@ describe('Appservice', () => {
 
     it("should return 404 if no remote location are found", async () => {
         const protocolId = "fakeproto";
-        const {appservice, doCall} = await beginAppserviceWithProtocols([protocolId]);
+        const { appservice, doCall } = await beginAppserviceWithProtocols([protocolId]);
         const locationFields = {
             "foo": "bar",
-            "bar": "baz"
+            "bar": "baz",
         };
         const getLocationSpy = simple.stub().callFn((proto, fields, fn) => {
             expect(proto).toEqual("fakeproto");
@@ -2660,7 +2673,7 @@ describe('Appservice', () => {
         } catch (e) {
             expect(e.error).toMatchObject({
                 errcode: "NO_MAPPING_FOUND",
-                error: "No mappings found"
+                error: "No mappings found",
             });
             expect(e.statusCode).toBe(404);
         } finally {
@@ -2669,7 +2682,7 @@ describe('Appservice', () => {
     });
 
     it("should fail to lookup a matrix location if the alias is empty", async () => {
-        const {appservice, doCall} = await beginAppserviceWithProtocols(["fakeproto"]);
+        const { appservice, doCall } = await beginAppserviceWithProtocols(["fakeproto"]);
         try {
             await doCall("/_matrix/app/v1/thirdparty/location");
             // noinspection ExceptionCaughtLocallyJS
@@ -2701,7 +2714,7 @@ describe('Appservice', () => {
                 hs_token: hsToken,
                 sender_localpart: "_bot_",
                 namespaces: {
-                    users: [{exclusive: true, regex: "@_prefix_.*:.+"}],
+                    users: [{ exclusive: true, regex: "@_prefix_.*:.+" }],
                     rooms: [],
                     aliases: [],
                 },
@@ -2716,7 +2729,7 @@ describe('Appservice', () => {
 
         http.when("PUT", "/_matrix/client/r0/directory/list/appservice").respond(200, (path, content) => {
             expect(path).toEqual(`${hsUrl}/_matrix/client/r0/directory/list/appservice/${encodeURIComponent(networkId)}/${encodeURIComponent(roomId)}`);
-            expect(content).toMatchObject({visibility: "public"});
+            expect(content).toMatchObject({ visibility: "public" });
             return {};
         });
 

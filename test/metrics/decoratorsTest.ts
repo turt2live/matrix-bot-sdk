@@ -1,9 +1,10 @@
 import * as simple from "simple-mock";
+
 import {
     Metrics,
     timedIdentityClientFunctionCall,
     timedIntentFunctionCall,
-    timedMatrixClientFunctionCall
+    timedMatrixClientFunctionCall,
 } from "../../src";
 
 class InterceptedClass {
@@ -24,7 +25,7 @@ class InterceptedClass {
     }
 
     @timedIntentFunctionCall()
-    async intentIntercepted(i: number) : Promise<number> {
+    async intentIntercepted(i: number): Promise<number> {
         return this.interceptedFn(i);
     }
 }

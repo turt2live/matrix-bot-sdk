@@ -10,6 +10,7 @@ export * from "./e2ee/RoomTracker";
 export * from "./e2ee/CryptoClient";
 export * from "./e2ee/decorators";
 export * from "./e2ee/SdkOlmEngine";
+// export * from "./e2ee/InternalOlmMachineFactory";
 
 // Helpers
 export * from "./helpers/RichReply";
@@ -50,6 +51,10 @@ export * from "./models/IdentityServerModels";
 export * from "./models/Crypto";
 export * from "./models/MSC2176";
 export * from "./models/Account";
+export * from "./models/PowerLevelAction";
+
+// Unstable models
+export * from "./models/unstable/MediaInfo";
 
 // Event models
 export * from "./models/events/EventKind";
@@ -105,3 +110,5 @@ export * from "./SynchronousMatrixClient";
 export * from "./SynapseAdminApis";
 export * from "./simple-validation";
 export * from "./b64";
+export * from "./http";
+export * from "./DMs";

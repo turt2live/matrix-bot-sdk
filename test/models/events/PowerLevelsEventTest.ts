@@ -11,7 +11,7 @@ describe("PowerLevelsEvent", () => {
         ev.content['redact'] = 79;
         ev.content['state_default'] = 80;
         ev.content['users_default'] = 81;
-        ev.content['notifications'] = {room: 82};
+        ev.content['notifications'] = { room: 82 };
         const obj = new PowerLevelsEvent(ev);
 
         expect(obj.banLevel).toEqual(ev.content['ban']);

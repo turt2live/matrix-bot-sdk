@@ -1,3 +1,5 @@
+import * as fs from "fs";
+
 import {
     EncryptionAlgorithm,
     FileMessageEventContent,
@@ -9,7 +11,6 @@ import {
     RustSdkCryptoStorageProvider,
     SimpleFsStorageProvider,
 } from "../src";
-import * as fs from "fs";
 
 LogService.setLogger(new RichConsoleLogger());
 LogService.setLevel(LogLevel.TRACE);
@@ -49,8 +50,8 @@ const client = new MatrixClient(homeserverUrl, accessToken, storage, crypto);
             visibility: "private",
             preset: "trusted_private_chat",
             initial_state: [
-                {type: "m.room.encryption", state_key: "", content: {algorithm: EncryptionAlgorithm.MegolmV1AesSha2}},
-                {type: "m.room.guest_access", state_key: "", content: {guest_access: "can_join"}},
+                { type: "m.room.encryption", state_key: "", content: { algorithm: EncryptionAlgorithm.MegolmV1AesSha2 } },
+                { type: "m.room.guest_access", state_key: "", content: { guest_access: "can_join" } },
             ],
         });
     }

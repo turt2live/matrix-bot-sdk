@@ -1,4 +1,4 @@
-import { MatrixAuth } from "../src";
+import { LogService, MatrixAuth } from "../src";
 
 // CAUTION: This logs a lot of secrets the console, including the password. Use with caution.
 
@@ -11,12 +11,12 @@ const auth = new MatrixAuth(homeserverUrl);
 auth.passwordRegister(username, password).then(client => {
     return client.getUserId();
 }).then(userId => {
-    console.log("Registered as " + userId + " - Trying to log in now");
+    LogService.info("index", "Registered as " + userId + " - Trying to log in now");
     return auth.passwordLogin(username, password);
 }).then(client => {
     return client.getUserId();
 }).then(userId => {
-    console.log("Logged in as " + userId);
+    LogService.info("index", "Logged in as " + userId);
 }).catch(err => {
-    console.error(err);
+    LogService.error("index", err);
 });

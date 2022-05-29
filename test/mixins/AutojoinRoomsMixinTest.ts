@@ -1,10 +1,11 @@
-import { Appservice, AutojoinRoomsMixin, Intent } from "../../src";
 import * as simple from "simple-mock";
+
+import { Appservice, AutojoinRoomsMixin, Intent } from "../../src";
 import { createTestClient } from "../TestUtils";
 
 describe('AutojoinRoomsMixin', () => {
     it('should join rooms for regular invites', () => {
-        const {client} = createTestClient();
+        const { client } = createTestClient();
 
         const roomId = "!test:example.org";
 
@@ -28,7 +29,7 @@ describe('AutojoinRoomsMixin', () => {
                 hs_token: "",
                 sender_localpart: "_bot_",
                 namespaces: {
-                    users: [{exclusive: true, regex: "@_prefix_.*:.+"}],
+                    users: [{ exclusive: true, regex: "@_prefix_.*:.+" }],
                     rooms: [],
                     aliases: [],
                 },
@@ -40,7 +41,7 @@ describe('AutojoinRoomsMixin', () => {
 
         const roomId = "!test:example.org";
         const userId = "@join:example.org";
-        const event = {type: "m.room.test", state_key: userId};
+        const event = { type: "m.room.test", state_key: userId };
 
         const joinSpy = simple.stub().callFn((rid) => {
             expect(rid).toEqual(roomId);
@@ -69,7 +70,7 @@ describe('AutojoinRoomsMixin', () => {
                 hs_token: "",
                 sender_localpart: "_bot_",
                 namespaces: {
-                    users: [{exclusive: true, regex: "@_prefix_.*:.+"}],
+                    users: [{ exclusive: true, regex: "@_prefix_.*:.+" }],
                     rooms: [],
                     aliases: [],
                 },
@@ -83,11 +84,11 @@ describe('AutojoinRoomsMixin', () => {
 
         const okRoomId = "!ok:example.org";
         const okUserId = "@ok:example.org";
-        const okEvent = {type: "m.room.ok", state_key: okUserId, sender: notBotUserId};
+        const okEvent = { type: "m.room.ok", state_key: okUserId, sender: notBotUserId };
 
         const badRoomId = "!bad:example.org";
         const badUserId = "@bad:example.org";
-        const badEvent = {type: "m.room.bad", state_key: badUserId, sender: notBotUserId};
+        const badEvent = { type: "m.room.bad", state_key: badUserId, sender: notBotUserId };
 
         const joinSpy = simple.stub().callFn((rid) => {
             expect(rid).toEqual(okRoomId);
@@ -133,7 +134,7 @@ describe('AutojoinRoomsMixin', () => {
                 hs_token: "",
                 sender_localpart: "_bot_",
                 namespaces: {
-                    users: [{exclusive: true, regex: "@_prefix_.*:.+"}],
+                    users: [{ exclusive: true, regex: "@_prefix_.*:.+" }],
                     rooms: [],
                     aliases: [],
                 },
@@ -147,11 +148,11 @@ describe('AutojoinRoomsMixin', () => {
 
         const okRoomId = "!ok:example.org";
         const okUserId = "@ok:example.org";
-        const okEvent = {type: "m.room.ok", state_key: okUserId, sender: botUserId};
+        const okEvent = { type: "m.room.ok", state_key: okUserId, sender: botUserId };
 
         const badRoomId = "!bad:example.org";
         const badUserId = "@bad:example.org";
-        const badEvent = {type: "m.room.bad", state_key: badUserId, sender: botUserId};
+        const badEvent = { type: "m.room.bad", state_key: badUserId, sender: botUserId };
 
         const joinSpy = simple.stub().callFn((rid) => {
             if (rid !== okRoomId && rid !== badRoomId) throw new Error("Unexpected room ID");

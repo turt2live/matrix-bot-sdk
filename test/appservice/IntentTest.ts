@@ -1,3 +1,8 @@
+import * as simple from "simple-mock";
+import * as MockHttpBackend from 'matrix-mock-request';
+import * as tmp from "tmp";
+
+import { expectArrayEquals } from "../TestUtils";
 import {
     Appservice,
     IAppserviceCryptoStorageProvider,
@@ -9,10 +14,6 @@ import {
     RustSdkAppserviceCryptoStorageProvider,
     setRequestFn,
 } from "../../src";
-import * as simple from "simple-mock";
-import * as MockHttpBackend from 'matrix-mock-request';
-import { expectArrayEquals } from "../TestUtils";
-import * as tmp from "tmp";
 
 tmp.setGracefulCleanup();
 
@@ -21,7 +22,7 @@ describe('Intent', () => {
         const userId = "@someone:example.org";
         const asToken = "s3cret";
         const hsUrl = "https://localhost";
-        const appservice = <Appservice>{botUserId: userId};
+        const appservice = <Appservice>{ botUserId: userId };
         const options = <IAppserviceOptions>{
             homeserverUrl: hsUrl,
             registration: {
@@ -41,7 +42,7 @@ describe('Intent', () => {
         const userId = "@someone:example.org";
         const asToken = "s3cret";
         const hsUrl = "https://localhost";
-        const appservice = <Appservice>{botUserId: userId};
+        const appservice = <Appservice>{ botUserId: userId };
         const joinStrategy = <IJoinRoomStrategy>{};
         const options = <IAppserviceOptions>{
             homeserverUrl: hsUrl,
@@ -65,7 +66,7 @@ describe('Intent', () => {
         const botUserId = "@bot:example.org";
         const asToken = "s3cret";
         const hsUrl = "https://localhost";
-        const appservice = <Appservice>{botUserId: botUserId};
+        const appservice = <Appservice>{ botUserId: botUserId };
         const options = <IAppserviceOptions>{
             homeserverUrl: hsUrl,
             registration: {
@@ -86,7 +87,7 @@ describe('Intent', () => {
         const botUserId = "@bot:example.org";
         const asToken = "s3cret";
         const hsUrl = "https://localhost";
-        const appservice = <Appservice>{botUserId: botUserId};
+        const appservice = <Appservice>{ botUserId: botUserId };
         const joinStrategy = <IJoinRoomStrategy>{};
         const options = <IAppserviceOptions>{
             homeserverUrl: hsUrl,
@@ -111,7 +112,7 @@ describe('Intent', () => {
             const botUserId = "@bot:example.org";
             const asToken = "s3cret";
             const hsUrl = "https://localhost";
-            const appservice = <Appservice>{botUserId: botUserId};
+            const appservice = <Appservice>{ botUserId: botUserId };
 
             const storage = new MemoryStorageProvider();
             const isRegisteredSpy = simple.mock(storage, "isUserRegistered").callFn((uid) => {
@@ -145,7 +146,7 @@ describe('Intent', () => {
             const botUserId = "@bot:example.org";
             const asToken = "s3cret";
             const hsUrl = "https://localhost";
-            const appservice = <Appservice>{botUserId: botUserId};
+            const appservice = <Appservice>{ botUserId: botUserId };
 
             const storage = new MemoryStorageProvider();
             const isRegisteredSpy = simple.mock(storage, "isUserRegistered").callFn((uid) => {
@@ -166,7 +167,7 @@ describe('Intent', () => {
             };
 
             http.when("POST", "/_matrix/client/r0/register").respond(200, (path, content) => {
-                expect(content).toMatchObject({type: "m.login.application_service", username: "someone"});
+                expect(content).toMatchObject({ type: "m.login.application_service", username: "someone" });
                 return {};
             });
 
@@ -184,7 +185,7 @@ describe('Intent', () => {
             const botUserId = "@bot:example.org";
             const asToken = "s3cret";
             const hsUrl = "https://localhost";
-            const appservice = <Appservice>{botUserId: botUserId};
+            const appservice = <Appservice>{ botUserId: botUserId };
 
             const storage = new MemoryStorageProvider();
             const isRegisteredSpy = simple.mock(storage, "isUserRegistered").callFn((uid) => {
@@ -206,8 +207,8 @@ describe('Intent', () => {
 
             // HACK: 200 OK because the mock lib can't handle 400+response body
             http.when("POST", "/_matrix/client/r0/register").respond(200, (path, content) => {
-                expect(content).toMatchObject({type: "m.login.application_service", username: "someone"});
-                return {errcode: "M_USER_IN_USE", error: "User ID already in use"};
+                expect(content).toMatchObject({ type: "m.login.application_service", username: "someone" });
+                return { errcode: "M_USER_IN_USE", error: "User ID already in use" };
             });
 
             const intent = new Intent(options, userId, appservice);
@@ -224,7 +225,7 @@ describe('Intent', () => {
             const botUserId = "@bot:example.org";
             const asToken = "s3cret";
             const hsUrl = "https://localhost";
-            const appservice = <Appservice>{botUserId: botUserId};
+            const appservice = <Appservice>{ botUserId: botUserId };
 
             const storage = new MemoryStorageProvider();
             const isRegisteredSpy = simple.mock(storage, "isUserRegistered").callFn((uid) => {
@@ -245,8 +246,8 @@ describe('Intent', () => {
             };
 
             http.when("POST", "/_matrix/client/r0/register").respond(500, (path, content) => {
-                expect(content).toMatchObject({type: "m.login.application_service", username: "someone"});
-                return {errcode: "M_UNKNOWN", error: "It broke"};
+                expect(content).toMatchObject({ type: "m.login.application_service", username: "someone" });
+                return { errcode: "M_UNKNOWN", error: "It broke" };
             });
 
             const flush = http.flushAllExpected();
@@ -273,7 +274,7 @@ describe('Intent', () => {
             const asToken = "s3cret";
             const hsUrl = "https://localhost";
             const roomsPartA = ['!a:example.org', '!b:example.org'];
-            const appservice = <Appservice>{botUserId: botUserId};
+            const appservice = <Appservice>{ botUserId: botUserId };
             const storage = new MemoryStorageProvider();
             const options = <IAppserviceOptions>{
                 homeserverUrl: hsUrl,
@@ -306,7 +307,7 @@ describe('Intent', () => {
             const asToken = "s3cret";
             const hsUrl = "https://localhost";
             const roomId = "!test:example.org";
-            const appservice = <Appservice>{botUserId: botUserId};
+            const appservice = <Appservice>{ botUserId: botUserId };
             const storage = new MemoryStorageProvider();
             const options = <IAppserviceOptions>{
                 homeserverUrl: hsUrl,
@@ -355,7 +356,7 @@ describe('Intent', () => {
             const asToken = "s3cret";
             const hsUrl = "https://localhost";
             const roomId = "!test:example.org";
-            const appservice = <Appservice>{botUserId: botUserId};
+            const appservice = <Appservice>{ botUserId: botUserId };
             const storage = new MemoryStorageProvider();
             const options = <IAppserviceOptions>{
                 homeserverUrl: hsUrl,
@@ -404,7 +405,7 @@ describe('Intent', () => {
             const asToken = "s3cret";
             const hsUrl = "https://localhost";
             const roomId = "!test:example.org";
-            const appservice = <Appservice>{botUserId: botUserId};
+            const appservice = <Appservice>{ botUserId: botUserId };
             const storage = new MemoryStorageProvider();
             const options = <IAppserviceOptions>{
                 homeserverUrl: hsUrl,
@@ -465,7 +466,7 @@ describe('Intent', () => {
             const hsUrl = "https://localhost";
             const roomsPartA = ['!a:example.org', '!b:example.org'];
             const roomsPartB = ['!c:example.org', '!d:example.org'];
-            const appservice = <Appservice>{botUserId: botUserId};
+            const appservice = <Appservice>{ botUserId: botUserId };
             const storage = new MemoryStorageProvider();
             const options = <IAppserviceOptions>{
                 homeserverUrl: hsUrl,
@@ -481,10 +482,6 @@ describe('Intent', () => {
             // its cache.
             const getJoinedRooms = () => (<any>intent).knownJoinedRooms;
             const setJoinedRooms = (rooms) => (<any>intent).knownJoinedRooms = rooms;
-
-            const registeredSpy = simple.mock(intent, "ensureRegistered").callFn(() => {
-                return Promise.resolve();
-            });
 
             const getJoinedSpy = simple.stub().callFn(() => {
                 return Promise.resolve(roomsPartB);
@@ -511,7 +508,7 @@ describe('Intent', () => {
             const hsUrl = "https://localhost";
             const roomIds = ["!a:example.org", "!b:example.org"];
             const targetRoomId = "!a:example.org";
-            const appservice = <Appservice>{botUserId: botUserId};
+            const appservice = <Appservice>{ botUserId: botUserId };
             const storage = new MemoryStorageProvider();
             const options = <IAppserviceOptions>{
                 homeserverUrl: hsUrl,
@@ -545,7 +542,7 @@ describe('Intent', () => {
             const hsUrl = "https://localhost";
             const roomIds = ["!a:example.org", "!b:example.org"];
             const targetRoomId = "!c:example.org";
-            const appservice = <Appservice>{botUserId: botUserId};
+            const appservice = <Appservice>{ botUserId: botUserId };
             const storage = new MemoryStorageProvider();
             const options = <IAppserviceOptions>{
                 homeserverUrl: hsUrl,
@@ -579,7 +576,7 @@ describe('Intent', () => {
             const hsUrl = "https://localhost";
             const roomIds = ["!a:example.org", "!b:example.org"];
             const targetRoomId = "!c:example.org";
-            const appservice = <Appservice>{botUserId: botUserId};
+            const appservice = <Appservice>{ botUserId: botUserId };
             const storage = new MemoryStorageProvider();
             const options = <IAppserviceOptions>{
                 homeserverUrl: hsUrl,
@@ -618,9 +615,8 @@ describe('Intent', () => {
             const botUserId = "@bot:example.org";
             const asToken = "s3cret";
             const hsUrl = "https://localhost";
-            const roomIds = ["!a:example.org", "!b:example.org"];
             const targetRoomId = "!c:example.org";
-            const appservice = <Appservice>{botUserId: botUserId};
+            const appservice = <Appservice>{ botUserId: botUserId };
             const storage = new MemoryStorageProvider();
             const options = <IAppserviceOptions>{
                 homeserverUrl: hsUrl,
@@ -661,7 +657,7 @@ describe('Intent', () => {
             const botUserId = "@bot:example.org";
             const asToken = "s3cret";
             const hsUrl = "https://localhost";
-            const appservice = <Appservice>{botUserId: botUserId};
+            const appservice = <Appservice>{ botUserId: botUserId };
             const targetRoomId = "!a:example.org";
             const storage = new MemoryStorageProvider();
             const options = <IAppserviceOptions>{
@@ -692,7 +688,7 @@ describe('Intent', () => {
             const botUserId = "@bot:example.org";
             const asToken = "s3cret";
             const hsUrl = "https://localhost";
-            const appservice = <Appservice>{botUserId: botUserId};
+            const appservice = <Appservice>{ botUserId: botUserId };
             const targetRoomId = "!a:example.org";
             const storage = new MemoryStorageProvider();
             const options = <IAppserviceOptions>{
@@ -730,7 +726,7 @@ describe('Intent', () => {
             const botUserId = "@bot:example.org";
             const asToken = "s3cret";
             const hsUrl = "https://localhost";
-            const appservice = <Appservice>{botUserId: botUserId};
+            const appservice = <Appservice>{ botUserId: botUserId };
             const targetRoomId = "!a:example.org";
             const storage = new MemoryStorageProvider();
             const options = <IAppserviceOptions>{
@@ -770,9 +766,9 @@ describe('Intent', () => {
             const botUserId = "@bot:example.org";
             const asToken = "s3cret";
             const hsUrl = "https://localhost";
-            const appservice = <Appservice>{botUserId: botUserId};
+            const appservice = <Appservice>{ botUserId: botUserId };
             const targetRoomId = "!a:example.org";
-            const content = {hello: "world"};
+            const content = { hello: "world" };
             const eventId = "$something:example.org";
             const storage = new MemoryStorageProvider();
             const options = <IAppserviceOptions>{
@@ -812,9 +808,9 @@ describe('Intent', () => {
             const botUserId = "@bot:example.org";
             const asToken = "s3cret";
             const hsUrl = "https://localhost";
-            const appservice = <Appservice>{botUserId: botUserId};
+            const appservice = <Appservice>{ botUserId: botUserId };
             const targetRoomId = "!a:example.org";
-            const content = {hello: "world"};
+            const content = { hello: "world" };
             const storage = new MemoryStorageProvider();
             const options = <IAppserviceOptions>{
                 homeserverUrl: hsUrl,
@@ -861,9 +857,9 @@ describe('Intent', () => {
             const botUserId = "@bot:example.org";
             const asToken = "s3cret";
             const hsUrl = "https://localhost";
-            const appservice = <Appservice>{botUserId: botUserId};
+            const appservice = <Appservice>{ botUserId: botUserId };
             const targetRoomId = "!a:example.org";
-            const content = {body: "hello world", msgtype: "m.emote"};
+            const content = { body: "hello world", msgtype: "m.emote" };
             const eventId = "$something:example.org";
             const storage = new MemoryStorageProvider();
             const options = <IAppserviceOptions>{
@@ -903,9 +899,9 @@ describe('Intent', () => {
             const botUserId = "@bot:example.org";
             const asToken = "s3cret";
             const hsUrl = "https://localhost";
-            const appservice = <Appservice>{botUserId: botUserId};
+            const appservice = <Appservice>{ botUserId: botUserId };
             const targetRoomId = "!a:example.org";
-            const content = {body: "hello world", msgtype: "m.emote"};
+            const content = { body: "hello world", msgtype: "m.emote" };
             const storage = new MemoryStorageProvider();
             const options = <IAppserviceOptions>{
                 homeserverUrl: hsUrl,
@@ -952,7 +948,7 @@ describe('Intent', () => {
             const botUserId = "@bot:example.org";
             const asToken = "s3cret";
             const hsUrl = "https://localhost";
-            const appservice = <Appservice>{botUserId: botUserId};
+            const appservice = <Appservice>{ botUserId: botUserId };
             const targetRoomId = "!a:example.org";
             const storage = new MemoryStorageProvider();
             const options = <IAppserviceOptions>{
@@ -996,7 +992,7 @@ describe('Intent', () => {
             const botUserId = "@bot:example.org";
             const asToken = "s3cret";
             const hsUrl = "https://localhost";
-            const appservice = <Appservice>{botUserId: botUserId};
+            const appservice = <Appservice>{ botUserId: botUserId };
             const targetRoomId = "!a:example.org";
             const storage = new MemoryStorageProvider();
             const options = <IAppserviceOptions>{
@@ -1043,7 +1039,7 @@ describe('Intent', () => {
             const botUserId = "@bot:example.org";
             const asToken = "s3cret";
             const hsUrl = "https://localhost";
-            const appservice = <Appservice>{botUserId: botUserId};
+            const appservice = <Appservice>{ botUserId: botUserId };
             const targetRoomId = "!a:example.org";
             const storage = new MemoryStorageProvider();
             const options = <IAppserviceOptions>{
@@ -1086,7 +1082,7 @@ describe('Intent', () => {
             const botUserId = "@bot:example.org";
             const asToken = "s3cret";
             const hsUrl = "https://localhost";
-            const appservice = <Appservice>{botUserId: botUserId};
+            const appservice = <Appservice>{ botUserId: botUserId };
             const targetRoomId = "!a:example.org";
             const storage = new MemoryStorageProvider();
             const options = <IAppserviceOptions>{
@@ -1132,7 +1128,7 @@ describe('Intent', () => {
         const botUserId = "@bot:example.org";
         const asToken = "s3cret";
         const hsUrl = "https://localhost";
-        const appservice = <Appservice>{botUserId: botUserId};
+        const appservice = <Appservice>{ botUserId: botUserId };
         let storage: IAppserviceStorageProvider;
         let cryptoStorage: IAppserviceCryptoStorageProvider;
         let options: IAppserviceOptions;
@@ -1163,7 +1159,7 @@ describe('Intent', () => {
                     },
                 },
             };
-            intent = new Intent(options, userId, appservice);
+            intent = new Intent(options, userId, appservice); // eslint-disable-line @typescript-eslint/no-unused-vars
         });
 
         // TODO: Test once device_id impersonation set up

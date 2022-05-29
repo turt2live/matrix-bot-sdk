@@ -1,8 +1,13 @@
 import * as simple from "simple-mock";
+
 import { EncryptionEventContent, MatrixClient, RoomEncryptionAlgorithm, RoomTracker } from "../../src";
 import { createTestClient } from "../TestUtils";
 
-function prepareQueueSpies(client: MatrixClient, roomId: string, content: Partial<EncryptionEventContent> = {}, storedContent: Partial<EncryptionEventContent> = null): simple.Stub<any>[] {
+function prepareQueueSpies(
+    client: MatrixClient,
+    roomId: string,
+    content: Partial<EncryptionEventContent> = {}, storedContent: Partial<EncryptionEventContent> = null,
+): simple.Stub<any>[] {
     const readSpy = simple.stub().callFn<any>((rid: string) => {
         expect(rid).toEqual(roomId);
         return Promise.resolve(storedContent);
@@ -156,7 +161,7 @@ describe('RoomTracker', () => {
     describe('getRoomCryptoConfig', () => {
         it('should return the config as-is', async () => {
             const roomId = "!a:example.org";
-            const content: Partial<EncryptionEventContent> = {algorithm: RoomEncryptionAlgorithm.MegolmV1AesSha2};
+            const content: Partial<EncryptionEventContent> = { algorithm: RoomEncryptionAlgorithm.MegolmV1AesSha2 };
 
             const { client } = createTestClient(null, "@user:example.org", true);
 
@@ -175,7 +180,7 @@ describe('RoomTracker', () => {
 
         it('should queue unknown rooms', async () => {
             const roomId = "!a:example.org";
-            const content: Partial<EncryptionEventContent> = {algorithm: RoomEncryptionAlgorithm.MegolmV1AesSha2};
+            const content: Partial<EncryptionEventContent> = { algorithm: RoomEncryptionAlgorithm.MegolmV1AesSha2 };
 
             const { client } = createTestClient(null, "@user:example.org", true);
 
@@ -220,7 +225,7 @@ describe('RoomTracker', () => {
             const config = await tracker.getRoomCryptoConfig(roomId);
             expect(readSpy.callCount).toEqual(2);
             expect(queueSpy.callCount).toEqual(1);
-            expect(config).toMatchObject({ });
+            expect(config).toMatchObject({});
         });
     });
 });

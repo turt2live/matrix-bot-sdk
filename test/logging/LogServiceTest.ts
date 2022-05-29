@@ -1,5 +1,6 @@
-import { ConsoleLogger, LogLevel, LogService } from "../../src";
 import * as simple from "simple-mock";
+
+import { ConsoleLogger, LogLevel, LogService } from "../../src";
 
 describe('LogService', () => {
     afterEach(() => LogService.setLogger(new ConsoleLogger()));
@@ -7,7 +8,7 @@ describe('LogService', () => {
     it('should log to the INFO channel', () => {
         const module = "Testing Module";
         const a1 = "This is a message";
-        const a2 = {hello: "world"};
+        const a2 = { hello: "world" };
 
         const logSpy = simple.stub().callFn((m, arg1, arg2) => {
             expect(m).toEqual(module);
@@ -15,7 +16,7 @@ describe('LogService', () => {
             expect(arg2).toEqual(a2);
         });
 
-        LogService.setLogger({info: logSpy, warn: null, error: null, debug: null, trace: null});
+        LogService.setLogger({ info: logSpy, warn: null, error: null, debug: null, trace: null });
         LogService.info(module, a1, a2);
         expect(logSpy.callCount).toBe(1);
     });
@@ -23,7 +24,7 @@ describe('LogService', () => {
     it('should log to the ERROR channel', () => {
         const module = "Testing Module";
         const a1 = "This is a message";
-        const a2 = {hello: "world"};
+        const a2 = { hello: "world" };
 
         const logSpy = simple.stub().callFn((m, arg1, arg2) => {
             expect(m).toEqual(module);
@@ -31,7 +32,7 @@ describe('LogService', () => {
             expect(arg2).toEqual(a2);
         });
 
-        LogService.setLogger({info: null, warn: null, error: logSpy, debug: null, trace: null});
+        LogService.setLogger({ info: null, warn: null, error: logSpy, debug: null, trace: null });
         LogService.error(module, a1, a2);
         expect(logSpy.callCount).toBe(1);
     });
@@ -39,7 +40,7 @@ describe('LogService', () => {
     it('should log to the WARN channel', () => {
         const module = "Testing Module";
         const a1 = "This is a message";
-        const a2 = {hello: "world"};
+        const a2 = { hello: "world" };
 
         const logSpy = simple.stub().callFn((m, arg1, arg2) => {
             expect(m).toEqual(module);
@@ -47,7 +48,7 @@ describe('LogService', () => {
             expect(arg2).toEqual(a2);
         });
 
-        LogService.setLogger({info: null, warn: logSpy, error: null, debug: null, trace: null});
+        LogService.setLogger({ info: null, warn: logSpy, error: null, debug: null, trace: null });
         LogService.warn(module, a1, a2);
         expect(logSpy.callCount).toBe(1);
     });
@@ -55,7 +56,7 @@ describe('LogService', () => {
     it('should log to the DEBUG channel', () => {
         const module = "Testing Module";
         const a1 = "This is a message";
-        const a2 = {hello: "world"};
+        const a2 = { hello: "world" };
 
         const logSpy = simple.stub().callFn((m, arg1, arg2) => {
             expect(m).toEqual(module);
@@ -64,7 +65,7 @@ describe('LogService', () => {
         });
 
         LogService.setLevel(LogLevel.DEBUG);
-        LogService.setLogger({info: null, warn: null, error: null, debug: logSpy, trace: null});
+        LogService.setLogger({ info: null, warn: null, error: null, debug: logSpy, trace: null });
         LogService.debug(module, a1, a2);
         expect(logSpy.callCount).toBe(1);
     });
@@ -72,7 +73,7 @@ describe('LogService', () => {
     it('should log to the TRACE channel', () => {
         const module = "Testing Module";
         const a1 = "This is a message";
-        const a2 = {hello: "world"};
+        const a2 = { hello: "world" };
 
         const logSpy = simple.stub().callFn((m, arg1, arg2) => {
             expect(m).toEqual(module);
@@ -81,7 +82,7 @@ describe('LogService', () => {
         });
 
         LogService.setLevel(LogLevel.TRACE);
-        LogService.setLogger({info: null, warn: null, error: null, debug: null, trace: logSpy});
+        LogService.setLogger({ info: null, warn: null, error: null, debug: null, trace: logSpy });
         LogService.trace(module, a1, a2);
         expect(logSpy.callCount).toBe(1);
     });
@@ -89,7 +90,7 @@ describe('LogService', () => {
     it('should not log to the TRACE channel when the log level is higher', () => {
         const module = "Testing Module";
         const a1 = "This is a message";
-        const a2 = {hello: "world"};
+        const a2 = { hello: "world" };
 
         const logSpy = simple.stub().callFn((m, arg1, arg2) => {
             expect(m).toEqual(module);
@@ -97,7 +98,7 @@ describe('LogService', () => {
             expect(arg2).toEqual(a2);
         });
 
-        LogService.setLogger({info: null, warn: null, error: null, debug: null, trace: logSpy});
+        LogService.setLogger({ info: null, warn: null, error: null, debug: null, trace: logSpy });
         LogService.setLevel(LogLevel.DEBUG);
         LogService.trace(module, a1, a2);
         expect(logSpy.callCount).toBe(0);
@@ -106,7 +107,7 @@ describe('LogService', () => {
     it('should not log to the DEBUG channel when the log level is higher', () => {
         const module = "Testing Module";
         const a1 = "This is a message";
-        const a2 = {hello: "world"};
+        const a2 = { hello: "world" };
 
         const logSpy = simple.stub().callFn((m, arg1, arg2) => {
             expect(m).toEqual(module);
@@ -114,7 +115,7 @@ describe('LogService', () => {
             expect(arg2).toEqual(a2);
         });
 
-        LogService.setLogger({info: null, warn: null, error: null, debug: logSpy, trace: null});
+        LogService.setLogger({ info: null, warn: null, error: null, debug: logSpy, trace: null });
         LogService.setLevel(LogLevel.INFO);
         LogService.debug(module, a1, a2);
         expect(logSpy.callCount).toBe(0);
@@ -123,7 +124,7 @@ describe('LogService', () => {
     it('should not log to the INFO channel when the log level is higher', () => {
         const module = "Testing Module";
         const a1 = "This is a message";
-        const a2 = {hello: "world"};
+        const a2 = { hello: "world" };
 
         const logSpy = simple.stub().callFn((m, arg1, arg2) => {
             expect(m).toEqual(module);
@@ -131,7 +132,7 @@ describe('LogService', () => {
             expect(arg2).toEqual(a2);
         });
 
-        LogService.setLogger({info: logSpy, warn: null, error: null, debug: null, trace: null});
+        LogService.setLogger({ info: logSpy, warn: null, error: null, debug: null, trace: null });
         LogService.setLevel(LogLevel.WARN);
         LogService.info(module, a1, a2);
         expect(logSpy.callCount).toBe(0);
@@ -140,7 +141,7 @@ describe('LogService', () => {
     it('should not log to the WARN channel when the log level is higher', () => {
         const module = "Testing Module";
         const a1 = "This is a message";
-        const a2 = {hello: "world"};
+        const a2 = { hello: "world" };
 
         const logSpy = simple.stub().callFn((m, arg1, arg2) => {
             expect(m).toEqual(module);
@@ -148,7 +149,7 @@ describe('LogService', () => {
             expect(arg2).toEqual(a2);
         });
 
-        LogService.setLogger({info: null, warn: logSpy, error: null, debug: null, trace: null});
+        LogService.setLogger({ info: null, warn: logSpy, error: null, debug: null, trace: null });
         LogService.setLevel(LogLevel.ERROR);
         LogService.warn(module, a1, a2);
         expect(logSpy.callCount).toBe(0);
@@ -162,7 +163,7 @@ describe('LogService', () => {
             expect(m).toEqual(unmutedModule);
         });
 
-        LogService.setLogger({info: logSpy, warn: logSpy, error: logSpy, debug: logSpy, trace: logSpy});
+        LogService.setLogger({ info: logSpy, warn: logSpy, error: logSpy, debug: logSpy, trace: logSpy });
         LogService.setLevel(LogLevel.TRACE);
         LogService.muteModule(mutedModule);
 

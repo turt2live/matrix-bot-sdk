@@ -1,3 +1,5 @@
+import * as fs from "fs";
+
 import {
     Appservice,
     EncryptionAlgorithm,
@@ -12,7 +14,6 @@ import {
     SimpleFsStorageProvider,
     SimpleRetryJoinStrategy,
 } from "../src";
-import * as fs from "fs";
 
 LogService.setLogger(new RichConsoleLogger());
 LogService.setLevel(LogLevel.TRACE);
@@ -33,10 +34,10 @@ const crypto = new RustSdkAppserviceCryptoStorageProvider("./examples/storage/en
 const worksImage = fs.readFileSync("./examples/static/it-works.png");
 
 const registration: IAppserviceRegistration = {
-    as_token: creds?.['asToken'] ?? "change_me",
-    hs_token: creds?.['hsToken'] ?? "change_me",
-    sender_localpart: "crypto_test_appservice_rust3",
-    namespaces: {
+    "as_token": creds?.['asToken'] ?? "change_me",
+    "hs_token": creds?.['hsToken'] ?? "change_me",
+    "sender_localpart": "crypto_test_appservice_rust3",
+    "namespaces": {
         users: [{
             regex: "@crypto.*:localhost",
             exclusive: true,
@@ -88,8 +89,8 @@ const bot = appservice.getIntentForUserId("@crypto_nondefault_test3:localhost");
             visibility: "private",
             preset: "trusted_private_chat",
             initial_state: [
-                {type: "m.room.encryption", state_key: "", content: {algorithm: EncryptionAlgorithm.MegolmV1AesSha2}},
-                {type: "m.room.guest_access", state_key: "", content: {guest_access: "can_join"}},
+                { type: "m.room.encryption", state_key: "", content: { algorithm: EncryptionAlgorithm.MegolmV1AesSha2 } },
+                { type: "m.room.guest_access", state_key: "", content: { guest_access: "can_join" } },
             ],
         });
     }
