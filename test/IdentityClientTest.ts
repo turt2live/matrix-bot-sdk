@@ -18,14 +18,12 @@ export async function createTestIdentityClient(): Promise<{ client: IdentityClie
         token_type: "Bearer",
     });
 
-    const flush = result.http.flushAllExpected();
+    result.http.flushAllExpected();
     const client = await mxClient.getIdentityServerClient(idServer);
 
     delete result.client;
     delete result.hsUrl;
     delete result.accessToken;
-
-    await flush;
 
     return {...result, client, mxClient, accessToken: idAccessToken, identityUrl: `https://${idServer}`};
 }
@@ -44,10 +42,9 @@ describe('IdentityClient', () => {
                 return accountResponse;
             });
 
-            const flush = http.flushAllExpected();
+            http.flushAllExpected();
             const resp = await client.getAccount();
             expect(resp).toMatchObject(accountResponse);
-            await flush;
         });
     });
 
@@ -83,10 +80,9 @@ describe('IdentityClient', () => {
                 return response;
             });
 
-            const flush = http.flushAllExpected();
+            http.flushAllExpected();
             const result = await client.getTermsOfService();
             expect(result).toEqual(response);
-            await flush;
         });
     });
 
@@ -102,9 +98,8 @@ describe('IdentityClient', () => {
                 return {};
             });
 
-            const flush = http.flushAllExpected();
+            http.flushAllExpected();
             await client.acceptTerms(urls);
-            await flush;
         });
     });
 
@@ -148,9 +143,8 @@ describe('IdentityClient', () => {
                 return {};
             });
 
-            const flush = http.flushAllExpected();
+            http.flushAllExpected();
             await client.acceptAllTerms();
-            await flush;
         });
 
         it('should pick other languages if English is not available', async () => {
@@ -192,9 +186,8 @@ describe('IdentityClient', () => {
                 return {};
             });
 
-            const flush = http.flushAllExpected();
+            http.flushAllExpected();
             await client.acceptAllTerms();
-            await flush;
         });
 
         it('should ignore invalid policies', async () => {
@@ -236,9 +229,8 @@ describe('IdentityClient', () => {
                 return {};
             });
 
-            const flush = http.flushAllExpected();
+            http.flushAllExpected();
             await client.acceptAllTerms();
-            await flush;
         });
     });
 
@@ -280,12 +272,11 @@ describe('IdentityClient', () => {
                 };
             });
 
-            const flush = http.flushAllExpected();
+            http.flushAllExpected();
             const response = await client.lookup(addresses);
             expect(Array.isArray(response)).toBe(true);
             expect(response[0]).toEqual(mappedUserId);
             expect(response[1]).toBeFalsy();
-            await flush;
         });
 
         it('should call the right endpoint (none/plaintext)', async () => {
@@ -325,12 +316,11 @@ describe('IdentityClient', () => {
                 };
             });
 
-            const flush = http.flushAllExpected();
+            http.flushAllExpected();
             const response = await client.lookup(addresses, true);
             expect(Array.isArray(response)).toBe(true);
             expect(response[0]).toEqual(mappedUserId);
             expect(response[1]).toBeFalsy();
-            await flush;
         });
 
         it('should prefer hashing over plaintext', async () => {
@@ -370,12 +360,11 @@ describe('IdentityClient', () => {
                 };
             });
 
-            const flush = http.flushAllExpected();
+            http.flushAllExpected();
             const response = await client.lookup(addresses);
             expect(Array.isArray(response)).toBe(true);
             expect(response[0]).toEqual(mappedUserId);
             expect(response[1]).toBeFalsy();
-            await flush;
         });
 
         it('should prefer hashing over plaintext, even if allowed', async () => {
@@ -415,12 +404,11 @@ describe('IdentityClient', () => {
                 };
             });
 
-            const flush = http.flushAllExpected();
+            http.flushAllExpected();
             const response = await client.lookup(addresses, true);
             expect(Array.isArray(response)).toBe(true);
             expect(response[0]).toEqual(mappedUserId);
             expect(response[1]).toBeFalsy();
-            await flush;
         });
 
         it('should fail if no algorithms are present', async () => {
@@ -441,14 +429,13 @@ describe('IdentityClient', () => {
                 };
             });
 
-            const flush = http.flushAllExpected();
+            http.flushAllExpected();
             try {
                 await client.lookup(addresses);
                 throw new Error("Failed to fail");
             } catch (e) {
                 expect(e.message === "No supported hashing algorithm found");
             }
-            await flush;
         });
 
         it('should fail if no relevant algorithms are present', async () => {
@@ -469,14 +456,13 @@ describe('IdentityClient', () => {
                 };
             });
 
-            const flush = http.flushAllExpected();
+            http.flushAllExpected();
             try {
                 await client.lookup(addresses);
                 throw new Error("Failed to fail");
             } catch (e) {
                 expect(e.message === "No supported hashing algorithm found");
             }
-            await flush;
         });
     });
 
@@ -497,9 +483,8 @@ describe('IdentityClient', () => {
             http.when("GET", "/test").respond(404, {error: "Not Found"});
 
             try {
-                const flush = http.flushAllExpected();
+                http.flushAllExpected();
                 await client.doRequest("GET", "/test");
-                await flush;
 
                 // noinspection ExceptionCaughtLocallyJS
                 throw new Error("Expected an error and didn't get one");
@@ -514,10 +499,9 @@ describe('IdentityClient', () => {
             const expectedResponse = {test: 1234};
             http.when("GET", "/test").respond(200, expectedResponse);
 
-            const flush = http.flushAllExpected();
+            http.flushAllExpected();
             const response = await client.doRequest("GET", "/test");
             expect(response).toMatchObject(expectedResponse);
-            await flush;
         });
 
         it('should be kind with prefixed slashes', async () => {
@@ -526,10 +510,9 @@ describe('IdentityClient', () => {
             const expectedResponse = {test: 1234};
             http.when("GET", "/test").respond(200, expectedResponse);
 
-            const flush = http.flushAllExpected();
+            http.flushAllExpected();
             const response = await client.doRequest("GET", "test");
             expect(response).toMatchObject(expectedResponse);
-            await flush;
         });
 
         it('should send the appropriate body', async () => {
@@ -541,9 +524,8 @@ describe('IdentityClient', () => {
                 return {};
             });
 
-            const flush = http.flushAllExpected();
+            http.flushAllExpected();
             await client.doRequest("PUT", "/test", null, expectedInput);
-            await flush;
         });
 
         it('should send the appropriate query string', async () => {
@@ -555,9 +537,8 @@ describe('IdentityClient', () => {
                 return {};
             });
 
-            const flush = http.flushAllExpected();
+            http.flushAllExpected();
             await client.doRequest("GET", "/test", expectedInput);
-            await flush;
         });
 
         it('should send the access token in the Authorization header', async () => {
@@ -568,9 +549,8 @@ describe('IdentityClient', () => {
                 return {};
             });
 
-            const flush = http.flushAllExpected();
+            http.flushAllExpected();
             await client.doRequest("GET", "/test");
-            await flush;
         });
 
         it('should send application/json by default', async () => {
@@ -581,9 +561,8 @@ describe('IdentityClient', () => {
                 return {};
             });
 
-            const flush = http.flushAllExpected();
+            http.flushAllExpected();
             await client.doRequest("PUT", "/test", null, {test: 1});
-            await flush;
         });
 
         it('should send the content-type of choice where possible', async () => {
@@ -598,9 +577,8 @@ describe('IdentityClient', () => {
                 return {};
             });
 
-            const flush = http.flushAllExpected();
+            http.flushAllExpected();
             await client.doRequest("PUT", "/test", null, fakeJson, 60000, false, contentType);
-            await flush;
         });
 
         it('should return raw responses if requested', async () => {
@@ -610,11 +588,10 @@ describe('IdentityClient', () => {
 
             http.when("PUT", "/test").respond(200, expectedOutput);
 
-            const flush = http.flushAllExpected();
+            http.flushAllExpected();
             const result = await client.doRequest("PUT", "/test", null, {}, 60000, true);
             // HACK: We can't check the body because of the mock library. Check the status code instead.
             expect(result.statusCode).toBe(200);
-            await flush;
         });
 
         it('should proxy the timeout to request', async () => {
@@ -626,9 +603,8 @@ describe('IdentityClient', () => {
                 expect(req.opts.timeout).toBe(timeout);
             });
 
-            const flush = http.flushAllExpected();
+            http.flushAllExpected();
             await client.doRequest("GET", "/test", null, null, timeout);
-            await flush;
         });
     });
 
@@ -664,10 +640,9 @@ describe('IdentityClient', () => {
                 return storedInvite;
             });
 
-            const flush = http.flushAllExpected();
+            http.flushAllExpected();
             const resp = await client.makeEmailInvite(inviteEmail, inviteRoomId);
             expect(resp).toMatchObject(storedInvite);
-            await flush;
         });
 
         it('should request room state events and user profile', async () => {
@@ -740,12 +715,11 @@ describe('IdentityClient', () => {
                 return storedInvite;
             });
 
-            const flush = http.flushAllExpected();
+            http.flushAllExpected();
             const resp = await client.makeEmailInvite(inviteEmail, inviteRoomId);
             expect(resp).toMatchObject(storedInvite);
             expect(profileSpy.callCount).toBe(1);
             expect({calledStateEvents}).toMatchObject({calledStateEvents: expectedStateEvents});
-            await flush;
         });
 
         it('should use the canonical alias when no explicit name is present', async () => {
@@ -817,12 +791,11 @@ describe('IdentityClient', () => {
                 return storedInvite;
             });
 
-            const flush = http.flushAllExpected();
+            http.flushAllExpected();
             const resp = await client.makeEmailInvite(inviteEmail, inviteRoomId);
             expect(resp).toMatchObject(storedInvite);
             expect(profileSpy.callCount).toBe(1);
             expect({calledStateEvents}).toMatchObject({calledStateEvents: expectedStateEvents});
-            await flush;
         });
     });
 });

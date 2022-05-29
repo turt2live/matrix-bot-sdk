@@ -1770,7 +1770,7 @@ describe('Appservice', () => {
                     return {};
                 });
 
-                const flush = http.flushAllExpected();
+                http.flushAllExpected();
                 const res = await requestPromise({
                     uri: `http://localhost:${port}${route}`,
                     method: "GET",
@@ -1782,7 +1782,6 @@ describe('Appservice', () => {
 
                 expect(userSpy.callCount).toBe(1);
                 userSpy.callCount = 0;
-                await flush;
             }
 
             await doCall("/users/" + userId);
@@ -1855,7 +1854,7 @@ describe('Appservice', () => {
                     return {};
                 });
 
-                const flush = http.flushAllExpected();
+                http.flushAllExpected();
                 const res = await requestPromise({
                     uri: `http://localhost:${port}${route}`,
                     method: "GET",
@@ -1867,7 +1866,6 @@ describe('Appservice', () => {
 
                 expect(userSpy.callCount).toBe(1);
                 userSpy.callCount = 0;
-                await flush;
             }
 
             await doCall("/users/" + userId);
@@ -2724,8 +2722,7 @@ describe('Appservice', () => {
             return {};
         });
 
-        const flush = http.flushAllExpected();
+        http.flushAllExpected();
         await appservice.setRoomDirectoryVisibility("foonetwork", "!aroomid:example.org", "public");
-        await flush;
     });
 });

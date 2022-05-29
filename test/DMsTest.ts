@@ -30,7 +30,7 @@ describe('DMs', () => {
             return {};
         });
 
-        const flush = http.flushAllExpected();
+        http.flushAllExpected();
 
         const accountHandleProm = new Promise<void>(resolve => {
             const orig = (<any>dms).updateFromAccountData.bind(dms);
@@ -76,7 +76,6 @@ describe('DMs', () => {
 
         expect(dms.isDm(dmRoomId1)).toBe(true);
         expect(dms.isDm(dmRoomId2)).toBe(true);
-        await flush;
     });
 
     it('should update from account data when requested', async () => {
@@ -94,11 +93,10 @@ describe('DMs', () => {
         // noinspection TypeScriptValidateJSTypes
         http.when("GET", `/user/${encodeURIComponent(selfUserId)}/account_data/m.direct`).respond(200, accountDataDms);
 
-        const flush = http.flushAllExpected();
+        http.flushAllExpected();
         expect(dms.isDm(dmRoomId)).toBe(false);
         await dms.update();
         expect(dms.isDm(dmRoomId)).toBe(true);
-        await flush;
     });
 
     it('should not fail to update when the account data is missing/fails', async () => {
@@ -111,11 +109,10 @@ describe('DMs', () => {
         // noinspection TypeScriptValidateJSTypes
         http.when("GET", `/user/${encodeURIComponent(selfUserId)}/account_data/m.direct`).respond(404);
 
-        const flush = http.flushAllExpected();
+        http.flushAllExpected();
         expect(dms.isDm(dmRoomId)).toBe(false);
         await dms.update();
         expect(dms.isDm(dmRoomId)).toBe(false);
-        await flush;
     });
 
     it('should create a DM if one does not exist', async () => {
@@ -146,13 +143,12 @@ describe('DMs', () => {
             return {};
         });
 
-        const flush = http.flushAllExpected();
+        http.flushAllExpected();
 
         expect(dms.isDm(dmRoomId)).toBe(false);
         const roomId = await dms.getOrCreateDm(dmUserId);
         expect(roomId).toEqual(dmRoomId);
         expect(dms.isDm(dmRoomId)).toBe(true);
-        await flush;
     });
 
     it('should call the optional create room function when provided', async () => {
@@ -176,14 +172,13 @@ describe('DMs', () => {
             return {};
         });
 
-        const flush = http.flushAllExpected();
+        http.flushAllExpected();
 
         expect(dms.isDm(dmRoomId)).toBe(false);
         const roomId = await dms.getOrCreateDm(dmUserId, fn);
         expect(roomId).toEqual(dmRoomId);
         expect(dms.isDm(dmRoomId)).toBe(true);
         expect(fn.callCount).toBe(1);
-        await flush;
     });
 
     it('should try to patch up DMs when a DM is potentially known', async () => {
@@ -256,7 +251,7 @@ describe('DMs', () => {
             return {};
         });
 
-        const flush = http.flushAllExpected();
+        http.flushAllExpected();
 
         await dms.update();
         expect(dms.isDm(dmRoomId)).toBe(true);
@@ -265,7 +260,6 @@ describe('DMs', () => {
         expect(roomId).toEqual(dmRoomId);
         expect(dms.isDm(dmRoomId)).toBe(true);
         expect(dms.isDm(deadRoomId)).toBe(false);
-        await flush;
     });
 
     it('should use the cache if a DM already exists', async () => {
@@ -286,14 +280,13 @@ describe('DMs', () => {
         // noinspection TypeScriptValidateJSTypes
         http.when("GET", `/user/${encodeURIComponent(selfUserId)}/account_data/m.direct`).respond(200, accountDataDms);
 
-        const flush = http.flushAllExpected();
+        http.flushAllExpected();
 
         await dms.update();
         expect(dms.isDm(dmRoomId)).toBe(true);
         const roomId = await dms.getOrCreateDm(dmUserId);
         expect(roomId).toEqual(dmRoomId);
         expect(dms.isDm(dmRoomId)).toBe(true);
-        await flush;
     });
 
     it('should create an encrypted DM if supported', async () => {
@@ -350,13 +343,12 @@ describe('DMs', () => {
             return {};
         });
 
-        const flush = http.flushAllExpected();
+        http.flushAllExpected();
 
         expect(dms.isDm(dmRoomId)).toBe(false);
         const roomId = await dms.getOrCreateDm(dmUserId);
         expect(roomId).toEqual(dmRoomId);
         expect(dms.isDm(dmRoomId)).toBe(true);
-        await flush;
     });
 
     it('should create an unencrypted DM when the target user has no devices', async () => {
@@ -401,12 +393,11 @@ describe('DMs', () => {
             return {};
         });
 
-        const flush = http.flushAllExpected();
+        http.flushAllExpected();
 
         expect(dms.isDm(dmRoomId)).toBe(false);
         const roomId = await dms.getOrCreateDm(dmUserId);
         expect(roomId).toEqual(dmRoomId);
         expect(dms.isDm(dmRoomId)).toBe(true);
-        await flush;
     });
 });
