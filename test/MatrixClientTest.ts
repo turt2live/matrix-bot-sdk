@@ -530,7 +530,7 @@ describe('MatrixClient', () => {
             // noinspection TypeScriptValidateJSTypes
             http.when("PUT", "/_matrix/client/r0/presence").respond(200, (path, obj) => {
                 expect(path).toEqual(`${hsUrl}/_matrix/client/r0/presence/${encodeURIComponent(userId)}/status`);
-                expect(obj).toMatchObject({
+                expect(obj).toEqual({
                     presence: presence,
                 });
                 return {};
