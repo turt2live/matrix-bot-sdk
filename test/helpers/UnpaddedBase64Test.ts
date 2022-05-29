@@ -1,4 +1,3 @@
-import * as expect from "expect";
 import { UnpaddedBase64 } from "../../src";
 
 describe('UnpaddedBase64', () => {

@@ -1,7 +1,6 @@
 import { Appservice, AutojoinRoomsMixin, Intent } from "../../src";
-import * as expect from "expect";
 import * as simple from "simple-mock";
-import { createTestClient } from "../MatrixClientTest";
+import { createTestClient } from "../TestUtils";
 
 describe('AutojoinRoomsMixin', () => {
     it('should join rooms for regular invites', () => {
@@ -49,9 +48,9 @@ describe('AutojoinRoomsMixin', () => {
 
         appservice.getIntentForUserId = (uid) => {
             expect(uid).toEqual(userId);
-            return <Intent>{
+            return {
                 joinRoom: joinSpy,
-            };
+            } as unknown as Intent;
         };
 
         AutojoinRoomsMixin.setupOnAppservice(appservice);
@@ -96,9 +95,9 @@ describe('AutojoinRoomsMixin', () => {
 
         appservice.getIntentForUserId = (uid) => {
             expect(uid).toEqual(okUserId);
-            return <Intent>{
+            return {
                 joinRoom: joinSpy,
-            };
+            } as unknown as Intent;
         };
 
         const conditional = simple.stub().callFn((ev) => {
@@ -160,9 +159,9 @@ describe('AutojoinRoomsMixin', () => {
 
         appservice.getIntentForUserId = (uid) => {
             if (uid !== okUserId && uid !== badUserId) throw new Error("Unexpected user ID");
-            return <Intent>{
+            return {
                 joinRoom: joinSpy,
-            };
+            } as unknown as Intent;
         };
 
         const conditional = simple.stub().callFn((ev) => {

@@ -1,0 +1,68 @@
+name: Static Analysis
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+jobs:
+  # Global
+  # ================================================
+  eslint:
+    name: 'ESLint'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: '16'  # Target desired node version
+      - run: yarn install
+      - run: yarn lint
+
+  # Node-specific
+  # ================================================
+  build:
+    strategy:
+      matrix:
+        node: [ 16, 18 ]
+    name: 'Build Node ${{ matrix.node }}'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: ${{ matrix.node }}
+      - run: yarn install
+      - run: yarn build
+      - run: yarn build:examples
+
+  build-docs:
+    strategy:
+      matrix:
+        node: [ 16, 18 ]
+    name: 'Build Docs Node ${{ matrix.node }}'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: ${{ matrix.node }}
+      - run: yarn install
+      - run: yarn docs
+
+  tests:
+    strategy:
+      matrix:
+        node: [ 16, 18 ]
+    name: 'Tests Node ${{ matrix.node }}'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: ${{ matrix.node }}
+      - run: yarn install
+      - uses: nick-invision/retry@v2
+        with:
+          max_attempts: 5
+          timeout_minutes: 5
+          command: yarn test

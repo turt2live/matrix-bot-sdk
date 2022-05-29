@@ -17,7 +17,7 @@
     "docs": "jsdoc -c jsdoc.json -P package.json -u docs/tutorials",
     "build": "tsc --listEmittedFiles",
     "lint": "eslint \"src/**/*.ts\"",
-    "test": "ts-mocha --project ./tsconfig.json test/*Test.ts test/**/*.ts",
+    "test": "jest",
     "build:examples": "tsc -p tsconfig-examples.json",
     "example:bot": "yarn build:examples && node lib/examples/bot.js",
     "example:appservice": "yarn build:examples && node lib/examples/appservice.js",
@@ -73,6 +73,7 @@
     "@babel/eslint-parser": "^7.18.2",
     "@babel/eslint-plugin": "^7.17.7",
     "@types/expect": "^24.3.0",
+    "@types/jest": "^27.5.1",
     "@types/mocha": "^8",
     "@types/node": "^16",
     "@types/simple-mock": "^0.8.2",
@@ -83,14 +84,20 @@
     "eslint-config-google": "^0.14.0",
     "eslint-plugin-import": "^2.26.0",
     "eslint-plugin-matrix-org": "^0.5.2",
-    "expect": "^26",
     "get-port": "^5",
+    "jest": "^28.1.0",
     "jsdoc": "^3.6.10",
     "matrix-mock-request": "^1.2.3",
-    "mocha": "^8",
     "simple-mock": "^0.8.0",
     "tmp": "^0.2.1",
-    "ts-mocha": "^7",
+    "ts-jest": "^28.0.3",
     "typescript": "^4.7.2"
+  },
+  "jest": {
+    "preset": "ts-jest",
+    "testEnvironment": "node",
+    "testMatch": [
+      "<rootDir>/test/**/*Test.ts"
+    ]
   }
 }

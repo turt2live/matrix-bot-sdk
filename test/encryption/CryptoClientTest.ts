@@ -1,4 +1,3 @@
-import * as expect from "expect";
 import * as simple from "simple-mock";
 import {
     ConsoleLogger,
@@ -8,9 +7,9 @@ import {
     MatrixClient,
     RoomEncryptionAlgorithm,
 } from "../../src";
-import { createTestClient, TEST_DEVICE_ID } from "../MatrixClientTest";
 import { InternalOlmMachineFactory } from "../../src/e2ee/InternalOlmMachineFactory";
 import { OlmMachine, Signatures } from "@turt2live/matrix-sdk-crypto-nodejs";
+import { createTestClient, TEST_DEVICE_ID } from "../TestUtils";
 
 describe('CryptoClient', () => {
     afterEach(() => {

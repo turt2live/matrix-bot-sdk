@@ -1,4 +1,3 @@
-import * as expect from "expect";
 import {
     DeviceKeyAlgorithm,
     DeviceKeyLabel,
@@ -6,7 +5,6 @@ import {
     EventKind,
     IJoinRoomStrategy,
     IPreprocessor,
-    IStorageProvider,
     MatrixClient,
     Membership,
     MemoryStorageProvider,
@@ -21,27 +19,13 @@ import {
 } from "../src";
 import * as tmp from "tmp";
 import * as simple from "simple-mock";
-import * as MockHttpBackend from 'matrix-mock-request';
-import { expectArrayEquals } from "./TestUtils";
+import { createTestClient, expectArrayEquals, TEST_DEVICE_ID } from "./TestUtils";
 import { redactObjectForLogging } from "../src/http";
 import { PowerLevelAction } from "../src/models/PowerLevelAction";
 import { InternalOlmMachineFactory } from "../src/e2ee/InternalOlmMachineFactory";
 import { OlmMachine, Signatures } from "@turt2live/matrix-sdk-crypto-nodejs";
 
 tmp.setGracefulCleanup();
-
-export const TEST_DEVICE_ID = "TEST_DEVICE";
-
-export function createTestClient(storage: IStorageProvider = null, userId: string = null, crypto = false): { client: MatrixClient, http: MockHttpBackend, hsUrl: string, accessToken: string } {
-    const http = new MockHttpBackend();
-    const hsUrl = "https://localhost";
-    const accessToken = "s3cret";
-    const client = new MatrixClient(hsUrl, accessToken, storage, crypto ? new RustSdkCryptoStorageProvider(tmp.dirSync().name) : null);
-    (<any>client).userId = userId; // private member access
-    setRequestFn(http.requestFn);
-
-    return {http, hsUrl, accessToken, client};
-}
 
 describe('MatrixClient', () => {
     afterEach(() => {
@@ -105,8 +89,7 @@ describe('MatrixClient', () => {
             http.when("GET", "/test").respond(404, {error: "Not Found"});
 
             try {
-                http.flushAllExpected();
-                await client.doRequest("GET", "/test");
+                await Promise.all([client.doRequest("GET", "/test"), http.flushAllExpected()]);
 
                 // noinspection ExceptionCaughtLocallyJS
                 throw new Error("Expected an error and didn't get one");
@@ -123,8 +106,7 @@ describe('MatrixClient', () => {
             // noinspection TypeScriptValidateJSTypes
             http.when("GET", "/test").respond(200, expectedResponse);
 
-            http.flushAllExpected();
-            const response = await client.doRequest("GET", "/test");
+            const [response] = await Promise.all([client.doRequest("GET", "/test"), http.flushAllExpected()]);
             expect(response).toMatchObject(expectedResponse);
         });
 
@@ -136,8 +118,7 @@ describe('MatrixClient', () => {
             // noinspection TypeScriptValidateJSTypes
             http.when("GET", "/test").respond(200, expectedResponse);
 
-            http.flushAllExpected();
-            const response = await client.doRequest("GET", "test");
+            const [response] = await Promise.all([client.doRequest("GET", "test"), http.flushAllExpected()]);
             expect(response).toMatchObject(expectedResponse);
         });
 
@@ -152,8 +133,7 @@ describe('MatrixClient', () => {
                 return {};
             });
 
-            http.flushAllExpected();
-            await client.doRequest("PUT", "/test", null, expectedInput);
+            await Promise.all([client.doRequest("PUT", "/test", null, expectedInput), http.flushAllExpected()]);
         });
 
         it('should send the appropriate query string', async () => {
@@ -167,8 +147,7 @@ describe('MatrixClient', () => {
                 return {};
             });
 
-            http.flushAllExpected();
-            await client.doRequest("GET", "/test", expectedInput);
+            await Promise.all([client.doRequest("GET", "/test", expectedInput), http.flushAllExpected()]);
         });
 
         it('should send the access token in the Authorization header', async () => {
@@ -180,8 +159,7 @@ describe('MatrixClient', () => {
                 return {};
             });
 
-            http.flushAllExpected();
-            await client.doRequest("GET", "/test");
+            await Promise.all([client.doRequest("GET", "/test"), http.flushAllExpected()]);
         });
 
         it('should send application/json by default', async () => {
@@ -193,8 +171,7 @@ describe('MatrixClient', () => {
                 return {};
             });
 
-            http.flushAllExpected();
-            await client.doRequest("PUT", "/test", null, {test: 1});
+            await Promise.all([client.doRequest("PUT", "/test", null, {test: 1}), http.flushAllExpected()]);
         });
 
         it('should send the content-type of choice where possible', async () => {
@@ -210,8 +187,10 @@ describe('MatrixClient', () => {
                 return {};
             });
 
-            http.flushAllExpected();
-            await client.doRequest("PUT", "/test", null, fakeJson, 60000, false, contentType);
+            await Promise.all([
+                client.doRequest("PUT", "/test", null, fakeJson, 60000, false, contentType),
+                http.flushAllExpected(),
+            ]);
         });
 
         it('should return raw responses if requested', async () => {
@@ -222,8 +201,10 @@ describe('MatrixClient', () => {
             // noinspection TypeScriptValidateJSTypes
             http.when("PUT", "/test").respond(200, expectedOutput);
 
-            http.flushAllExpected();
-            const result = await client.doRequest("PUT", "/test", null, {}, 60000, true);
+            const [result] = await Promise.all([
+                client.doRequest("PUT", "/test", null, {}, 60000, true),
+                http.flushAllExpected(),
+            ]);
             // HACK: We can't check the body because of the mock library. Check the status code instead.
             expect(result.statusCode).toBe(200);
         });
@@ -238,8 +219,7 @@ describe('MatrixClient', () => {
                 expect(req.opts.timeout).toBe(timeout);
             });
 
-            http.flushAllExpected();
-            await client.doRequest("GET", "/test", null, null, timeout);
+            await Promise.all([client.doRequest("GET", "/test", null, null, timeout), http.flushAllExpected()]);
         });
     });
 
@@ -256,8 +236,7 @@ describe('MatrixClient', () => {
                 expect(req.opts.qs["org.matrix.msc3202.device_id"]).toBe(undefined);
             });
 
-            http.flushAllExpected();
-            await client.doRequest("GET", "/test");
+            await Promise.all([client.doRequest("GET", "/test"), http.flushAllExpected()]);
         });
 
         it('should set a device_id param on requests', async () => {
@@ -273,8 +252,7 @@ describe('MatrixClient', () => {
                 expect(req.opts.qs["org.matrix.msc3202.device_id"]).toBe(deviceId);
             });
 
-            http.flushAllExpected();
-            await client.doRequest("GET", "/test");
+            await Promise.all([client.doRequest("GET", "/test"), http.flushAllExpected()]);
         });
 
         it('should stop impersonation with a null user_id', async () => {
@@ -290,8 +268,7 @@ describe('MatrixClient', () => {
                 expect(req.opts.qs?.["org.matrix.msc3202.device_id"]).toBe(undefined);
             });
 
-            http.flushAllExpected();
-            await client.doRequest("GET", "/test");
+            await Promise.all([client.doRequest("GET", "/test"), http.flushAllExpected()]);
         });
 
         it('should not allow impersonation of only a device ID', async () => {
@@ -352,8 +329,7 @@ describe('MatrixClient', () => {
                 return testToken;
             });
 
-            http.flushAllExpected();
-            const r = await client.getOpenIDConnectToken();
+            const [r] = await Promise.all([client.getOpenIDConnectToken(), http.flushAllExpected()]);
             expect(r).toMatchObject(<any>testToken); // <any> to fix typescript
         });
     });
@@ -382,8 +358,7 @@ describe('MatrixClient', () => {
                 return {token: identityToken};
             });
 
-            http.flushAllExpected();
-            const iClient = await client.getIdentityServerClient(identityDomain);
+            const [iClient] = await Promise.all([client.getIdentityServerClient(identityDomain), http.flushAllExpected()]);
             expect(iClient).toBeDefined();
         });
     });
@@ -403,8 +378,7 @@ describe('MatrixClient', () => {
                 return {};
             });
 
-            http.flushAllExpected();
-            await client.getAccountData(eventType);
+            await Promise.all([client.getAccountData(eventType), http.flushAllExpected()]);
         });
     });
 
@@ -423,8 +397,7 @@ describe('MatrixClient', () => {
                 return {};
             });
 
-            http.flushAllExpected();
-            await client.getSafeAccountData(eventType);
+            await Promise.all([client.getSafeAccountData(eventType), http.flushAllExpected()]);
         });
 
         it('should return the default on error', async () => {
@@ -439,8 +412,7 @@ describe('MatrixClient', () => {
             // noinspection TypeScriptValidateJSTypes
             http.when("GET", "/_matrix/client/r0/user").respond(404, {});
 
-            http.flushAllExpected();
-            const ret = await client.getSafeAccountData(eventType, defaultContent);
+            const [ret] = await Promise.all([client.getSafeAccountData(eventType, defaultContent), http.flushAllExpected()]);
             expect(ret).toBe(defaultContent);
         });
     });
@@ -465,8 +437,7 @@ describe('MatrixClient', () => {
                 return presenceObj;
             });
 
-            http.flushAllExpected();
-            const result = await client.getPresenceStatus();
+            const [result] = await Promise.all([client.getPresenceStatus(), http.flushAllExpected()]);
             expect(result).toBeDefined(); // The shape of the object is handled by other tests
         });
     });
@@ -489,8 +460,7 @@ describe('MatrixClient', () => {
                 return presenceObj;
             });
 
-            http.flushAllExpected();
-            const result = await client.getPresenceStatusFor(userId);
+            const [result] = await Promise.all([client.getPresenceStatusFor(userId), http.flushAllExpected()]);
             expect(result).toBeDefined(); // The shape of the object is handled by other tests
         });
     });
@@ -515,8 +485,7 @@ describe('MatrixClient', () => {
                 return {};
             });
 
-            http.flushAllExpected();
-            await client.setPresenceStatus(presence, message);
+            await Promise.all([client.setPresenceStatus(presence, message), http.flushAllExpected()]);
         });
 
         it('should not send status_msg if the parameter is omitted', async () => {
@@ -536,8 +505,7 @@ describe('MatrixClient', () => {
                 return {};
             });
 
-            http.flushAllExpected();
-            await client.setPresenceStatus(presence);
+            await Promise.all([client.setPresenceStatus(presence), http.flushAllExpected()]);
         });
     });
 
@@ -557,8 +525,7 @@ describe('MatrixClient', () => {
                 return {};
             });
 
-            http.flushAllExpected();
-            await client.getRoomAccountData(eventType, roomId);
+            await Promise.all([client.getRoomAccountData(eventType, roomId), http.flushAllExpected()]);
         });
     });
 
@@ -578,8 +545,7 @@ describe('MatrixClient', () => {
                 return {};
             });
 
-            http.flushAllExpected();
-            await client.getSafeRoomAccountData(eventType, roomId);
+            await Promise.all([client.getSafeRoomAccountData(eventType, roomId), http.flushAllExpected()]);
         });
 
         it('should return the default on error', async () => {
@@ -595,8 +561,7 @@ describe('MatrixClient', () => {
             // noinspection TypeScriptValidateJSTypes
             http.when("GET", "/_matrix/client/r0/user").respond(404, {});
 
-            http.flushAllExpected();
-            const ret = await client.getSafeRoomAccountData(eventType, roomId, defaultContent);
+            const [ret] = await Promise.all([client.getSafeRoomAccountData(eventType, roomId, defaultContent), http.flushAllExpected()]);
             expect(ret).toBe(defaultContent);
         });
     });
@@ -618,8 +583,7 @@ describe('MatrixClient', () => {
                 return {};
             });
 
-            http.flushAllExpected();
-            await client.setAccountData(eventType, eventContent);
+            await Promise.all([client.setAccountData(eventType, eventContent), http.flushAllExpected()]);
         });
     });
 
@@ -641,8 +605,7 @@ describe('MatrixClient', () => {
                 return {};
             });
 
-            http.flushAllExpected();
-            await client.setRoomAccountData(eventType, roomId, eventContent);
+            await Promise.all([client.setRoomAccountData(eventType, roomId, eventContent), http.flushAllExpected()]);
         });
     });
 
@@ -655,8 +618,7 @@ describe('MatrixClient', () => {
             // noinspection TypeScriptValidateJSTypes
             http.when("GET", "/_matrix/client/r0/rooms/").respond(404, {});
 
-            http.flushAllExpected();
-            const published = await client.getPublishedAlias(roomId);
+            const [published] = await Promise.all([client.getPublishedAlias(roomId), http.flushAllExpected()]);
             expect(published).toBeFalsy();
         });
 
@@ -668,8 +630,7 @@ describe('MatrixClient', () => {
             // noinspection TypeScriptValidateJSTypes
             http.when("GET", "/_matrix/client/r0/rooms/").respond(200, {});
 
-            http.flushAllExpected();
-            const published = await client.getPublishedAlias(roomId);
+            const [published] = await Promise.all([client.getPublishedAlias(roomId), http.flushAllExpected()]);
             expect(published).toBeFalsy();
         });
 
@@ -686,8 +647,7 @@ describe('MatrixClient', () => {
                 alt_aliases: [alias2],
             });
 
-            http.flushAllExpected();
-            const published = await client.getPublishedAlias(roomId);
+            const [published] = await Promise.all([client.getPublishedAlias(roomId), http.flushAllExpected()]);
             expect(published).toEqual(alias1);
         });
 
@@ -703,8 +663,7 @@ describe('MatrixClient', () => {
                 alt_aliases: [alias2, alias1],
             });
 
-            http.flushAllExpected();
-            const published = await client.getPublishedAlias(roomId);
+            const [published] = await Promise.all([client.getPublishedAlias(roomId), http.flushAllExpected()]);
             expect(published).toEqual(alias2);
         });
     });
@@ -723,8 +682,7 @@ describe('MatrixClient', () => {
                 return {};
             });
 
-            http.flushAllExpected();
-            await client.createRoomAlias(alias, roomId);
+            await Promise.all([client.createRoomAlias(alias, roomId), http.flushAllExpected()]);
         });
     });
 
@@ -740,8 +698,7 @@ describe('MatrixClient', () => {
                 return {};
             });
 
-            http.flushAllExpected();
-            await client.deleteRoomAlias(alias);
+            await Promise.all([client.deleteRoomAlias(alias), http.flushAllExpected()]);
         });
     });
 
@@ -759,8 +716,7 @@ describe('MatrixClient', () => {
                 return {};
             });
 
-            http.flushAllExpected();
-            await client.setDirectoryVisibility(roomId, visibility);
+            await Promise.all([client.setDirectoryVisibility(roomId, visibility), http.flushAllExpected()]);
         });
     });
 
@@ -776,8 +732,7 @@ describe('MatrixClient', () => {
                 return {};
             });
 
-            http.flushAllExpected();
-            await client.getDirectoryVisibility(roomId);
+            await Promise.all([client.getDirectoryVisibility(roomId), http.flushAllExpected()]);
         });
 
         it('should return the right visibility string', async () => {
@@ -789,8 +744,7 @@ describe('MatrixClient', () => {
             // noinspection TypeScriptValidateJSTypes
             http.when("GET", "/_matrix/client/r0/directory/list/room/").respond(200, {visibility: visibility});
 
-            http.flushAllExpected();
-            const result = await client.getDirectoryVisibility(roomId);
+            const [result] = await Promise.all([client.getDirectoryVisibility(roomId), http.flushAllExpected()]);
             expect(result).toEqual(visibility);
         });
     });
@@ -849,8 +803,7 @@ describe('MatrixClient', () => {
                 return {room_id: roomId, servers: servers};
             });
 
-            http.flushAllExpected();
-            await client.lookupRoomAlias(alias);
+            await Promise.all([client.lookupRoomAlias(alias), http.flushAllExpected()]);
         });
 
         it('should return a translated response', async () => {
@@ -863,8 +816,7 @@ describe('MatrixClient', () => {
             // noinspection TypeScriptValidateJSTypes
             http.when("GET", "/_matrix/client/r0/directory/room/").respond(200, {room_id: roomId, servers: servers});
 
-            http.flushAllExpected();
-            const result = await client.lookupRoomAlias(alias);
+            const [result] = await Promise.all([client.lookupRoomAlias(alias), http.flushAllExpected()]);
             expect(result).toMatchObject({roomId: roomId, residentServers: servers});
         });
     });
@@ -883,8 +835,7 @@ describe('MatrixClient', () => {
                 return {};
             });
 
-            http.flushAllExpected();
-            await client.inviteUser(userId, roomId);
+            await Promise.all([client.inviteUser(userId, roomId), http.flushAllExpected()]);
         });
     });
 
@@ -902,8 +853,7 @@ describe('MatrixClient', () => {
                 return {};
             });
 
-            http.flushAllExpected();
-            await client.kickUser(userId, roomId);
+            await Promise.all([client.kickUser(userId, roomId), http.flushAllExpected()]);
         });
 
         it('should support a reason', async () => {
@@ -920,8 +870,7 @@ describe('MatrixClient', () => {
                 return {};
             });
 
-            http.flushAllExpected();
-            await client.kickUser(userId, roomId, reason);
+            await Promise.all([client.kickUser(userId, roomId, reason), http.flushAllExpected()]);
         });
     });
 
@@ -939,8 +888,7 @@ describe('MatrixClient', () => {
                 return {};
             });
 
-            http.flushAllExpected();
-            await client.banUser(userId, roomId);
+            await Promise.all([client.banUser(userId, roomId), http.flushAllExpected()]);
         });
 
         it('should support a reason', async () => {
@@ -957,8 +905,7 @@ describe('MatrixClient', () => {
                 return {};
             });
 
-            http.flushAllExpected();
-            await client.banUser(userId, roomId, reason);
+            await Promise.all([client.banUser(userId, roomId, reason), http.flushAllExpected()]);
         });
     });
 
@@ -976,8 +923,7 @@ describe('MatrixClient', () => {
                 return {};
             });
 
-            http.flushAllExpected();
-            await client.unbanUser(userId, roomId);
+            await Promise.all([client.unbanUser(userId, roomId), http.flushAllExpected()]);
         });
     });
 
@@ -1004,8 +950,7 @@ describe('MatrixClient', () => {
             // noinspection TypeScriptValidateJSTypes
             http.when("GET", "/_matrix/client/r0/account/whoami").respond(200, response);
 
-            http.flushAllExpected();
-            const result = await client.getUserId();
+            const [result] = await Promise.all([client.getUserId(), http.flushAllExpected()]);
             expect(result).toEqual(userId);
         });
     });
@@ -1022,8 +967,7 @@ describe('MatrixClient', () => {
             // noinspection TypeScriptValidateJSTypes
             http.when("GET", "/_matrix/client/r0/account/whoami").respond(200, response);
 
-            http.flushAllExpected();
-            const result = await client.getWhoAmI();
+            const [result] = await Promise.all([client.getWhoAmI(), http.flushAllExpected()]);
             expect(result).toMatchObject(response);
         });
     });
@@ -1061,13 +1005,15 @@ describe('MatrixClient', () => {
                 }
             });
 
-            http.flushAllExpected().catch(() => false);
+            const flush = http.flushAllExpected().catch(() => false);
             await client.start();
             expect(count).toBeLessThan(max);
             await waitPromise;
             expect(count).toBe(max);
             expect(dmsUpdate.callCount).toBe(1);
-        }).timeout(10000);
+            await flush;
+            client.stop();
+        }, 10000);
     });
 
     describe('start', () => {
@@ -1094,9 +1040,9 @@ describe('MatrixClient', () => {
                 return {next_batch: "123"};
             });
 
-            http.flushAllExpected();
-            await client.start(filter);
+            await Promise.all([client.start(filter), http.flushAllExpected()]);
             expect(dmsMock.callCount).toBe(1);
+            client.stop();
         });
 
         it('should create a filter when the stored filter is outdated', async () => {
@@ -1131,10 +1077,10 @@ describe('MatrixClient', () => {
                 return {filter_id: filterId};
             });
 
-            http.flushAllExpected();
-            await client.start(filter);
+            await Promise.all([client.start(filter), http.flushAllExpected()]);
             expect(setFilterFn.callCount).toBe(1);
             expect(dmsMock.callCount).toBe(1);
+            client.stop();
         });
 
         it('should create a filter when there is no stored filter', async () => {
@@ -1169,11 +1115,11 @@ describe('MatrixClient', () => {
                 return {filter_id: filterId};
             });
 
-            http.flushAllExpected();
-            await client.start(filter);
+            await Promise.all([client.start(filter), http.flushAllExpected()]);
             expect(getFilterFn.callCount).toBe(1);
             expect(setFilterFn.callCount).toBe(1);
             expect(dmsMock.callCount).toBe(1);
+            client.stop();
         });
 
         it('should use the filter ID when syncing', async () => {
@@ -1202,9 +1148,9 @@ describe('MatrixClient', () => {
                 return {next_batch: "1234"};
             });
 
-            http.flushAllExpected();
-            await client.start(filter);
+            await Promise.all([client.start(filter), http.flushAllExpected()]);
             expect(dmsMock.callCount).toBe(1);
+            client.stop();
         });
 
         it('should make sync requests with the new token', async () => {
@@ -1246,10 +1192,10 @@ describe('MatrixClient', () => {
                 return {next_batch: secondToken};
             });
 
-            http.flushAllExpected();
-            await client.start(filter);
+            await Promise.all([client.start(filter), http.flushAllExpected()]);
             await waitPromise;
             expect(dmsUpdate.callCount).toBe(1);
+            client.stop();
         });
 
         it('should read the sync token from the store', async () => {
@@ -1288,11 +1234,11 @@ describe('MatrixClient', () => {
                 return {next_batch: syncToken};
             });
 
-            http.flushAllExpected();
-            await client.start(filter);
+            await Promise.all([client.start(filter), http.flushAllExpected()]);
             expect(getSyncTokenFn.callCount).toBe(1);
             await waitPromise;
             expect(dmsUpdate.callCount).toBe(1);
+            client.stop();
         });
 
         it('should use the syncing presence variable', async () => {
@@ -1329,9 +1275,9 @@ describe('MatrixClient', () => {
                 return {next_batch: "testing"};
             });
 
-            http.flushAllExpected();
-            await client.start(filter);
+            await Promise.all([client.start(filter), http.flushAllExpected()]);
             expect(dmsUpdate.callCount).toBe(1);
+            client.stop();
         });
     });
 
@@ -2286,8 +2232,7 @@ describe('MatrixClient', () => {
                 return event;
             });
 
-            http.flushAllExpected();
-            const result = await client.getEvent(roomId, eventId);
+            const [result] = await Promise.all([client.getEvent(roomId, eventId), http.flushAllExpected()]);
             expect(result).toMatchObject(event);
         });
 
@@ -2313,8 +2258,7 @@ describe('MatrixClient', () => {
                 return event;
             });
 
-            http.flushAllExpected();
-            const result = await client.getEvent(roomId, eventId);
+            const [result] = await Promise.all([client.getEvent(roomId, eventId), http.flushAllExpected()]);
             expect(result).toMatchObject(event);
             expect(result["processed"]).toBeTruthy();
         });
@@ -2356,8 +2300,7 @@ describe('MatrixClient', () => {
                 return event;
             });
 
-            http.flushAllExpected();
-            const result = await client.getEvent(roomId, eventId);
+            const [result] = await Promise.all([client.getEvent(roomId, eventId), http.flushAllExpected()]);
             expect(result).toMatchObject(decrypted);
             expect(processSpy.callCount).toBe(2);
             expect(isEncSpy.callCount).toBe(1);
@@ -2401,8 +2344,7 @@ describe('MatrixClient', () => {
                 return event;
             });
 
-            http.flushAllExpected();
-            const result = await client.getEvent(roomId, eventId);
+            const [result] = await Promise.all([client.getEvent(roomId, eventId), http.flushAllExpected()]);
             expect(result).toMatchObject(event);
             expect(processSpy.callCount).toBe(1);
             expect(isEncSpy.callCount).toBe(1);
@@ -2424,8 +2366,7 @@ describe('MatrixClient', () => {
                 return event;
             });
 
-            http.flushAllExpected();
-            const result = await client.getRawEvent(roomId, eventId);
+            const [result] = await Promise.all([client.getRawEvent(roomId, eventId), http.flushAllExpected()]);
             expect(result).toMatchObject(event);
         });
 
@@ -2451,8 +2392,7 @@ describe('MatrixClient', () => {
                 return event;
             });
 
-            http.flushAllExpected();
-            const result = await client.getRawEvent(roomId, eventId);
+            const [result] = await Promise.all([client.getRawEvent(roomId, eventId), http.flushAllExpected()]);
             expect(result).toMatchObject(event);
             expect(result["processed"]).toBeTruthy();
         });
@@ -2494,8 +2434,7 @@ describe('MatrixClient', () => {
                 return event;
             });
 
-            http.flushAllExpected();
-            const result = await client.getRawEvent(roomId, eventId);
+            const [result] = await Promise.all([client.getRawEvent(roomId, eventId), http.flushAllExpected()]);
             expect(result).toMatchObject(event);
             expect(processSpy.callCount).toBe(1);
             expect(isEncSpy.callCount).toBe(0);
@@ -2516,8 +2455,7 @@ describe('MatrixClient', () => {
                 return events;
             });
 
-            http.flushAllExpected();
-            const result = await client.getRoomState(roomId);
+            const [result] = await Promise.all([client.getRoomState(roomId), http.flushAllExpected()]);
             expect(result).toBeDefined();
             expect(result.length).toBe(events.length);
             for (let i = 0; i < result.length; i++) {
@@ -2546,8 +2484,7 @@ describe('MatrixClient', () => {
                 return events;
             });
 
-            http.flushAllExpected();
-            const result = await client.getRoomState(roomId);
+            const [result] = await Promise.all([client.getRoomState(roomId), http.flushAllExpected()]);
             expect(result).toBeDefined();
             expect(result.length).toBe(events.length);
             for (let i = 0; i < result.length; i++) {
@@ -2575,8 +2512,7 @@ describe('MatrixClient', () => {
                 return event;
             });
 
-            http.flushAllExpected();
-            const result = await client.getRoomStateEvent(roomId, eventType, "");
+            const [result] = await Promise.all([client.getRoomStateEvent(roomId, eventType, ""), http.flushAllExpected()]);
             expect(result).toMatchObject(event);
         });
 
@@ -2594,8 +2530,7 @@ describe('MatrixClient', () => {
                 return event;
             });
 
-            http.flushAllExpected();
-            const result = await client.getRoomStateEvent(roomId, eventType, stateKey);
+            const [result] = await Promise.all([client.getRoomStateEvent(roomId, eventType, stateKey), http.flushAllExpected()]);
             expect(result).toMatchObject(event);
         });
 
@@ -2621,8 +2556,7 @@ describe('MatrixClient', () => {
                 return event;
             });
 
-            http.flushAllExpected();
-            const result = await client.getRoomStateEvent(roomId, eventType, "");
+            const [result] = await Promise.all([client.getRoomStateEvent(roomId, eventType, ""), http.flushAllExpected()]);
             expect(result).toMatchObject(event);
             expect(result["processed"]).toBeTruthy();
         });
@@ -2650,8 +2584,7 @@ describe('MatrixClient', () => {
                 return event;
             });
 
-            http.flushAllExpected();
-            const result = await client.getRoomStateEvent(roomId, eventType, stateKey);
+            const [result] = await Promise.all([client.getRoomStateEvent(roomId, eventType, stateKey), http.flushAllExpected()]);
             expect(result).toMatchObject(event);
             expect(result["processed"]).toBeTruthy();
         });
@@ -2690,8 +2623,7 @@ describe('MatrixClient', () => {
                 };
             });
 
-            http.flushAllExpected();
-            const result = await client.getEventContext(roomId, targetEvent.eventId, limit);
+            const [result] = await Promise.all([client.getEventContext(roomId, targetEvent.eventId, limit), http.flushAllExpected()]);
             expect(result).toBeDefined();
             expect(result.event).toBeDefined();
             expect(result.event.raw).toMatchObject(targetEvent);
@@ -2729,8 +2661,7 @@ describe('MatrixClient', () => {
                 return profile;
             });
 
-            http.flushAllExpected();
-            const result = await client.getUserProfile(userId);
+            const [result] = await Promise.all([client.getUserProfile(userId), http.flushAllExpected()]);
             expect(result).toMatchObject(profile);
         });
     });
@@ -2747,8 +2678,7 @@ describe('MatrixClient', () => {
                 return {room_id: roomId};
             });
 
-            http.flushAllExpected();
-            const result = await client.createRoom();
+            const [result] = await Promise.all([client.createRoom(), http.flushAllExpected()]);
             expect(result).toEqual(roomId);
         });
 
@@ -2767,8 +2697,7 @@ describe('MatrixClient', () => {
                 return {room_id: roomId};
             });
 
-            http.flushAllExpected();
-            const result = await client.createRoom(properties);
+            const [result] = await Promise.all([client.createRoom(properties), http.flushAllExpected()]);
             expect(result).toEqual(roomId);
         });
     });
@@ -2789,8 +2718,7 @@ describe('MatrixClient', () => {
                 return {};
             });
 
-            http.flushAllExpected();
-            await client.setDisplayName(displayName);
+            await Promise.all([client.setDisplayName(displayName), http.flushAllExpected()]);
         });
     });
 
@@ -2810,8 +2738,7 @@ describe('MatrixClient', () => {
                 return {};
             });
 
-            http.flushAllExpected();
-            await client.setAvatarUrl(displayName);
+            await Promise.all([client.setAvatarUrl(displayName), http.flushAllExpected()]);
         });
     });
 
@@ -2829,8 +2756,7 @@ describe('MatrixClient', () => {
                 return {room_id: roomId};
             });
 
-            http.flushAllExpected();
-            const result = await client.joinRoom(roomId);
+            const [result] = await Promise.all([client.joinRoom(roomId), http.flushAllExpected()]);
             expect(result).toEqual(roomId);
         });
 
@@ -2852,8 +2778,7 @@ describe('MatrixClient', () => {
                 return {room_id: roomId};
             });
 
-            http.flushAllExpected();
-            const result = await client.joinRoom(roomId, serverNames);
+            const [result] = await Promise.all([client.joinRoom(roomId, serverNames), http.flushAllExpected()]);
             expect(result).toEqual(roomId);
         });
 
@@ -2871,8 +2796,7 @@ describe('MatrixClient', () => {
                 return {room_id: roomId};
             });
 
-            http.flushAllExpected();
-            const result = await client.joinRoom(roomAlias);
+            const [result] = await Promise.all([client.joinRoom(roomAlias), http.flushAllExpected()]);
             expect(result).toEqual(roomId);
         });
 
@@ -2900,8 +2824,7 @@ describe('MatrixClient', () => {
                 return {room_id: roomId};
             });
 
-            http.flushAllExpected();
-            const result = await client.joinRoom(roomId);
+            const [result] = await Promise.all([client.joinRoom(roomId), http.flushAllExpected()]);
             expect(result).toEqual(roomId);
             expect(strategySpy.callCount).toBe(1);
         });
@@ -2931,8 +2854,7 @@ describe('MatrixClient', () => {
                 return {room_id: roomId};
             });
 
-            http.flushAllExpected();
-            const result = await client.joinRoom(roomAlias);
+            const [result] = await Promise.all([client.joinRoom(roomAlias), http.flushAllExpected()]);
             expect(result).toEqual(roomId);
             expect(strategySpy.callCount).toBe(1);
         });
@@ -2950,8 +2872,7 @@ describe('MatrixClient', () => {
                 return {joined_rooms: roomIds};
             });
 
-            http.flushAllExpected();
-            const result = await client.getJoinedRooms();
+            const [result] = await Promise.all([client.getJoinedRooms(), http.flushAllExpected()]);
             expectArrayEquals(roomIds, result);
         });
     });
@@ -2971,8 +2892,7 @@ describe('MatrixClient', () => {
                 return {joined: obj};
             });
 
-            http.flushAllExpected();
-            const result = await client.getJoinedRoomMembers(roomId);
+            const [result] = await Promise.all([client.getJoinedRoomMembers(roomId), http.flushAllExpected()]);
             expectArrayEquals(members, result);
         });
     });
@@ -2998,8 +2918,7 @@ describe('MatrixClient', () => {
                 return {joined: members};
             });
 
-            http.flushAllExpected();
-            const result = await client.getJoinedRoomMembersWithProfiles(roomId);
+            const [result] = await Promise.all([client.getJoinedRoomMembersWithProfiles(roomId), http.flushAllExpected()]);
             expect(result).toEqual(members);
         });
     });
@@ -3034,8 +2953,7 @@ describe('MatrixClient', () => {
                 return {chunk: memberEvents};
             });
 
-            http.flushAllExpected();
-            const result = await client.getRoomMembers(roomId);
+            const [result] = await Promise.all([client.getRoomMembers(roomId), http.flushAllExpected()]);
             expect(result).toBeDefined();
             expect(result.length).toBe(2);
             expect(result[0].membership).toBe(memberEvents[0]['content']['membership']);
@@ -3074,8 +2992,7 @@ describe('MatrixClient', () => {
                 return {chunk: memberEvents};
             });
 
-            http.flushAllExpected();
-            const result = await client.getRoomMembers(roomId, atToken);
+            const [result] = await Promise.all([client.getRoomMembers(roomId, atToken), http.flushAllExpected()]);
             expect(result).toBeDefined();
             expect(result.length).toBe(2);
             expect(result[0].membership).toBe(memberEvents[0]['content']['membership']);
@@ -3116,8 +3033,7 @@ describe('MatrixClient', () => {
                 return {chunk: memberEvents};
             });
 
-            http.flushAllExpected();
-            const result = await client.getRoomMembers(roomId, null, forMemberships, forNotMemberships);
+            const [result] = await Promise.all([client.getRoomMembers(roomId, null, forMemberships, forNotMemberships), http.flushAllExpected()]);
             expect(result).toBeDefined();
             expect(result.length).toBe(2);
             expect(result[0].membership).toBe(memberEvents[0]['content']['membership']);
@@ -3139,8 +3055,7 @@ describe('MatrixClient', () => {
                 return {};
             });
 
-            http.flushAllExpected();
-            await client.leaveRoom(roomId);
+            await Promise.all([client.leaveRoom(roomId), http.flushAllExpected()]);
         });
     });
 
@@ -3157,8 +3072,7 @@ describe('MatrixClient', () => {
                 return {};
             });
 
-            http.flushAllExpected();
-            await client.sendReadReceipt(roomId, eventId);
+            await Promise.all([client.sendReadReceipt(roomId, eventId), http.flushAllExpected()]);
         });
     });
 
@@ -3180,8 +3094,7 @@ describe('MatrixClient', () => {
                 return {};
             });
 
-            http.flushAllExpected();
-            await client.setTyping(roomId, typing, timeout);
+            await Promise.all([client.setTyping(roomId, typing, timeout), http.flushAllExpected()]);
         });
     });
 
@@ -3222,8 +3135,7 @@ describe('MatrixClient', () => {
                 return {event_id: eventId};
             });
 
-            http.flushAllExpected();
-            const result = await client.replyText(roomId, originalEvent, replyText, replyHtml);
+            const [result] = await Promise.all([client.replyText(roomId, originalEvent, replyText, replyHtml), http.flushAllExpected()]);
             expect(result).toEqual(eventId);
         });
 
@@ -3275,8 +3187,7 @@ describe('MatrixClient', () => {
                 return {event_id: eventId};
             });
 
-            http.flushAllExpected();
-            const result = await client.replyText(roomId, originalEvent, replyText, replyHtml);
+            const [result] = await Promise.all([client.replyText(roomId, originalEvent, replyText, replyHtml), http.flushAllExpected()]);
             expect(result).toEqual(eventId);
         });
 
@@ -3318,8 +3229,7 @@ describe('MatrixClient', () => {
                 return {event_id: eventId};
             });
 
-            http.flushAllExpected();
-            const result = await client.replyText(roomId, originalEvent, replyText, replyHtml);
+            const [result] = await Promise.all([client.replyText(roomId, originalEvent, replyText, replyHtml), http.flushAllExpected()]);
             expect(result).toEqual(eventId);
         });
 
@@ -3359,8 +3269,7 @@ describe('MatrixClient', () => {
                 return {event_id: eventId};
             });
 
-            http.flushAllExpected();
-            const result = await client.replyText(roomId, originalEvent, replyText);
+            const [result] = await Promise.all([client.replyText(roomId, originalEvent, replyText), http.flushAllExpected()]);
             expect(result).toEqual(eventId);
         });
     });
@@ -3402,8 +3311,7 @@ describe('MatrixClient', () => {
                 return {event_id: eventId};
             });
 
-            http.flushAllExpected();
-            const result = await client.replyHtmlText(roomId, originalEvent, replyHtml);
+            const [result] = await Promise.all([client.replyHtmlText(roomId, originalEvent, replyHtml), http.flushAllExpected()]);
             expect(result).toEqual(eventId);
         });
 
@@ -3455,8 +3363,7 @@ describe('MatrixClient', () => {
                 return {event_id: eventId};
             });
 
-            http.flushAllExpected();
-            const result = await client.replyHtmlText(roomId, originalEvent, replyHtml);
+            const [result] = await Promise.all([client.replyHtmlText(roomId, originalEvent, replyHtml), http.flushAllExpected()]);
             expect(result).toEqual(eventId);
         });
 
@@ -3498,8 +3405,7 @@ describe('MatrixClient', () => {
                 return {event_id: eventId};
             });
 
-            http.flushAllExpected();
-            const result = await client.replyHtmlText(roomId, originalEvent, replyHtml);
+            const [result] = await Promise.all([client.replyHtmlText(roomId, originalEvent, replyHtml), http.flushAllExpected()]);
             expect(result).toEqual(eventId);
         });
     });
@@ -3541,8 +3447,7 @@ describe('MatrixClient', () => {
                 return {event_id: eventId};
             });
 
-            http.flushAllExpected();
-            const result = await client.replyNotice(roomId, originalEvent, replyText, replyHtml);
+            const [result] = await Promise.all([client.replyNotice(roomId, originalEvent, replyText, replyHtml), http.flushAllExpected()]);
             expect(result).toEqual(eventId);
         });
 
@@ -3594,8 +3499,7 @@ describe('MatrixClient', () => {
                 return {event_id: eventId};
             });
 
-            http.flushAllExpected();
-            const result = await client.replyNotice(roomId, originalEvent, replyText, replyHtml);
+            const [result] = await Promise.all([client.replyNotice(roomId, originalEvent, replyText, replyHtml), http.flushAllExpected()]);
             expect(result).toEqual(eventId);
         });
 
@@ -3637,8 +3541,7 @@ describe('MatrixClient', () => {
                 return {event_id: eventId};
             });
 
-            http.flushAllExpected();
-            const result = await client.replyNotice(roomId, originalEvent, replyText, replyHtml);
+            const [result] = await Promise.all([client.replyNotice(roomId, originalEvent, replyText, replyHtml), http.flushAllExpected()]);
             expect(result).toEqual(eventId);
         });
 
@@ -3678,8 +3581,7 @@ describe('MatrixClient', () => {
                 return {event_id: eventId};
             });
 
-            http.flushAllExpected();
-            const result = await client.replyNotice(roomId, originalEvent, replyText);
+            const [result] = await Promise.all([client.replyNotice(roomId, originalEvent, replyText), http.flushAllExpected()]);
             expect(result).toEqual(eventId);
         });
     });
@@ -3721,8 +3623,7 @@ describe('MatrixClient', () => {
                 return {event_id: eventId};
             });
 
-            http.flushAllExpected();
-            const result = await client.replyHtmlNotice(roomId, originalEvent, replyHtml);
+            const [result] = await Promise.all([client.replyHtmlNotice(roomId, originalEvent, replyHtml), http.flushAllExpected()]);
             expect(result).toEqual(eventId);
         });
 
@@ -3774,8 +3675,7 @@ describe('MatrixClient', () => {
                 return {event_id: eventId};
             });
 
-            http.flushAllExpected();
-            const result = await client.replyHtmlNotice(roomId, originalEvent, replyHtml);
+            const [result] = await Promise.all([client.replyHtmlNotice(roomId, originalEvent, replyHtml), http.flushAllExpected()]);
             expect(result).toEqual(eventId);
         });
 
@@ -3817,8 +3717,7 @@ describe('MatrixClient', () => {
                 return {event_id: eventId};
             });
 
-            http.flushAllExpected();
-            const result = await client.replyHtmlNotice(roomId, originalEvent, replyHtml);
+            const [result] = await Promise.all([client.replyHtmlNotice(roomId, originalEvent, replyHtml), http.flushAllExpected()]);
             expect(result).toEqual(eventId);
         });
     });
@@ -3842,8 +3741,7 @@ describe('MatrixClient', () => {
                 return {event_id: eventId};
             });
 
-            http.flushAllExpected();
-            const result = await client.sendNotice(roomId, eventContent.body);
+            const [result] = await Promise.all([client.sendNotice(roomId, eventContent.body), http.flushAllExpected()]);
             expect(result).toEqual(eventId);
         });
 
@@ -3878,8 +3776,7 @@ describe('MatrixClient', () => {
                 return {event_id: eventId};
             });
 
-            http.flushAllExpected();
-            const result = await client.sendNotice(roomId, eventContent.body);
+            const [result] = await Promise.all([client.sendNotice(roomId, eventContent.body), http.flushAllExpected()]);
             expect(result).toEqual(eventId);
         });
 
@@ -3903,8 +3800,7 @@ describe('MatrixClient', () => {
                 return {event_id: eventId};
             });
 
-            http.flushAllExpected();
-            const result = await client.sendNotice(roomId, eventContent.body);
+            const [result] = await Promise.all([client.sendNotice(roomId, eventContent.body), http.flushAllExpected()]);
             expect(result).toEqual(eventId);
         });
     });
@@ -3930,8 +3826,7 @@ describe('MatrixClient', () => {
                 return {event_id: eventId};
             });
 
-            http.flushAllExpected();
-            const result = await client.sendHtmlNotice(roomId, eventContent.formatted_body);
+            const [result] = await Promise.all([client.sendHtmlNotice(roomId, eventContent.formatted_body), http.flushAllExpected()]);
             expect(result).toEqual(eventId);
         });
 
@@ -3968,8 +3863,7 @@ describe('MatrixClient', () => {
                 return {event_id: eventId};
             });
 
-            http.flushAllExpected();
-            const result = await client.sendHtmlNotice(roomId, eventContent.formatted_body);
+            const [result] = await Promise.all([client.sendHtmlNotice(roomId, eventContent.formatted_body), http.flushAllExpected()]);
             expect(result).toEqual(eventId);
         });
 
@@ -3995,8 +3889,7 @@ describe('MatrixClient', () => {
                 return {event_id: eventId};
             });
 
-            http.flushAllExpected();
-            const result = await client.sendHtmlNotice(roomId, eventContent.formatted_body);
+            const [result] = await Promise.all([client.sendHtmlNotice(roomId, eventContent.formatted_body), http.flushAllExpected()]);
             expect(result).toEqual(eventId);
         });
     });
@@ -4020,8 +3913,7 @@ describe('MatrixClient', () => {
                 return {event_id: eventId};
             });
 
-            http.flushAllExpected();
-            const result = await client.sendText(roomId, eventContent.body);
+            const [result] = await Promise.all([client.sendText(roomId, eventContent.body), http.flushAllExpected()]);
             expect(result).toEqual(eventId);
         });
 
@@ -4056,8 +3948,7 @@ describe('MatrixClient', () => {
                 return {event_id: eventId};
             });
 
-            http.flushAllExpected();
-            const result = await client.sendText(roomId, eventContent.body);
+            const [result] = await Promise.all([client.sendText(roomId, eventContent.body), http.flushAllExpected()]);
             expect(result).toEqual(eventId);
         });
 
@@ -4081,8 +3972,7 @@ describe('MatrixClient', () => {
                 return {event_id: eventId};
             });
 
-            http.flushAllExpected();
-            const result = await client.sendText(roomId, eventContent.body);
+            const [result] = await Promise.all([client.sendText(roomId, eventContent.body), http.flushAllExpected()]);
             expect(result).toEqual(eventId);
         });
     });
@@ -4108,8 +3998,7 @@ describe('MatrixClient', () => {
                 return {event_id: eventId};
             });
 
-            http.flushAllExpected();
-            const result = await client.sendHtmlText(roomId, eventContent.formatted_body);
+            const [result] = await Promise.all([client.sendHtmlText(roomId, eventContent.formatted_body), http.flushAllExpected()]);
             expect(result).toEqual(eventId);
         });
 
@@ -4146,8 +4035,7 @@ describe('MatrixClient', () => {
                 return {event_id: eventId};
             });
 
-            http.flushAllExpected();
-            const result = await client.sendHtmlText(roomId, eventContent.formatted_body);
+            const [result] = await Promise.all([client.sendHtmlText(roomId, eventContent.formatted_body), http.flushAllExpected()]);
             expect(result).toEqual(eventId);
         });
 
@@ -4173,8 +4061,7 @@ describe('MatrixClient', () => {
                 return {event_id: eventId};
             });
 
-            http.flushAllExpected();
-            const result = await client.sendHtmlText(roomId, eventContent.formatted_body);
+            const [result] = await Promise.all([client.sendHtmlText(roomId, eventContent.formatted_body), http.flushAllExpected()]);
             expect(result).toEqual(eventId);
         });
     });
@@ -4199,8 +4086,7 @@ describe('MatrixClient', () => {
                 return {event_id: eventId};
             });
 
-            http.flushAllExpected();
-            const result = await client.sendMessage(roomId, eventContent);
+            const [result] = await Promise.all([client.sendMessage(roomId, eventContent), http.flushAllExpected()]);
             expect(result).toEqual(eventId);
         });
 
@@ -4236,8 +4122,7 @@ describe('MatrixClient', () => {
                 return {event_id: eventId};
             });
 
-            http.flushAllExpected();
-            const result = await client.sendMessage(roomId, eventPlainContent);
+            const [result] = await Promise.all([client.sendMessage(roomId, eventPlainContent), http.flushAllExpected()]);
             expect(result).toEqual(eventId);
         });
 
@@ -4262,8 +4147,7 @@ describe('MatrixClient', () => {
                 return {event_id: eventId};
             });
 
-            http.flushAllExpected();
-            const result = await client.sendMessage(roomId, eventContent);
+            const [result] = await Promise.all([client.sendMessage(roomId, eventContent), http.flushAllExpected()]);
             expect(result).toEqual(eventId);
         });
     });
@@ -4288,8 +4172,7 @@ describe('MatrixClient', () => {
                 return {event_id: eventId};
             });
 
-            http.flushAllExpected();
-            const result = await client.sendEvent(roomId, eventType, eventContent);
+            const [result] = await Promise.all([client.sendEvent(roomId, eventType, eventContent), http.flushAllExpected()]);
             expect(result).toEqual(eventId);
         });
 
@@ -4326,8 +4209,7 @@ describe('MatrixClient', () => {
                 return {event_id: eventId};
             });
 
-            http.flushAllExpected();
-            const result = await client.sendEvent(roomId, eventType, eventPlainContent);
+            const [result] = await Promise.all([client.sendEvent(roomId, eventType, eventPlainContent), http.flushAllExpected()]);
             expect(result).toEqual(eventId);
         });
 
@@ -4352,8 +4234,7 @@ describe('MatrixClient', () => {
                 return {event_id: eventId};
             });
 
-            http.flushAllExpected();
-            const result = await client.sendEvent(roomId, eventType, eventContent);
+            const [result] = await Promise.all([client.sendEvent(roomId, eventType, eventContent), http.flushAllExpected()]);
             expect(result).toEqual(eventId);
         });
     });
@@ -4378,8 +4259,7 @@ describe('MatrixClient', () => {
                 return {event_id: eventId};
             });
 
-            http.flushAllExpected();
-            const result = await client.sendEvent(roomId, eventType, eventContent);
+            const [result] = await Promise.all([client.sendEvent(roomId, eventType, eventContent), http.flushAllExpected()]);
             expect(result).toEqual(eventId);
         });
 
@@ -4404,8 +4284,7 @@ describe('MatrixClient', () => {
                 return {event_id: eventId};
             });
 
-            http.flushAllExpected();
-            const result = await client.sendRawEvent(roomId, eventType, eventContent);
+            const [result] = await Promise.all([client.sendRawEvent(roomId, eventType, eventContent), http.flushAllExpected()]);
             expect(result).toEqual(eventId);
         });
     });
@@ -4432,8 +4311,7 @@ describe('MatrixClient', () => {
                 return {event_id: eventId};
             });
 
-            http.flushAllExpected();
-            const result = await client.sendStateEvent(roomId, eventType, stateKey, eventContent);
+            const [result] = await Promise.all([client.sendStateEvent(roomId, eventType, stateKey, eventContent), http.flushAllExpected()]);
             expect(result).toEqual(eventId);
         });
 
@@ -4458,8 +4336,7 @@ describe('MatrixClient', () => {
                 return {event_id: eventId};
             });
 
-            http.flushAllExpected();
-            const result = await client.sendStateEvent(roomId, eventType, stateKey, eventContent);
+            const [result] = await Promise.all([client.sendStateEvent(roomId, eventType, stateKey, eventContent), http.flushAllExpected()]);
             expect(result).toEqual(eventId);
         });
     });
@@ -4480,8 +4357,7 @@ describe('MatrixClient', () => {
                 return {event_id: eventId};
             });
 
-            http.flushAllExpected();
-            const result = await client.redactEvent(roomId, eventId, reason);
+            const [result] = await Promise.all([client.redactEvent(roomId, eventId, reason), http.flushAllExpected()]);
             expect(result).toEqual(eventId);
         });
     });
@@ -5441,8 +5317,7 @@ describe('MatrixClient', () => {
                 return {content_uri: uri};
             });
 
-            http.flushAllExpected();
-            const result = await client.uploadContent(data, contentType, filename);
+            const [result] = await Promise.all([client.uploadContent(data, contentType, filename), http.flushAllExpected()]);
             expect(result).toEqual(uri);
         });
 
@@ -5465,8 +5340,7 @@ describe('MatrixClient', () => {
                 return {content_uri: uri};
             });
 
-            http.flushAllExpected();
-            const result = await client.uploadContent(data, contentType, filename);
+            const [result] = await Promise.all([client.uploadContent(data, contentType, filename), http.flushAllExpected()]);
             expect(result).toEqual(uri);
         });
     });
@@ -5493,9 +5367,8 @@ describe('MatrixClient', () => {
                 return {};
             });
 
-            http.flushAllExpected();
             // Due to the above problem, the output of this won't be correct, so we cannot verify it.
-            const res = await client.downloadContent(mxcUrl);
+            const [res] = await Promise.all([client.downloadContent(mxcUrl), http.flushAllExpected()]);
             expect(Object.keys(res)).toContain("data");
             expect(Object.keys(res)).toContain("contentType");
         });
@@ -5525,8 +5398,7 @@ describe('MatrixClient', () => {
                 return {content_uri: uri};
             });
 
-            http.flushAllExpected();
-            const result = await client.uploadContentFromUrl(`${hsUrl}/sample/download`);
+            const [result] = await Promise.all([client.uploadContentFromUrl(`${hsUrl}/sample/download`), http.flushAllExpected()]);
             expect(result).toEqual(uri);
         });
     });
@@ -6340,15 +6212,14 @@ describe('MatrixClient', () => {
                 return {room_id: roomId};
             });
 
-            http.flushAllExpected();
-            const result = await client.createSpace({
+            const [result] = await Promise.all([client.createSpace({
                 name: name,
                 topic: topic,
                 localpart: aliasLocalpart,
                 avatarUrl,
                 isPublic: publicSpace,
                 invites,
-            });
+            }), http.flushAllExpected()]);
             expect(result).toBeDefined();
             expect(result.client).toEqual(client);
             expect(result.roomId).toEqual(roomId);
@@ -6389,13 +6260,12 @@ describe('MatrixClient', () => {
                 return {room_id: roomId};
             });
 
-            http.flushAllExpected();
-            const result = await client.createSpace({
+            const [result] = await Promise.all([client.createSpace({
                 name: name,
                 topic: topic,
                 localpart: aliasLocalpart,
                 isPublic: publicSpace,
-            });
+            }), http.flushAllExpected()]);
             expect(result).toBeDefined();
             expect(result.client).toEqual(client);
             expect(result.roomId).toEqual(roomId);
@@ -6527,8 +6397,7 @@ describe('MatrixClient', () => {
                 return { one_time_key_counts: counts };
             });
 
-            http.flushAllExpected();
-            const result = await client.uploadDeviceKeys(algorithms, keys);
+            const [result] = await Promise.all([client.uploadDeviceKeys(algorithms, keys), http.flushAllExpected()]);
             expect(result).toMatchObject(counts);
         });
     });
@@ -6575,8 +6444,7 @@ describe('MatrixClient', () => {
                 return { one_time_key_counts: counts };
             });
 
-            http.flushAllExpected();
-            const result = await client.uploadDeviceOneTimeKeys(keys);
+            const [result] = await Promise.all([client.uploadDeviceOneTimeKeys(keys), http.flushAllExpected()]);
             expect(result).toMatchObject(counts);
         });
     });
@@ -6609,8 +6477,7 @@ describe('MatrixClient', () => {
                 return { one_time_key_counts: counts };
             });
 
-            http.flushAllExpected();
-            const result = await client.checkOneTimeKeyCounts();
+            const [result] = await Promise.all([client.checkOneTimeKeyCounts(), http.flushAllExpected()]);
             expect(result).toMatchObject(counts);
         });
     });
@@ -6645,8 +6512,7 @@ describe('MatrixClient', () => {
                 return response;
             });
 
-            http.flushAllExpected();
-            const result = await client.getUserDevices(Object.keys(requestBody), timeout);
+            const [result] = await Promise.all([client.getUserDevices(Object.keys(requestBody), timeout), http.flushAllExpected()]);
             expect(result).toMatchObject(response);
         });
 
@@ -6679,8 +6545,7 @@ describe('MatrixClient', () => {
                 return response;
             });
 
-            http.flushAllExpected();
-            const result = await client.getUserDevices(Object.keys(requestBody));
+            const [result] = await Promise.all([client.getUserDevices(Object.keys(requestBody)), http.flushAllExpected()]);
             expect(result).toMatchObject(response);
         });
     });
@@ -6734,8 +6599,7 @@ describe('MatrixClient', () => {
                 return response;
             });
 
-            http.flushAllExpected();
-            const result = await client.claimOneTimeKeys(request);
+            const [result] = await Promise.all([client.claimOneTimeKeys(request), http.flushAllExpected()]);
             expect(result).toMatchObject(response);
         });
 
@@ -6777,8 +6641,7 @@ describe('MatrixClient', () => {
                 return response;
             });
 
-            http.flushAllExpected();
-            const result = await client.claimOneTimeKeys(request, timeout);
+            const [result] = await Promise.all([client.claimOneTimeKeys(request, timeout), http.flushAllExpected()]);
             expect(result).toMatchObject(response);
         });
     });
@@ -6810,8 +6673,7 @@ describe('MatrixClient', () => {
                 return {};
             });
 
-            http.flushAllExpected();
-            await client.sendToDevices(type, messages);
+            await Promise.all([client.sendToDevices(type, messages), http.flushAllExpected()]);
         });
     });
 
@@ -6827,8 +6689,7 @@ describe('MatrixClient', () => {
                 return {devices};
             });
 
-            http.flushAllExpected();
-            const res = await client.getOwnDevices();
+            const [res] = await Promise.all([client.getOwnDevices(), http.flushAllExpected()]);
             expect(res).toMatchObject(devices);
         });
     });

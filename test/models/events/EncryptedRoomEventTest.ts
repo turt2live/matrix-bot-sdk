@@ -1,4 +1,3 @@
-import * as expect from "expect";
 import { createMinimalEvent } from "./EventTest";
 import { EncryptedRoomEvent, RoomEncryptionAlgorithm } from "../../../src";
 

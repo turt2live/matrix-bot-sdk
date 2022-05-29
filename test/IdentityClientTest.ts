@@ -1,8 +1,7 @@
-import * as expect from "expect";
 import { IdentityClient, MatrixClient, setRequestFn, Threepid } from "../src";
 import * as MockHttpBackend from 'matrix-mock-request';
-import { createTestClient } from "./MatrixClientTest";
 import * as simple from "simple-mock";
+import { createTestClient } from "./TestUtils";
 
 export async function createTestIdentityClient(): Promise<{ client: IdentityClient, mxClient: MatrixClient, http: MockHttpBackend, identityUrl: string, accessToken: string }> {
     const result = createTestClient();
@@ -19,8 +18,7 @@ export async function createTestIdentityClient(): Promise<{ client: IdentityClie
         token_type: "Bearer",
     });
 
-    result.http.flushAllExpected();
-    const client = await mxClient.getIdentityServerClient(idServer);
+    const [client] = await Promise.all([mxClient.getIdentityServerClient(idServer), result.http.flushAllExpected()]);
 
     delete result.client;
     delete result.hsUrl;
@@ -43,8 +41,7 @@ describe('IdentityClient', () => {
                 return accountResponse;
             });
 
-            http.flushAllExpected();
-            const resp = await client.getAccount();
+            const [resp] = await Promise.all([client.getAccount(), http.flushAllExpected()]);
             expect(resp).toMatchObject(accountResponse);
         });
     });
@@ -81,8 +78,7 @@ describe('IdentityClient', () => {
                 return response;
             });
 
-            http.flushAllExpected();
-            const result = await client.getTermsOfService();
+            const [result] = await Promise.all([client.getTermsOfService(), http.flushAllExpected()]);
             expect(result).toEqual(response);
         });
     });
@@ -99,8 +95,7 @@ describe('IdentityClient', () => {
                 return {};
             });
 
-            http.flushAllExpected();
-            await client.acceptTerms(urls);
+            await Promise.all([client.acceptTerms(urls), http.flushAllExpected()]);
         });
     });
 
@@ -144,8 +139,7 @@ describe('IdentityClient', () => {
                 return {};
             });
 
-            http.flushAllExpected();
-            await client.acceptAllTerms();
+            await Promise.all([client.acceptAllTerms(), http.flushAllExpected()]);
         });
 
         it('should pick other languages if English is not available', async () => {
@@ -187,8 +181,7 @@ describe('IdentityClient', () => {
                 return {};
             });
 
-            http.flushAllExpected();
-            await client.acceptAllTerms();
+            await Promise.all([client.acceptAllTerms(), http.flushAllExpected()]);
         });
 
         it('should ignore invalid policies', async () => {
@@ -230,8 +223,7 @@ describe('IdentityClient', () => {
                 return {};
             });
 
-            http.flushAllExpected();
-            await client.acceptAllTerms();
+            await Promise.all([client.acceptAllTerms(), http.flushAllExpected()]);
         });
     });
 
@@ -273,8 +265,7 @@ describe('IdentityClient', () => {
                 };
             });
 
-            http.flushAllExpected();
-            const response = await client.lookup(addresses);
+            const [response] = await Promise.all([client.lookup(addresses), http.flushAllExpected()]);
             expect(Array.isArray(response)).toBe(true);
             expect(response[0]).toEqual(mappedUserId);
             expect(response[1]).toBeFalsy();
@@ -317,8 +308,7 @@ describe('IdentityClient', () => {
                 };
             });
 
-            http.flushAllExpected();
-            const response = await client.lookup(addresses, true);
+            const [response] = await Promise.all([client.lookup(addresses, true), http.flushAllExpected()]);
             expect(Array.isArray(response)).toBe(true);
             expect(response[0]).toEqual(mappedUserId);
             expect(response[1]).toBeFalsy();
@@ -361,8 +351,7 @@ describe('IdentityClient', () => {
                 };
             });
 
-            http.flushAllExpected();
-            const response = await client.lookup(addresses);
+            const [response] = await Promise.all([client.lookup(addresses), http.flushAllExpected()]);
             expect(Array.isArray(response)).toBe(true);
             expect(response[0]).toEqual(mappedUserId);
             expect(response[1]).toBeFalsy();
@@ -405,8 +394,7 @@ describe('IdentityClient', () => {
                 };
             });
 
-            http.flushAllExpected();
-            const response = await client.lookup(addresses, true);
+            const [response] = await Promise.all([client.lookup(addresses, true), http.flushAllExpected()]);
             expect(Array.isArray(response)).toBe(true);
             expect(response[0]).toEqual(mappedUserId);
             expect(response[1]).toBeFalsy();
@@ -430,9 +418,8 @@ describe('IdentityClient', () => {
                 };
             });
 
-            http.flushAllExpected();
             try {
-                await client.lookup(addresses);
+                await Promise.all([client.lookup(addresses), http.flushAllExpected()]);
                 throw new Error("Failed to fail");
             } catch (e) {
                 expect(e.message === "No supported hashing algorithm found");
@@ -457,9 +444,8 @@ describe('IdentityClient', () => {
                 };
             });
 
-            http.flushAllExpected();
             try {
-                await client.lookup(addresses);
+                await Promise.all([client.lookup(addresses), http.flushAllExpected()]);
                 throw new Error("Failed to fail");
             } catch (e) {
                 expect(e.message === "No supported hashing algorithm found");
@@ -484,8 +470,7 @@ describe('IdentityClient', () => {
             http.when("GET", "/test").respond(404, {error: "Not Found"});
 
             try {
-                http.flushAllExpected();
-                await client.doRequest("GET", "/test");
+                await Promise.all([client.doRequest("GET", "/test"), http.flushAllExpected()]);
 
                 // noinspection ExceptionCaughtLocallyJS
                 throw new Error("Expected an error and didn't get one");
@@ -500,8 +485,7 @@ describe('IdentityClient', () => {
             const expectedResponse = {test: 1234};
             http.when("GET", "/test").respond(200, expectedResponse);
 
-            http.flushAllExpected();
-            const response = await client.doRequest("GET", "/test");
+            const [response] = await Promise.all([client.doRequest("GET", "/test"), http.flushAllExpected()]);
             expect(response).toMatchObject(expectedResponse);
         });
 
@@ -511,8 +495,7 @@ describe('IdentityClient', () => {
             const expectedResponse = {test: 1234};
             http.when("GET", "/test").respond(200, expectedResponse);
 
-            http.flushAllExpected();
-            const response = await client.doRequest("GET", "test");
+            const [response] = await Promise.all([client.doRequest("GET", "test"), http.flushAllExpected()]);
             expect(response).toMatchObject(expectedResponse);
         });
 
@@ -525,8 +508,7 @@ describe('IdentityClient', () => {
                 return {};
             });
 
-            http.flushAllExpected();
-            await client.doRequest("PUT", "/test", null, expectedInput);
+            await Promise.all([client.doRequest("PUT", "/test", null, expectedInput), http.flushAllExpected()]);
         });
 
         it('should send the appropriate query string', async () => {
@@ -538,8 +520,7 @@ describe('IdentityClient', () => {
                 return {};
             });
 
-            http.flushAllExpected();
-            await client.doRequest("GET", "/test", expectedInput);
+            await Promise.all([client.doRequest("GET", "/test", expectedInput), http.flushAllExpected()]);
         });
 
         it('should send the access token in the Authorization header', async () => {
@@ -550,8 +531,7 @@ describe('IdentityClient', () => {
                 return {};
             });
 
-            http.flushAllExpected();
-            await client.doRequest("GET", "/test");
+            await Promise.all([client.doRequest("GET", "/test"), http.flushAllExpected()]);
         });
 
         it('should send application/json by default', async () => {
@@ -562,8 +542,7 @@ describe('IdentityClient', () => {
                 return {};
             });
 
-            http.flushAllExpected();
-            await client.doRequest("PUT", "/test", null, {test: 1});
+            await Promise.all([client.doRequest("PUT", "/test", null, {test: 1}), http.flushAllExpected()]);
         });
 
         it('should send the content-type of choice where possible', async () => {
@@ -578,8 +557,10 @@ describe('IdentityClient', () => {
                 return {};
             });
 
-            http.flushAllExpected();
-            await client.doRequest("PUT", "/test", null, fakeJson, 60000, false, contentType);
+            await Promise.all([
+                client.doRequest("PUT", "/test", null, fakeJson, 60000, false, contentType),
+                http.flushAllExpected(),
+            ]);
         });
 
         it('should return raw responses if requested', async () => {
@@ -589,8 +570,10 @@ describe('IdentityClient', () => {
 
             http.when("PUT", "/test").respond(200, expectedOutput);
 
-            http.flushAllExpected();
-            const result = await client.doRequest("PUT", "/test", null, {}, 60000, true);
+            const [result] = await Promise.all([
+                client.doRequest("PUT", "/test", null, {}, 60000, true),
+                http.flushAllExpected(),
+            ]);
             // HACK: We can't check the body because of the mock library. Check the status code instead.
             expect(result.statusCode).toBe(200);
         });
@@ -604,8 +587,7 @@ describe('IdentityClient', () => {
                 expect(req.opts.timeout).toBe(timeout);
             });
 
-            http.flushAllExpected();
-            await client.doRequest("GET", "/test", null, null, timeout);
+            await Promise.all([client.doRequest("GET", "/test", null, null, timeout), http.flushAllExpected()]);
         });
     });
 
@@ -641,8 +623,7 @@ describe('IdentityClient', () => {
                 return storedInvite;
             });
 
-            http.flushAllExpected();
-            const resp = await client.makeEmailInvite(inviteEmail, inviteRoomId);
+            const [resp] = await Promise.all([client.makeEmailInvite(inviteEmail, inviteRoomId), http.flushAllExpected()]);
             expect(resp).toMatchObject(storedInvite);
         });
 
@@ -716,8 +697,7 @@ describe('IdentityClient', () => {
                 return storedInvite;
             });
 
-            http.flushAllExpected();
-            const resp = await client.makeEmailInvite(inviteEmail, inviteRoomId);
+            const [resp] = await Promise.all([client.makeEmailInvite(inviteEmail, inviteRoomId), http.flushAllExpected()]);
             expect(resp).toMatchObject(storedInvite);
             expect(profileSpy.callCount).toBe(1);
             expect({calledStateEvents}).toMatchObject({calledStateEvents: expectedStateEvents});
@@ -792,8 +772,7 @@ describe('IdentityClient', () => {
                 return storedInvite;
             });
 
-            http.flushAllExpected();
-            const resp = await client.makeEmailInvite(inviteEmail, inviteRoomId);
+            const [resp] = await Promise.all([client.makeEmailInvite(inviteEmail, inviteRoomId), http.flushAllExpected()]);
             expect(resp).toMatchObject(storedInvite);
             expect(profileSpy.callCount).toBe(1);
             expect({calledStateEvents}).toMatchObject({calledStateEvents: expectedStateEvents});

@@ -1,7 +1,6 @@
-import * as expect from "expect";
 import { MatrixAuth } from "../src";
 import * as MockHttpBackend from 'matrix-mock-request';
-import { createTestClient } from "./MatrixClientTest";
+import { createTestClient } from "./TestUtils";
 
 export function createTestAuth(): { auth: MatrixAuth, http: MockHttpBackend, hsUrl: string } {
     const result = createTestClient();
@@ -33,8 +32,7 @@ describe('MatrixAuth', () => {
                 return {access_token: accessToken};
             });
 
-            http.flushAllExpected();
-            const client = await auth.passwordRegister(username, password);
+            const [client] = await Promise.all([auth.passwordRegister(username, password), http.flushAllExpected()]);
             expect(client.homeserverUrl).toEqual(hsUrl);
             expect(client.accessToken).toEqual(accessToken);
         });
@@ -74,8 +72,7 @@ describe('MatrixAuth', () => {
                 return {access_token: accessToken};
             });
 
-            http.flushAllExpected();
-            const client = await auth.passwordRegister(username, password);
+            const [client] = await Promise.all([auth.passwordRegister(username, password), http.flushAllExpected()]);
             expect(client.homeserverUrl).toEqual(hsUrl);
             expect(client.accessToken).toEqual(accessToken);
         });
@@ -101,8 +98,7 @@ describe('MatrixAuth', () => {
                 return {access_token: accessToken};
             });
 
-            http.flushAllExpected();
-            const client = await auth.passwordLogin(username, password);
+            const [client] = await Promise.all([auth.passwordLogin(username, password), http.flushAllExpected()]);
             expect(client.homeserverUrl).toEqual(hsUrl);
             expect(client.accessToken).toEqual(accessToken);
         });

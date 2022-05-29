@@ -1,8 +1,7 @@
-import { createTestClient, TEST_DEVICE_ID } from "./MatrixClientTest";
 import { DMs } from "../src/DMs";
-import * as expect from "expect";
 import * as simple from "simple-mock";
 import { EncryptionAlgorithm } from "../src";
+import { createTestClient, TEST_DEVICE_ID } from "./TestUtils";
 
 describe('DMs', () => {
     it('should update the cache when an sync requests happen', async () => {
@@ -31,7 +30,7 @@ describe('DMs', () => {
             return {};
         });
 
-        http.flushAllExpected();
+        const flush = http.flushAllExpected();
 
         const accountHandleProm = new Promise<void>(resolve => {
             const orig = (<any>dms).updateFromAccountData.bind(dms);
@@ -77,6 +76,8 @@ describe('DMs', () => {
 
         expect(dms.isDm(dmRoomId1)).toBe(true);
         expect(dms.isDm(dmRoomId2)).toBe(true);
+
+        await flush;
     });
 
     it('should update from account data when requested', async () => {
@@ -94,9 +95,8 @@ describe('DMs', () => {
         // noinspection TypeScriptValidateJSTypes
         http.when("GET", `/user/${encodeURIComponent(selfUserId)}/account_data/m.direct`).respond(200, accountDataDms);
 
-        http.flushAllExpected();
         expect(dms.isDm(dmRoomId)).toBe(false);
-        await dms.update();
+        await Promise.all([dms.update(), http.flushAllExpected()]);
         expect(dms.isDm(dmRoomId)).toBe(true);
     });
 
@@ -110,9 +110,8 @@ describe('DMs', () => {
         // noinspection TypeScriptValidateJSTypes
         http.when("GET", `/user/${encodeURIComponent(selfUserId)}/account_data/m.direct`).respond(404);
 
-        http.flushAllExpected();
         expect(dms.isDm(dmRoomId)).toBe(false);
-        await dms.update();
+        await Promise.all([dms.update(), http.flushAllExpected()]);
         expect(dms.isDm(dmRoomId)).toBe(false);
     });
 
@@ -144,12 +143,14 @@ describe('DMs', () => {
             return {};
         });
 
-        http.flushAllExpected();
+        const flush = http.flushAllExpected();
 
         expect(dms.isDm(dmRoomId)).toBe(false);
         const roomId = await dms.getOrCreateDm(dmUserId);
         expect(roomId).toEqual(dmRoomId);
         expect(dms.isDm(dmRoomId)).toBe(true);
+
+        await flush;
     });
 
     it('should call the optional create room function when provided', async () => {
@@ -173,13 +174,15 @@ describe('DMs', () => {
             return {};
         });
 
-        http.flushAllExpected();
+        const flush = http.flushAllExpected();
 
         expect(dms.isDm(dmRoomId)).toBe(false);
         const roomId = await dms.getOrCreateDm(dmUserId, fn);
         expect(roomId).toEqual(dmRoomId);
         expect(dms.isDm(dmRoomId)).toBe(true);
         expect(fn.callCount).toBe(1);
+
+        await flush;
     });
 
     it('should try to patch up DMs when a DM is potentially known', async () => {
@@ -252,7 +255,7 @@ describe('DMs', () => {
             return {};
         });
 
-        http.flushAllExpected();
+        const flush = http.flushAllExpected();
 
         await dms.update();
         expect(dms.isDm(dmRoomId)).toBe(true);
@@ -261,6 +264,8 @@ describe('DMs', () => {
         expect(roomId).toEqual(dmRoomId);
         expect(dms.isDm(dmRoomId)).toBe(true);
         expect(dms.isDm(deadRoomId)).toBe(false);
+
+        await flush;
     });
 
     it('should use the cache if a DM already exists', async () => {
@@ -281,13 +286,15 @@ describe('DMs', () => {
         // noinspection TypeScriptValidateJSTypes
         http.when("GET", `/user/${encodeURIComponent(selfUserId)}/account_data/m.direct`).respond(200, accountDataDms);
 
-        http.flushAllExpected();
+        const flush = http.flushAllExpected();
 
         await dms.update();
         expect(dms.isDm(dmRoomId)).toBe(true);
         const roomId = await dms.getOrCreateDm(dmUserId);
         expect(roomId).toEqual(dmRoomId);
         expect(dms.isDm(dmRoomId)).toBe(true);
+
+        await flush;
     });
 
     it('should create an encrypted DM if supported', async () => {
@@ -344,12 +351,14 @@ describe('DMs', () => {
             return {};
         });
 
-        http.flushAllExpected();
+        const flush = http.flushAllExpected();
 
         expect(dms.isDm(dmRoomId)).toBe(false);
         const roomId = await dms.getOrCreateDm(dmUserId);
         expect(roomId).toEqual(dmRoomId);
         expect(dms.isDm(dmRoomId)).toBe(true);
+
+        await flush;
     });
 
     it('should create an unencrypted DM when the target user has no devices', async () => {
@@ -394,11 +403,13 @@ describe('DMs', () => {
             return {};
         });
 
-        http.flushAllExpected();
+        const flush = http.flushAllExpected();
 
         expect(dms.isDm(dmRoomId)).toBe(false);
         const roomId = await dms.getOrCreateDm(dmUserId);
         expect(roomId).toEqual(dmRoomId);
         expect(dms.isDm(dmRoomId)).toBe(true);
+
+        await flush;
     });
 });

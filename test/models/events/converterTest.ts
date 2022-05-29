@@ -6,10 +6,9 @@ import {
     StateEvent,
     wrapRoomEvent
 } from "../../../src";
-import * as expect from "expect";
 import { createMinimalEvent } from "./EventTest";
 import { expectInstanceOf } from "../../TestUtils";
-import { MembershipEvent } from "../../../src/models/events/MembershipEvent";
+import { MembershipEvent } from "../../../src";
 
 describe("Event Converter", () => {
     it("should return generic room events", () => {

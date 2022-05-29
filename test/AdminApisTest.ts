@@ -1,7 +1,6 @@
-import * as expect from "expect";
 import { AdminApis, IStorageProvider, MatrixClient, WhoisInfo } from "../src";
 import * as MockHttpBackend from 'matrix-mock-request';
-import { createTestClient } from "./MatrixClientTest";
+import { createTestClient } from "./TestUtils";
 
 export function createTestAdminClient(storage: IStorageProvider = null): { client: AdminApis, mxClient: MatrixClient, http: MockHttpBackend, hsUrl: string, accessToken: string } {
     const result = createTestClient(storage);
@@ -39,9 +38,9 @@ describe('AdminApis', () => {
                 return response;
             });
 
-            http.flushAllExpected();
-            const result = await client.whoisUser(userId);
-            expect(result).toMatchObject(<any>response);
+            const result = client.whoisUser(userId);
+            await http.flushAllExpected();
+            expect(await result).toMatchObject(<any>response);
         });
     });
 });

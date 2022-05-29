@@ -1,7 +1,6 @@
 import { Appservice, AutojoinUpgradedRoomsMixin, Intent } from "../../src";
-import * as expect from "expect";
 import * as simple from "simple-mock";
-import { createTestClient } from "../MatrixClientTest";
+import { createTestClient } from "../TestUtils";
 
 describe('AutojoinUpgradedRoomsMixin', () => {
     it('should join rooms for regular upgrades', () => {
@@ -66,12 +65,12 @@ describe('AutojoinUpgradedRoomsMixin', () => {
             expect(names).toBeDefined();
             expect(names.length).toBe(1);
             expect(names[0]).toEqual(senderServer);
-            return Promise.resolve({room_id: newRoomId});
+            return Promise.resolve(newRoomId);
         });
 
-        botIntent.underlyingClient.joinRoom = joinSpy;
+        botIntent.underlyingClient.joinRoom = joinSpy as typeof botIntent.underlyingClient.joinRoom;
 
-        const waitPromise = new Promise(((resolve, reject) => {
+        const waitPromise = new Promise<void>(((resolve, reject) => {
             const intentJoinSpy = simple.stub().callFn((rid) => {
                 expect(rid).toEqual(newRoomId);
             });
@@ -85,9 +84,9 @@ describe('AutojoinUpgradedRoomsMixin', () => {
                     throw new Error("Expected an appservice user ID, got " + uid);
                 }
                 if (++calls === 2) resolve();
-                return <Intent>{
+                return {
                     joinRoom: intentJoinSpy,
-                };
+                } as unknown as Intent;
             };
         }));
 

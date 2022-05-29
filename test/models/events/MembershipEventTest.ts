@@ -1,4 +1,3 @@
-import * as expect from "expect";
 import { createMinimalEvent } from "./EventTest";
 import { MembershipEvent } from "../../../src";
 

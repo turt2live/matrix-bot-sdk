@@ -1,5 +1,4 @@
 import { Appservice, EventKind, IPreprocessor, setRequestFn } from "../../src";
-import * as expect from "expect";
 import * as getPort from "get-port";
 import * as requestPromise from "request-promise";
 import * as simple from "simple-mock";
@@ -10,7 +9,7 @@ async function beginAppserviceWithProtocols(protocols: string[]) {
     const hsToken = "s3cret_token";
     const appservice = new Appservice({
         port: port,
-        bindAddress: '127.0.0.1',
+        bindAddress: '',
         homeserverName: 'example.org',
         homeserverUrl: 'https://localhost',
         registration: {
@@ -48,7 +47,7 @@ describe('Appservice', () => {
         try {
             new Appservice({
                 port: 0,
-                bindAddress: '127.0.0.1',
+                bindAddress: '',
                 homeserverName: 'localhost',
                 homeserverUrl: 'https://localhost',
                 registration: {
@@ -74,7 +73,7 @@ describe('Appservice', () => {
         try {
             new Appservice({
                 port: 0,
-                bindAddress: '127.0.0.1',
+                bindAddress: '',
                 homeserverName: 'localhost',
                 homeserverUrl: 'https://localhost',
                 registration: {
@@ -102,7 +101,7 @@ describe('Appservice', () => {
     it('should accept a ".+" prefix namespace', async () => {
         const appservice = new Appservice({
             port: 0,
-            bindAddress: '127.0.0.1',
+            bindAddress: '',
             homeserverName: 'localhost',
             homeserverUrl: 'https://localhost',
             registration: {
@@ -122,7 +121,7 @@ describe('Appservice', () => {
     it('should accept a ".*" prefix namespace', async () => {
         const appservice = new Appservice({
             port: 0,
-            bindAddress: '127.0.0.1',
+            bindAddress: '',
             homeserverName: 'localhost',
             homeserverUrl: 'https://localhost',
             registration: {
@@ -142,7 +141,7 @@ describe('Appservice', () => {
     it('should allow disabling the suffix check', async () => {
         const appservice = new Appservice({
             port: 0,
-            bindAddress: '127.0.0.1',
+            bindAddress: '',
             homeserverName: 'localhost',
             homeserverUrl: 'https://localhost',
             registration: {
@@ -164,7 +163,7 @@ describe('Appservice', () => {
     it('should return the right bot user ID', async () => {
         const appservice = new Appservice({
             port: 0,
-            bindAddress: '127.0.0.1',
+            bindAddress: '',
             homeserverName: 'example.org',
             homeserverUrl: 'https://localhost',
             registration: {
@@ -185,7 +184,7 @@ describe('Appservice', () => {
     it('should return the express app running the webserver', async () => {
         const appservice = new Appservice({
             port: 0,
-            bindAddress: '127.0.0.1',
+            bindAddress: '',
             homeserverName: 'example.org',
             homeserverUrl: 'https://localhost',
             registration: {
@@ -207,7 +206,7 @@ describe('Appservice', () => {
     it('should return the bridge APIs for the appservice', async () => {
         const appservice = new Appservice({
             port: 0,
-            bindAddress: '127.0.0.1',
+            bindAddress: '',
             homeserverName: 'example.org',
             homeserverUrl: 'https://localhost',
             registration: {
@@ -229,7 +228,7 @@ describe('Appservice', () => {
     it('should return an intent for the bot user', async () => {
         const appservice = new Appservice({
             port: 0,
-            bindAddress: '127.0.0.1',
+            bindAddress: '',
             homeserverName: 'example.org',
             homeserverUrl: 'https://localhost',
             registration: {
@@ -252,7 +251,7 @@ describe('Appservice', () => {
     it('should return a client for the bot user', async () => {
         const appservice = new Appservice({
             port: 0,
-            bindAddress: '127.0.0.1',
+            bindAddress: '',
             homeserverName: 'example.org',
             homeserverUrl: 'https://localhost',
             registration: {
@@ -274,7 +273,7 @@ describe('Appservice', () => {
     it('should be able to tell if a given user is the prefix namespace', async () => {
         const appservice = new Appservice({
             port: 0,
-            bindAddress: '127.0.0.1',
+            bindAddress: '',
             homeserverName: 'example.org',
             homeserverUrl: 'https://localhost',
             registration: {
@@ -300,7 +299,7 @@ describe('Appservice', () => {
     it('should return an intent for any namespaced localpart', async () => {
         const appservice = new Appservice({
             port: 0,
-            bindAddress: '127.0.0.1',
+            bindAddress: '',
             homeserverName: 'example.org',
             homeserverUrl: 'https://localhost',
             registration: {
@@ -323,7 +322,7 @@ describe('Appservice', () => {
     it('should return an intent for any namespaced suffix', async () => {
         const appservice = new Appservice({
             port: 0,
-            bindAddress: '127.0.0.1',
+            bindAddress: '',
             homeserverName: 'example.org',
             homeserverUrl: 'https://localhost',
             registration: {
@@ -346,7 +345,7 @@ describe('Appservice', () => {
     it('should return an intent for any user ID', async () => {
         const appservice = new Appservice({
             port: 0,
-            bindAddress: '127.0.0.1',
+            bindAddress: '',
             homeserverName: 'example.org',
             homeserverUrl: 'https://localhost',
             registration: {
@@ -387,7 +386,7 @@ describe('Appservice', () => {
     it('should return a user ID for any namespaced localpart', async () => {
         const appservice = new Appservice({
             port: 0,
-            bindAddress: '127.0.0.1',
+            bindAddress: '',
             homeserverName: 'example.org',
             homeserverUrl: 'https://localhost',
             registration: {
@@ -408,7 +407,7 @@ describe('Appservice', () => {
     it('should return a user ID for any namespaced suffix', async () => {
         const appservice = new Appservice({
             port: 0,
-            bindAddress: '127.0.0.1',
+            bindAddress: '',
             homeserverName: 'example.org',
             homeserverUrl: 'https://localhost',
             registration: {
@@ -430,7 +429,7 @@ describe('Appservice', () => {
         it('should return a suffix for any namespaced user ID', async () => {
             const appservice = new Appservice({
                 port: 0,
-                bindAddress: '127.0.0.1',
+                bindAddress: '',
                 homeserverName: 'example.org',
                 homeserverUrl: 'https://localhost',
                 registration: {
@@ -454,7 +453,7 @@ describe('Appservice', () => {
         it('should return a falsey suffix for any non-namespaced user ID', async () => {
             const appservice = new Appservice({
                 port: 0,
-                bindAddress: '127.0.0.1',
+                bindAddress: '',
                 homeserverName: 'example.org',
                 homeserverUrl: 'https://localhost',
                 registration: {
@@ -484,7 +483,7 @@ describe('Appservice', () => {
             try {
                 const appservice = new Appservice({
                     port: 0,
-                    bindAddress: '127.0.0.1',
+                    bindAddress: '',
                     homeserverName: 'example.org',
                     homeserverUrl: 'https://localhost',
                     registration: {
@@ -513,7 +512,7 @@ describe('Appservice', () => {
         it('should be able to tell if a given alias is the prefix namespace', async () => {
             const appservice = new Appservice({
                 port: 0,
-                bindAddress: '127.0.0.1',
+                bindAddress: '',
                 homeserverName: 'example.org',
                 homeserverUrl: 'https://localhost',
                 registration: {
@@ -539,7 +538,7 @@ describe('Appservice', () => {
     it('should return a alias for any namespaced localpart', async () => {
         const appservice = new Appservice({
             port: 0,
-            bindAddress: '127.0.0.1',
+            bindAddress: '',
             homeserverName: 'example.org',
             homeserverUrl: 'https://localhost',
             registration: {
@@ -562,7 +561,7 @@ describe('Appservice', () => {
             try {
                 const appservice = new Appservice({
                     port: 0,
-                    bindAddress: '127.0.0.1',
+                    bindAddress: '',
                     homeserverName: 'example.org',
                     homeserverUrl: 'https://localhost',
                     registration: {
@@ -587,7 +586,7 @@ describe('Appservice', () => {
         it('should return an alias for any namespaced suffix', async () => {
             const appservice = new Appservice({
                 port: 0,
-                bindAddress: '127.0.0.1',
+                bindAddress: '',
                 homeserverName: 'example.org',
                 homeserverUrl: 'https://localhost',
                 registration: {
@@ -611,7 +610,7 @@ describe('Appservice', () => {
             try {
                 const appservice = new Appservice({
                     port: 0,
-                    bindAddress: '127.0.0.1',
+                    bindAddress: '',
                     homeserverName: 'example.org',
                     homeserverUrl: 'https://localhost',
                     registration: {
@@ -636,7 +635,7 @@ describe('Appservice', () => {
         it('should return an alias localpart for any namespaced suffix', async () => {
             const appservice = new Appservice({
                 port: 0,
-                bindAddress: '127.0.0.1',
+                bindAddress: '',
                 homeserverName: 'example.org',
                 homeserverUrl: 'https://localhost',
                 registration: {
@@ -660,7 +659,7 @@ describe('Appservice', () => {
             try {
                 const appservice = new Appservice({
                     port: 0,
-                    bindAddress: '127.0.0.1',
+                    bindAddress: '',
                     homeserverName: 'example.org',
                     homeserverUrl: 'https://localhost',
                     registration: {
@@ -688,7 +687,7 @@ describe('Appservice', () => {
         it('should return a suffix for any namespaced alias', async () => {
             const appservice = new Appservice({
                 port: 0,
-                bindAddress: '127.0.0.1',
+                bindAddress: '',
                 homeserverName: 'example.org',
                 homeserverUrl: 'https://localhost',
                 registration: {
@@ -712,7 +711,7 @@ describe('Appservice', () => {
         it('should return a falsey suffix for any non-namespaced alias', async () => {
             const appservice = new Appservice({
                 port: 0,
-                bindAddress: '127.0.0.1',
+                bindAddress: '',
                 homeserverName: 'example.org',
                 homeserverUrl: 'https://localhost',
                 registration: {
@@ -742,7 +741,7 @@ describe('Appservice', () => {
         const hsToken = "s3cret_token";
         const appservice = new Appservice({
             port: port,
-            bindAddress: '127.0.0.1',
+            bindAddress: '',
             homeserverName: 'example.org',
             homeserverUrl: 'https://localhost',
             registration: {
@@ -811,7 +810,7 @@ describe('Appservice', () => {
         const hsToken = "s3cret_token";
         const appservice = new Appservice({
             port: port,
-            bindAddress: '127.0.0.1',
+            bindAddress: '',
             homeserverName: 'example.org',
             homeserverUrl: 'https://localhost',
             registration: {
@@ -867,7 +866,7 @@ describe('Appservice', () => {
         const hsToken = "s3cret_token";
         const appservice = new Appservice({
             port: port,
-            bindAddress: '127.0.0.1',
+            bindAddress: '',
             homeserverName: 'example.org',
             homeserverUrl: 'https://localhost',
             registration: {
@@ -934,7 +933,7 @@ describe('Appservice', () => {
         const hsToken = "s3cret_token";
         const appservice = new Appservice({
             port: port,
-            bindAddress: '127.0.0.1',
+            bindAddress: '',
             homeserverName: 'example.org',
             homeserverUrl: 'https://localhost',
             registration: {
@@ -998,7 +997,7 @@ describe('Appservice', () => {
         const hsToken = "s3cret_token";
         const appservice = new Appservice({
             port: port,
-            bindAddress: '127.0.0.1',
+            bindAddress: '',
             homeserverName: 'example.org',
             homeserverUrl: 'https://localhost',
             registration: {
@@ -1063,7 +1062,7 @@ describe('Appservice', () => {
         const hsToken = "s3cret_token";
         const appservice = new Appservice({
             port: port,
-            bindAddress: '127.0.0.1',
+            bindAddress: '',
             homeserverName: 'example.org',
             homeserverUrl: 'https://localhost',
             registration: {
@@ -1142,7 +1141,7 @@ describe('Appservice', () => {
         const hsToken = "s3cret_token";
         const appservice = new Appservice({
             port: port,
-            bindAddress: '127.0.0.1',
+            bindAddress: '',
             homeserverName: 'example.org',
             homeserverUrl: 'https://localhost',
             registration: {
@@ -1215,7 +1214,7 @@ describe('Appservice', () => {
         const hsToken = "s3cret_token";
         const appservice = new Appservice({
             port: port,
-            bindAddress: '127.0.0.1',
+            bindAddress: '',
             homeserverName: 'example.org',
             homeserverUrl: 'https://localhost',
             registration: {
@@ -1315,7 +1314,7 @@ describe('Appservice', () => {
         const hsToken = "s3cret_token";
         const appservice = new Appservice({
             port: port,
-            bindAddress: '127.0.0.1',
+            bindAddress: '',
             homeserverName: 'example.org',
             homeserverUrl: 'https://localhost',
             registration: {
@@ -1401,7 +1400,7 @@ describe('Appservice', () => {
         const hsToken = "s3cret_token";
         const appservice = new Appservice({
             port: port,
-            bindAddress: '127.0.0.1',
+            bindAddress: '',
             homeserverName: 'example.org',
             homeserverUrl: 'https://localhost',
             registration: {
@@ -1526,7 +1525,7 @@ describe('Appservice', () => {
         const hsToken = "s3cret_token";
         const appservice = new Appservice({
             port: port,
-            bindAddress: '127.0.0.1',
+            bindAddress: '',
             homeserverName: 'example.org',
             homeserverUrl: 'https://localhost',
             registration: {
@@ -1641,7 +1640,7 @@ describe('Appservice', () => {
         const hsToken = "s3cret_token";
         const appservice = new Appservice({
             port: port,
-            bindAddress: '127.0.0.1',
+            bindAddress: '',
             homeserverName: 'example.org',
             homeserverUrl: 'https://localhost',
             registration: {
@@ -1714,7 +1713,7 @@ describe('Appservice', () => {
         const hsUrl = "https://localhost";
         const appservice = new Appservice({
             port: port,
-            bindAddress: '127.0.0.1',
+            bindAddress: '',
             homeserverName: 'example.org',
             homeserverUrl: hsUrl,
             registration: {
@@ -1771,14 +1770,13 @@ describe('Appservice', () => {
                     return {};
                 });
 
-                http.flushAllExpected();
-                const res = await requestPromise({
+                const [res] = await Promise.all([requestPromise({
                     uri: `http://localhost:${port}${route}`,
                     method: "GET",
                     qs: {access_token: hsToken},
                     json: true,
                     ...opts,
-                });
+                }), http.flushAllExpected()]);
                 expect(res).toMatchObject({});
 
                 expect(userSpy.callCount).toBe(1);
@@ -1798,7 +1796,7 @@ describe('Appservice', () => {
         const hsUrl = "https://localhost";
         const appservice = new Appservice({
             port: port,
-            bindAddress: '127.0.0.1',
+            bindAddress: '',
             homeserverName: 'example.org',
             homeserverUrl: hsUrl,
             registration: {
@@ -1855,14 +1853,13 @@ describe('Appservice', () => {
                     return {};
                 });
 
-                http.flushAllExpected();
-                const res = await requestPromise({
+                const [res] = await Promise.all([requestPromise({
                     uri: `http://localhost:${port}${route}`,
                     method: "GET",
                     qs: {access_token: hsToken},
                     json: true,
                     ...opts,
-                });
+                }), http.flushAllExpected()]);
                 expect(res).toMatchObject({});
 
                 expect(userSpy.callCount).toBe(1);
@@ -1881,7 +1878,7 @@ describe('Appservice', () => {
         const hsToken = "s3cret_token";
         const appservice = new Appservice({
             port: port,
-            bindAddress: '127.0.0.1',
+            bindAddress: '',
             homeserverName: 'example.org',
             homeserverUrl: 'https://localhost',
             registration: {
@@ -1963,7 +1960,7 @@ describe('Appservice', () => {
         const hsToken = "s3cret_token";
         const appservice = new Appservice({
             port: port,
-            bindAddress: '127.0.0.1',
+            bindAddress: '',
             homeserverName: 'example.org',
             homeserverUrl: 'https://localhost',
             registration: {
@@ -2045,7 +2042,7 @@ describe('Appservice', () => {
         const hsToken = "s3cret_token";
         const appservice = new Appservice({
             port: port,
-            bindAddress: '127.0.0.1',
+            bindAddress: '',
             homeserverName: 'example.org',
             homeserverUrl: 'https://localhost',
             registration: {
@@ -2115,7 +2112,7 @@ describe('Appservice', () => {
         const hsToken = "s3cret_token";
         const appservice = new Appservice({
             port: port,
-            bindAddress: '127.0.0.1',
+            bindAddress: '',
             homeserverName: 'example.org',
             homeserverUrl: 'https://localhost',
             registration: {
@@ -2185,7 +2182,7 @@ describe('Appservice', () => {
         const hsToken = "s3cret_token";
         const appservice = new Appservice({
             port: port,
-            bindAddress: '127.0.0.1',
+            bindAddress: '',
             homeserverName: 'example.org',
             homeserverUrl: 'https://localhost',
             registration: {
@@ -2255,7 +2252,7 @@ describe('Appservice', () => {
         const hsToken = "s3cret_token";
         const appservice = new Appservice({
             port: port,
-            bindAddress: '127.0.0.1',
+            bindAddress: '',
             homeserverName: 'example.org',
             homeserverUrl: 'https://localhost',
             registration: {
@@ -2335,7 +2332,7 @@ describe('Appservice', () => {
         const hsToken = "s3cret_token";
         const appservice = new Appservice({
             port: port,
-            bindAddress: '127.0.0.1',
+            bindAddress: '',
             homeserverName: 'example.org',
             homeserverUrl: 'https://localhost',
             registration: {
@@ -2696,7 +2693,7 @@ describe('Appservice', () => {
         const roomId = "!aroomid:example.org";
         const appservice = new Appservice({
             port: port,
-            bindAddress: '127.0.0.1',
+            bindAddress: '',
             homeserverName: 'example.org',
             homeserverUrl: hsUrl,
             registration: {
@@ -2723,7 +2720,9 @@ describe('Appservice', () => {
             return {};
         });
 
-        http.flushAllExpected();
-        await appservice.setRoomDirectoryVisibility("foonetwork", "!aroomid:example.org", "public");
+        await Promise.all([
+            appservice.setRoomDirectoryVisibility("foonetwork", "!aroomid:example.org", "public"),
+            http.flushAllExpected(),
+        ]);
     });
 });

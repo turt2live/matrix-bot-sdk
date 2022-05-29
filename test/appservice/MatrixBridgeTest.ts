@@ -8,7 +8,6 @@ import {
     REMOTE_USER_INFO_ACCOUNT_DATA_EVENT_TYPE,
     REMOTE_USER_MAP_ACCOUNT_DATA_EVENT_TYPE_PREFIX
 } from "../../src";
-import * as expect from "expect";
 import * as simple from "simple-mock";
 
 describe('MatrixBridge', () => {
@@ -35,7 +34,7 @@ describe('MatrixBridge', () => {
                 expect(eventType).toEqual(REMOTE_USER_INFO_ACCOUNT_DATA_EVENT_TYPE);
                 return Promise.resolve(remoteObject);
             });
-            intent.underlyingClient.getAccountData = accountDataSpy;
+            intent.underlyingClient.getAccountData = accountDataSpy as typeof intent.underlyingClient.getAccountData;
 
             const bridge = new MatrixBridge(appservice);
 
@@ -124,7 +123,7 @@ describe('MatrixBridge', () => {
                 expect(rid).toEqual(roomId);
                 return Promise.resolve(remoteObject);
             });
-            intent.underlyingClient.getRoomAccountData = accountDataSpy;
+            intent.underlyingClient.getRoomAccountData = accountDataSpy as typeof intent.underlyingClient.getRoomAccountData;
 
             const bridge = new MatrixBridge(appservice);
 
@@ -208,7 +207,7 @@ describe('MatrixBridge', () => {
                 expect(eventType).toEqual(REMOTE_ROOM_MAP_ACCOUNT_DATA_EVENT_TYPE_PREFIX + "." + remoteId);
                 return Promise.resolve({id: roomId});
             });
-            intent.underlyingClient.getAccountData = accountDataSpy;
+            intent.underlyingClient.getAccountData = accountDataSpy as typeof intent.underlyingClient.getAccountData;
 
             const bridge = new MatrixBridge(appservice);
 
@@ -245,7 +244,7 @@ describe('MatrixBridge', () => {
                 expect(eventType).toEqual(REMOTE_USER_MAP_ACCOUNT_DATA_EVENT_TYPE_PREFIX + "." + remoteId);
                 return Promise.resolve({id: userId});
             });
-            botIntent.underlyingClient.getAccountData = accountDataSpy;
+            botIntent.underlyingClient.getAccountData = accountDataSpy as typeof botIntent.underlyingClient.getAccountData;
 
             const getIntentSpy = simple.mock(appservice, "getIntentForUserId").callFn((uid) => {
                 expect(uid).toEqual(userId);
