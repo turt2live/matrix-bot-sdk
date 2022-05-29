@@ -12,7 +12,7 @@ export class AppserviceJoinRoomStrategy implements IJoinRoomStrategy {
     constructor(private underlyingStrategy: IJoinRoomStrategy, private appservice: Appservice) {
     }
 
-    public async joinRoom(roomIdOrAlias: string, userId: string, apiCall: (roomIdOrAlias: string) => Promise<string>): Promise<string> {
+    public async joinRoom(roomIdOrAlias: string, userId: string, apiCall: (targetRoomIdOrAlias: string) => Promise<string>): Promise<string> {
         try {
             // First just try joining via the apiCall
             return await apiCall(roomIdOrAlias);

@@ -16,7 +16,7 @@
     "prepublishOnly": "yarn build",
     "docs": "jsdoc -c jsdoc.json -P package.json -u docs/tutorials",
     "build": "tsc --listEmittedFiles",
-    "lint": "eslint 'src/**/*.ts'",
+    "lint": "eslint \"src/**/*.ts\"",
     "test": "ts-mocha --project ./tsconfig.json test/*Test.ts test/**/*.ts",
     "build:examples": "tsc -p tsconfig-examples.json",
     "example:bot": "yarn build:examples && node lib/examples/bot.js",

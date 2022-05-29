@@ -114,7 +114,7 @@ export class DMs {
      * to the created room ID.
      * @returns {Promise<string>} Resolves to the DM room ID.
      */
-    public async getOrCreateDm(userId: string, createFn?: (userId: string) => Promise<string>): Promise<string> {
+    public async getOrCreateDm(userId: string, createFn?: (targetUserId: string) => Promise<string>): Promise<string> {
         await this.ready;
         await this.fixDms(userId);
         const rooms = this.cached.get(userId);
