@@ -4,7 +4,7 @@ Woo! Good to see you're interested in contributing a change to the bot-sdk! Ever
 there are some requirements in order to do so. Namely, all contributors must be willing to license their changes under
 the same license as the project itself. We follow a simple "inbound=outbound" model for contributions: the act of 
 submitting an "inbound" contribution means that the contributor agrees to license the code under the same terms as the
-project's overall "outbound" license - in this case, Apache 2.0 (per [LICENSE](./LICENSE)).
+project's overall "outbound" license - in this case, MIT (per [LICENSE](./LICENSE)).
 
 ## How to contribute
 
