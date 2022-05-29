@@ -12,6 +12,8 @@ import {
     OTKAlgorithm,
     OTKCounts,
     OTKs,
+    PowerLevelAction,
+    redactObjectForLogging,
     RoomDirectoryLookupResponse,
     RoomEvent,
     RustSdkCryptoStorageProvider,
@@ -20,8 +22,6 @@ import {
 import * as tmp from "tmp";
 import * as simple from "simple-mock";
 import { createTestClient, expectArrayEquals, TEST_DEVICE_ID } from "./TestUtils";
-import { redactObjectForLogging } from "../src/http";
-import { PowerLevelAction } from "../src/models/PowerLevelAction";
 import { InternalOlmMachineFactory } from "../src/e2ee/InternalOlmMachineFactory";
 import { OlmMachine, Signatures } from "@turt2live/matrix-sdk-crypto-nodejs";
 

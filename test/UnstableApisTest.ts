@@ -1,7 +1,6 @@
-import { GroupProfile, IStorageProvider, MatrixClient, UnstableApis } from "../src";
+import { GroupProfile, IStorageProvider, MatrixClient, MSC2380MediaInfo, UnstableApis } from "../src";
 import * as MockHttpBackend from 'matrix-mock-request';
 import { createTestClient } from "./TestUtils";
-import { MSC2380MediaInfo } from "../src/models/unstable/MediaInfo";
 
 export function createTestUnstableClient(storage: IStorageProvider = null): { client: UnstableApis, mxClient: MatrixClient, http: MockHttpBackend, hsUrl: string, accessToken: string } {
     const result = createTestClient(storage);
