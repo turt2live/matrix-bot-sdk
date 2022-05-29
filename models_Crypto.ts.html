@@ -154,14 +154,16 @@ export interface SignedCurve25519OTK {
  */
 export interface FallbackKey {
     keyId: string;
-    key: SignedCurve25519OTK &amp; {fallback: true};
+    key: SignedCurve25519OTK &amp; { fallback: true };
 }
 
 /**
  * One Time Keys structure model.
  * @category Models
  */
-export type OTKs = Record&lt;OTKLabel&lt;OTKAlgorithm.Signed, string>, SignedCurve25519OTK> &amp; Record&lt;OTKLabel&lt;OTKAlgorithm.Unsigned, string>, string>;
+export type OTKs =
+    Record&lt;OTKLabel&lt;OTKAlgorithm.Signed, string>, SignedCurve25519OTK>
+    &amp; Record&lt;OTKLabel&lt;OTKAlgorithm.Unsigned, string>, string>;
 
 /**
  * The counts of each one time key by algorithm.

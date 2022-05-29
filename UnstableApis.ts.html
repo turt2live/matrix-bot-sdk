@@ -168,7 +168,7 @@ export class UnstableApis {
      * @return {Promise&lt;string>} Resolves to the created group ID.
      */
     public async createGroup(localpart: string): Promise&lt;string> {
-        const response = await this.client.doRequest("POST", "/_matrix/client/unstable/create_group", null, {"localpart": localpart});
+        const response = await this.client.doRequest("POST", "/_matrix/client/unstable/create_group", null, { "localpart": localpart });
         return response["group_id"];
     }
 
@@ -181,7 +181,8 @@ export class UnstableApis {
      *  homeserver accepted/rejected the invite right away.
      */
     public async inviteUserToGroup(groupId: string, userId: string): Promise&lt;"join" | "invite" | "reject"> {
-        const response = await this.client.doRequest("PUT", `/_matrix/client/unstable/groups/${encodeURIComponent(groupId)}/admin/users/invite/${encodeURIComponent(userId)}`, null, {});
+        const path = `/_matrix/client/unstable/groups/${encodeURIComponent(groupId)}/admin/users/invite/${encodeURIComponent(userId)}`;
+        const response = await this.client.doRequest("PUT", path, null, {});
         return response["state"];
     }
 
@@ -229,7 +230,7 @@ export class UnstableApis {
      */
     public async addRoomToGroup(groupId: string, roomId: string, isPublic = true): Promise&lt;any> {
         return this.client.doRequest("PUT", `/_matrix/client/unstable/groups/${encodeURIComponent(groupId)}/admin/rooms/${encodeURIComponent(roomId)}`, null, {
-            "m.visibility": {type: isPublic ? "public" : "private"},
+            "m.visibility": { type: isPublic ? "public" : "private" },
         });
     }
 
@@ -378,7 +379,7 @@ export class UnstableApis {
      * @param {string?} eventType The type of event to look for (e.g. `m.room.member`). Optional.
      * @returns {Promise&lt;{original_event: any, chunk: any[]}>} Resolves a object containing the original event, and a chunk of relations
      */
-    public async getRelationsForEvent(roomId: string, eventId: string, relationType?: string, eventType?: string): Promise&lt;{original_event: any, chunk: any[]}> {
+    public async getRelationsForEvent(roomId: string, eventId: string, relationType?: string, eventType?: string): Promise&lt;{ original_event: any, chunk: any[] }> {
         let url = `/_matrix/client/unstable/rooms/${roomId}/relations/${eventId}`;
         if (relationType) {
             url += `/${relationType}`;

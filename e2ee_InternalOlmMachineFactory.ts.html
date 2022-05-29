@@ -126,6 +126,7 @@ export class InternalOlmMachineFactory {
 
     public build(): OlmMachine {
         if (InternalOlmMachineFactory.FACTORY_OVERRIDE) {
+            // eslint-disable-next-line new-cap
             return InternalOlmMachineFactory.FACTORY_OVERRIDE(this.userId, this.deviceId, this.engine, this.storagePath);
         }
         return OlmMachine.withSledBackend(this.userId, this.deviceId, this.engine, this.storagePath);

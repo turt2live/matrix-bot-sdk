@@ -114,9 +114,12 @@
     <section>
         <article>
             <pre class="prettyprint source linenums"><code>import * as LRU from "lru-cache";
+
 import { extractRequestError, LogService, MatrixClient, MatrixProfile } from "..";
 import { MembershipEvent } from "../models/events/MembershipEvent";
 import { Appservice } from "../appservice/Appservice";
+
+type CacheKey = `${string}@${string | '&lt;none>'}`;
 
 /**
  * Functions for avoiding calls to profile endpoints. Useful for bots when
@@ -125,8 +128,7 @@ import { Appservice } from "../appservice/Appservice";
  * @category Utilities
  */
 export class ProfileCache {
-
-    private cache: LRU;
+    private cache: LRU&lt;CacheKey, MatrixProfile>;
 
     /**
      * Creates a new profile cache.
@@ -141,7 +143,7 @@ export class ProfileCache {
         });
     }
 
-    private getCacheKey(userId: string, roomId: string | null): string {
+    private getCacheKey(userId: string, roomId: string | null): CacheKey {
         return `${userId}@${roomId || '&lt;none>'}`;
     }
 
