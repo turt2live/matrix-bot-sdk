@@ -51,6 +51,9 @@ export * from "./models/Crypto";
 export * from "./models/MSC2176";
 export * from "./models/Account";
 
+// Unstable models
+export * from "./models/unstable/MediaInfo";
+
 // Event models
 export * from "./models/events/EventKind";
 export * from "./models/events/converter";
