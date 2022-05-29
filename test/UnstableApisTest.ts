@@ -25,9 +25,10 @@ describe('UnstableApis', () => {
                 return {aliases: aliases};
             });
 
-            http.flushAllExpected();
+            const flush = http.flushAllExpected();
             const result = await client.getRoomAliases(roomId);
             expect(result).toMatchObject(aliases);
+            await flush;
         });
     });
 
@@ -43,9 +44,10 @@ describe('UnstableApis', () => {
                 return {group_id: groupId};
             });
 
-            http.flushAllExpected();
+            const flush = http.flushAllExpected();
             const result = await client.createGroup(localpart);
             expect(result).toEqual(groupId);
+            await flush;
         });
     });
 
@@ -63,9 +65,10 @@ describe('UnstableApis', () => {
                 return {state: state};
             });
 
-            http.flushAllExpected();
+            const flush = http.flushAllExpected();
             const result = await client.inviteUserToGroup(groupId, userId);
             expect(result).toEqual(state);
+            await flush;
         });
     });
 
@@ -82,9 +85,10 @@ describe('UnstableApis', () => {
                 return {};
             });
 
-            http.flushAllExpected();
+            const flush = http.flushAllExpected();
             const result = await client.kickUserFromGroup(groupId, userId);
             expect(result).toMatchObject({});
+            await flush;
         });
     });
 
@@ -106,8 +110,9 @@ describe('UnstableApis', () => {
                 return {};
             });
 
-            http.flushAllExpected();
+            const flush = http.flushAllExpected();
             await client.setGroupProfile(groupId, profile);
+            await flush;
         });
     });
 
@@ -124,8 +129,9 @@ describe('UnstableApis', () => {
                 return {};
             });
 
-            http.flushAllExpected();
+            const flush = http.flushAllExpected();
             await client.setGroupJoinPolicy(groupId, policy);
+            await flush;
         });
     });
 
@@ -142,9 +148,10 @@ describe('UnstableApis', () => {
                 return {};
             });
 
-            http.flushAllExpected();
+            const flush = http.flushAllExpected();
             const result = await client.addRoomToGroup(groupId, roomId);
             expect(result).toMatchObject({});
+            await flush;
         });
     });
 
@@ -161,9 +168,10 @@ describe('UnstableApis', () => {
                 return {};
             });
 
-            http.flushAllExpected();
+            const flush = http.flushAllExpected();
             const result = await client.updateGroupRoomVisibility(groupId, roomId, false);
             expect(result).toMatchObject({});
+            await flush;
         });
 
         it('should call the right endpoint for public rooms', async () => {
@@ -178,9 +186,10 @@ describe('UnstableApis', () => {
                 return {};
             });
 
-            http.flushAllExpected();
+            const flush = http.flushAllExpected();
             const result = await client.updateGroupRoomVisibility(groupId, roomId, true);
             expect(result).toMatchObject({});
+            await flush;
         });
     });
 
@@ -196,9 +205,10 @@ describe('UnstableApis', () => {
                 return {};
             });
 
-            http.flushAllExpected();
+            const flush = http.flushAllExpected();
             const result = await client.removeRoomFromGroup(groupId, roomId);
             expect(result).toMatchObject({});
+            await flush;
         });
     });
 
@@ -218,12 +228,13 @@ describe('UnstableApis', () => {
                 };
             });
 
-            http.flushAllExpected();
+            const flush = http.flushAllExpected();
             const result = await client.getGroupProfile(groupId);
             expect(result.name).toEqual("Test Group");
             expect(result.avatar_url).toEqual("mxc://some/avatar");
             expect(result.short_description).toEqual("Short description of group");
             expect(result.long_description).toEqual("Long description of group");
+            await flush;
         });
     });
 
@@ -245,10 +256,11 @@ describe('UnstableApis', () => {
                 };
             });
 
-            http.flushAllExpected();
+            const flush = http.flushAllExpected();
             const result = await client.getGroupUsers(groupId);
             expect(result.length).toEqual(1);
             expect(result[0].user_id).toEqual(joinedUser);
+            await flush;
         });
     });
 
@@ -270,10 +282,11 @@ describe('UnstableApis', () => {
                 };
             });
 
-            http.flushAllExpected();
+            const flush = http.flushAllExpected();
             const result = await client.getGroupInvitedUsers(groupId);
             expect(result.length).toEqual(1);
             expect(result[0].user_id).toEqual(invitedUser);
+            await flush;
         });
     });
 
@@ -295,10 +308,11 @@ describe('UnstableApis', () => {
                 };
             });
 
-            http.flushAllExpected();
+            const flush = http.flushAllExpected();
             const result = await client.getGroupRooms(groupId);
             expect(result.length).toEqual(1);
             expect(result[0].room_id).toEqual(roomId);
+            await flush;
         });
     });
 
@@ -313,9 +327,10 @@ describe('UnstableApis', () => {
                 return {};
             });
 
-            http.flushAllExpected();
+            const flush = http.flushAllExpected();
             const result = await client.acceptGroupInvite(groupId);
             expect(result).toMatchObject({});
+            await flush;
         });
     });
 
@@ -330,9 +345,10 @@ describe('UnstableApis', () => {
                 return {};
             });
 
-            http.flushAllExpected();
+            const flush = http.flushAllExpected();
             const result = await client.joinGroup(groupId);
             expect(result).toMatchObject({});
+            await flush;
         });
     });
 
@@ -347,9 +363,10 @@ describe('UnstableApis', () => {
                 return {};
             });
 
-            http.flushAllExpected();
+            const flush = http.flushAllExpected();
             const result = await client.leaveGroup(groupId);
             expect(result).toMatchObject({});
+            await flush;
         });
     });
 
@@ -365,9 +382,10 @@ describe('UnstableApis', () => {
                 return {};
             });
 
-            http.flushAllExpected();
+            const flush = http.flushAllExpected();
             const result = await client.setGroupPublicity(groupId, true);
             expect(result).toMatchObject({});
+            await flush;
         });
     });
 
@@ -383,10 +401,11 @@ describe('UnstableApis', () => {
                 };
             });
 
-            http.flushAllExpected();
+            const flush = http.flushAllExpected();
             const result = await client.getJoinedGroups();
             expect(result.length).toEqual(1);
             expect(result[0]).toEqual(groupId);
+            await flush;
         });
     });
 
@@ -404,10 +423,11 @@ describe('UnstableApis', () => {
                 };
             });
 
-            http.flushAllExpected();
+            const flush = http.flushAllExpected();
             const result = await client.getPublicisedGroups(userId);
             expect(result.length).toEqual(1);
             expect(result[0]).toEqual(groupId);
+            await flush;
         });
     });
 
@@ -434,9 +454,10 @@ describe('UnstableApis', () => {
                 return {event_id: newEventId};
             });
 
-            http.flushAllExpected();
+            const flush = http.flushAllExpected();
             const result = await client.addReactionToEvent(roomId, originalEventId, emoji);
             expect(result).toEqual(newEventId);
+            await flush;
         });
     });
 });

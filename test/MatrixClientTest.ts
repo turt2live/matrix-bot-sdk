@@ -104,8 +104,9 @@ describe('MatrixClient', () => {
             http.when("GET", "/test").respond(404, {error: "Not Found"});
 
             try {
-                http.flushAllExpected();
+                const flush = http.flushAllExpected();
                 await client.doRequest("GET", "/test");
+                await flush;
 
                 // noinspection ExceptionCaughtLocallyJS
                 throw new Error("Expected an error and didn't get one");
@@ -122,9 +123,10 @@ describe('MatrixClient', () => {
             // noinspection TypeScriptValidateJSTypes
             http.when("GET", "/test").respond(200, expectedResponse);
 
-            http.flushAllExpected();
+            const flush = http.flushAllExpected();
             const response = await client.doRequest("GET", "/test");
             expect(response).toMatchObject(expectedResponse);
+            await flush;
         });
 
         it('should be kind with prefixed slashes', async () => {
@@ -135,9 +137,10 @@ describe('MatrixClient', () => {
             // noinspection TypeScriptValidateJSTypes
             http.when("GET", "/test").respond(200, expectedResponse);
 
-            http.flushAllExpected();
+            const flush = http.flushAllExpected();
             const response = await client.doRequest("GET", "test");
             expect(response).toMatchObject(expectedResponse);
+            await flush;
         });
 
         it('should send the appropriate body', async () => {
@@ -151,8 +154,9 @@ describe('MatrixClient', () => {
                 return {};
             });
 
-            http.flushAllExpected();
+            const flush = http.flushAllExpected();
             await client.doRequest("PUT", "/test", null, expectedInput);
+            await flush;
         });
 
         it('should send the appropriate query string', async () => {
@@ -166,8 +170,9 @@ describe('MatrixClient', () => {
                 return {};
             });
 
-            http.flushAllExpected();
+            const flush = http.flushAllExpected();
             await client.doRequest("GET", "/test", expectedInput);
+            await flush;
         });
 
         it('should send the access token in the Authorization header', async () => {
@@ -179,8 +184,9 @@ describe('MatrixClient', () => {
                 return {};
             });
 
-            http.flushAllExpected();
+            const flush = http.flushAllExpected();
             await client.doRequest("GET", "/test");
+            await flush;
         });
 
         it('should send application/json by default', async () => {
@@ -192,8 +198,9 @@ describe('MatrixClient', () => {
                 return {};
             });
 
-            http.flushAllExpected();
+            const flush = http.flushAllExpected();
             await client.doRequest("PUT", "/test", null, {test: 1});
+            await flush;
         });
 
         it('should send the content-type of choice where possible', async () => {
@@ -209,8 +216,9 @@ describe('MatrixClient', () => {
                 return {};
             });
 
-            http.flushAllExpected();
+            const flush = http.flushAllExpected();
             await client.doRequest("PUT", "/test", null, fakeJson, 60000, false, contentType);
+            await flush;
         });
 
         it('should return raw responses if requested', async () => {
@@ -221,10 +229,11 @@ describe('MatrixClient', () => {
             // noinspection TypeScriptValidateJSTypes
             http.when("PUT", "/test").respond(200, expectedOutput);
 
-            http.flushAllExpected();
+            const flush = http.flushAllExpected();
             const result = await client.doRequest("PUT", "/test", null, {}, 60000, true);
             // HACK: We can't check the body because of the mock library. Check the status code instead.
             expect(result.statusCode).toBe(200);
+            await flush;
         });
 
         it('should proxy the timeout to request', async () => {
@@ -237,8 +246,9 @@ describe('MatrixClient', () => {
                 expect(req.opts.timeout).toBe(timeout);
             });
 
-            http.flushAllExpected();
+            const flush = http.flushAllExpected();
             await client.doRequest("GET", "/test", null, null, timeout);
+            await flush;
         });
     });
 
@@ -255,8 +265,9 @@ describe('MatrixClient', () => {
                 expect(req.opts.qs["org.matrix.msc3202.device_id"]).toBe(undefined);
             });
 
-            http.flushAllExpected();
+            const flush = http.flushAllExpected();
             await client.doRequest("GET", "/test");
+            await flush;
         });
 
         it('should set a device_id param on requests', async () => {
@@ -272,8 +283,9 @@ describe('MatrixClient', () => {
                 expect(req.opts.qs["org.matrix.msc3202.device_id"]).toBe(deviceId);
             });
 
-            http.flushAllExpected();
+            const flush = http.flushAllExpected();
             await client.doRequest("GET", "/test");
+            await flush;
         });
 
         it('should stop impersonation with a null user_id', async () => {
@@ -289,8 +301,9 @@ describe('MatrixClient', () => {
                 expect(req.opts.qs?.["org.matrix.msc3202.device_id"]).toBe(undefined);
             });
 
-            http.flushAllExpected();
+            const flush = http.flushAllExpected();
             await client.doRequest("GET", "/test");
+            await flush;
         });
 
         it('should not allow impersonation of only a device ID', async () => {
@@ -351,9 +364,10 @@ describe('MatrixClient', () => {
                 return testToken;
             });
 
-            http.flushAllExpected();
+            const flush = http.flushAllExpected();
             const r = await client.getOpenIDConnectToken();
             expect(r).toMatchObject(<any>testToken); // <any> to fix typescript
+            await flush;
         });
     });
 
@@ -381,9 +395,10 @@ describe('MatrixClient', () => {
                 return {token: identityToken};
             });
 
-            http.flushAllExpected();
+            const flush = http.flushAllExpected();
             const iClient = await client.getIdentityServerClient(identityDomain);
             expect(iClient).toBeDefined();
+            await flush;
         });
     });
 
@@ -402,8 +417,9 @@ describe('MatrixClient', () => {
                 return {};
             });
 
-            http.flushAllExpected();
+            const flush = http.flushAllExpected();
             await client.getAccountData(eventType);
+            await flush;
         });
     });
 
@@ -422,8 +438,9 @@ describe('MatrixClient', () => {
                 return {};
             });
 
-            http.flushAllExpected();
+            const flush = http.flushAllExpected();
             await client.getSafeAccountData(eventType);
+            await flush;
         });
 
         it('should return the default on error', async () => {
@@ -438,9 +455,10 @@ describe('MatrixClient', () => {
             // noinspection TypeScriptValidateJSTypes
             http.when("GET", "/_matrix/client/r0/user").respond(404, {});
 
-            http.flushAllExpected();
+            const flush = http.flushAllExpected();
             const ret = await client.getSafeAccountData(eventType, defaultContent);
             expect(ret).toBe(defaultContent);
+            await flush;
         });
     });
 
@@ -464,9 +482,10 @@ describe('MatrixClient', () => {
                 return presenceObj;
             });
 
-            http.flushAllExpected();
+            const flush = http.flushAllExpected();
             const result = await client.getPresenceStatus();
             expect(result).toBeDefined(); // The shape of the object is handled by other tests
+            await flush;
         });
     });
 
@@ -488,9 +507,10 @@ describe('MatrixClient', () => {
                 return presenceObj;
             });
 
-            http.flushAllExpected();
+            const flush = http.flushAllExpected();
             const result = await client.getPresenceStatusFor(userId);
             expect(result).toBeDefined(); // The shape of the object is handled by other tests
+            await flush;
         });
     });
 
@@ -514,8 +534,9 @@ describe('MatrixClient', () => {
                 return {};
             });
 
-            http.flushAllExpected();
+            const flush = http.flushAllExpected();
             await client.setPresenceStatus(presence, message);
+            await flush;
         });
 
         it('should not send status_msg if the parameter is omitted', async () => {
@@ -535,8 +556,9 @@ describe('MatrixClient', () => {
                 return {};
             });
 
-            http.flushAllExpected();
+            const flush = http.flushAllExpected();
             await client.setPresenceStatus(presence);
+            await flush;
         });
     });
 
@@ -556,8 +578,9 @@ describe('MatrixClient', () => {
                 return {};
             });
 
-            http.flushAllExpected();
+            const flush = http.flushAllExpected();
             await client.getRoomAccountData(eventType, roomId);
+            await flush;
         });
     });
 
@@ -577,8 +600,9 @@ describe('MatrixClient', () => {
                 return {};
             });
 
-            http.flushAllExpected();
+            const flush = http.flushAllExpected();
             await client.getSafeRoomAccountData(eventType, roomId);
+            await flush;
         });
 
         it('should return the default on error', async () => {
@@ -594,9 +618,10 @@ describe('MatrixClient', () => {
             // noinspection TypeScriptValidateJSTypes
             http.when("GET", "/_matrix/client/r0/user").respond(404, {});
 
-            http.flushAllExpected();
+            const flush = http.flushAllExpected();
             const ret = await client.getSafeRoomAccountData(eventType, roomId, defaultContent);
             expect(ret).toBe(defaultContent);
+            await flush;
         });
     });
 
@@ -617,8 +642,9 @@ describe('MatrixClient', () => {
                 return {};
             });
 
-            http.flushAllExpected();
+            const flush = http.flushAllExpected();
             await client.setAccountData(eventType, eventContent);
+            await flush;
         });
     });
 
@@ -640,8 +666,9 @@ describe('MatrixClient', () => {
                 return {};
             });
 
-            http.flushAllExpected();
+            const flush = http.flushAllExpected();
             await client.setRoomAccountData(eventType, roomId, eventContent);
+            await flush;
         });
     });
 
@@ -654,9 +681,10 @@ describe('MatrixClient', () => {
             // noinspection TypeScriptValidateJSTypes
             http.when("GET", "/_matrix/client/r0/rooms/").respond(404, {});
 
-            http.flushAllExpected();
+            const flush = http.flushAllExpected();
             const published = await client.getPublishedAlias(roomId);
             expect(published).toBeFalsy();
+            await flush;
         });
 
         it('should return falsey on no aliases (empty content)', async () => {
@@ -667,9 +695,10 @@ describe('MatrixClient', () => {
             // noinspection TypeScriptValidateJSTypes
             http.when("GET", "/_matrix/client/r0/rooms/").respond(200, {});
 
-            http.flushAllExpected();
+            const flush = http.flushAllExpected();
             const published = await client.getPublishedAlias(roomId);
             expect(published).toBeFalsy();
+            await flush;
         });
 
         it('should return the canonical alias where possible', async () => {
@@ -685,9 +714,10 @@ describe('MatrixClient', () => {
                 alt_aliases: [alias2],
             });
 
-            http.flushAllExpected();
+            const flush = http.flushAllExpected();
             const published = await client.getPublishedAlias(roomId);
             expect(published).toEqual(alias1);
+            await flush;
         });
 
         it('should return the first alt alias where possible', async () => {
@@ -702,9 +732,10 @@ describe('MatrixClient', () => {
                 alt_aliases: [alias2, alias1],
             });
 
-            http.flushAllExpected();
+            const flush = http.flushAllExpected();
             const published = await client.getPublishedAlias(roomId);
             expect(published).toEqual(alias2);
+            await flush;
         });
     });
 
@@ -722,8 +753,9 @@ describe('MatrixClient', () => {
                 return {};
             });
 
-            http.flushAllExpected();
+            const flush = http.flushAllExpected();
             await client.createRoomAlias(alias, roomId);
+            await flush;
         });
     });
 
@@ -739,8 +771,9 @@ describe('MatrixClient', () => {
                 return {};
             });
 
-            http.flushAllExpected();
+            const flush = http.flushAllExpected();
             await client.deleteRoomAlias(alias);
+            await flush;
         });
     });
 
@@ -758,8 +791,9 @@ describe('MatrixClient', () => {
                 return {};
             });
 
-            http.flushAllExpected();
+            const flush = http.flushAllExpected();
             await client.setDirectoryVisibility(roomId, visibility);
+            await flush;
         });
     });
 
@@ -775,8 +809,9 @@ describe('MatrixClient', () => {
                 return {};
             });
 
-            http.flushAllExpected();
+            const flush = http.flushAllExpected();
             await client.getDirectoryVisibility(roomId);
+            await flush;
         });
 
         it('should return the right visibility string', async () => {
@@ -788,9 +823,10 @@ describe('MatrixClient', () => {
             // noinspection TypeScriptValidateJSTypes
             http.when("GET", "/_matrix/client/r0/directory/list/room/").respond(200, {visibility: visibility});
 
-            http.flushAllExpected();
+            const flush = http.flushAllExpected();
             const result = await client.getDirectoryVisibility(roomId);
             expect(result).toEqual(visibility);
+            await flush;
         });
     });
 
@@ -848,8 +884,9 @@ describe('MatrixClient', () => {
                 return {room_id: roomId, servers: servers};
             });
 
-            http.flushAllExpected();
+            const flush = http.flushAllExpected();
             await client.lookupRoomAlias(alias);
+            await flush;
         });
 
         it('should return a translated response', async () => {
@@ -862,9 +899,10 @@ describe('MatrixClient', () => {
             // noinspection TypeScriptValidateJSTypes
             http.when("GET", "/_matrix/client/r0/directory/room/").respond(200, {room_id: roomId, servers: servers});
 
-            http.flushAllExpected();
+            const flush = http.flushAllExpected();
             const result = await client.lookupRoomAlias(alias);
             expect(result).toMatchObject({roomId: roomId, residentServers: servers});
+            await flush;
         });
     });
 
@@ -882,8 +920,9 @@ describe('MatrixClient', () => {
                 return {};
             });
 
-            http.flushAllExpected();
+            const flush = http.flushAllExpected();
             await client.inviteUser(userId, roomId);
+            await flush;
         });
     });
 
@@ -901,8 +940,9 @@ describe('MatrixClient', () => {
                 return {};
             });
 
-            http.flushAllExpected();
+            const flush = http.flushAllExpected();
             await client.kickUser(userId, roomId);
+            await flush;
         });
 
         it('should support a reason', async () => {
@@ -919,8 +959,9 @@ describe('MatrixClient', () => {
                 return {};
             });
 
-            http.flushAllExpected();
+            const flush = http.flushAllExpected();
             await client.kickUser(userId, roomId, reason);
+            await flush;
         });
     });
 
@@ -938,8 +979,9 @@ describe('MatrixClient', () => {
                 return {};
             });
 
-            http.flushAllExpected();
+            const flush = http.flushAllExpected();
             await client.banUser(userId, roomId);
+            await flush;
         });
 
         it('should support a reason', async () => {
@@ -956,8 +998,9 @@ describe('MatrixClient', () => {
                 return {};
             });
 
-            http.flushAllExpected();
+            const flush = http.flushAllExpected();
             await client.banUser(userId, roomId, reason);
+            await flush;
         });
     });
 
@@ -975,8 +1018,9 @@ describe('MatrixClient', () => {
                 return {};
             });
 
-            http.flushAllExpected();
+            const flush = http.flushAllExpected();
             await client.unbanUser(userId, roomId);
+            await flush;
         });
     });
 
@@ -1003,9 +1047,10 @@ describe('MatrixClient', () => {
             // noinspection TypeScriptValidateJSTypes
             http.when("GET", "/_matrix/client/r0/account/whoami").respond(200, response);
 
-            http.flushAllExpected();
+            const flush = http.flushAllExpected();
             const result = await client.getUserId();
             expect(result).toEqual(userId);
+            await flush;
         });
     });
 
@@ -1021,9 +1066,10 @@ describe('MatrixClient', () => {
             // noinspection TypeScriptValidateJSTypes
             http.when("GET", "/_matrix/client/r0/account/whoami").respond(200, response);
 
-            http.flushAllExpected();
+            const flush = http.flushAllExpected();
             const result = await client.getWhoAmI();
             expect(result).toMatchObject(response);
+            await flush;
         });
     });
 
@@ -1060,12 +1106,13 @@ describe('MatrixClient', () => {
                 }
             });
 
-            http.flushAllExpected().catch(() => false);
+            const flush = http.flushAllExpected().catch(() => false);
             await client.start();
             expect(count).toBeLessThan(max);
             await waitPromise;
             expect(count).toBe(max);
             expect(dmsUpdate.callCount).toBe(1);
+            await flush;
         }, 10000);
     });
 
@@ -1093,9 +1140,10 @@ describe('MatrixClient', () => {
                 return {next_batch: "123"};
             });
 
-            http.flushAllExpected();
+            const flush = http.flushAllExpected();
             await client.start(filter);
             expect(dmsMock.callCount).toBe(1);
+            await flush;
         });
 
         it('should create a filter when the stored filter is outdated', async () => {
@@ -1130,10 +1178,11 @@ describe('MatrixClient', () => {
                 return {filter_id: filterId};
             });
 
-            http.flushAllExpected();
+            const flush = http.flushAllExpected();
             await client.start(filter);
             expect(setFilterFn.callCount).toBe(1);
             expect(dmsMock.callCount).toBe(1);
+            await flush;
         });
 
         it('should create a filter when there is no stored filter', async () => {
@@ -1168,11 +1217,12 @@ describe('MatrixClient', () => {
                 return {filter_id: filterId};
             });
 
-            http.flushAllExpected();
+            const flush = http.flushAllExpected();
             await client.start(filter);
             expect(getFilterFn.callCount).toBe(1);
             expect(setFilterFn.callCount).toBe(1);
             expect(dmsMock.callCount).toBe(1);
+            await flush;
         });
 
         it('should use the filter ID when syncing', async () => {
@@ -1201,9 +1251,10 @@ describe('MatrixClient', () => {
                 return {next_batch: "1234"};
             });
 
-            http.flushAllExpected();
+            const flush = http.flushAllExpected();
             await client.start(filter);
             expect(dmsMock.callCount).toBe(1);
+            await flush;
         });
 
         it('should make sync requests with the new token', async () => {
@@ -1245,10 +1296,11 @@ describe('MatrixClient', () => {
                 return {next_batch: secondToken};
             });
 
-            http.flushAllExpected();
+            const flush = http.flushAllExpected();
             await client.start(filter);
             await waitPromise;
             expect(dmsUpdate.callCount).toBe(1);
+            await flush;
         });
 
         it('should read the sync token from the store', async () => {
@@ -1287,11 +1339,12 @@ describe('MatrixClient', () => {
                 return {next_batch: syncToken};
             });
 
-            http.flushAllExpected();
+            const flush = http.flushAllExpected();
             await client.start(filter);
             expect(getSyncTokenFn.callCount).toBe(1);
             await waitPromise;
             expect(dmsUpdate.callCount).toBe(1);
+            await flush;
         });
 
         it('should use the syncing presence variable', async () => {
@@ -1328,9 +1381,10 @@ describe('MatrixClient', () => {
                 return {next_batch: "testing"};
             });
 
-            http.flushAllExpected();
+            const flush = http.flushAllExpected();
             await client.start(filter);
             expect(dmsUpdate.callCount).toBe(1);
+            await flush;
         });
     });
 
@@ -2285,9 +2339,10 @@ describe('MatrixClient', () => {
                 return event;
             });
 
-            http.flushAllExpected();
+            const flush = http.flushAllExpected();
             const result = await client.getEvent(roomId, eventId);
             expect(result).toMatchObject(event);
+            await flush;
         });
 
         it('should process events', async () => {
@@ -2312,10 +2367,11 @@ describe('MatrixClient', () => {
                 return event;
             });
 
-            http.flushAllExpected();
+            const flush = http.flushAllExpected();
             const result = await client.getEvent(roomId, eventId);
             expect(result).toMatchObject(event);
             expect(result["processed"]).toBeTruthy();
+            await flush;
         });
 
         it('should try decryption', async () => {
@@ -2355,12 +2411,13 @@ describe('MatrixClient', () => {
                 return event;
             });
 
-            http.flushAllExpected();
+            const flush = http.flushAllExpected();
             const result = await client.getEvent(roomId, eventId);
             expect(result).toMatchObject(decrypted);
             expect(processSpy.callCount).toBe(2);
             expect(isEncSpy.callCount).toBe(1);
             expect(decryptSpy.callCount).toBe(1);
+            await flush;
         });
 
         it('should not try decryption in unencrypted rooms', async () => {
@@ -2400,12 +2457,13 @@ describe('MatrixClient', () => {
                 return event;
             });
 
-            http.flushAllExpected();
+            const flush = http.flushAllExpected();
             const result = await client.getEvent(roomId, eventId);
             expect(result).toMatchObject(event);
             expect(processSpy.callCount).toBe(1);
             expect(isEncSpy.callCount).toBe(1);
             expect(decryptSpy.callCount).toBe(0);
+            await flush;
         });
     });
 
@@ -2423,9 +2481,10 @@ describe('MatrixClient', () => {
                 return event;
             });
 
-            http.flushAllExpected();
+            const flush = http.flushAllExpected();
             const result = await client.getRawEvent(roomId, eventId);
             expect(result).toMatchObject(event);
+            await flush;
         });
 
         it('should process events', async () => {
@@ -2450,10 +2509,11 @@ describe('MatrixClient', () => {
                 return event;
             });
 
-            http.flushAllExpected();
+            const flush = http.flushAllExpected();
             const result = await client.getRawEvent(roomId, eventId);
             expect(result).toMatchObject(event);
             expect(result["processed"]).toBeTruthy();
+            await flush;
         });
 
         it('should not try decryption in any rooms', async () => {
@@ -2493,12 +2553,13 @@ describe('MatrixClient', () => {
                 return event;
             });
 
-            http.flushAllExpected();
+            const flush = http.flushAllExpected();
             const result = await client.getRawEvent(roomId, eventId);
             expect(result).toMatchObject(event);
             expect(processSpy.callCount).toBe(1);
             expect(isEncSpy.callCount).toBe(0);
             expect(decryptSpy.callCount).toBe(0);
+            await flush;
         });
     });
 
@@ -2515,13 +2576,14 @@ describe('MatrixClient', () => {
                 return events;
             });
 
-            http.flushAllExpected();
+            const flush = http.flushAllExpected();
             const result = await client.getRoomState(roomId);
             expect(result).toBeDefined();
             expect(result.length).toBe(events.length);
             for (let i = 0; i < result.length; i++) {
                 expect(result[i]).toMatchObject(events[i]);
             }
+            await flush;
         });
 
         it('should process events', async () => {
@@ -2545,7 +2607,7 @@ describe('MatrixClient', () => {
                 return events;
             });
 
-            http.flushAllExpected();
+            const flush = http.flushAllExpected();
             const result = await client.getRoomState(roomId);
             expect(result).toBeDefined();
             expect(result.length).toBe(events.length);
@@ -2557,6 +2619,7 @@ describe('MatrixClient', () => {
                     expect(result[i]['processed']).toBeUndefined();
                 }
             }
+            await flush;
         });
     });
 
@@ -2574,9 +2637,10 @@ describe('MatrixClient', () => {
                 return event;
             });
 
-            http.flushAllExpected();
+            const flush = http.flushAllExpected();
             const result = await client.getRoomStateEvent(roomId, eventType, "");
             expect(result).toMatchObject(event);
+            await flush;
         });
 
         it('should call the right endpoint with a state key', async () => {
@@ -2593,9 +2657,10 @@ describe('MatrixClient', () => {
                 return event;
             });
 
-            http.flushAllExpected();
+            const flush = http.flushAllExpected();
             const result = await client.getRoomStateEvent(roomId, eventType, stateKey);
             expect(result).toMatchObject(event);
+            await flush;
         });
 
         it('should process events with no state key', async () => {
@@ -2620,10 +2685,11 @@ describe('MatrixClient', () => {
                 return event;
             });
 
-            http.flushAllExpected();
+            const flush = http.flushAllExpected();
             const result = await client.getRoomStateEvent(roomId, eventType, "");
             expect(result).toMatchObject(event);
             expect(result["processed"]).toBeTruthy();
+            await flush;
         });
 
         it('should process events with a state key', async () => {
@@ -2649,10 +2715,11 @@ describe('MatrixClient', () => {
                 return event;
             });
 
-            http.flushAllExpected();
+            const flush = http.flushAllExpected();
             const result = await client.getRoomStateEvent(roomId, eventType, stateKey);
             expect(result).toMatchObject(event);
             expect(result["processed"]).toBeTruthy();
+            await flush;
         });
     });
 
@@ -2689,7 +2756,7 @@ describe('MatrixClient', () => {
                 };
             });
 
-            http.flushAllExpected();
+            const flush = http.flushAllExpected();
             const result = await client.getEventContext(roomId, targetEvent.eventId, limit);
             expect(result).toBeDefined();
             expect(result.event).toBeDefined();
@@ -2712,6 +2779,7 @@ describe('MatrixClient', () => {
             expect(result.state[0].raw).toMatchObject(state[0]);
             expect(result.state[1]).toBeDefined();
             expect(result.state[1].raw).toMatchObject(state[1]);
+            await flush;
         });
     });
 
@@ -2728,9 +2796,10 @@ describe('MatrixClient', () => {
                 return profile;
             });
 
-            http.flushAllExpected();
+            const flush = http.flushAllExpected();
             const result = await client.getUserProfile(userId);
             expect(result).toMatchObject(profile);
+            await flush;
         });
     });
 
@@ -2746,9 +2815,10 @@ describe('MatrixClient', () => {
                 return {room_id: roomId};
             });
 
-            http.flushAllExpected();
+            const flush = http.flushAllExpected();
             const result = await client.createRoom();
             expect(result).toEqual(roomId);
+            await flush;
         });
 
         it('should call the right endpoint with all the provided properties', async () => {
@@ -2766,9 +2836,10 @@ describe('MatrixClient', () => {
                 return {room_id: roomId};
             });
 
-            http.flushAllExpected();
+            const flush = http.flushAllExpected();
             const result = await client.createRoom(properties);
             expect(result).toEqual(roomId);
+            await flush;
         });
     });
 
@@ -2788,8 +2859,9 @@ describe('MatrixClient', () => {
                 return {};
             });
 
-            http.flushAllExpected();
+            const flush = http.flushAllExpected();
             await client.setDisplayName(displayName);
+            await flush;
         });
     });
 
@@ -2809,8 +2881,9 @@ describe('MatrixClient', () => {
                 return {};
             });
 
-            http.flushAllExpected();
+            const flush = http.flushAllExpected();
             await client.setAvatarUrl(displayName);
+            await flush;
         });
     });
 
@@ -2828,9 +2901,10 @@ describe('MatrixClient', () => {
                 return {room_id: roomId};
             });
 
-            http.flushAllExpected();
+            const flush = http.flushAllExpected();
             const result = await client.joinRoom(roomId);
             expect(result).toEqual(roomId);
+            await flush;
         });
 
         it('should call the right endpoint with server names', async () => {
@@ -2851,9 +2925,10 @@ describe('MatrixClient', () => {
                 return {room_id: roomId};
             });
 
-            http.flushAllExpected();
+            const flush = http.flushAllExpected();
             const result = await client.joinRoom(roomId, serverNames);
             expect(result).toEqual(roomId);
+            await flush;
         });
 
         it('should call the right endpoint for room aliases', async () => {
@@ -2870,9 +2945,10 @@ describe('MatrixClient', () => {
                 return {room_id: roomId};
             });
 
-            http.flushAllExpected();
+            const flush = http.flushAllExpected();
             const result = await client.joinRoom(roomAlias);
             expect(result).toEqual(roomId);
+            await flush;
         });
 
         it('should use a join strategy for room IDs', async () => {
@@ -2899,10 +2975,11 @@ describe('MatrixClient', () => {
                 return {room_id: roomId};
             });
 
-            http.flushAllExpected();
+            const flush = http.flushAllExpected();
             const result = await client.joinRoom(roomId);
             expect(result).toEqual(roomId);
             expect(strategySpy.callCount).toBe(1);
+            await flush;
         });
 
         it('should use a join strategy for room aliases', async () => {
@@ -2930,10 +3007,11 @@ describe('MatrixClient', () => {
                 return {room_id: roomId};
             });
 
-            http.flushAllExpected();
+            const flush = http.flushAllExpected();
             const result = await client.joinRoom(roomAlias);
             expect(result).toEqual(roomId);
             expect(strategySpy.callCount).toBe(1);
+            await flush;
         });
     });
 
@@ -2949,9 +3027,10 @@ describe('MatrixClient', () => {
                 return {joined_rooms: roomIds};
             });
 
-            http.flushAllExpected();
+            const flush = http.flushAllExpected();
             const result = await client.getJoinedRooms();
             expectArrayEquals(roomIds, result);
+            await flush;
         });
     });
 
@@ -2970,9 +3049,10 @@ describe('MatrixClient', () => {
                 return {joined: obj};
             });
 
-            http.flushAllExpected();
+            const flush = http.flushAllExpected();
             const result = await client.getJoinedRoomMembers(roomId);
             expectArrayEquals(members, result);
+            await flush;
         });
     });
 
@@ -2997,9 +3077,10 @@ describe('MatrixClient', () => {
                 return {joined: members};
             });
 
-            http.flushAllExpected();
+            const flush = http.flushAllExpected();
             const result = await client.getJoinedRoomMembersWithProfiles(roomId);
             expect(result).toEqual(members);
+            await flush;
         });
     });
 
@@ -3033,7 +3114,7 @@ describe('MatrixClient', () => {
                 return {chunk: memberEvents};
             });
 
-            http.flushAllExpected();
+            const flush = http.flushAllExpected();
             const result = await client.getRoomMembers(roomId);
             expect(result).toBeDefined();
             expect(result.length).toBe(2);
@@ -3041,6 +3122,7 @@ describe('MatrixClient', () => {
             expect(result[0].membershipFor).toBe(memberEvents[0]['state_key']);
             expect(result[1].membership).toBe(memberEvents[1]['content']['membership']);
             expect(result[1].membershipFor).toBe(memberEvents[1]['state_key']);
+            await flush;
         });
 
         it('should call the right endpoint with a batch token', async () => {
@@ -3073,7 +3155,7 @@ describe('MatrixClient', () => {
                 return {chunk: memberEvents};
             });
 
-            http.flushAllExpected();
+            const flush = http.flushAllExpected();
             const result = await client.getRoomMembers(roomId, atToken);
             expect(result).toBeDefined();
             expect(result.length).toBe(2);
@@ -3081,6 +3163,7 @@ describe('MatrixClient', () => {
             expect(result[0].membershipFor).toBe(memberEvents[0]['state_key']);
             expect(result[1].membership).toBe(memberEvents[1]['content']['membership']);
             expect(result[1].membershipFor).toBe(memberEvents[1]['state_key']);
+            await flush;
         });
 
         it('should call the right endpoint with membership filtering', async () => {
@@ -3115,7 +3198,7 @@ describe('MatrixClient', () => {
                 return {chunk: memberEvents};
             });
 
-            http.flushAllExpected();
+            const flush = http.flushAllExpected();
             const result = await client.getRoomMembers(roomId, null, forMemberships, forNotMemberships);
             expect(result).toBeDefined();
             expect(result.length).toBe(2);
@@ -3123,6 +3206,7 @@ describe('MatrixClient', () => {
             expect(result[0].membershipFor).toBe(memberEvents[0]['state_key']);
             expect(result[1].membership).toBe(memberEvents[1]['content']['membership']);
             expect(result[1].membershipFor).toBe(memberEvents[1]['state_key']);
+            await flush;
         });
     });
 
@@ -3138,8 +3222,9 @@ describe('MatrixClient', () => {
                 return {};
             });
 
-            http.flushAllExpected();
+            const flush = http.flushAllExpected();
             await client.leaveRoom(roomId);
+            await flush;
         });
     });
 
@@ -3156,8 +3241,9 @@ describe('MatrixClient', () => {
                 return {};
             });
 
-            http.flushAllExpected();
+            const flush = http.flushAllExpected();
             await client.sendReadReceipt(roomId, eventId);
+            await flush;
         });
     });
 
@@ -3179,8 +3265,9 @@ describe('MatrixClient', () => {
                 return {};
             });
 
-            http.flushAllExpected();
+            const flush = http.flushAllExpected();
             await client.setTyping(roomId, typing, timeout);
+            await flush;
         });
     });
 
@@ -3221,9 +3308,10 @@ describe('MatrixClient', () => {
                 return {event_id: eventId};
             });
 
-            http.flushAllExpected();
+            const flush = http.flushAllExpected();
             const result = await client.replyText(roomId, originalEvent, replyText, replyHtml);
             expect(result).toEqual(eventId);
+            await flush;
         });
 
         it('should try to encrypt in encrypted rooms', async () => {
@@ -3274,9 +3362,10 @@ describe('MatrixClient', () => {
                 return {event_id: eventId};
             });
 
-            http.flushAllExpected();
+            const flush = http.flushAllExpected();
             const result = await client.replyText(roomId, originalEvent, replyText, replyHtml);
             expect(result).toEqual(eventId);
+            await flush;
         });
 
         it('should not try to encrypt in unencrypted rooms', async () => {
@@ -3317,9 +3406,10 @@ describe('MatrixClient', () => {
                 return {event_id: eventId};
             });
 
-            http.flushAllExpected();
+            const flush = http.flushAllExpected();
             const result = await client.replyText(roomId, originalEvent, replyText, replyHtml);
             expect(result).toEqual(eventId);
+            await flush;
         });
 
         it('should use encoded plain text as the HTML component', async () => {
@@ -3358,9 +3448,10 @@ describe('MatrixClient', () => {
                 return {event_id: eventId};
             });
 
-            http.flushAllExpected();
+            const flush = http.flushAllExpected();
             const result = await client.replyText(roomId, originalEvent, replyText);
             expect(result).toEqual(eventId);
+            await flush;
         });
     });
 
@@ -3401,9 +3492,10 @@ describe('MatrixClient', () => {
                 return {event_id: eventId};
             });
 
-            http.flushAllExpected();
+            const flush = http.flushAllExpected();
             const result = await client.replyHtmlText(roomId, originalEvent, replyHtml);
             expect(result).toEqual(eventId);
+            await flush;
         });
 
         it('should try to encrypt in encrypted rooms', async () => {
@@ -3454,9 +3546,10 @@ describe('MatrixClient', () => {
                 return {event_id: eventId};
             });
 
-            http.flushAllExpected();
+            const flush = http.flushAllExpected();
             const result = await client.replyHtmlText(roomId, originalEvent, replyHtml);
             expect(result).toEqual(eventId);
+            await flush;
         });
 
         it('should not try to encrypt in unencrypted rooms', async () => {
@@ -3497,9 +3590,10 @@ describe('MatrixClient', () => {
                 return {event_id: eventId};
             });
 
-            http.flushAllExpected();
+            const flush = http.flushAllExpected();
             const result = await client.replyHtmlText(roomId, originalEvent, replyHtml);
             expect(result).toEqual(eventId);
+            await flush;
         });
     });
 
@@ -3540,9 +3634,10 @@ describe('MatrixClient', () => {
                 return {event_id: eventId};
             });
 
-            http.flushAllExpected();
+            const flush = http.flushAllExpected();
             const result = await client.replyNotice(roomId, originalEvent, replyText, replyHtml);
             expect(result).toEqual(eventId);
+            await flush;
         });
 
         it('should try to encrypt in encrypted rooms', async () => {
@@ -3593,9 +3688,10 @@ describe('MatrixClient', () => {
                 return {event_id: eventId};
             });
 
-            http.flushAllExpected();
+            const flush = http.flushAllExpected();
             const result = await client.replyNotice(roomId, originalEvent, replyText, replyHtml);
             expect(result).toEqual(eventId);
+            await flush;
         });
 
         it('should not try to encrypt in unencrypted rooms', async () => {
@@ -3636,9 +3732,10 @@ describe('MatrixClient', () => {
                 return {event_id: eventId};
             });
 
-            http.flushAllExpected();
+            const flush = http.flushAllExpected();
             const result = await client.replyNotice(roomId, originalEvent, replyText, replyHtml);
             expect(result).toEqual(eventId);
+            await flush;
         });
 
         it('should use encoded plain text as the HTML component', async () => {
@@ -3677,9 +3774,10 @@ describe('MatrixClient', () => {
                 return {event_id: eventId};
             });
 
-            http.flushAllExpected();
+            const flush = http.flushAllExpected();
             const result = await client.replyNotice(roomId, originalEvent, replyText);
             expect(result).toEqual(eventId);
+            await flush;
         });
     });
 
@@ -3720,9 +3818,10 @@ describe('MatrixClient', () => {
                 return {event_id: eventId};
             });
 
-            http.flushAllExpected();
+            const flush = http.flushAllExpected();
             const result = await client.replyHtmlNotice(roomId, originalEvent, replyHtml);
             expect(result).toEqual(eventId);
+            await flush;
         });
 
         it('should try to encrypt in encrypted rooms', async () => {
@@ -3773,9 +3872,10 @@ describe('MatrixClient', () => {
                 return {event_id: eventId};
             });
 
-            http.flushAllExpected();
+            const flush = http.flushAllExpected();
             const result = await client.replyHtmlNotice(roomId, originalEvent, replyHtml);
             expect(result).toEqual(eventId);
+            await flush;
         });
 
         it('should not try to encrypt in unencrypted rooms', async () => {
@@ -3816,9 +3916,10 @@ describe('MatrixClient', () => {
                 return {event_id: eventId};
             });
 
-            http.flushAllExpected();
+            const flush = http.flushAllExpected();
             const result = await client.replyHtmlNotice(roomId, originalEvent, replyHtml);
             expect(result).toEqual(eventId);
+            await flush;
         });
     });
 
@@ -3841,9 +3942,10 @@ describe('MatrixClient', () => {
                 return {event_id: eventId};
             });
 
-            http.flushAllExpected();
+            const flush = http.flushAllExpected();
             const result = await client.sendNotice(roomId, eventContent.body);
             expect(result).toEqual(eventId);
+            await flush;
         });
 
         it('should try to encrypt in encrypted rooms', async () => {
@@ -3877,9 +3979,10 @@ describe('MatrixClient', () => {
                 return {event_id: eventId};
             });
 
-            http.flushAllExpected();
+            const flush = http.flushAllExpected();
             const result = await client.sendNotice(roomId, eventContent.body);
             expect(result).toEqual(eventId);
+            await flush;
         });
 
         it('should not try to encrypt in unencrypted rooms', async () => {
@@ -3902,9 +4005,10 @@ describe('MatrixClient', () => {
                 return {event_id: eventId};
             });
 
-            http.flushAllExpected();
+            const flush = http.flushAllExpected();
             const result = await client.sendNotice(roomId, eventContent.body);
             expect(result).toEqual(eventId);
+            await flush;
         });
     });
 
@@ -3929,9 +4033,10 @@ describe('MatrixClient', () => {
                 return {event_id: eventId};
             });
 
-            http.flushAllExpected();
+            const flush = http.flushAllExpected();
             const result = await client.sendHtmlNotice(roomId, eventContent.formatted_body);
             expect(result).toEqual(eventId);
+            await flush;
         });
 
         it('should try to encrypt in encrypted rooms', async () => {
@@ -3967,9 +4072,10 @@ describe('MatrixClient', () => {
                 return {event_id: eventId};
             });
 
-            http.flushAllExpected();
+            const flush = http.flushAllExpected();
             const result = await client.sendHtmlNotice(roomId, eventContent.formatted_body);
             expect(result).toEqual(eventId);
+            await flush;
         });
 
         it('should not try to encrypt in unencrypted rooms', async () => {
@@ -3994,9 +4100,10 @@ describe('MatrixClient', () => {
                 return {event_id: eventId};
             });
 
-            http.flushAllExpected();
+            const flush = http.flushAllExpected();
             const result = await client.sendHtmlNotice(roomId, eventContent.formatted_body);
             expect(result).toEqual(eventId);
+            await flush;
         });
     });
 
@@ -4019,9 +4126,10 @@ describe('MatrixClient', () => {
                 return {event_id: eventId};
             });
 
-            http.flushAllExpected();
+            const flush = http.flushAllExpected();
             const result = await client.sendText(roomId, eventContent.body);
             expect(result).toEqual(eventId);
+            await flush;
         });
 
         it('should try to encrypt in encrypted rooms', async () => {
@@ -4055,9 +4163,10 @@ describe('MatrixClient', () => {
                 return {event_id: eventId};
             });
 
-            http.flushAllExpected();
+            const flush = http.flushAllExpected();
             const result = await client.sendText(roomId, eventContent.body);
             expect(result).toEqual(eventId);
+            await flush;
         });
 
         it('should not try to encrypt in unencrypted rooms', async () => {
@@ -4080,9 +4189,10 @@ describe('MatrixClient', () => {
                 return {event_id: eventId};
             });
 
-            http.flushAllExpected();
+            const flush = http.flushAllExpected();
             const result = await client.sendText(roomId, eventContent.body);
             expect(result).toEqual(eventId);
+            await flush;
         });
     });
 
@@ -4107,9 +4217,10 @@ describe('MatrixClient', () => {
                 return {event_id: eventId};
             });
 
-            http.flushAllExpected();
+            const flush = http.flushAllExpected();
             const result = await client.sendHtmlText(roomId, eventContent.formatted_body);
             expect(result).toEqual(eventId);
+            await flush;
         });
 
         it('should try to encrypt in encrypted rooms', async () => {
@@ -4145,9 +4256,10 @@ describe('MatrixClient', () => {
                 return {event_id: eventId};
             });
 
-            http.flushAllExpected();
+            const flush = http.flushAllExpected();
             const result = await client.sendHtmlText(roomId, eventContent.formatted_body);
             expect(result).toEqual(eventId);
+            await flush;
         });
 
         it('should not try to encrypt in unencrypted rooms', async () => {
@@ -4172,9 +4284,10 @@ describe('MatrixClient', () => {
                 return {event_id: eventId};
             });
 
-            http.flushAllExpected();
+            const flush = http.flushAllExpected();
             const result = await client.sendHtmlText(roomId, eventContent.formatted_body);
             expect(result).toEqual(eventId);
+            await flush;
         });
     });
 
@@ -4198,9 +4311,10 @@ describe('MatrixClient', () => {
                 return {event_id: eventId};
             });
 
-            http.flushAllExpected();
+            const flush = http.flushAllExpected();
             const result = await client.sendMessage(roomId, eventContent);
             expect(result).toEqual(eventId);
+            await flush;
         });
 
         it('should try to encrypt in encrypted rooms', async () => {
@@ -4235,9 +4349,10 @@ describe('MatrixClient', () => {
                 return {event_id: eventId};
             });
 
-            http.flushAllExpected();
+            const flush = http.flushAllExpected();
             const result = await client.sendMessage(roomId, eventPlainContent);
             expect(result).toEqual(eventId);
+            await flush;
         });
 
         it('should not try to encrypt in unencrypted rooms', async () => {
@@ -4261,9 +4376,10 @@ describe('MatrixClient', () => {
                 return {event_id: eventId};
             });
 
-            http.flushAllExpected();
+            const flush = http.flushAllExpected();
             const result = await client.sendMessage(roomId, eventContent);
             expect(result).toEqual(eventId);
+            await flush;
         });
     });
 
@@ -4287,9 +4403,10 @@ describe('MatrixClient', () => {
                 return {event_id: eventId};
             });
 
-            http.flushAllExpected();
+            const flush = http.flushAllExpected();
             const result = await client.sendEvent(roomId, eventType, eventContent);
             expect(result).toEqual(eventId);
+            await flush;
         });
 
         it('should try to encrypt in encrypted rooms', async () => {
@@ -4325,9 +4442,10 @@ describe('MatrixClient', () => {
                 return {event_id: eventId};
             });
 
-            http.flushAllExpected();
+            const flush = http.flushAllExpected();
             const result = await client.sendEvent(roomId, eventType, eventPlainContent);
             expect(result).toEqual(eventId);
+            await flush;
         });
 
         it('should not try to encrypt in unencrypted rooms', async () => {
@@ -4351,9 +4469,10 @@ describe('MatrixClient', () => {
                 return {event_id: eventId};
             });
 
-            http.flushAllExpected();
+            const flush = http.flushAllExpected();
             const result = await client.sendEvent(roomId, eventType, eventContent);
             expect(result).toEqual(eventId);
+            await flush;
         });
     });
 
@@ -4377,9 +4496,10 @@ describe('MatrixClient', () => {
                 return {event_id: eventId};
             });
 
-            http.flushAllExpected();
+            const flush = http.flushAllExpected();
             const result = await client.sendEvent(roomId, eventType, eventContent);
             expect(result).toEqual(eventId);
+            await flush;
         });
 
         it('should not try to encrypt in any rooms', async () => {
@@ -4403,9 +4523,10 @@ describe('MatrixClient', () => {
                 return {event_id: eventId};
             });
 
-            http.flushAllExpected();
+            const flush = http.flushAllExpected();
             const result = await client.sendRawEvent(roomId, eventType, eventContent);
             expect(result).toEqual(eventId);
+            await flush;
         });
     });
 
@@ -4431,9 +4552,10 @@ describe('MatrixClient', () => {
                 return {event_id: eventId};
             });
 
-            http.flushAllExpected();
+            const flush = http.flushAllExpected();
             const result = await client.sendStateEvent(roomId, eventType, stateKey, eventContent);
             expect(result).toEqual(eventId);
+            await flush;
         });
 
         it('should call the right endpoint with a state key', async () => {
@@ -4457,9 +4579,10 @@ describe('MatrixClient', () => {
                 return {event_id: eventId};
             });
 
-            http.flushAllExpected();
+            const flush = http.flushAllExpected();
             const result = await client.sendStateEvent(roomId, eventType, stateKey, eventContent);
             expect(result).toEqual(eventId);
+            await flush;
         });
     });
 
@@ -4479,9 +4602,10 @@ describe('MatrixClient', () => {
                 return {event_id: eventId};
             });
 
-            http.flushAllExpected();
+            const flush = http.flushAllExpected();
             const result = await client.redactEvent(roomId, eventId, reason);
             expect(result).toEqual(eventId);
+            await flush;
         });
     });
 
@@ -5440,9 +5564,10 @@ describe('MatrixClient', () => {
                 return {content_uri: uri};
             });
 
-            http.flushAllExpected();
+            const flush = http.flushAllExpected();
             const result = await client.uploadContent(data, contentType, filename);
             expect(result).toEqual(uri);
+            await flush;
         });
 
         it('should use the right filename', async () => {
@@ -5464,9 +5589,10 @@ describe('MatrixClient', () => {
                 return {content_uri: uri};
             });
 
-            http.flushAllExpected();
+            const flush = http.flushAllExpected();
             const result = await client.uploadContent(data, contentType, filename);
             expect(result).toEqual(uri);
+            await flush;
         });
     });
 
@@ -5492,11 +5618,12 @@ describe('MatrixClient', () => {
                 return {};
             });
 
-            http.flushAllExpected();
+            const flush = http.flushAllExpected();
             // Due to the above problem, the output of this won't be correct, so we cannot verify it.
             const res = await client.downloadContent(mxcUrl);
             expect(Object.keys(res)).toContain("data");
             expect(Object.keys(res)).toContain("contentType");
+            await flush;
         });
     });
 
@@ -5524,9 +5651,10 @@ describe('MatrixClient', () => {
                 return {content_uri: uri};
             });
 
-            http.flushAllExpected();
+            const flush = http.flushAllExpected();
             const result = await client.uploadContentFromUrl(`${hsUrl}/sample/download`);
             expect(result).toEqual(uri);
+            await flush;
         });
     });
 
@@ -6339,7 +6467,7 @@ describe('MatrixClient', () => {
                 return {room_id: roomId};
             });
 
-            http.flushAllExpected();
+            const flush = http.flushAllExpected();
             const result = await client.createSpace({
                 name: name,
                 topic: topic,
@@ -6351,6 +6479,7 @@ describe('MatrixClient', () => {
             expect(result).toBeDefined();
             expect(result.client).toEqual(client);
             expect(result.roomId).toEqual(roomId);
+            await flush;
         });
 
         it('should create a typed public room', async () => {
@@ -6388,7 +6517,7 @@ describe('MatrixClient', () => {
                 return {room_id: roomId};
             });
 
-            http.flushAllExpected();
+            const flush = http.flushAllExpected();
             const result = await client.createSpace({
                 name: name,
                 topic: topic,
@@ -6398,6 +6527,7 @@ describe('MatrixClient', () => {
             expect(result).toBeDefined();
             expect(result.client).toEqual(client);
             expect(result.roomId).toEqual(roomId);
+            await flush;
         });
     });
 
@@ -6526,9 +6656,10 @@ describe('MatrixClient', () => {
                 return { one_time_key_counts: counts };
             });
 
-            http.flushAllExpected();
+            const flush = http.flushAllExpected();
             const result = await client.uploadDeviceKeys(algorithms, keys);
             expect(result).toMatchObject(counts);
+            await flush;
         });
     });
 
@@ -6574,9 +6705,10 @@ describe('MatrixClient', () => {
                 return { one_time_key_counts: counts };
             });
 
-            http.flushAllExpected();
+            const flush = http.flushAllExpected();
             const result = await client.uploadDeviceOneTimeKeys(keys);
             expect(result).toMatchObject(counts);
+            await flush;
         });
     });
 
@@ -6608,9 +6740,10 @@ describe('MatrixClient', () => {
                 return { one_time_key_counts: counts };
             });
 
-            http.flushAllExpected();
+            const flush = http.flushAllExpected();
             const result = await client.checkOneTimeKeyCounts();
             expect(result).toMatchObject(counts);
+            await flush;
         });
     });
 
@@ -6644,9 +6777,10 @@ describe('MatrixClient', () => {
                 return response;
             });
 
-            http.flushAllExpected();
+            const flush = http.flushAllExpected();
             const result = await client.getUserDevices(Object.keys(requestBody), timeout);
             expect(result).toMatchObject(response);
+            await flush;
         });
 
         it('should call the right endpoint with a default timeout', async () => {
@@ -6678,9 +6812,10 @@ describe('MatrixClient', () => {
                 return response;
             });
 
-            http.flushAllExpected();
+            const flush = http.flushAllExpected();
             const result = await client.getUserDevices(Object.keys(requestBody));
             expect(result).toMatchObject(response);
+            await flush;
         });
     });
 
@@ -6733,9 +6868,10 @@ describe('MatrixClient', () => {
                 return response;
             });
 
-            http.flushAllExpected();
+            const flush = http.flushAllExpected();
             const result = await client.claimOneTimeKeys(request);
             expect(result).toMatchObject(response);
+            await flush;
         });
 
         it('should use the timeout parameter', async () => {
@@ -6776,9 +6912,10 @@ describe('MatrixClient', () => {
                 return response;
             });
 
-            http.flushAllExpected();
+            const flush = http.flushAllExpected();
             const result = await client.claimOneTimeKeys(request, timeout);
             expect(result).toMatchObject(response);
+            await flush;
         });
     });
 
@@ -6809,8 +6946,9 @@ describe('MatrixClient', () => {
                 return {};
             });
 
-            http.flushAllExpected();
+            const flush = http.flushAllExpected();
             await client.sendToDevices(type, messages);
+            await flush;
         });
     });
 
@@ -6826,9 +6964,10 @@ describe('MatrixClient', () => {
                 return {devices};
             });
 
-            http.flushAllExpected();
+            const flush = http.flushAllExpected();
             const res = await client.getOwnDevices();
             expect(res).toMatchObject(devices);
+            await flush;
         });
     });
 

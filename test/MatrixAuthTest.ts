@@ -32,10 +32,11 @@ describe('MatrixAuth', () => {
                 return {access_token: accessToken};
             });
 
-            http.flushAllExpected();
+            const flush = http.flushAllExpected();
             const client = await auth.passwordRegister(username, password);
             expect(client.homeserverUrl).toEqual(hsUrl);
             expect(client.accessToken).toEqual(accessToken);
+            await flush;
         });
 
         // TODO: Enable test.
@@ -73,10 +74,11 @@ describe('MatrixAuth', () => {
                 return {access_token: accessToken};
             });
 
-            http.flushAllExpected();
+            const flush = http.flushAllExpected();
             const client = await auth.passwordRegister(username, password);
             expect(client.homeserverUrl).toEqual(hsUrl);
             expect(client.accessToken).toEqual(accessToken);
+            await flush;
         });
     });
 
@@ -100,10 +102,11 @@ describe('MatrixAuth', () => {
                 return {access_token: accessToken};
             });
 
-            http.flushAllExpected();
+            const flush = http.flushAllExpected();
             const client = await auth.passwordLogin(username, password);
             expect(client.homeserverUrl).toEqual(hsUrl);
             expect(client.accessToken).toEqual(accessToken);
+            await flush;
         });
     });
 });
