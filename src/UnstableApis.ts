@@ -53,7 +53,7 @@ export class UnstableApis {
      * @return {Promise<string>} Resolves to the created group ID.
      */
     public async createGroup(localpart: string): Promise<string> {
-        const response = await this.client.doRequest("POST", "/_matrix/client/unstable/create_group", null, {"localpart": localpart});
+        const response = await this.client.doRequest("POST", "/_matrix/client/unstable/create_group", null, { "localpart": localpart });
         return response["group_id"];
     }
 
@@ -114,7 +114,7 @@ export class UnstableApis {
      */
     public async addRoomToGroup(groupId: string, roomId: string, isPublic = true): Promise<any> {
         return this.client.doRequest("PUT", `/_matrix/client/unstable/groups/${encodeURIComponent(groupId)}/admin/rooms/${encodeURIComponent(roomId)}`, null, {
-            "m.visibility": {type: isPublic ? "public" : "private"},
+            "m.visibility": { type: isPublic ? "public" : "private" },
         });
     }
 
@@ -263,7 +263,7 @@ export class UnstableApis {
      * @param {string?} eventType The type of event to look for (e.g. `m.room.member`). Optional.
      * @returns {Promise<{original_event: any, chunk: any[]}>} Resolves a object containing the original event, and a chunk of relations
      */
-    public async getRelationsForEvent(roomId: string, eventId: string, relationType?: string, eventType?: string): Promise<{original_event: any, chunk: any[]}> {
+    public async getRelationsForEvent(roomId: string, eventId: string, relationType?: string, eventType?: string): Promise<{ original_event: any, chunk: any[] }> {
         let url = `/_matrix/client/unstable/rooms/${roomId}/relations/${eventId}`;
         if (relationType) {
             url += `/${relationType}`;

@@ -929,7 +929,7 @@ export class MatrixClient extends EventEmitter {
      */
     @timedMatrixClientFunctionCall()
     public async getEventContext(roomId: string, eventId: string, limit = 10): Promise<EventContext> {
-        const res = await this.doRequest("GET", "/_matrix/client/r0/rooms/" + encodeURIComponent(roomId) + "/context/" + encodeURIComponent(eventId), {limit});
+        const res = await this.doRequest("GET", "/_matrix/client/r0/rooms/" + encodeURIComponent(roomId) + "/context/" + encodeURIComponent(eventId), { limit });
         return {
             event: new RoomEvent<RoomEventContent>(res['event']),
             before: res['events_before'].map(e => new RoomEvent<RoomEventContent>(e)),
@@ -1023,7 +1023,7 @@ export class MatrixClient extends EventEmitter {
      * @returns {Object} The joined user IDs in the room as an object mapped to a set of profiles.
      */
     @timedMatrixClientFunctionCall()
-    public async getJoinedRoomMembersWithProfiles(roomId: string): Promise<{[userId: string]: {display_name?: string, avatar_url?: string}}> {
+    public async getJoinedRoomMembersWithProfiles(roomId: string): Promise<{ [userId: string]: { display_name?: string, avatar_url?: string } }> {
         return (await this.doRequest("GET", "/_matrix/client/r0/rooms/" + encodeURIComponent(roomId) + "/joined_members")).joined;
     }
 
@@ -1112,7 +1112,7 @@ export class MatrixClient extends EventEmitter {
      */
     @timedMatrixClientFunctionCall()
     public replyHtmlText(roomId: string, event: any, html: string): Promise<string> {
-        const text = htmlToText(html, {wordwrap: false});
+        const text = htmlToText(html, { wordwrap: false });
         const reply = RichReply.createFor(roomId, event, text, html);
         return this.sendMessage(roomId, reply);
     }
@@ -1145,7 +1145,7 @@ export class MatrixClient extends EventEmitter {
      */
     @timedMatrixClientFunctionCall()
     public replyHtmlNotice(roomId: string, event: any, html: string): Promise<string> {
-        const text = htmlToText(html, {wordwrap: false});
+        const text = htmlToText(html, { wordwrap: false });
         const reply = RichReply.createFor(roomId, event, text, html);
         reply['msgtype'] = 'm.notice';
         return this.sendMessage(roomId, reply);
@@ -1176,7 +1176,7 @@ export class MatrixClient extends EventEmitter {
     @timedMatrixClientFunctionCall()
     public sendHtmlNotice(roomId: string, html: string): Promise<string> {
         return this.sendMessage(roomId, {
-            body: htmlToText(html, {wordwrap: false}),
+            body: htmlToText(html, { wordwrap: false }),
             msgtype: "m.notice",
             format: "org.matrix.custom.html",
             formatted_body: html,
@@ -1208,7 +1208,7 @@ export class MatrixClient extends EventEmitter {
     @timedMatrixClientFunctionCall()
     public sendHtmlText(roomId: string, html: string): Promise<string> {
         return this.sendMessage(roomId, {
-            body: htmlToText(html, {wordwrap: false}),
+            body: htmlToText(html, { wordwrap: false }),
             msgtype: "m.text",
             format: "org.matrix.custom.html",
             formatted_body: html,
@@ -1284,7 +1284,7 @@ export class MatrixClient extends EventEmitter {
     @timedMatrixClientFunctionCall()
     public redactEvent(roomId: string, eventId: string, reason: string | null = null): Promise<string> {
         const txnId = (new Date().getTime()) + "__inc" + (++this.requestId);
-        const content = reason !== null ? {reason} : {};
+        const content = reason !== null ? { reason } : {};
         return this.doRequest("PUT", `/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/redact/${encodeURIComponent(eventId)}/${txnId}`, null, content).then(response => {
             return response['event_id'];
         });
@@ -1350,7 +1350,7 @@ export class MatrixClient extends EventEmitter {
             throw new Error("No power level event found");
         }
 
-        const defaultForActions: {[A in PowerLevelAction]: number} = {
+        const defaultForActions: { [A in PowerLevelAction]: number } = {
             [PowerLevelAction.Ban]: 50,
             [PowerLevelAction.Invite]: 50,
             [PowerLevelAction.Kick]: 50,
@@ -1386,7 +1386,7 @@ export class MatrixClient extends EventEmitter {
         const myUserId = await this.getUserId();
 
         const canChangePower = await this.userHasPowerLevelFor(myUserId, roomId, "m.room.power_levels", true);
-        if (!canChangePower) return {canModify: false, maximumPossibleLevel: 0};
+        if (!canChangePower) return { canModify: false, maximumPossibleLevel: 0 };
 
         const powerLevelsEvent = await this.getRoomStateEvent(roomId, "m.room.power_levels", "");
         if (!powerLevelsEvent) {
@@ -1399,14 +1399,14 @@ export class MatrixClient extends EventEmitter {
         if (powerLevelsEvent["users"] && powerLevelsEvent["users"][myUserId]) myUserPower = powerLevelsEvent["users"][myUserId];
 
         if (myUserId === targetUserId) {
-            return {canModify: true, maximumPossibleLevel: myUserPower};
+            return { canModify: true, maximumPossibleLevel: myUserPower };
         }
 
         if (targetUserPower >= myUserPower) {
-            return {canModify: false, maximumPossibleLevel: myUserPower};
+            return { canModify: false, maximumPossibleLevel: myUserPower };
         }
 
-        return {canModify: true, maximumPossibleLevel: myUserPower};
+        return { canModify: true, maximumPossibleLevel: myUserPower };
     }
 
     /**
@@ -1465,7 +1465,7 @@ export class MatrixClient extends EventEmitter {
     @timedMatrixClientFunctionCall()
     public uploadContent(data: Buffer, contentType = "application/octet-stream", filename: string = null): Promise<string> {
         // TODO: Make doRequest take an object for options
-        return this.doRequest("POST", "/_matrix/media/r0/upload", {filename: filename}, data, 60000, false, contentType)
+        return this.doRequest("POST", "/_matrix/media/r0/upload", { filename: filename }, data, 60000, false, contentType)
             .then(response => response["content_uri"]);
     }
 
@@ -1486,7 +1486,7 @@ export class MatrixClient extends EventEmitter {
         const domain = encodeURIComponent(urlParts[0]);
         const mediaId = encodeURIComponent(urlParts[1].split("/")[0]);
         const path = `/_matrix/media/r0/download/${domain}/${mediaId}`;
-        const res = await this.doRequest("GET", path, {allow_remote: allowRemote}, null, null, true, null, true);
+        const res = await this.doRequest("GET", path, { allow_remote: allowRemote }, null, null, true, null, true);
         return {
             data: res.body,
             contentType: res.headers["content-type"],
@@ -1519,7 +1519,7 @@ export class MatrixClient extends EventEmitter {
                     if (response.statusCode < 200 || response.statusCode >= 300) {
                         LogService.error("MatrixClientLite", "(REQ-" + requestId + ")", "<data>");
                         reject(response);
-                    } else resolve({body: resBody, contentType: contentType});
+                    } else resolve({ body: resBody, contentType: contentType });
                 }
             });
         }).then(obj => {
@@ -1540,7 +1540,7 @@ export class MatrixClient extends EventEmitter {
      */
     @timedMatrixClientFunctionCall()
     public async getRoomUpgradeHistory(roomId: string): Promise<{ previous: RoomReference[], newer: RoomReference[], current: RoomReference }> {
-        const result = {previous: [], newer: [], current: null};
+        const result = { previous: [], newer: [], current: null };
 
         const chaseCreates = async (findRoomId) => {
             try {
@@ -1865,11 +1865,11 @@ export class MatrixClient extends EventEmitter {
     @timedMatrixClientFunctionCall()
     public doRequest(method, endpoint, qs = null, body = null, timeout = 60000, raw = false, contentType = "application/json", noEncoding = false): Promise<any> {
         if (this.impersonatedUserId) {
-            if (!qs) qs = {"user_id": this.impersonatedUserId};
+            if (!qs) qs = { "user_id": this.impersonatedUserId };
             else qs["user_id"] = this.impersonatedUserId;
         }
         if (this.impersonatedDeviceId) {
-            if (!qs) qs = {"org.matrix.msc3202.device_id": this.impersonatedDeviceId};
+            if (!qs) qs = { "org.matrix.msc3202.device_id": this.impersonatedDeviceId };
             else qs["org.matrix.msc3202.device_id"] = this.impersonatedDeviceId;
         }
         const headers = {};

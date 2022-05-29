@@ -36,7 +36,7 @@ export class SdkOlmEngine implements OlmEngine {
         return this.client.getUserDevices(userIds);
     }
 
-    public uploadOneTimeKeys(body: {device_keys?: DeviceKeys, one_time_keys?: GenericKeys}): Promise<OTKCounts> {
+    public uploadOneTimeKeys(body: { device_keys?: DeviceKeys, one_time_keys?: GenericKeys }): Promise<OTKCounts> {
         return this.client.doRequest("POST", "/_matrix/client/r0/keys/upload", null, body);
     }
 

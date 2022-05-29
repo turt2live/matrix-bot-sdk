@@ -23,7 +23,7 @@ export default class MatrixError extends Error {
      * @param body The error body.
      * @param statusCode The HTTP status code.
      */
-    constructor(public readonly body: {errcode: string, error: string, retry_after_ms?: number}, public readonly statusCode: number) {
+    constructor(public readonly body: { errcode: string, error: string, retry_after_ms?: number }, public readonly statusCode: number) {
         super();
         this.errcode = body.errcode;
         this.error = body.error;

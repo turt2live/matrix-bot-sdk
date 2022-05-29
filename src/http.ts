@@ -1,6 +1,7 @@
 import { LogLevel, LogService } from "./logging/LogService";
 import { getRequestFn } from "./request";
 import MatrixError from './models/MatrixError';
+
 let lastRequestId = 0;
 
 /**
@@ -18,7 +19,7 @@ let lastRequestId = 0;
  * @param {string} noEncoding Set to true to disable encoding, and return a Buffer. Defaults to false
  * @returns {Promise<any>} Resolves to the response (body), rejected if a non-2xx status code was returned.
  */
-export async function doHttpRequest(baseUrl: string, method: "GET"|"POST"|"PUT"|"DELETE", endpoint: string, qs = null, body = null, headers = {}, timeout = 60000, raw = false, contentType = "application/json", noEncoding = false): Promise<any> {
+export async function doHttpRequest(baseUrl: string, method: "GET" | "POST" | "PUT" | "DELETE", endpoint: string, qs = null, body = null, headers = {}, timeout = 60000, raw = false, contentType = "application/json", noEncoding = false): Promise<any> {
     if (!endpoint.startsWith('/')) {
         endpoint = '/' + endpoint;
     }
@@ -44,7 +45,7 @@ export async function doHttpRequest(baseUrl: string, method: "GET"|"POST"|"PUT"|
         encoding: noEncoding === false ? undefined : null,
         useQuerystring: true,
         qsStringifyOptions: {
-            options: {arrayFormat: 'repeat'},
+            options: { arrayFormat: 'repeat' },
         },
         timeout: timeout,
         headers: headers,
@@ -62,7 +63,7 @@ export async function doHttpRequest(baseUrl: string, method: "GET"|"POST"|"PUT"|
         }
     }
 
-    const {response, resBody} = await new Promise<{response: any, resBody: any}>((resolve, reject) => {
+    const { response, resBody } = await new Promise<{ response: any, resBody: any }>((resolve, reject) => {
         getRequestFn()(params, (err, res, rBody) => {
             if (err) {
                 LogService.error("MatrixHttpClient", "(REQ-" + requestId + ")", err);
@@ -84,7 +85,7 @@ export async function doHttpRequest(baseUrl: string, method: "GET"|"POST"|"PUT"|
                 }
             }
 
-            resolve({response: res, resBody: rBody});
+            resolve({ response: res, resBody: rBody });
         });
     });
 

@@ -127,13 +127,13 @@ export class MatrixBridge {
         const eventType = `${REMOTE_USER_MAP_ACCOUNT_DATA_EVENT_TYPE_PREFIX}.${remoteUserId}`;
         const bridgeBot = this.appservice.botIntent;
         await bridgeBot.ensureRegistered();
-        await bridgeBot.underlyingClient.setAccountData(eventType, {id: matrixUserId});
+        await bridgeBot.underlyingClient.setAccountData(eventType, { id: matrixUserId });
     }
 
     private async updateRemoteRoomMapping(matrixRoomId: string, remoteRoomId: string): Promise<any> {
         const eventType = `${REMOTE_ROOM_MAP_ACCOUNT_DATA_EVENT_TYPE_PREFIX}.${remoteRoomId}`;
         const bridgeBot = this.appservice.botIntent;
         await bridgeBot.ensureRegistered();
-        await bridgeBot.underlyingClient.setAccountData(eventType, {id: matrixRoomId});
+        await bridgeBot.underlyingClient.setAccountData(eventType, { id: matrixRoomId });
     }
 }

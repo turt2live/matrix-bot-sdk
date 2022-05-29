@@ -114,7 +114,10 @@ export class CryptoClient {
      */
     @requiresReady()
     public async updateSyncData(toDeviceMessages: IToDeviceMessage<IOlmEncrypted>[], otkCounts: OTKCounts, unusedFallbackKeyAlgs: OTKAlgorithm[], changedDeviceLists: string[], leftDeviceLists: string[]): Promise<void> {
-        await this.machine.pushSync(toDeviceMessages, {changed: changedDeviceLists, left: leftDeviceLists}, otkCounts, unusedFallbackKeyAlgs);
+        await this.machine.pushSync(toDeviceMessages, {
+            changed: changedDeviceLists,
+            left: leftDeviceLists,
+        }, otkCounts, unusedFallbackKeyAlgs);
     }
 
     /**
@@ -172,7 +175,7 @@ export class CryptoClient {
         return new RoomEvent<unknown>({
             ...event.raw,
             type: decrypted.clearEvent.type || "io.t2bot.unknown",
-            content: (typeof(decrypted.clearEvent.content) === 'object') ? decrypted.clearEvent.content : {},
+            content: (typeof (decrypted.clearEvent.content) === 'object') ? decrypted.clearEvent.content : {},
         });
     }
 
@@ -184,7 +187,7 @@ export class CryptoClient {
      * contents and file information.
      */
     @requiresReady()
-    public async encryptMedia(file: Buffer): Promise<{buffer: Buffer, file: Omit<EncryptedFile, "url">}> {
+    public async encryptMedia(file: Buffer): Promise<{ buffer: Buffer, file: Omit<EncryptedFile, "url"> }> {
         const encrypted = rustEncryptFile(file);
         return {
             buffer: encrypted.data,
@@ -192,7 +195,7 @@ export class CryptoClient {
                 iv: encrypted.file.iv,
                 key: encrypted.file.web_key,
                 v: encrypted.file.v,
-                hashes: encrypted.file.hashes as {sha256: string},
+                hashes: encrypted.file.hashes as { sha256: string },
             },
         };
     }

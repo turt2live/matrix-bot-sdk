@@ -7,7 +7,7 @@ import {
     MessageEvent,
     MessageEventContent,
     TextualMessageEventContent,
-    VideoMessageEventContent
+    VideoMessageEventContent,
 } from "./MessageEvent";
 
 /**
@@ -19,7 +19,7 @@ import {
 export function wrapRoomEvent(event: any): RoomEvent<any> {
     if (!event) return null;
 
-    if (typeof(event['state_key']) === 'string') {
+    if (typeof (event['state_key']) === 'string') {
         if (event['type'] === 'm.room.member') {
             return new MembershipEvent(event);
         } else {

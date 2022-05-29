@@ -85,10 +85,10 @@ export class Permalinks {
 
         const entity = decodeURIComponent(parts[0]);
         if (entity[0] === '@') {
-            return {userId: entity, roomIdOrAlias: undefined, eventId: undefined, viaServers: undefined};
+            return { userId: entity, roomIdOrAlias: undefined, eventId: undefined, viaServers: undefined };
         } else if (entity[0] === '#' || entity[0] === '!') {
             if (parts.length === 1) {
-                return {roomIdOrAlias: entity, userId: undefined, eventId: undefined, viaServers: []};
+                return { roomIdOrAlias: entity, userId: undefined, eventId: undefined, viaServers: [] };
             }
 
             // rejoin the rest because v3 room can have slashes
@@ -100,7 +100,7 @@ export class Permalinks {
 
             const via = query.split("via=").filter(p => !!p);
 
-            return {roomIdOrAlias: entity, eventId: eventId, viaServers: via, userId: undefined};
+            return { roomIdOrAlias: entity, eventId: eventId, viaServers: via, userId: undefined };
         }
 
         throw new Error("Unexpected entity");

@@ -161,7 +161,7 @@ export class LogService {
  * @returns {*} The extracted error, or the given error if unaltered.
  * @category Logging
  */
-export function extractRequestError(err: Error|MatrixError): any {
+export function extractRequestError(err: Error | MatrixError): any {
     if (err && 'body' in err) {
         return err.body;
     }

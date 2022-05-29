@@ -6,7 +6,7 @@ import {
     ICryptoStorageProvider,
     LogService,
     MatrixClient,
-    Metrics
+    Metrics,
 } from "..";
 import { Appservice, IAppserviceOptions } from "./Appservice";
 
@@ -231,7 +231,7 @@ export class Intent {
      */
     @timedIntentFunctionCall()
     public async sendText(roomId: string, body: string, msgtype: "m.text" | "m.emote" | "m.notice" = "m.text"): Promise<string> {
-        return this.sendEvent(roomId, {body: body, msgtype: msgtype});
+        return this.sendEvent(roomId, { body: body, msgtype: msgtype });
     }
 
     /**
@@ -308,7 +308,7 @@ export class Intent {
                 // HACK: Workaround for unit tests
                 if (result['errcode']) {
                     // noinspection ExceptionCaughtLocallyJS
-                    throw {body: result};
+                    throw { body: result };
                 }
             } catch (err) {
                 if (err instanceof MatrixError && err.errcode === "M_USER_IN_USE") {

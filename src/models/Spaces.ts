@@ -81,7 +81,8 @@ export interface SpaceEntityMap {
  * @category Models
  */
 export class Space {
-    public constructor(public readonly roomId: string, public readonly client: MatrixClient) { }
+    public constructor(public readonly roomId: string, public readonly client: MatrixClient) {
+    }
 
     /**
      * Creates a new child space under this space.
@@ -121,7 +122,7 @@ export class Space {
      */
     public async addChildRoom(roomId: string, childOpts: SpaceChildEntityOptions = {}): Promise<void> {
         const via = childOpts.via ?? [new UserID(await this.client.getUserId()).domain];
-        const childContent: SpaceChildEventContent = {via};
+        const childContent: SpaceChildEventContent = { via };
 
         if (childOpts.suggested) childContent.suggested = childOpts.suggested;
         if (childOpts.order) {
@@ -138,7 +139,7 @@ export class Space {
      * @returns {Promise<void>} Resolves when complete.
      */
     public async removeChildRoom(roomId: string): Promise<void> {
-        await this.client.sendStateEvent(this.roomId, "m.space.child", roomId, { });
+        await this.client.sendStateEvent(this.roomId, "m.space.child", roomId, {});
     }
 
     /**

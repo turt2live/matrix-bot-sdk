@@ -1,7 +1,6 @@
 import { MatrixClient } from "./MatrixClient";
 import { EncryptionAlgorithm } from "./models/Crypto";
 import { LogService } from "./logging/LogService";
-import { redactObjectForLogging } from "./http";
 
 /**
  * Handles DM (direct messages) matching between users. Note that bots which
@@ -134,7 +133,11 @@ export class DMs {
                 invite: [userId],
                 is_direct: true,
                 preset: "trusted_private_chat",
-                initial_state: hasKeys ? [{type: "m.room.encryption", state_key: "", content: {algorithm: EncryptionAlgorithm.MegolmV1AesSha2}}] : [],
+                initial_state: hasKeys ? [{
+                    type: "m.room.encryption",
+                    state_key: "",
+                    content: { algorithm: EncryptionAlgorithm.MegolmV1AesSha2 },
+                }] : [],
             });
         }
 
