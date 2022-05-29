@@ -33,7 +33,7 @@ jobs:
       - run: yarn build:examples
 
   tests-16:
-    name: 'Mocha Tests Node 16'
+    name: 'Tests Node 16'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -63,7 +63,7 @@ jobs:
       - run: yarn build:examples
 
   tests-14:
-    name: 'Mocha Tests Node 18'
+    name: 'Tests Node 18'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
