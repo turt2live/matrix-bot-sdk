@@ -79,7 +79,7 @@
     "better-docs": "^2.7.2",
     "eslint": "^8.16.0",
     "expect": "^28.1.0",
-    "get-port": "^6.1.2",
+    "get-port": "^5",
     "jsdoc": "^3.6.10",
     "matrix-mock-request": "^1.2.3",
     "mocha": "^10.0.0",
