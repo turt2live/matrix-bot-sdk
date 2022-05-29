@@ -32,7 +32,7 @@ export function timedMatrixClientFunctionCall() {
                 this.metrics.increment(METRIC_MATRIX_CLIENT_FAILED_FUNCTION_CALL, context, 1);
                 throw e;
             } finally {
-                this.metrics.end(METRIC_MATRIX_CLIENT_FUNCTION_CALL, context)
+                this.metrics.end(METRIC_MATRIX_CLIENT_FUNCTION_CALL, context);
             }
         };
     };
@@ -59,7 +59,7 @@ export function timedIdentityClientFunctionCall() {
                 this.metrics.increment(METRIC_IDENTITY_CLIENT_FAILED_FUNCTION_CALL, context, 1);
                 throw e;
             } finally {
-                this.metrics.end(METRIC_IDENTITY_CLIENT_FUNCTION_CALL, context)
+                this.metrics.end(METRIC_IDENTITY_CLIENT_FUNCTION_CALL, context);
             }
         }
     };
@@ -87,7 +87,7 @@ export function timedIntentFunctionCall() {
                 this.metrics.increment(METRIC_INTENT_FAILED_FUNCTION_CALL, context, 1);
                 throw e;
             } finally {
-                this.metrics.end(METRIC_INTENT_FUNCTION_CALL, context)
+                this.metrics.end(METRIC_INTENT_FUNCTION_CALL, context);
             }
         }
     };
