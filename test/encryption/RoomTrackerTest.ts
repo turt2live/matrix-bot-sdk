@@ -1,4 +1,3 @@
-import * as expect from "expect";
 import * as simple from "simple-mock";
 import { EncryptionEventContent, MatrixClient, RoomEncryptionAlgorithm, RoomTracker } from "../../src";
 import { createTestClient } from "../MatrixClientTest";

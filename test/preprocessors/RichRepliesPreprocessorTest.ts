@@ -1,5 +1,4 @@
 import { EventKind, RichRepliesPreprocessor } from "../../src";
-import * as expect from "expect";
 import * as simple from "simple-mock";
 import { createTestClient } from "../MatrixClientTest";
 

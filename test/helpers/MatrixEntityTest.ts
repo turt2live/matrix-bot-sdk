@@ -1,4 +1,3 @@
-import * as expect from "expect";
 import { MatrixEntity, RoomAlias, UserID } from "../../src";
 
 describe('MatrixEntity', () => {

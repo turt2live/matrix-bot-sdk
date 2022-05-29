@@ -1,4 +1,3 @@
-import * as expect from "expect";
 import {
     decodeBase64,
     decodeUnpaddedBase64,

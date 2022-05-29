@@ -1,4 +1,3 @@
-import * as expect from "expect";
 import * as simple from "simple-mock";
 import { createTestClient } from "../MatrixClientTest";
 import { Space } from "../../src";
@@ -37,11 +36,12 @@ describe('Space', () => {
                     expect(stateKey).toBe(childRoomId);
                     expect(content).toMatchObject(childEvContent);
                     expect(roomId).toBe(parentRoomId);
+                    return "$void";
                 } else {
                     throw new Error("unexpected event");
                 }
             });
-            client.sendStateEvent = stateEventSpy;
+            client.sendStateEvent = stateEventSpy as typeof client.sendStateEvent;
 
             const parent = new Space(parentRoomId, client);
             const child = await parent.createChildSpace(createOpts);
@@ -87,11 +87,12 @@ describe('Space', () => {
                     expect(stateKey).toBe(childRoomId);
                     expect(content).toMatchObject(childEvContent);
                     expect(roomId).toBe(parentRoomId);
+                    return "$void";
                 } else {
                     throw new Error("unexpected event");
                 }
             });
-            client.sendStateEvent = stateEventSpy;
+            client.sendStateEvent = stateEventSpy as typeof client.sendStateEvent;
 
             const child = new Space(childRoomId, client);
             const parent = new Space(parentRoomId, client);
@@ -135,11 +136,12 @@ describe('Space', () => {
                     expect(stateKey).toBe(childRoomId);
                     expect(content).toMatchObject(childEvContent);
                     expect(roomId).toBe(parentRoomId);
+                    return "$void";
                 } else {
                     throw new Error("unexpected event");
                 }
             });
-            client.sendStateEvent = stateEventSpy;
+            client.sendStateEvent = stateEventSpy as typeof client.sendStateEvent;
 
             const parent = new Space(parentRoomId, client);
             await parent.addChildRoom(childRoomId);
@@ -165,8 +167,9 @@ describe('Space', () => {
                 expect(stateKey).toBe(childRoomId);
                 expect(content).toMatchObject(childEvContent);
                 expect(roomId).toBe(parentRoomId);
+                return "$void";
             });
-            client.sendStateEvent = stateEventSpy;
+            client.sendStateEvent = stateEventSpy as typeof client.sendStateEvent;
 
             const child = new Space(childRoomId, client);
             const parent = new Space(parentRoomId, client);
@@ -191,8 +194,9 @@ describe('Space', () => {
                 expect(stateKey).toBe(childRoomId);
                 expect(content).toMatchObject(childEvContent);
                 expect(roomId).toBe(parentRoomId);
+                return "$void";
             });
-            client.sendStateEvent = stateEventSpy;
+            client.sendStateEvent = stateEventSpy as typeof client.sendStateEvent;
 
             const parent = new Space(parentRoomId, client);
             await parent.removeChildRoom(childRoomId);

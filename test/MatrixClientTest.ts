@@ -1,4 +1,3 @@
-import * as expect from "expect";
 import {
     DeviceKeyAlgorithm,
     DeviceKeyLabel,
@@ -1067,7 +1066,7 @@ describe('MatrixClient', () => {
             await waitPromise;
             expect(count).toBe(max);
             expect(dmsUpdate.callCount).toBe(1);
-        }).timeout(10000);
+        }, 10000);
     });
 
     describe('start', () => {

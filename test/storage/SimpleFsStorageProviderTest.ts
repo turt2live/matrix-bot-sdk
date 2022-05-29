@@ -1,5 +1,4 @@
 import { IFilterInfo, SimpleFsStorageProvider } from "../../src";
-import * as expect from "expect";
 import * as tmp from "tmp";
 
 tmp.setGracefulCleanup();

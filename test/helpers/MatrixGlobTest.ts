@@ -1,4 +1,3 @@
-import * as expect from "expect";
 import { MatrixGlob } from "../../src";
 
 describe('MatrixGlob', () => {

@@ -1,4 +1,3 @@
-import * as expect from "expect";
 import { MatrixAuth } from "../src";
 import * as MockHttpBackend from 'matrix-mock-request';
 import { createTestClient } from "./MatrixClientTest";

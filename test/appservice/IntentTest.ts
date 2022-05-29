@@ -9,7 +9,6 @@ import {
     RustSdkAppserviceCryptoStorageProvider,
     setRequestFn,
 } from "../../src";
-import * as expect from "expect";
 import * as simple from "simple-mock";
 import * as MockHttpBackend from 'matrix-mock-request';
 import { expectArrayEquals } from "../TestUtils";

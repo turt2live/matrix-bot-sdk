@@ -1,4 +1,3 @@
-import * as expect from "expect";
 import {
     IStorageProvider,
     MatrixClient,
@@ -266,7 +265,7 @@ describe('SynapseAdminApis', () => {
             http.flushAllExpected();
             const resultUser1 = await iterable.next();
             expect(resultUser1).toEqual({done: false, value: user1});
-            
+
             http.when("GET", "/_synapse/admin/v2/users").respond(200, (path, _content, req) => {
                 expect(path).toEqual(`${hsUrl}/_synapse/admin/v2/users`);
                 expect(req.opts.qs).toEqual({...request, from: 'from-token'});
@@ -489,7 +488,7 @@ describe('SynapseAdminApis', () => {
                 const responseToken: SynapseRegistrationToken = {
                     token: "foo", uses_allowed: null, pending: 5, completed: 25, expiry_time: null
                 };
-            
+
                 const options: SynapseRegistrationTokenUpdateOptions = {
                     uses_allowed: null,
                 }

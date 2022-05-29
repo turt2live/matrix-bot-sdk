@@ -1,4 +1,3 @@
-import * as expect from "expect";
 import { IStorageProvider, MatrixClient, MSC2716BatchSendResponse, UnstableAppserviceApis } from "../../src";
 import * as MockHttpBackend from 'matrix-mock-request';
 import { createTestClient } from "../MatrixClientTest";

@@ -1,5 +1,4 @@
 import { SimpleRetryJoinStrategy } from "../../src";
-import * as expect from "expect";
 import * as simple from "simple-mock";
 
 describe('SimpleRetryJoinStrategy', () => {
@@ -17,7 +16,7 @@ describe('SimpleRetryJoinStrategy', () => {
             expect(rid).toEqual(roomId);
             attempt++;
             if (attempt === schedule.length) {
-                return true;
+                return Promise.resolve("!void:example.org");
             } else {
                 throw new Error("Simulated failure");
             }
@@ -50,7 +49,7 @@ describe('SimpleRetryJoinStrategy', () => {
 
             attempt++;
             if (attempt === schedule.length) {
-                return true;
+                return Promise.resolve("!void:example.org");
             } else {
                 throw new Error("Simulated failure");
             }

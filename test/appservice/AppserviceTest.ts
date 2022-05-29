@@ -1,5 +1,4 @@
 import { Appservice, EventKind, IPreprocessor, setRequestFn } from "../../src";
-import * as expect from "expect";
 import * as getPort from "get-port";
 import * as requestPromise from "request-promise";
 import * as simple from "simple-mock";

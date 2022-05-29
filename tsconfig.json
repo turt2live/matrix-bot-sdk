@@ -12,10 +12,11 @@
     "types": [
       "node",
       "express",
-      "mocha"
+      "jest"
     ]
   },
   "include": [
-    "./src/**/*"
+    "./src/**/*",
+    "./test/**/*"
   ]
 }

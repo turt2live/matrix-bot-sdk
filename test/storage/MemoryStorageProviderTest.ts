@@ -1,5 +1,4 @@
 import { IFilterInfo, MemoryStorageProvider } from "../../src";
-import * as expect from "expect";
 
 describe('MemoryStorageProvider', () => {
     it('should return the right sync token', async () => {

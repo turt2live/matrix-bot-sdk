@@ -1,4 +1,3 @@
-import * as expect from "expect";
 import { getRequestFn, setRequestFn } from "../src";
 
 describe('request', () => {

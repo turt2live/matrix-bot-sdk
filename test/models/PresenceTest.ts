@@ -1,5 +1,4 @@
 import { Presence, PresenceEventContent } from "../../src";
-import * as expect from "expect";
 
 describe("Presence", () => {
     it("should return the right fields", () => {

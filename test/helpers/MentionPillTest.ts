@@ -1,4 +1,3 @@
-import * as expect from "expect";
 import { MentionPill } from "../../src";
 import { createTestClient } from "../MatrixClientTest";
 import * as simple from "simple-mock";

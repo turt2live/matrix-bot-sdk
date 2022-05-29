@@ -1,6 +1,5 @@
 import { createTestClient, TEST_DEVICE_ID } from "./MatrixClientTest";
 import { DMs } from "../src/DMs";
-import * as expect from "expect";
 import * as simple from "simple-mock";
 import { EncryptionAlgorithm } from "../src";
 

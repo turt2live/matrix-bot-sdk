@@ -1,4 +1,3 @@
-import * as expect from "expect";
 import * as simple from "simple-mock";
 import {
     ConsoleLogger,

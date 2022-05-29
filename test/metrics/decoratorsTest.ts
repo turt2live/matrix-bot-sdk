@@ -1,4 +1,3 @@
-import * as expect from "expect";
 import * as simple from "simple-mock";
 import {
     Metrics,
@@ -70,12 +69,12 @@ describe('decorators', () => {
 
         it('should call start on metrics with function name before calling intercepted method', async () => {
             const metrics = new Metrics();
-            simple.mock(metrics, "start");
+            const startFn = simple.mock(metrics, "start");
 
             const interceptedFn = simple.stub().callFn((i: number) => {
-                expect(metrics.start.callCount).toBe(1);
-                expect(metrics.start.lastCall.args[0]).toBe("matrix_client_function_call");
-                expect(metrics.start.lastCall.args[1]).toHaveProperty("functionName", "matrixClientIntercepted");
+                expect(startFn.callCount).toBe(1);
+                expect(startFn.lastCall.args[0]).toBe("matrix_client_function_call");
+                expect(startFn.lastCall.args[1]).toHaveProperty("functionName", "matrixClientIntercepted");
                 return -1;
             });
 
@@ -85,53 +84,53 @@ describe('decorators', () => {
 
         it('should call end on metrics with function name after calling intercepted method', async () => {
             const metrics = new Metrics();
-            simple.mock(metrics, "end");
+            const endFn = simple.mock(metrics, "end");
 
             const interceptedFn = simple.stub().callFn((i: number) => {
-                expect(metrics.end.callCount).toBe(0);
+                expect(endFn.callCount).toBe(0);
                 return -1;
             });
 
             const interceptedClass = new InterceptedClass(metrics, interceptedFn);
             await interceptedClass.matrixClientIntercepted(1234).then(waitingPromise);
 
-            expect(metrics.end.callCount).toBe(1);
-            expect(metrics.end.lastCall.args[0]).toBe("matrix_client_function_call");
-            expect(metrics.end.lastCall.args[1]).toHaveProperty("functionName", "matrixClientIntercepted");
+            expect(endFn.callCount).toBe(1);
+            expect(endFn.lastCall.args[0]).toBe("matrix_client_function_call");
+            expect(endFn.lastCall.args[1]).toHaveProperty("functionName", "matrixClientIntercepted");
         });
 
         it('should increment the successful counter on returning a result', async () => {
             const metrics = new Metrics();
-            simple.mock(metrics, "increment");
+            const incrementFn = simple.mock(metrics, "increment");
 
             const interceptedFn = simple.stub().callFn((i: number) => {
-                expect(metrics.increment.callCount).toBe(0);
+                expect(incrementFn.callCount).toBe(0);
                 return -1;
             });
 
             const interceptedClass = new InterceptedClass(metrics, interceptedFn);
             await interceptedClass.matrixClientIntercepted(1234).then(waitingPromise);
 
-            expect(metrics.increment.callCount).toBe(1);
-            expect(metrics.increment.lastCall.args[0]).toBe("matrix_client_successful_function_call");
-            expect(metrics.increment.lastCall.args[1]).toHaveProperty("functionName", "matrixClientIntercepted");
+            expect(incrementFn.callCount).toBe(1);
+            expect(incrementFn.lastCall.args[0]).toBe("matrix_client_successful_function_call");
+            expect(incrementFn.lastCall.args[1]).toHaveProperty("functionName", "matrixClientIntercepted");
         });
 
         it('should increment the failure counter on throwing', async () => {
             const metrics = new Metrics();
-            simple.mock(metrics, "increment");
+            const incrementFn = simple.mock(metrics, "increment");
 
             const interceptedFn = simple.stub().callFn((i: number) => {
-                expect(metrics.increment.callCount).toBe(0);
+                expect(incrementFn.callCount).toBe(0);
                 throw new Error("Bad things");
             });
 
             const interceptedClass = new InterceptedClass(metrics, interceptedFn);
             await interceptedClass.matrixClientIntercepted(1234).catch(waitingPromise);
 
-            expect(metrics.increment.callCount).toBe(1);
-            expect(metrics.increment.lastCall.args[0]).toBe("matrix_client_failed_function_call");
-            expect(metrics.increment.lastCall.args[1]).toHaveProperty("functionName", "matrixClientIntercepted");
+            expect(incrementFn.callCount).toBe(1);
+            expect(incrementFn.lastCall.args[0]).toBe("matrix_client_failed_function_call");
+            expect(incrementFn.lastCall.args[1]).toHaveProperty("functionName", "matrixClientIntercepted");
         });
     });
 
@@ -169,12 +168,12 @@ describe('decorators', () => {
 
         it('should call start on metrics with function name before calling intercepted method', async () => {
             const metrics = new Metrics();
-            simple.mock(metrics, "start");
+            const startFn = simple.mock(metrics, "start");
 
             const interceptedFn = simple.stub().callFn((i: number) => {
-                expect(metrics.start.callCount).toBe(1);
-                expect(metrics.start.lastCall.args[0]).toBe("identity_client_function_call");
-                expect(metrics.start.lastCall.args[1]).toHaveProperty("functionName", "identityClientIntercepted");
+                expect(startFn.callCount).toBe(1);
+                expect(startFn.lastCall.args[0]).toBe("identity_client_function_call");
+                expect(startFn.lastCall.args[1]).toHaveProperty("functionName", "identityClientIntercepted");
                 return -1;
             });
 
@@ -184,53 +183,53 @@ describe('decorators', () => {
 
         it('should call end on metrics with function name after calling intercepted method', async () => {
             const metrics = new Metrics();
-            simple.mock(metrics, "end");
+            const endFn = simple.mock(metrics, "end");
 
             const interceptedFn = simple.stub().callFn((i: number) => {
-                expect(metrics.end.callCount).toBe(0);
+                expect(endFn.callCount).toBe(0);
                 return -1;
             });
 
             const interceptedClass = new InterceptedClass(metrics, interceptedFn);
             await interceptedClass.identityClientIntercepted(1234).then(waitingPromise);
 
-            expect(metrics.end.callCount).toBe(1);
-            expect(metrics.end.lastCall.args[0]).toBe("identity_client_function_call");
-            expect(metrics.end.lastCall.args[1]).toHaveProperty("functionName", "identityClientIntercepted");
+            expect(endFn.callCount).toBe(1);
+            expect(endFn.lastCall.args[0]).toBe("identity_client_function_call");
+            expect(endFn.lastCall.args[1]).toHaveProperty("functionName", "identityClientIntercepted");
         });
 
         it('should increment the successful counter on returning a result', async () => {
             const metrics = new Metrics();
-            simple.mock(metrics, "increment");
+            const incrementFn = simple.mock(metrics, "increment");
 
             const interceptedFn = simple.stub().callFn((i: number) => {
-                expect(metrics.increment.callCount).toBe(0);
+                expect(incrementFn.callCount).toBe(0);
                 return -1;
             });
 
             const interceptedClass = new InterceptedClass(metrics, interceptedFn);
             await interceptedClass.identityClientIntercepted(1234).then(waitingPromise);
 
-            expect(metrics.increment.callCount).toBe(1);
-            expect(metrics.increment.lastCall.args[0]).toBe("identity_client_successful_function_call");
-            expect(metrics.increment.lastCall.args[1]).toHaveProperty("functionName", "identityClientIntercepted");
+            expect(incrementFn.callCount).toBe(1);
+            expect(incrementFn.lastCall.args[0]).toBe("identity_client_successful_function_call");
+            expect(incrementFn.lastCall.args[1]).toHaveProperty("functionName", "identityClientIntercepted");
         });
 
         it('should increment the failure counter on throwing', async () => {
             const metrics = new Metrics();
-            simple.mock(metrics, "increment");
+            const incrementFn = simple.mock(metrics, "increment");
 
             const interceptedFn = simple.stub().callFn((i: number) => {
-                expect(metrics.increment.callCount).toBe(0);
+                expect(incrementFn.callCount).toBe(0);
                 throw new Error("Bad things");
             });
 
             const interceptedClass = new InterceptedClass(metrics, interceptedFn);
             await interceptedClass.identityClientIntercepted(1234).catch(waitingPromise);
 
-            expect(metrics.increment.callCount).toBe(1);
-            expect(metrics.increment.lastCall.args[0]).toBe("identity_client_failed_function_call");
-            expect(metrics.increment.lastCall.args[1]).toHaveProperty("functionName", "identityClientIntercepted");
+            expect(incrementFn.callCount).toBe(1);
+            expect(incrementFn.lastCall.args[0]).toBe("identity_client_failed_function_call");
+            expect(incrementFn.lastCall.args[1]).toHaveProperty("functionName", "identityClientIntercepted");
         });
     });
 
@@ -268,12 +267,12 @@ describe('decorators', () => {
 
         it('should call start on metrics with function name before calling intercepted method', async () => {
             const metrics = new Metrics();
-            simple.mock(metrics, "start");
+            const startFn = simple.mock(metrics, "start");
 
             const interceptedFn = simple.stub().callFn((i: number) => {
-                expect(metrics.start.callCount).toBe(1);
-                expect(metrics.start.lastCall.args[0]).toBe("intent_function_call");
-                expect(metrics.start.lastCall.args[1]).toHaveProperty("functionName", "intentIntercepted");
+                expect(startFn.callCount).toBe(1);
+                expect(startFn.lastCall.args[0]).toBe("intent_function_call");
+                expect(startFn.lastCall.args[1]).toHaveProperty("functionName", "intentIntercepted");
                 return -1;
             });
 
@@ -283,53 +282,53 @@ describe('decorators', () => {
 
         it('should call end on metrics with function name after calling intercepted method', async () => {
             const metrics = new Metrics();
-            simple.mock(metrics, "end");
+            const endFn = simple.mock(metrics, "end");
 
             const interceptedFn = simple.stub().callFn((i: number) => {
-                expect(metrics.end.callCount).toBe(0);
+                expect(endFn.callCount).toBe(0);
                 return -1;
             });
 
             const interceptedClass = new InterceptedClass(metrics, interceptedFn);
             await interceptedClass.intentIntercepted(1234).then(waitingPromise);
 
-            expect(metrics.end.callCount).toBe(1);
-            expect(metrics.end.lastCall.args[0]).toBe("intent_function_call");
-            expect(metrics.end.lastCall.args[1]).toHaveProperty("functionName", "intentIntercepted");
+            expect(endFn.callCount).toBe(1);
+            expect(endFn.lastCall.args[0]).toBe("intent_function_call");
+            expect(endFn.lastCall.args[1]).toHaveProperty("functionName", "intentIntercepted");
         });
 
         it('should increment the successful counter on returning a result', async () => {
             const metrics = new Metrics();
-            simple.mock(metrics, "increment");
+            const incrementFn = simple.mock(metrics, "increment");
 
             const interceptedFn = simple.stub().callFn((i: number) => {
-                expect(metrics.increment.callCount).toBe(0);
+                expect(incrementFn.callCount).toBe(0);
                 return -1;
             });
 
             const interceptedClass = new InterceptedClass(metrics, interceptedFn);
             await interceptedClass.intentIntercepted(1234).then(waitingPromise);
 
-            expect(metrics.increment.callCount).toBe(1);
-            expect(metrics.increment.lastCall.args[0]).toBe("intent_successful_function_call");
-            expect(metrics.increment.lastCall.args[1]).toHaveProperty("functionName", "intentIntercepted");
+            expect(incrementFn.callCount).toBe(1);
+            expect(incrementFn.lastCall.args[0]).toBe("intent_successful_function_call");
+            expect(incrementFn.lastCall.args[1]).toHaveProperty("functionName", "intentIntercepted");
         });
 
         it('should increment the failure counter on throwing', async () => {
             const metrics = new Metrics();
-            simple.mock(metrics, "increment");
+            const incrementFn = simple.mock(metrics, "increment");
 
             const interceptedFn = simple.stub().callFn((i: number) => {
-                expect(metrics.increment.callCount).toBe(0);
+                expect(incrementFn.callCount).toBe(0);
                 throw new Error("Bad things");
             });
 
             const interceptedClass = new InterceptedClass(metrics, interceptedFn);
             await interceptedClass.intentIntercepted(1234).catch(waitingPromise);
 
-            expect(metrics.increment.callCount).toBe(1);
-            expect(metrics.increment.lastCall.args[0]).toBe("intent_failed_function_call");
-            expect(metrics.increment.lastCall.args[1]).toHaveProperty("functionName", "intentIntercepted");
+            expect(incrementFn.callCount).toBe(1);
+            expect(incrementFn.lastCall.args[0]).toBe("intent_failed_function_call");
+            expect(incrementFn.lastCall.args[1]).toHaveProperty("functionName", "intentIntercepted");
         });
     });
 });

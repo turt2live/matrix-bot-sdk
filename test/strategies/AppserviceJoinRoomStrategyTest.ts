@@ -1,5 +1,4 @@
 import { Appservice, AppserviceJoinRoomStrategy, IJoinRoomStrategy } from "../../src";
-import * as expect from "expect";
 import * as simple from "simple-mock";
 
 describe('AppserviceJoinRoomStrategy', () => {
@@ -33,13 +32,13 @@ describe('AppserviceJoinRoomStrategy', () => {
             expect(apiCall).toBeDefined();
             return Promise.resolve();
         });
-        const underlyingStrategy = <IJoinRoomStrategy>{joinRoom: underlyingSpy};
+        const underlyingStrategy = {joinRoom: underlyingSpy} as unknown as IJoinRoomStrategy;
 
         const strategy = new AppserviceJoinRoomStrategy(underlyingStrategy, appservice);
 
         const apiCallSpy = simple.stub().callFn((rid) => {
             expect(rid).toEqual(roomId);
-            return Promise.resolve();
+            return Promise.resolve("!void:example.org");
         });
 
         await strategy.joinRoom(roomId, userId, apiCallSpy);
@@ -87,7 +86,7 @@ describe('AppserviceJoinRoomStrategy', () => {
             expect(apiCall).toBeDefined();
             return Promise.resolve();
         });
-        const underlyingStrategy = <IJoinRoomStrategy>{joinRoom: underlyingSpy};
+        const underlyingStrategy = {joinRoom: underlyingSpy} as unknown as IJoinRoomStrategy;
 
         const strategy = new AppserviceJoinRoomStrategy(underlyingStrategy, appservice);
 
@@ -142,7 +141,7 @@ describe('AppserviceJoinRoomStrategy', () => {
             expect(apiCall).toBeDefined();
             return Promise.resolve();
         });
-        const underlyingStrategy = <IJoinRoomStrategy>{joinRoom: underlyingSpy};
+        const underlyingStrategy = {joinRoom: underlyingSpy} as unknown as IJoinRoomStrategy;
 
         const strategy = new AppserviceJoinRoomStrategy(underlyingStrategy, appservice);
 
@@ -198,7 +197,7 @@ describe('AppserviceJoinRoomStrategy', () => {
             expect(rid).toEqual(roomId);
             if (attempt++ === 0) {
                 throw new Error("Simulated failure");
-            } else return Promise.resolve();
+            } else return Promise.resolve("!void:example.org");
         });
 
         await strategy.joinRoom(roomId, userId, apiCallSpy);

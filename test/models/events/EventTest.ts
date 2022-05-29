@@ -1,5 +1,4 @@
 import { MatrixEvent } from "../../../src";
-import * as expect from "expect";
 
 export function createMinimalEvent(content: any = {hello: "world"}) {
     return {

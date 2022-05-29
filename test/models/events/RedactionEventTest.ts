@@ -1,4 +1,3 @@
-import * as expect from "expect";
 import { createMinimalEvent } from "./EventTest";
 import { RedactionEvent } from "../../../src";
 import { expectArrayEquals } from "../../TestUtils";
