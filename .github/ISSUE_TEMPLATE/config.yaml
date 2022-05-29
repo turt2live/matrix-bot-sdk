@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Community Support
+    url: "https://matrix.to/#/#bot-sdk:t2bot.io"
+    about: General support questions can be asked here.
+  - name: Security Policy
+    url: https://www.t2host.io/docs/legal/security-disclosure-policy-v1/
+    about: Learn more about our security disclosure policy.
