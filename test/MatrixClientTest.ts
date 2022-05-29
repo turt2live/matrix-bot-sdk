@@ -518,6 +518,27 @@ describe('MatrixClient', () => {
             http.flushAllExpected();
             await client.setPresenceStatus(presence, message);
         });
+
+        it('should not send status_msg if the parameter is omitted', async () => {
+            const {client, http, hsUrl} = createTestClient();
+
+            const userId = "@test:example.org";
+            const presence = "online";
+
+            client.getUserId = () => Promise.resolve(userId);
+
+            // noinspection TypeScriptValidateJSTypes
+            http.when("PUT", "/_matrix/client/r0/presence").respond(200, (path, obj) => {
+                expect(path).toEqual(`${hsUrl}/_matrix/client/r0/presence/${encodeURIComponent(userId)}/status`);
+                expect(obj).toEqual({
+                    presence: presence,
+                });
+                return {};
+            });
+
+            http.flushAllExpected();
+            await client.setPresenceStatus(presence);
+        });
     });
 
     describe('getRoomAccountData', () => {
