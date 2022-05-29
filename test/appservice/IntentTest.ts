@@ -170,9 +170,8 @@ describe('Intent', () => {
                 return {};
             });
 
-            http.flushAllExpected();
             const intent = new Intent(options, userId, appservice);
-            await intent.ensureRegistered();
+            await Promise.all([intent.ensureRegistered(), http.flushAllExpected()]);
             expect(isRegisteredSpy.callCount).toBe(1);
             expect(addRegisteredSpy.callCount).toBe(1);
         });
@@ -211,9 +210,8 @@ describe('Intent', () => {
                 return {errcode: "M_USER_IN_USE", error: "User ID already in use"};
             });
 
-            http.flushAllExpected();
             const intent = new Intent(options, userId, appservice);
-            await intent.ensureRegistered();
+            await Promise.all([intent.ensureRegistered(), http.flushAllExpected()]);
             expect(isRegisteredSpy.callCount).toBe(1);
             expect(addRegisteredSpy.callCount).toBe(1);
         });
@@ -251,7 +249,7 @@ describe('Intent', () => {
                 return {errcode: "M_UNKNOWN", error: "It broke"};
             });
 
-            http.flushAllExpected();
+            const flush = http.flushAllExpected();
             const intent = new Intent(options, userId, appservice);
             try {
                 await intent.ensureRegistered();
@@ -263,6 +261,8 @@ describe('Intent', () => {
             }
             expect(isRegisteredSpy.callCount).toBe(1);
             expect(addRegisteredSpy.callCount).toBe(0);
+
+            await flush;
         });
     });
 

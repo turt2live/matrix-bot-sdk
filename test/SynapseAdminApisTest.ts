@@ -37,8 +37,7 @@ describe('SynapseAdminApis', () => {
                 return response;
             });
 
-            http.flushAllExpected();
-            const result = await client.isAdmin(userId);
+            const [result] = await Promise.all([client.isAdmin(userId), http.flushAllExpected()]);
             expect(result).toEqual(response.admin);
         });
 
@@ -53,8 +52,7 @@ describe('SynapseAdminApis', () => {
                 return response;
             });
 
-            http.flushAllExpected();
-            const result = await client.isAdmin(userId);
+            const [result] = await Promise.all([client.isAdmin(userId), http.flushAllExpected()]);
             expect(result).toEqual(response.admin);
         });
     });
@@ -74,8 +72,7 @@ describe('SynapseAdminApis', () => {
                 return response;
             });
 
-            http.flushAllExpected();
-            const result = await client.isSelfAdmin();
+            const [result] = await Promise.all([client.isSelfAdmin(), http.flushAllExpected()]);
             expect(result).toEqual(response.admin);
         });
 
@@ -92,8 +89,7 @@ describe('SynapseAdminApis', () => {
                 return {errcode: "M_FORBIDDEN", error: "You are not a server admin"};
             });
 
-            http.flushAllExpected();
-            const result = await client.isSelfAdmin();
+            const [result] = await Promise.all([client.isSelfAdmin(), http.flushAllExpected()]);
             expect(result).toEqual(false);
         });
     });
@@ -119,8 +115,7 @@ describe('SynapseAdminApis', () => {
                 return response;
             });
 
-            http.flushAllExpected();
-            const result = await client.getUser(userId);
+            const [result] = await Promise.all([client.getUser(userId), http.flushAllExpected()]);
             expect(result).toEqual(response);
         });
 
@@ -134,9 +129,8 @@ describe('SynapseAdminApis', () => {
                 return {error: "User not found", errcode: "M_NOT_FOUND"};
             });
 
-            http.flushAllExpected();
             try {
-                await client.getUser(userId);
+                await Promise.all([client.getUser(userId), http.flushAllExpected()]);
             } catch (ex) {
                 expect(ex.statusCode).toBe(404);
                 return;
@@ -172,8 +166,7 @@ describe('SynapseAdminApis', () => {
                 return response;
             });
 
-            http.flushAllExpected();
-            const result = await client.upsertUser(userId, request);
+            const [result] = await Promise.all([client.upsertUser(userId, request), http.flushAllExpected()]);
             expect(result).toEqual(response);
         });
     });
@@ -211,10 +204,9 @@ describe('SynapseAdminApis', () => {
                 return response;
             });
 
-            http.flushAllExpected();
-            const result = await client.listUsers(
+            const [result] = await Promise.all([client.listUsers(
                 request.from, request.limit, request.name, request.guests, request.deactivated
-            );
+            ), http.flushAllExpected()]);
             expect(result).toEqual(response);
         });
     });
@@ -262,7 +254,7 @@ describe('SynapseAdminApis', () => {
                 }
             });
             const iterable = await client.listAllUsers({ name: "bar", guests: true, deactivated: false, limit: 1});
-            http.flushAllExpected();
+            const flush = http.flushAllExpected();
             const resultUser1 = await iterable.next();
             expect(resultUser1).toEqual({done: false, value: user1});
 
@@ -277,6 +269,8 @@ describe('SynapseAdminApis', () => {
             const resultUser2 = await iterable.next();
             expect(resultUser2).toEqual({done: false, value: user2});
             expect(await iterable.next()).toEqual({done: true});
+
+            await flush;
         });
     });
 
@@ -321,10 +315,9 @@ describe('SynapseAdminApis', () => {
                 return response;
             });
 
-            http.flushAllExpected();
-            const result = await client.listRooms(
+            const [result] = await Promise.all([client.listRooms(
                 request.search_term, request.from, request.limit, request.order_by, request.dir === 'b',
-            );
+            ), http.flushAllExpected()]);
             expect(result).toEqual(response);
         });
 
@@ -344,8 +337,7 @@ describe('SynapseAdminApis', () => {
                     return {state};
                 });
 
-                http.flushAllExpected();
-                const result = await client.getRoomState(roomId);
+                const [result] = await Promise.all([client.getRoomState(roomId), http.flushAllExpected()]);
                 expect(result).toMatchObject(state);
             });
         });
@@ -362,8 +354,7 @@ describe('SynapseAdminApis', () => {
                     return {};
                 });
 
-                http.flushAllExpected();
-                await client.deleteRoom(roomId);
+                await Promise.all([client.deleteRoom(roomId), http.flushAllExpected()]);
             });
         });
 
@@ -405,8 +396,7 @@ describe('SynapseAdminApis', () => {
                     return { results: state };
                 });
 
-                http.flushAllExpected();
-                const result = await client.getDeleteRoomState(roomId);
+                const [result] = await Promise.all([client.getDeleteRoomState(roomId), http.flushAllExpected()]);
                 expect(result).toMatchObject(state);
             });
         });
@@ -424,8 +414,7 @@ describe('SynapseAdminApis', () => {
                     return {registration_tokens: tokens};
                 });
 
-                http.flushAllExpected();
-                const result = await client.listRegistrationTokens();
+                const [result] = await Promise.all([client.listRegistrationTokens(), http.flushAllExpected()]);
                 expect(result).toEqual(tokens);
             });
         });
@@ -449,12 +438,15 @@ describe('SynapseAdminApis', () => {
                     }
                 });
 
-                http.flushAllExpected();
+                const flush = http.flushAllExpected();
+
                 const result = await client.getRegistrationToken(token.token);
                 expect(result).toEqual(token);
 
                 const resultNull = await client.getRegistrationToken("not-a-token");
                 expect(resultNull).toEqual(null);
+
+                await flush;
             });
         });
 
@@ -475,8 +467,7 @@ describe('SynapseAdminApis', () => {
                     return responseToken;
                 });
 
-                http.flushAllExpected();
-                const result = await client.createRegistrationToken(options);
+                const [result] = await Promise.all([client.createRegistrationToken(options), http.flushAllExpected()]);
                 expect(result).toEqual(responseToken);
             });
         });
@@ -498,8 +489,7 @@ describe('SynapseAdminApis', () => {
                     return responseToken;
                 });
 
-                http.flushAllExpected();
-                const result = await client.updateRegistrationToken("foo", options);
+                const [result] = await Promise.all([client.updateRegistrationToken("foo", options), http.flushAllExpected()]);
                 expect(result).toEqual(responseToken);
             });
         });
@@ -512,8 +502,7 @@ describe('SynapseAdminApis', () => {
                     return {};
                 });
 
-                http.flushAllExpected();
-                await client.deleteRegistrationToken("foo");
+                await Promise.all([client.deleteRegistrationToken("foo"), http.flushAllExpected()]);
             });
         });
     });

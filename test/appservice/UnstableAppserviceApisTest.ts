@@ -42,8 +42,10 @@ describe('UnstableAppserviceApis', () => {
                 return expectedResponse;
             });
 
-            http.flushAllExpected();
-            const result = await client.sendHistoricalEventBatch(roomId, prevEventId, events, stateEvents, prevChunkId);
+            const [result] = await Promise.all([
+                client.sendHistoricalEventBatch(roomId, prevEventId, events, stateEvents, prevChunkId),
+                http.flushAllExpected(),
+            ]);
             expect(result).toEqual(expectedResponse);
         });
     });
@@ -69,8 +71,7 @@ describe('UnstableAppserviceApis', () => {
                 return {event_id: eventId};
             });
 
-            http.flushAllExpected();
-            const result = await client.sendEventWithTimestamp(roomId, eventType, eventContent, ts);
+            const [result] = await Promise.all([client.sendEventWithTimestamp(roomId, eventType, eventContent, ts), http.flushAllExpected()]);
             expect(result).toEqual(eventId);
         });
     });
@@ -98,8 +99,7 @@ describe('UnstableAppserviceApis', () => {
                 return {event_id: eventId};
             });
 
-            http.flushAllExpected();
-            const result = await client.sendStateEventWithTimestamp(roomId, eventType, stateKey, eventContent, ts);
+            const [result] = await Promise.all([client.sendStateEventWithTimestamp(roomId, eventType, stateKey, eventContent, ts), http.flushAllExpected()]);
             expect(result).toEqual(eventId);
         });
     });

@@ -25,8 +25,7 @@ describe('UnstableApis', () => {
                 return {aliases: aliases};
             });
 
-            http.flushAllExpected();
-            const result = await client.getRoomAliases(roomId);
+            const [result] = await Promise.all([client.getRoomAliases(roomId), http.flushAllExpected()]);
             expect(result).toMatchObject(aliases);
         });
     });
@@ -43,8 +42,7 @@ describe('UnstableApis', () => {
                 return {group_id: groupId};
             });
 
-            http.flushAllExpected();
-            const result = await client.createGroup(localpart);
+            const [result] = await Promise.all([client.createGroup(localpart), http.flushAllExpected()]);
             expect(result).toEqual(groupId);
         });
     });
@@ -63,8 +61,7 @@ describe('UnstableApis', () => {
                 return {state: state};
             });
 
-            http.flushAllExpected();
-            const result = await client.inviteUserToGroup(groupId, userId);
+            const [result] = await Promise.all([client.inviteUserToGroup(groupId, userId), http.flushAllExpected()]);
             expect(result).toEqual(state);
         });
     });
@@ -82,8 +79,7 @@ describe('UnstableApis', () => {
                 return {};
             });
 
-            http.flushAllExpected();
-            const result = await client.kickUserFromGroup(groupId, userId);
+            const [result] = await Promise.all([client.kickUserFromGroup(groupId, userId), http.flushAllExpected()]);
             expect(result).toMatchObject({});
         });
     });
@@ -106,8 +102,7 @@ describe('UnstableApis', () => {
                 return {};
             });
 
-            http.flushAllExpected();
-            await client.setGroupProfile(groupId, profile);
+            await Promise.all([client.setGroupProfile(groupId, profile), http.flushAllExpected()]);
         });
     });
 
@@ -124,8 +119,7 @@ describe('UnstableApis', () => {
                 return {};
             });
 
-            http.flushAllExpected();
-            await client.setGroupJoinPolicy(groupId, policy);
+            await Promise.all([client.setGroupJoinPolicy(groupId, policy), http.flushAllExpected()]);
         });
     });
 
@@ -142,8 +136,7 @@ describe('UnstableApis', () => {
                 return {};
             });
 
-            http.flushAllExpected();
-            const result = await client.addRoomToGroup(groupId, roomId);
+            const [result] = await Promise.all([client.addRoomToGroup(groupId, roomId), http.flushAllExpected()]);
             expect(result).toMatchObject({});
         });
     });
@@ -161,8 +154,7 @@ describe('UnstableApis', () => {
                 return {};
             });
 
-            http.flushAllExpected();
-            const result = await client.updateGroupRoomVisibility(groupId, roomId, false);
+            const [result] = await Promise.all([client.updateGroupRoomVisibility(groupId, roomId, false), http.flushAllExpected()]);
             expect(result).toMatchObject({});
         });
 
@@ -178,8 +170,7 @@ describe('UnstableApis', () => {
                 return {};
             });
 
-            http.flushAllExpected();
-            const result = await client.updateGroupRoomVisibility(groupId, roomId, true);
+            const [result] = await Promise.all([client.updateGroupRoomVisibility(groupId, roomId, true), http.flushAllExpected()]);
             expect(result).toMatchObject({});
         });
     });
@@ -196,8 +187,7 @@ describe('UnstableApis', () => {
                 return {};
             });
 
-            http.flushAllExpected();
-            const result = await client.removeRoomFromGroup(groupId, roomId);
+            const [result] = await Promise.all([client.removeRoomFromGroup(groupId, roomId), http.flushAllExpected()]);
             expect(result).toMatchObject({});
         });
     });
@@ -218,8 +208,7 @@ describe('UnstableApis', () => {
                 };
             });
 
-            http.flushAllExpected();
-            const result = await client.getGroupProfile(groupId);
+            const [result] = await Promise.all([client.getGroupProfile(groupId), http.flushAllExpected()]);
             expect(result.name).toEqual("Test Group");
             expect(result.avatar_url).toEqual("mxc://some/avatar");
             expect(result.short_description).toEqual("Short description of group");
@@ -245,8 +234,7 @@ describe('UnstableApis', () => {
                 };
             });
 
-            http.flushAllExpected();
-            const result = await client.getGroupUsers(groupId);
+            const [result] = await Promise.all([client.getGroupUsers(groupId), http.flushAllExpected()]);
             expect(result.length).toEqual(1);
             expect(result[0].user_id).toEqual(joinedUser);
         });
@@ -270,8 +258,7 @@ describe('UnstableApis', () => {
                 };
             });
 
-            http.flushAllExpected();
-            const result = await client.getGroupInvitedUsers(groupId);
+            const [result] = await Promise.all([client.getGroupInvitedUsers(groupId), http.flushAllExpected()]);
             expect(result.length).toEqual(1);
             expect(result[0].user_id).toEqual(invitedUser);
         });
@@ -295,8 +282,7 @@ describe('UnstableApis', () => {
                 };
             });
 
-            http.flushAllExpected();
-            const result = await client.getGroupRooms(groupId);
+            const [result] = await Promise.all([client.getGroupRooms(groupId), http.flushAllExpected()]);
             expect(result.length).toEqual(1);
             expect(result[0].room_id).toEqual(roomId);
         });
@@ -313,8 +299,7 @@ describe('UnstableApis', () => {
                 return {};
             });
 
-            http.flushAllExpected();
-            const result = await client.acceptGroupInvite(groupId);
+            const [result] = await Promise.all([client.acceptGroupInvite(groupId), http.flushAllExpected()]);
             expect(result).toMatchObject({});
         });
     });
@@ -330,8 +315,7 @@ describe('UnstableApis', () => {
                 return {};
             });
 
-            http.flushAllExpected();
-            const result = await client.joinGroup(groupId);
+            const [result] = await Promise.all([client.joinGroup(groupId), http.flushAllExpected()]);
             expect(result).toMatchObject({});
         });
     });
@@ -347,8 +331,7 @@ describe('UnstableApis', () => {
                 return {};
             });
 
-            http.flushAllExpected();
-            const result = await client.leaveGroup(groupId);
+            const [result] = await Promise.all([client.leaveGroup(groupId), http.flushAllExpected()]);
             expect(result).toMatchObject({});
         });
     });
@@ -365,8 +348,7 @@ describe('UnstableApis', () => {
                 return {};
             });
 
-            http.flushAllExpected();
-            const result = await client.setGroupPublicity(groupId, true);
+            const [result] = await Promise.all([client.setGroupPublicity(groupId, true), http.flushAllExpected()]);
             expect(result).toMatchObject({});
         });
     });
@@ -383,8 +365,7 @@ describe('UnstableApis', () => {
                 };
             });
 
-            http.flushAllExpected();
-            const result = await client.getJoinedGroups();
+            const [result] = await Promise.all([client.getJoinedGroups(), http.flushAllExpected()]);
             expect(result.length).toEqual(1);
             expect(result[0]).toEqual(groupId);
         });
@@ -404,8 +385,7 @@ describe('UnstableApis', () => {
                 };
             });
 
-            http.flushAllExpected();
-            const result = await client.getPublicisedGroups(userId);
+            const [result] = await Promise.all([client.getPublicisedGroups(userId), http.flushAllExpected()]);
             expect(result.length).toEqual(1);
             expect(result[0]).toEqual(groupId);
         });
@@ -434,8 +414,7 @@ describe('UnstableApis', () => {
                 return {event_id: newEventId};
             });
 
-            http.flushAllExpected();
-            const result = await client.addReactionToEvent(roomId, originalEventId, emoji);
+            const [result] = await Promise.all([client.addReactionToEvent(roomId, originalEventId, emoji), http.flushAllExpected()]);
             expect(result).toEqual(newEventId);
         });
     });

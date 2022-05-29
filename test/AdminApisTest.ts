@@ -38,9 +38,9 @@ describe('AdminApis', () => {
                 return response;
             });
 
-            http.flushAllExpected();
-            const result = await client.whoisUser(userId);
-            expect(result).toMatchObject(<any>response);
+            const result = client.whoisUser(userId);
+            await http.flushAllExpected();
+            expect(await result).toMatchObject(<any>response);
         });
     });
 });
