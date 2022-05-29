@@ -4,7 +4,7 @@ import { createTestClient } from "../TestUtils";
 
 describe('AutojoinUpgradedRoomsMixin', () => {
     it('should join rooms for regular upgrades', () => {
-        const {client} = createTestClient();
+        const { client } = createTestClient();
 
         const senderServer = "localhost:8448";
         const roomId = "!test:example.org";
@@ -38,7 +38,7 @@ describe('AutojoinUpgradedRoomsMixin', () => {
                 hs_token: "",
                 sender_localpart: "_bot_",
                 namespaces: {
-                    users: [{exclusive: true, regex: "@_prefix_.*:.+"}],
+                    users: [{ exclusive: true, regex: "@_prefix_.*:.+" }],
                     rooms: [],
                     aliases: [],
                 },

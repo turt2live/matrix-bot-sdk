@@ -156,7 +156,7 @@ describe('RoomTracker', () => {
     describe('getRoomCryptoConfig', () => {
         it('should return the config as-is', async () => {
             const roomId = "!a:example.org";
-            const content: Partial<EncryptionEventContent> = {algorithm: RoomEncryptionAlgorithm.MegolmV1AesSha2};
+            const content: Partial<EncryptionEventContent> = { algorithm: RoomEncryptionAlgorithm.MegolmV1AesSha2 };
 
             const { client } = createTestClient(null, "@user:example.org", true);
 
@@ -175,7 +175,7 @@ describe('RoomTracker', () => {
 
         it('should queue unknown rooms', async () => {
             const roomId = "!a:example.org";
-            const content: Partial<EncryptionEventContent> = {algorithm: RoomEncryptionAlgorithm.MegolmV1AesSha2};
+            const content: Partial<EncryptionEventContent> = { algorithm: RoomEncryptionAlgorithm.MegolmV1AesSha2 };
 
             const { client } = createTestClient(null, "@user:example.org", true);
 
@@ -220,7 +220,7 @@ describe('RoomTracker', () => {
             const config = await tracker.getRoomCryptoConfig(roomId);
             expect(readSpy.callCount).toEqual(2);
             expect(queueSpy.callCount).toEqual(1);
-            expect(config).toMatchObject({ });
+            expect(config).toMatchObject({});
         });
     });
 });

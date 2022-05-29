@@ -6,7 +6,7 @@ import { createTestClient, TEST_DEVICE_ID } from "./TestUtils";
 describe('DMs', () => {
     it('should update the cache when an sync requests happen', async () => {
         const selfUserId = "@self:example.org";
-        const {client, http} = createTestClient(null, selfUserId);
+        const { client, http } = createTestClient(null, selfUserId);
         const dms = client.dms;
 
         const dmRoomId1 = "!dm:example.org";
@@ -82,7 +82,7 @@ describe('DMs', () => {
 
     it('should update from account data when requested', async () => {
         const selfUserId = "@self:example.org";
-        const {client, http} = createTestClient(null, selfUserId);
+        const { client, http } = createTestClient(null, selfUserId);
         const dms = client.dms;
 
         const dmRoomId = "!dm:example.org";
@@ -102,7 +102,7 @@ describe('DMs', () => {
 
     it('should not fail to update when the account data is missing/fails', async () => {
         const selfUserId = "@self:example.org";
-        const {client, http} = createTestClient(null, selfUserId);
+        const { client, http } = createTestClient(null, selfUserId);
         const dms = client.dms;
 
         const dmRoomId = "!dm:example.org";
@@ -117,7 +117,7 @@ describe('DMs', () => {
 
     it('should create a DM if one does not exist', async () => {
         const selfUserId = "@self:example.org";
-        const {client, http} = createTestClient(null, selfUserId);
+        const { client, http } = createTestClient(null, selfUserId);
         const dms = client.dms;
 
         const dmRoomId = "!dm:example.org";
@@ -132,7 +132,7 @@ describe('DMs', () => {
                 initial_state: [],
             });
 
-            return {room_id: dmRoomId};
+            return { room_id: dmRoomId };
         });
 
         // noinspection TypeScriptValidateJSTypes
@@ -155,7 +155,7 @@ describe('DMs', () => {
 
     it('should call the optional create room function when provided', async () => {
         const selfUserId = "@self:example.org";
-        const {client, http} = createTestClient(null, selfUserId);
+        const { client, http } = createTestClient(null, selfUserId);
         const dms = client.dms;
 
         const dmRoomId = "!dm:example.org";
@@ -187,7 +187,7 @@ describe('DMs', () => {
 
     it('should try to patch up DMs when a DM is potentially known', async () => {
         const selfUserId = "@self:example.org";
-        const {client, http} = createTestClient(null, selfUserId);
+        const { client, http } = createTestClient(null, selfUserId);
         const dms = client.dms;
 
         const dmRoomId = "!dm:example.org";
@@ -270,7 +270,7 @@ describe('DMs', () => {
 
     it('should use the cache if a DM already exists', async () => {
         const selfUserId = "@self:example.org";
-        const {client, http} = createTestClient(null, selfUserId);
+        const { client, http } = createTestClient(null, selfUserId);
         const dms = client.dms;
 
         // Stop calls to `/members`
@@ -299,7 +299,7 @@ describe('DMs', () => {
 
     it('should create an encrypted DM if supported', async () => {
         const selfUserId = "@self:example.org";
-        const {client, http} = createTestClient(null, selfUserId, true);
+        const { client, http } = createTestClient(null, selfUserId, true);
         const dms = client.dms;
 
         const dmRoomId = "!dm:example.org";
@@ -336,11 +336,11 @@ describe('DMs', () => {
                 initial_state: [{
                     type: "m.room.encryption",
                     state_key: "",
-                    content: {algorithm: EncryptionAlgorithm.MegolmV1AesSha2},
+                    content: { algorithm: EncryptionAlgorithm.MegolmV1AesSha2 },
                 }],
             });
 
-            return {room_id: dmRoomId};
+            return { room_id: dmRoomId };
         });
 
         // noinspection TypeScriptValidateJSTypes
@@ -363,7 +363,7 @@ describe('DMs', () => {
 
     it('should create an unencrypted DM when the target user has no devices', async () => {
         const selfUserId = "@self:example.org";
-        const {client, http} = createTestClient(null, selfUserId, true);
+        const { client, http } = createTestClient(null, selfUserId, true);
         const dms = client.dms;
 
         const dmRoomId = "!dm:example.org";
@@ -392,7 +392,7 @@ describe('DMs', () => {
                 initial_state: [],
             });
 
-            return {room_id: dmRoomId};
+            return { room_id: dmRoomId };
         });
 
         // noinspection TypeScriptValidateJSTypes

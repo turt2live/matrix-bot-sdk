@@ -5,7 +5,7 @@ import { createTestClient } from "../TestUtils";
 describe('RichRepliesPreprocessor', () => {
     it('should only process room events', async () => {
         const processor = new RichRepliesPreprocessor();
-        const {client} = createTestClient();
+        const { client } = createTestClient();
         const originalEventId = "$original:example.org";
         const originalUserId = "@alice:example.org";
         const originalPlainText = "Hello world, this is text";
@@ -86,7 +86,7 @@ describe('RichRepliesPreprocessor', () => {
     });
 
     it('should parse single-line events', async () => {
-        const {client} = createTestClient();
+        const { client } = createTestClient();
 
         const originalEventId = "$original:example.org";
         const originalUserId = "@alice:example.org";
@@ -133,7 +133,7 @@ describe('RichRepliesPreprocessor', () => {
     });
 
     it('should parse multi-line events', async () => {
-        const {client} = createTestClient();
+        const { client } = createTestClient();
 
         const originalEventId = "$original:example.org";
         const originalUserId = "@alice:example.org";
@@ -187,9 +187,9 @@ describe('RichRepliesPreprocessor', () => {
     });
 
     it('should fetch the real message when instructed', async () => {
-        const {client} = createTestClient();
+        const { client } = createTestClient();
 
-        const realEvent = {hello: "world"};
+        const realEvent = { hello: "world" };
 
         const originalEventId = "$original:example.org";
         const originalUserId = "@alice:example.org";
@@ -235,7 +235,7 @@ describe('RichRepliesPreprocessor', () => {
     });
 
     it('should parse MSC3676 replies', async () => {
-        const {client} = createTestClient();
+        const { client } = createTestClient();
 
         const event = {
             content: {

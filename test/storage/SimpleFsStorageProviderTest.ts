@@ -8,12 +8,12 @@ function createSimpleFsStorageProvider(inMemory = false, maxMemTransactions = 20
     const writeProvider = new SimpleFsStorageProvider(tmpFile.name, inMemory, maxMemTransactions);
     const readProviderFn = () => new SimpleFsStorageProvider(tmpFile.name, inMemory, maxMemTransactions);
 
-    return {tmpFile, writeProvider, readProviderFn};
+    return { tmpFile, writeProvider, readProviderFn };
 }
 
 describe('SimpleFsStorageProvider', () => {
     it('should return the right sync token', async () => {
-        const {writeProvider, readProviderFn} = createSimpleFsStorageProvider();
+        const { writeProvider, readProviderFn } = createSimpleFsStorageProvider();
 
         const value = "testing";
         expect(await writeProvider.getSyncToken()).toBeFalsy();
@@ -23,9 +23,9 @@ describe('SimpleFsStorageProvider', () => {
     });
 
     it('should return the right filter object', async () => {
-        const {writeProvider, readProviderFn} = createSimpleFsStorageProvider();
+        const { writeProvider, readProviderFn } = createSimpleFsStorageProvider();
 
-        const value: IFilterInfo = {id: 12, filter: {hello: "world"}};
+        const value: IFilterInfo = { id: 12, filter: { hello: "world" } };
         expect(await writeProvider.getFilter()).toBeFalsy();
         await writeProvider.setFilter(value);
         expect(await writeProvider.getFilter()).toMatchObject(<any>value);
@@ -33,7 +33,7 @@ describe('SimpleFsStorageProvider', () => {
     });
 
     it('should track registered users', async () => {
-        const {writeProvider, readProviderFn} = createSimpleFsStorageProvider();
+        const { writeProvider, readProviderFn } = createSimpleFsStorageProvider();
 
         const userIdA = "@first:example.org";
         const userIdB = "@second:example.org";
@@ -58,7 +58,7 @@ describe('SimpleFsStorageProvider', () => {
     });
 
     it('should track completed transactions', async () => {
-        const {writeProvider, readProviderFn} = createSimpleFsStorageProvider();
+        const { writeProvider, readProviderFn } = createSimpleFsStorageProvider();
 
         const txnA = "@first:example.org";
         const txnB = "@second:example.org";
@@ -84,7 +84,7 @@ describe('SimpleFsStorageProvider', () => {
 
     it('should track a limited number of completed transactions in memory', async () => {
         const maxTransactions = 2;
-        const {writeProvider, readProviderFn} = createSimpleFsStorageProvider(true, maxTransactions);
+        const { writeProvider, readProviderFn } = createSimpleFsStorageProvider(true, maxTransactions);
 
         const txnA = "@first:example.org";
         const txnB = "@second:example.org";
@@ -127,7 +127,7 @@ describe('SimpleFsStorageProvider', () => {
     });
 
     it('should track arbitrary key value pairs', async () => {
-        const {writeProvider, readProviderFn} = createSimpleFsStorageProvider();
+        const { writeProvider, readProviderFn } = createSimpleFsStorageProvider();
 
         const key = "test";
         const value = "testing";
@@ -140,7 +140,7 @@ describe('SimpleFsStorageProvider', () => {
 
     describe('namespacing', () => {
         it('should return the right sync token', async () => {
-            const {writeProvider, readProviderFn} = createSimpleFsStorageProvider();
+            const { writeProvider, readProviderFn } = createSimpleFsStorageProvider();
 
             const value = "testing";
             const namespace = "@user:example.org";
@@ -158,9 +158,9 @@ describe('SimpleFsStorageProvider', () => {
         });
 
         it('should return the right filter object', async () => {
-            const {writeProvider, readProviderFn} = createSimpleFsStorageProvider();
+            const { writeProvider, readProviderFn } = createSimpleFsStorageProvider();
 
-            const value: IFilterInfo = {id: 12, filter: {hello: "world"}};
+            const value: IFilterInfo = { id: 12, filter: { hello: "world" } };
             const namespace = "@user:example.org";
 
             const nsWriter = writeProvider.storageForUser(namespace);

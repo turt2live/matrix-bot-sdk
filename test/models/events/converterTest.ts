@@ -1,14 +1,14 @@
 import {
+    MembershipEvent,
     MessageEvent,
     MessageEventContent,
     RoomEvent,
     RoomEventContent,
     StateEvent,
-    wrapRoomEvent
+    wrapRoomEvent,
 } from "../../../src";
 import { createMinimalEvent } from "./EventTest";
 import { expectInstanceOf } from "../../TestUtils";
-import { MembershipEvent } from "../../../src";
 
 describe("Event Converter", () => {
     it("should return generic room events", () => {
@@ -27,7 +27,7 @@ describe("Event Converter", () => {
     });
 
     it("should return membership events", () => {
-        const ev = createMinimalEvent({membership: "join"});
+        const ev = createMinimalEvent({ membership: "join" });
         ev['state_key'] = 'test';
         ev['type'] = 'm.room.member';
         const obj = <MembershipEvent>wrapRoomEvent(ev);
@@ -36,7 +36,7 @@ describe("Event Converter", () => {
     });
 
     it("should return message events", () => {
-        const ev = createMinimalEvent({msgtype: "m.text"});
+        const ev = createMinimalEvent({ msgtype: "m.text" });
         ev['type'] = 'm.room.message';
         const obj = <MessageEvent<MessageEventContent>>wrapRoomEvent(ev);
         expect(obj.messageType).toEqual(ev['content']['msgtype']);

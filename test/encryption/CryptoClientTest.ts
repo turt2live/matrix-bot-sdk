@@ -396,13 +396,13 @@ describe('CryptoClient', () => {
                 k: "l3OtQ3IJzfJa85j2WMsqNu7J--C-I1hzPxFvinR48mM",
                 key_ops: [
                     "encrypt",
-                    "decrypt"
+                    "decrypt",
                 ],
-                kty: "oct"
+                kty: "oct",
             },
             iv: "KJQOebQS1wwAAAAAAAAAAA",
             hashes: {
-                sha256: "Qe4YzmVoPaEcLQeZwFZ4iMp/dlgeFph6mi5DmCaCOzg"
+                sha256: "Qe4YzmVoPaEcLQeZwFZ4iMp/dlgeFph6mi5DmCaCOzg",
             },
             url: "mxc://localhost/uiWuISEVWixompuiiYyUoGrx",
         };
@@ -449,7 +449,7 @@ describe('CryptoClient', () => {
 
             const downloadSpy = simple.stub().callFn(async (u) => {
                 expect(u).toEqual(mxc);
-                return {data: encrypted.buffer, contentType: "application/octet-stream"};
+                return { data: encrypted.buffer, contentType: "application/octet-stream" };
             });
             client.downloadContent = downloadSpy;
 
@@ -466,7 +466,7 @@ describe('CryptoClient', () => {
 
             const downloadSpy = simple.stub().callFn(async (u) => {
                 expect(u).toEqual(testFile.url);
-                return {data: Buffer.from(mediaFileContents), contentType: "application/octet-stream"};
+                return { data: Buffer.from(mediaFileContents), contentType: "application/octet-stream" };
             });
             client.downloadContent = downloadSpy;
 

@@ -55,7 +55,7 @@ describe('Metrics', () => {
 
     it('should track time series metrics', async () => {
         const metrics = new Metrics();
-        const context = <IMetricContext>{uniqueId: "test1234", hello: "world"};
+        const context = <IMetricContext>{ uniqueId: "test1234", hello: "world" };
         const metricName = "test_metric";
         const tolerance = 50;
         const delayMs = 200;
@@ -82,7 +82,7 @@ describe('Metrics', () => {
     it('should track time series metrics with parent', async () => {
         const parentMetrics = new Metrics();
         const metrics = new Metrics(parentMetrics);
-        const context = <IMetricContext>{uniqueId: "test1234", hello: "world"};
+        const context = <IMetricContext>{ uniqueId: "test1234", hello: "world" };
         const metricName = "test_metric";
         const tolerance = 50;
         const delayMs = 200;
@@ -121,7 +121,7 @@ describe('Metrics', () => {
     describe('increment', () => {
         it('should increment', async () => {
             const metrics = new Metrics();
-            const context = <IMetricContext>{uniqueId: "test1234", hello: "world"};
+            const context = <IMetricContext>{ uniqueId: "test1234", hello: "world" };
             const metricName = "test_metric";
             const amount = 15;
 
@@ -142,7 +142,7 @@ describe('Metrics', () => {
         it('should increment with parent', async () => {
             const parentMetrics = new Metrics();
             const metrics = new Metrics(parentMetrics);
-            const context = <IMetricContext>{uniqueId: "test1234", hello: "world"};
+            const context = <IMetricContext>{ uniqueId: "test1234", hello: "world" };
             const metricName = "test_metric";
             const amount = 15;
 
@@ -175,7 +175,7 @@ describe('Metrics', () => {
     describe('decrement', () => {
         it('should decrement', async () => {
             const metrics = new Metrics();
-            const context = <IMetricContext>{uniqueId: "test1234", hello: "world"};
+            const context = <IMetricContext>{ uniqueId: "test1234", hello: "world" };
             const metricName = "test_metric";
             const amount = 15;
 
@@ -196,7 +196,7 @@ describe('Metrics', () => {
         it('should decrement with parent', async () => {
             const parentMetrics = new Metrics();
             const metrics = new Metrics(parentMetrics);
-            const context = <IMetricContext>{uniqueId: "test1234", hello: "world"};
+            const context = <IMetricContext>{ uniqueId: "test1234", hello: "world" };
             const metricName = "test_metric";
             const amount = 15;
 
@@ -229,7 +229,7 @@ describe('Metrics', () => {
     describe('reset', () => {
         it('should reset', async () => {
             const metrics = new Metrics();
-            const context = <IMetricContext>{uniqueId: "test1234", hello: "world"};
+            const context = <IMetricContext>{ uniqueId: "test1234", hello: "world" };
             const metricName = "test_metric";
 
             const listener = createTestMetricListener(metricName, context, (i: number) => {
@@ -249,7 +249,7 @@ describe('Metrics', () => {
         it('should reset with parent', async () => {
             const parentMetrics = new Metrics();
             const metrics = new Metrics(parentMetrics);
-            const context = <IMetricContext>{uniqueId: "test1234", hello: "world"};
+            const context = <IMetricContext>{ uniqueId: "test1234", hello: "world" };
             const metricName = "test_metric";
 
             const parentListener = createTestMetricListener(metricName, context, (i: number) => {

@@ -9,13 +9,13 @@ export function createTestAdminClient(storage: IStorageProvider = null): { clien
 
     delete result.client;
 
-    return {...result, client, mxClient};
+    return { ...result, client, mxClient };
 }
 
 describe('AdminApis', () => {
     describe('whoisUser', () => {
         it('should call the right endpoint', async () => {
-            const {client, http, hsUrl} = createTestAdminClient();
+            const { client, http, hsUrl } = createTestAdminClient();
 
             const userId = "@someone:example.org";
             const response: WhoisInfo = {
