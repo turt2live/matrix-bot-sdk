@@ -1,6 +1,6 @@
 import { Appservice, AutojoinUpgradedRoomsMixin, Intent } from "../../src";
 import * as simple from "simple-mock";
-import { createTestClient } from "../MatrixClientTest";
+import { createTestClient } from "../TestUtils";
 
 describe('AutojoinUpgradedRoomsMixin', () => {
     it('should join rooms for regular upgrades', () => {

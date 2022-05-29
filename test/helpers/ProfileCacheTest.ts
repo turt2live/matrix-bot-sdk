@@ -1,7 +1,6 @@
 import { Appservice, ProfileCache } from "../../src";
-import { createTestClient } from "../MatrixClientTest";
 import * as simple from "simple-mock";
-import { testDelay } from "../TestUtils";
+import { createTestClient, testDelay } from "../TestUtils";
 
 describe('ProfileCache', () => {
     it('should request the profile if it is not cached', async () => {

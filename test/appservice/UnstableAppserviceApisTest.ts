@@ -1,6 +1,6 @@
 import { IStorageProvider, MatrixClient, MSC2716BatchSendResponse, UnstableAppserviceApis } from "../../src";
 import * as MockHttpBackend from 'matrix-mock-request';
-import { createTestClient } from "../MatrixClientTest";
+import { createTestClient } from "../TestUtils";
 
 export function createTestUnstableClient(storage: IStorageProvider = null): { client: UnstableAppserviceApis, mxClient: MatrixClient, http: MockHttpBackend, hsUrl: string, accessToken: string } {
     const result = createTestClient(storage);

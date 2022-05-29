@@ -5,7 +5,6 @@ import {
     EventKind,
     IJoinRoomStrategy,
     IPreprocessor,
-    IStorageProvider,
     MatrixClient,
     Membership,
     MemoryStorageProvider,
@@ -20,27 +19,13 @@ import {
 } from "../src";
 import * as tmp from "tmp";
 import * as simple from "simple-mock";
-import * as MockHttpBackend from 'matrix-mock-request';
-import { expectArrayEquals } from "./TestUtils";
+import { createTestClient, expectArrayEquals, TEST_DEVICE_ID } from "./TestUtils";
 import { redactObjectForLogging } from "../src/http";
 import { PowerLevelAction } from "../src/models/PowerLevelAction";
 import { InternalOlmMachineFactory } from "../src/e2ee/InternalOlmMachineFactory";
 import { OlmMachine, Signatures } from "@turt2live/matrix-sdk-crypto-nodejs";
 
 tmp.setGracefulCleanup();
-
-export const TEST_DEVICE_ID = "TEST_DEVICE";
-
-export function createTestClient(storage: IStorageProvider = null, userId: string = null, crypto = false): { client: MatrixClient, http: MockHttpBackend, hsUrl: string, accessToken: string } {
-    const http = new MockHttpBackend();
-    const hsUrl = "https://localhost";
-    const accessToken = "s3cret";
-    const client = new MatrixClient(hsUrl, accessToken, storage, crypto ? new RustSdkCryptoStorageProvider(tmp.dirSync().name) : null);
-    (<any>client).userId = userId; // private member access
-    setRequestFn(http.requestFn);
-
-    return {http, hsUrl, accessToken, client};
-}
 
 describe('MatrixClient', () => {
     afterEach(() => {

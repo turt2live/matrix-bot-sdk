@@ -1,7 +1,7 @@
 import { IdentityClient, MatrixClient, setRequestFn, Threepid } from "../src";
 import * as MockHttpBackend from 'matrix-mock-request';
-import { createTestClient } from "./MatrixClientTest";
 import * as simple from "simple-mock";
+import { createTestClient } from "./TestUtils";
 
 export async function createTestIdentityClient(): Promise<{ client: IdentityClient, mxClient: MatrixClient, http: MockHttpBackend, identityUrl: string, accessToken: string }> {
     const result = createTestClient();

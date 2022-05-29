@@ -1,6 +1,6 @@
 import * as simple from "simple-mock";
 import { EncryptionEventContent, MatrixClient, RoomEncryptionAlgorithm, RoomTracker } from "../../src";
-import { createTestClient } from "../MatrixClientTest";
+import { createTestClient } from "../TestUtils";
 
 function prepareQueueSpies(client: MatrixClient, roomId: string, content: Partial<EncryptionEventContent> = {}, storedContent: Partial<EncryptionEventContent> = null): simple.Stub<any>[] {
     const readSpy = simple.stub().callFn<any>((rid: string) => {

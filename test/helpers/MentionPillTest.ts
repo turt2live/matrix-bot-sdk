@@ -1,6 +1,6 @@
 import { MentionPill } from "../../src";
-import { createTestClient } from "../MatrixClientTest";
 import * as simple from "simple-mock";
+import { createTestClient } from "../TestUtils";
 
 describe('MentionPill', () => {
     describe('forUser', () => {
