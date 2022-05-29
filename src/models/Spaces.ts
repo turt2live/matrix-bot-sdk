@@ -148,7 +148,7 @@ export class Space {
      */
     public async getChildEntities(): Promise<SpaceEntityMap> {
         const roomState = await this.client.getRoomState(this.roomId);
-        let mapping: SpaceEntityMap = {};
+        const mapping: SpaceEntityMap = {};
         roomState
             .filter(s => s.type === "m.space.child")
             .filter(s => s.content?.via)

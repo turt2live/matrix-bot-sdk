@@ -156,7 +156,6 @@ export interface SynapseRegistrationTokenOptions extends SynapseRegistrationToke
     length?: number;
 }
 
-
 /**
  * Information about a room on Synapse.
  * @category Admin APIs
@@ -233,8 +232,10 @@ export interface SynapseListUserOptions {
     deactivated?: boolean;
 
     /**
-     * The method by which to sort the returned list of users. If the ordered field has duplicates, the second order is always by ascending name, which guarantees a stable ordering.
-     * **Caution**: The database only has indexes on the columns `name` and `creation_ts`. This means that if a different sort order is used, it can cause a large load on the database.
+     * The method by which to sort the returned list of users. If the ordered field has duplicates, the
+     * second order is always by ascending name, which guarantees a stable ordering.
+     * **Caution**: The database only has indexes on the columns `name` and `creation_ts`. This means
+     * that if a different sort order is used, it can cause a large load on the database.
      */
     order_by?: "name" | "is_guest" | "admin" | "user_type" | "deactivated" | "shadow_banned" | "displayname" | "avatar_url" | "creation_ts";
 
@@ -320,7 +321,7 @@ export class SynapseAdminApis {
                 yield user;
             }
             from = response.next_token;
-        } while (from)
+        } while (from);
     }
 
     /**

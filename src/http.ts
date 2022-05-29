@@ -19,7 +19,18 @@ let lastRequestId = 0;
  * @param {string} noEncoding Set to true to disable encoding, and return a Buffer. Defaults to false
  * @returns {Promise<any>} Resolves to the response (body), rejected if a non-2xx status code was returned.
  */
-export async function doHttpRequest(baseUrl: string, method: "GET" | "POST" | "PUT" | "DELETE", endpoint: string, qs = null, body = null, headers = {}, timeout = 60000, raw = false, contentType = "application/json", noEncoding = false): Promise<any> {
+export async function doHttpRequest(
+    baseUrl: string,
+    method: "GET" | "POST" | "PUT" | "DELETE",
+    endpoint: string,
+    qs = null,
+    body = null,
+    headers = {},
+    timeout = 60000,
+    raw = false,
+    contentType = "application/json",
+    noEncoding = false,
+): Promise<any> {
     if (!endpoint.startsWith('/')) {
         endpoint = '/' + endpoint;
     }
@@ -33,7 +44,7 @@ export async function doHttpRequest(baseUrl: string, method: "GET" | "POST" | "P
     // Don't log the request unless we're in debug mode. It can be large.
     if (LogService.level.includes(LogLevel.TRACE)) {
         if (qs) LogService.trace("MatrixHttpClient", "(REQ-" + requestId + ")", "qs = " + JSON.stringify(qs));
-        if (body && !Buffer.isBuffer(body)) LogService.trace("MatrixHttpClient", "(REQ-" + requestId + ")", "body = " + JSON.stringify(this.redactObjectForLogging(body)));
+        if (body && !Buffer.isBuffer(body)) LogService.trace("MatrixHttpClient", "(REQ-" + requestId + ")", "body = " + JSON.stringify(redactObjectForLogging(body)));
         if (body && Buffer.isBuffer(body)) LogService.trace("MatrixHttpClient", "(REQ-" + requestId + ")", "body = <Buffer>");
     }
 

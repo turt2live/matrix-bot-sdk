@@ -1,3 +1,9 @@
+import {
+    decryptFile as rustDecryptFile,
+    encryptFile as rustEncryptFile,
+    OlmMachine,
+} from "@turt2live/matrix-sdk-crypto-nodejs";
+
 import { MatrixClient } from "../MatrixClient";
 import { LogService } from "../logging/LogService";
 import {
@@ -14,11 +20,6 @@ import { RoomTracker } from "./RoomTracker";
 import { EncryptedRoomEvent } from "../models/events/EncryptedRoomEvent";
 import { RoomEvent } from "../models/events/RoomEvent";
 import { EncryptedFile } from "../models/events/MessageEvent";
-import {
-    decryptFile as rustDecryptFile,
-    encryptFile as rustEncryptFile,
-    OlmMachine,
-} from "@turt2live/matrix-sdk-crypto-nodejs";
 import { RustSdkCryptoStorageProvider } from "../storage/RustSdkCryptoStorageProvider";
 import { SdkOlmEngine } from "./SdkOlmEngine";
 import { InternalOlmMachineFactory } from "./InternalOlmMachineFactory";
@@ -41,7 +42,7 @@ export class CryptoClient {
     }
 
     private get storage(): RustSdkCryptoStorageProvider {
-        return <RustSdkCryptoStorageProvider>this.client.cryptoStore;
+        return <RustSdkCryptoStorageProvider> this.client.cryptoStore;
     }
 
     /**
@@ -113,7 +114,13 @@ export class CryptoClient {
      * @returns {Promise<void>} Resolves when complete.
      */
     @requiresReady()
-    public async updateSyncData(toDeviceMessages: IToDeviceMessage<IOlmEncrypted>[], otkCounts: OTKCounts, unusedFallbackKeyAlgs: OTKAlgorithm[], changedDeviceLists: string[], leftDeviceLists: string[]): Promise<void> {
+    public async updateSyncData(
+        toDeviceMessages: IToDeviceMessage<IOlmEncrypted>[],
+        otkCounts: OTKCounts,
+        unusedFallbackKeyAlgs: OTKAlgorithm[],
+        changedDeviceLists: string[],
+        leftDeviceLists: string[],
+    ): Promise<void> {
         await this.machine.pushSync(toDeviceMessages, {
             changed: changedDeviceLists,
             left: leftDeviceLists,

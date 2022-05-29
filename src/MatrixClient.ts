@@ -1,4 +1,7 @@
 import { EventEmitter } from "events";
+import { htmlEncode } from "htmlencode";
+import { htmlToText } from "html-to-text";
+
 import { IStorageProvider } from "./storage/IStorageProvider";
 import { MemoryStorageProvider } from "./storage/MemoryStorageProvider";
 import { IJoinRoomStrategy } from "./strategies/JoinRoomStrategy";
@@ -6,7 +9,6 @@ import { UnstableApis } from "./UnstableApis";
 import { IPreprocessor } from "./preprocessors/IPreprocessor";
 import { getRequestFn } from "./request";
 import { extractRequestError, LogService } from "./logging/LogService";
-import { htmlEncode } from "htmlencode";
 import { RichReply } from "./helpers/RichReply";
 import { Metrics } from "./metrics/Metrics";
 import { timedMatrixClientFunctionCall } from "./metrics/decorators";
@@ -20,7 +22,6 @@ import { EventKind } from "./models/events/EventKind";
 import { IdentityClient } from "./identity/IdentityClient";
 import { OpenIDConnectToken } from "./models/OpenIDConnect";
 import { doHttpRequest } from "./http";
-import { htmlToText } from "html-to-text";
 import { Space, SpaceCreateOptions } from "./models/Spaces";
 import { PowerLevelAction } from "./models/PowerLevelAction";
 import { CryptoClient } from "./e2ee/CryptoClient";
@@ -51,7 +52,6 @@ const SYNC_BACKOFF_MAX_MS = 15000;
  * A client that is capable of interacting with a matrix homeserver.
  */
 export class MatrixClient extends EventEmitter {
-
     /**
      * The presence status to use while syncing. The valid values are "online" to set the account as online,
      * "offline" to set the user as offline, "unavailable" for marking the user away, and null for not setting
@@ -603,7 +603,7 @@ export class MatrixClient extends EventEmitter {
         let createFilter = false;
 
         // noinspection ES6RedundantAwait
-        let existingFilter = await Promise.resolve(this.storage.getFilter());
+        const existingFilter = await Promise.resolve(this.storage.getFilter());
         if (existingFilter) {
             LogService.trace("MatrixClientLite", "Found existing filter. Checking consistency with given filter");
             if (JSON.stringify(existingFilter.filter) === JSON.stringify(filter)) {
@@ -744,12 +744,12 @@ export class MatrixClient extends EventEmitter {
 
         if (!raw['rooms']) return; // nothing more to process
 
-        let leftRooms = raw['rooms']['leave'] || {};
-        let inviteRooms = raw['rooms']['invite'] || {};
-        let joinedRooms = raw['rooms']['join'] || {};
+        const leftRooms = raw['rooms']['leave'] || {};
+        const inviteRooms = raw['rooms']['invite'] || {};
+        const joinedRooms = raw['rooms']['join'] || {};
 
         // Process rooms we've left first
-        for (let roomId in leftRooms) {
+        for (const roomId in leftRooms) {
             const room = leftRooms[roomId];
 
             if (room['account_data'] && room['account_data']['events']) {
@@ -761,7 +761,7 @@ export class MatrixClient extends EventEmitter {
             if (!room['timeline'] || !room['timeline']['events']) continue;
 
             let leaveEvent = null;
-            for (let event of room['timeline']['events']) {
+            for (const event of room['timeline']['events']) {
                 if (event['type'] !== 'm.room.member') continue;
                 if (event['state_key'] !== await this.getUserId()) continue;
 
@@ -783,12 +783,12 @@ export class MatrixClient extends EventEmitter {
         }
 
         // Process rooms we've been invited to
-        for (let roomId in inviteRooms) {
+        for (const roomId in inviteRooms) {
             const room = inviteRooms[roomId];
             if (!room['invite_state'] || !room['invite_state']['events']) continue;
 
             let inviteEvent = null;
-            for (let event of room['invite_state']['events']) {
+            for (const event of room['invite_state']['events']) {
                 if (event['type'] !== 'm.room.member') continue;
                 if (event['state_key'] !== await this.getUserId()) continue;
                 if (!event['content']) continue;
@@ -811,7 +811,7 @@ export class MatrixClient extends EventEmitter {
         }
 
         // Process rooms we've joined and their events
-        for (let roomId in joinedRooms) {
+        for (const roomId in joinedRooms) {
             if (this.lastJoinedRoomIds.indexOf(roomId) === -1) {
                 await emitFn("room.join", roomId);
                 this.lastJoinedRoomIds.push(roomId);
@@ -916,7 +916,11 @@ export class MatrixClient extends EventEmitter {
      */
     @timedMatrixClientFunctionCall()
     public getRoomStateEvent(roomId, type, stateKey): Promise<any> {
-        return this.doRequest("GET", "/_matrix/client/r0/rooms/" + encodeURIComponent(roomId) + "/state/" + encodeURIComponent(type) + "/" + encodeURIComponent(stateKey ? stateKey : ''))
+        const path = "/_matrix/client/r0/rooms/"
+            + encodeURIComponent(roomId) + "/state/"
+            + encodeURIComponent(type) + "/"
+            + encodeURIComponent(stateKey ? stateKey : '');
+        return this.doRequest("GET", path)
             .then(ev => this.processEvent(ev));
     }
 
@@ -1254,7 +1258,11 @@ export class MatrixClient extends EventEmitter {
     @timedMatrixClientFunctionCall()
     public async sendRawEvent(roomId: string, eventType: string, content: any): Promise<string> {
         const txnId = (new Date().getTime()) + "__inc" + (++this.requestId);
-        return this.doRequest("PUT", "/_matrix/client/r0/rooms/" + encodeURIComponent(roomId) + "/send/" + encodeURIComponent(eventType) + "/" + encodeURIComponent(txnId), null, content).then(response => {
+        const path = "/_matrix/client/r0/rooms/"
+            + encodeURIComponent(roomId) + "/send/"
+            + encodeURIComponent(eventType) + "/"
+            + encodeURIComponent(txnId);
+        return this.doRequest("PUT", path, null, content).then(response => {
             return response['event_id'];
         });
     }
@@ -1269,7 +1277,11 @@ export class MatrixClient extends EventEmitter {
      */
     @timedMatrixClientFunctionCall()
     public sendStateEvent(roomId: string, type: string, stateKey: string, content: any): Promise<string> {
-        return this.doRequest("PUT", "/_matrix/client/r0/rooms/" + encodeURIComponent(roomId) + "/state/" + encodeURIComponent(type) + "/" + encodeURIComponent(stateKey), null, content).then(response => {
+        const path = "/_matrix/client/r0/rooms/"
+            + encodeURIComponent(roomId) + "/state/"
+            + encodeURIComponent(type) + "/"
+            + encodeURIComponent(stateKey);
+        return this.doRequest("PUT", path, null, content).then(response => {
             return response['event_id'];
         });
     }

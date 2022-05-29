@@ -71,5 +71,4 @@ export class SpaceChildEvent extends StateEvent<SpaceChildEventContent> {
     public get suggested(): boolean {
         return this.content.suggested ?? false;
     }
-
 }

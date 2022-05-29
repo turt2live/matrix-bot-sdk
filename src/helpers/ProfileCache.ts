@@ -1,4 +1,5 @@
 import * as LRU from "lru-cache";
+
 import { extractRequestError, LogService, MatrixClient, MatrixProfile } from "..";
 import { MembershipEvent } from "../models/events/MembershipEvent";
 import { Appservice } from "../appservice/Appservice";
@@ -12,7 +13,6 @@ type CacheKey = `${string}@${string | '<none>'}`;
  * @category Utilities
  */
 export class ProfileCache {
-
     private cache: LRU<CacheKey, MatrixProfile>;
 
     /**

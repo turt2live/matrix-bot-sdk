@@ -66,7 +66,8 @@ export class UnstableApis {
      *  homeserver accepted/rejected the invite right away.
      */
     public async inviteUserToGroup(groupId: string, userId: string): Promise<"join" | "invite" | "reject"> {
-        const response = await this.client.doRequest("PUT", `/_matrix/client/unstable/groups/${encodeURIComponent(groupId)}/admin/users/invite/${encodeURIComponent(userId)}`, null, {});
+        const path = `/_matrix/client/unstable/groups/${encodeURIComponent(groupId)}/admin/users/invite/${encodeURIComponent(userId)}`;
+        const response = await this.client.doRequest("PUT", path, null, {});
         return response["state"];
     }
 

@@ -8,7 +8,6 @@ import { Appservice } from "../appservice/Appservice";
  * @category Join strategies
  */
 export class AppserviceJoinRoomStrategy implements IJoinRoomStrategy {
-
     constructor(private underlyingStrategy: IJoinRoomStrategy, private appservice: Appservice) {
     }
 

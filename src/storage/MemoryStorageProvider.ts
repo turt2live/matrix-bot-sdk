@@ -7,7 +7,6 @@ import { IAppserviceStorageProvider } from "./IAppserviceStorageProvider";
  * @category Storage providers
  */
 export class MemoryStorageProvider implements IStorageProvider, IAppserviceStorageProvider {
-
     private namespaced = new Map<string, MemoryStorageProvider>();
     private syncToken: string;
     private filter: IFilterInfo;

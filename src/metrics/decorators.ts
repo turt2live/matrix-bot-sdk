@@ -16,9 +16,9 @@ import { IdentityClientCallContext, IntentCallContext, MatrixClientCallContext }
  * @category Metrics
  */
 export function timedMatrixClientFunctionCall() {
-    return function (_target: unknown, functionName: string, descriptor: PropertyDescriptor) {
+    return function(_target: unknown, functionName: string, descriptor: PropertyDescriptor) {
         const originalMethod = descriptor.value;
-        descriptor.value = async function (...args) {
+        descriptor.value = async function(...args) {
             const context = this.metrics.assignUniqueContextId(<MatrixClientCallContext>{
                 functionName,
                 client: this,
@@ -43,9 +43,9 @@ export function timedMatrixClientFunctionCall() {
  * @category Metrics
  */
 export function timedIdentityClientFunctionCall() {
-    return function (_target: unknown, functionName: string, descriptor: PropertyDescriptor) {
+    return function(_target: unknown, functionName: string, descriptor: PropertyDescriptor) {
         const originalMethod = descriptor.value;
-        descriptor.value = async function (...args: any[]) {
+        descriptor.value = async function(...args: any[]) {
             const context = this.metrics.assignUniqueContextId(<IdentityClientCallContext>{
                 functionName,
                 client: this,
@@ -61,7 +61,7 @@ export function timedIdentityClientFunctionCall() {
             } finally {
                 this.metrics.end(METRIC_IDENTITY_CLIENT_FUNCTION_CALL, context);
             }
-        }
+        };
     };
 }
 
@@ -70,9 +70,9 @@ export function timedIdentityClientFunctionCall() {
  * @category Metrics
  */
 export function timedIntentFunctionCall() {
-    return function (_target: unknown, functionName: string, descriptor: PropertyDescriptor) {
+    return function(_target: unknown, functionName: string, descriptor: PropertyDescriptor) {
         const originalMethod = descriptor.value;
-        descriptor.value = async function (...args: any[]) {
+        descriptor.value = async function(...args: any[]) {
             const context = this.metrics.assignUniqueContextId(<IntentCallContext>{
                 functionName,
                 client: this.client,
@@ -89,6 +89,6 @@ export function timedIntentFunctionCall() {
             } finally {
                 this.metrics.end(METRIC_INTENT_FUNCTION_CALL, context);
             }
-        }
+        };
     };
 }

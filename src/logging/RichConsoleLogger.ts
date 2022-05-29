@@ -1,12 +1,14 @@
-import { ILogger } from "./ILogger";
 import * as chalk from "chalk";
+
+import { ILogger } from "./ILogger";
+
+/* eslint-disable no-console */
 
 /**
  * Prints to the console with colors and a format.
  * @category Logging
  */
 export class RichConsoleLogger implements ILogger {
-
     protected chalkDebug = chalk.cyan;
     protected chalkInfo = chalk.green;
     protected chalkWarning = chalk.yellow;
@@ -63,5 +65,6 @@ export class RichConsoleLogger implements ILogger {
             ...messageOrObject,
         );
     }
-
 }
+
+/* eslint-enable no-console */

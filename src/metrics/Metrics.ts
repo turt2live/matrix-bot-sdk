@@ -7,7 +7,6 @@ import { LogService } from "..";
  * @category Metrics
  */
 export class Metrics {
-
     private listeners: IMetricListener[] = [];
     private requestStartTimes: { [contextId: string]: number } = {};
     private uid = 0;

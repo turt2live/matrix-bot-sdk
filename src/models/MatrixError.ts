@@ -34,6 +34,6 @@ export default class MatrixError extends Error {
      * Developer-friendly error message.
      */
     public get message() {
-        return `${this.errcode}: ${this.error}`
+        return `${this.errcode}: ${this.error}`;
     }
 }

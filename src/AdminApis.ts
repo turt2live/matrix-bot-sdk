@@ -11,10 +11,10 @@ export interface WhoisInfo {
     devices: {
         [device_id: string]: {
             sessions: [{
-                connections: WhoisConnectionInfo[]
+                connections: WhoisConnectionInfo[];
             }];
-        }
-    }
+        };
+    };
 }
 
 interface WhoisConnectionInfo {

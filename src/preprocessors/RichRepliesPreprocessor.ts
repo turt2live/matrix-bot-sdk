@@ -61,7 +61,6 @@ export interface IRichReplyMetadata {
  * @category Preprocessors
  */
 export class RichRepliesPreprocessor implements IPreprocessor {
-
     /**
      * Creates a new rich replies preprocessor.
      * @param fetchRealEventContents If enabled, this preprocessor will
@@ -103,7 +102,7 @@ export class RichRepliesPreprocessor implements IPreprocessor {
                 const fbHtml = parts[0];
                 realHtml = parts[1];
 
-                const results = fbHtml.match(/<br[ ]*[\/]{0,2}>(.*)<\/blockquote>\s*$/i);
+                const results = fbHtml.match(/<br[ ]*[/]{0,2}>(.*)<\/blockquote>\s*$/i);
                 if (!results) {
                     lenient = true;
                 } else {
@@ -112,15 +111,12 @@ export class RichRepliesPreprocessor implements IPreprocessor {
             }
         }
 
-        let lastLine = "";
         let processedFallback = false;
         const body = event["content"]["body"] || "";
         for (const line of body.split("\n")) {
             if (line.startsWith("> ") && !processedFallback) {
                 fallbackText += line.substring(2) + "\n";
-                lastLine = line;
             } else if (!processedFallback) {
-                lastLine = line;
                 realText = "";
                 processedFallback = true;
             } else {

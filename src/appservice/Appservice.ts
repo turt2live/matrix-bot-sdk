@@ -1,4 +1,8 @@
 import * as express from "express";
+import { EventEmitter } from "events";
+import * as morgan from "morgan";
+import * as LRU from "lru-cache";
+
 import { Intent } from "./Intent";
 import {
     AppserviceJoinRoomStrategy,
@@ -14,10 +18,7 @@ import {
     Metrics,
     OTKAlgorithm,
 } from "..";
-import { EventEmitter } from "events";
-import * as morgan from "morgan";
 import { MatrixBridge } from "./MatrixBridge";
-import * as LRU from "lru-cache";
 import { IApplicationServiceProtocol } from "./http_responses";
 
 const EDU_ANNOTATION_KEY = "io.t2bot.sdk.bot.type";
@@ -217,7 +218,6 @@ export interface IAppserviceOptions {
  * @category Application services
  */
 export class Appservice extends EventEmitter {
-
     /**
      * The metrics instance for this appservice. This will raise all metrics
      * from this appservice instance as well as any intents/MatrixClients created
@@ -297,15 +297,14 @@ export class Appservice extends EventEmitter {
             throw new Error("Too many user namespaces registered: expecting exactly one");
         }
 
-        let userPrefix = (this.registration.namespaces.users[0].regex || "").split(":")[0];
+        const userPrefix = (this.registration.namespaces.users[0].regex || "").split(":")[0];
         if (!userPrefix.endsWith(".*") && !userPrefix.endsWith(".+")) {
             this.userPrefix = null;
         } else {
             this.userPrefix = userPrefix.substring(0, userPrefix.length - 2); // trim off the .* part
         }
 
-
-        if (!this.registration.namespaces || !this.registration.namespaces.aliases || this.registration.namespaces.aliases.length === 0 || this.registration.namespaces.aliases.length !== 1) {
+        if (!this.registration.namespaces?.aliases || this.registration.namespaces.aliases.length !== 1) {
             this.aliasPrefix = null;
         } else {
             this.aliasPrefix = (this.registration.namespaces.aliases[0].regex || "").split(":")[0];
@@ -665,6 +664,7 @@ export class Appservice extends EventEmitter {
         }
 
         LogService.info("Appservice", "Processing transaction " + txnId);
+        // eslint-disable-next-line no-async-promise-executor
         this.pendingTransactions[txnId] = new Promise<void>(async (resolve) => {
             // Process all the crypto stuff first to ensure that future transactions (if not this one)
             // will decrypt successfully. We start with EDUs because we need structures to put counts
@@ -730,11 +730,13 @@ export class Appservice extends EventEmitter {
                         await intent.enableEncryption();
                         const otksForUser = otks[userId][intent.underlyingClient.crypto.clientDeviceId];
                         if (otksForUser) {
-                            if (!byUserId[userId]) byUserId[userId] = {
-                                counts: null,
-                                toDevice: null,
-                                unusedFallbacks: null,
-                            };
+                            if (!byUserId[userId]) {
+                                byUserId[userId] = {
+                                    counts: null,
+                                    toDevice: null,
+                                    unusedFallbacks: null,
+                                };
+                            }
                             byUserId[userId].counts = otksForUser;
                         }
                     }
@@ -747,11 +749,13 @@ export class Appservice extends EventEmitter {
                         await intent.enableEncryption();
                         const fallbacksForUser = fallbacks[userId][intent.underlyingClient.crypto.clientDeviceId];
                         if (Array.isArray(fallbacksForUser) && !fallbacksForUser.includes(OTKAlgorithm.Signed)) {
-                            if (!byUserId[userId]) byUserId[userId] = {
-                                counts: null,
-                                toDevice: null,
-                                unusedFallbacks: null,
-                            };
+                            if (!byUserId[userId]) {
+                                byUserId[userId] = {
+                                    counts: null,
+                                    toDevice: null,
+                                    unusedFallbacks: null,
+                                };
+                            }
                             byUserId[userId].unusedFallbacks = fallbacksForUser;
                         }
                     }

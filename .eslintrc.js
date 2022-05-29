@@ -1,95 +1,63 @@
 module.exports = {
-    "env": {
-        "es6": true,
-        "node": true
-    },
-    "parser": "@typescript-eslint/parser",
-    "parserOptions": {
-        "project": "tsconfig.json",
-        "sourceType": "module"
-    },
-    "plugins": [
-        "@typescript-eslint",
-        "@typescript-eslint/eslint-plugin-tslint"
+    plugins: [
+        "matrix-org",
     ],
-    "rules": {
-        "@typescript-eslint/dot-notation": "off",
-        "@typescript-eslint/explicit-member-accessibility": [
-            "off",
-            {
-                "accessibility": "explicit"
-            }
+    extends: [
+        "plugin:matrix-org/babel",
+    ],
+    env: {
+        browser: true,
+        node: true,
+    },
+    rules: {
+        "no-var": ["warn"],
+        "prefer-rest-params": ["warn"],
+        "prefer-spread": ["warn"],
+        "one-var": ["warn"],
+        "padded-blocks": ["warn"],
+        "no-extend-native": ["warn"],
+        "camelcase": ["warn"],
+        "no-multi-spaces": ["error", { "ignoreEOLComments": true }],
+        "space-before-function-paren": ["error", {
+            "anonymous": "never",
+            "named": "never",
+            "asyncArrow": "always",
+        }],
+        "arrow-parens": "off",
+        "prefer-promise-reject-errors": "off",
+        "quotes": "off",
+        "indent": "off",
+        "no-constant-condition": "off",
+        "no-async-promise-executor": "off",
+        // We use a `LogService` intermediary module
+        "no-console": "error",
+    },
+    overrides: [{
+        files: [
+            "**/*.ts",
         ],
-        "@typescript-eslint/indent": "error",
-        "@typescript-eslint/member-delimiter-style": [
-            "off",
-            {
-                "multiline": {
-                    "delimiter": "none",
-                    "requireLast": true
-                },
-                "singleline": {
-                    "delimiter": "semi",
-                    "requireLast": false
-                }
-            }
+        extends: [
+            "plugin:matrix-org/typescript",
         ],
-        "@typescript-eslint/member-ordering": "off",
-        "@typescript-eslint/naming-convention": "off",
-        "@typescript-eslint/no-empty-function": "off",
-        "@typescript-eslint/no-inferrable-types": "error",
-        "@typescript-eslint/no-unused-expressions": "error",
-        "@typescript-eslint/no-use-before-define": "off",
-        "@typescript-eslint/quotes": "off",
-        "@typescript-eslint/semi": [
-            "off",
-            null
-        ],
-        "@typescript-eslint/type-annotation-spacing": "error",
-        "brace-style": [
-            "error",
-            "1tbs"
-        ],
-        "curly": "off",
-        "eol-last": "off",
-        "eqeqeq": [
-            "error",
-            "always"
-        ],
-        "guard-for-in": "off",
-        "id-blacklist": "off",
-        "id-match": "off",
-        "max-len": "off",
-        "no-bitwise": "off",
-        "no-caller": "error",
-        "no-console": "off",
-        "no-debugger": "error",
-        "no-empty": "off",
-        "no-eval": "error",
-        "no-fallthrough": "error",
-        "no-new-wrappers": "error",
-        "no-redeclare": "error",
-        "no-shadow": "off",
-        "@typescript-eslint/no-shadow": ["error"],
-        "no-trailing-spaces": "error",
-        "no-underscore-dangle": "off",
-        "no-unused-labels": "error",
-        "no-var": "error",
-        "radix": "error",
-        "@typescript-eslint/tslint/config": [
-            "error",
-            {
-                "rules": {
-                    "whitespace": [
-                        true,
-                        "check-branch",
-                        "check-decl",
-                        "check-operator",
-                        "check-separator",
-                        "check-type"
-                    ]
-                }
-            }
-        ]
-    }
+        rules: {
+            // TypeScript has its own version of this
+            "@babel/no-invalid-this": "off",
+
+            // We're okay being explicit at the moment
+            "@typescript-eslint/no-empty-interface": "off",
+            // We disable this while we're transitioning
+            "@typescript-eslint/no-explicit-any": "off",
+            // We'd rather not do this but we do
+            "@typescript-eslint/ban-ts-comment": "off",
+            // We're okay with assertion errors when we ask for them
+            "@typescript-eslint/no-non-null-assertion": "off",
+
+            "quotes": "off",
+            // We use a `logger` intermediary module
+            "no-console": "error",
+
+            "max-len": ["error", { "code": 180 }],
+            "no-extra-boolean-cast": "off",
+        },
+    }],
 };

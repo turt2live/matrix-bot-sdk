@@ -7,7 +7,6 @@ import { ILogger } from "./ILogger";
  * @category Logging
  */
 export class LogLevel {
-
     /**
      * The TRACE channel
      */
@@ -60,7 +59,6 @@ export class LogLevel {
  * @category Logging
  */
 export class LogService {
-
     private static logger: ILogger = new ConsoleLogger();
     private static logLevel: LogLevel = LogLevel.INFO;
     private static mutedModules: string[] = [];

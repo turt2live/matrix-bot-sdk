@@ -9,7 +9,6 @@ import {
     Metrics,
 } from "..";
 import { Appservice, IAppserviceOptions } from "./Appservice";
-
 // noinspection TypeScriptPreferShortImport
 import { timedIntentFunctionCall } from "../metrics/decorators";
 import { UnstableAppserviceApis } from "./UnstableAppserviceApis";
@@ -23,7 +22,6 @@ import MatrixError from "../models/MatrixError";
  * @category Application services
  */
 export class Intent {
-
     /**
      * The metrics instance for this intent. Note that this will not raise metrics
      * for the underlying client - those will be available through this instance's
@@ -105,6 +103,7 @@ export class Intent {
     @timedIntentFunctionCall()
     public async enableEncryption(): Promise<void> {
         if (!this.cryptoSetupPromise) {
+            // eslint-disable-next-line no-async-promise-executor
             this.cryptoSetupPromise = new Promise(async (resolve, reject) => {
                 try {
                     // Prepare a client first
@@ -129,7 +128,7 @@ export class Intent {
                             // for devices without keys to impersonate, so it should be fine. In theory,
                             // those devices won't even be present but we're cautious.
                             const devicesWithKeys = Array.from(Object.entries(userDeviceKeys))
-                                .filter(d => d[0] === d[1].device_id && !!d[1].keys?.[`${DeviceKeyAlgorithm.Curve25519}:${d[1].device_id}`])
+                                .filter(d => d[0] === d[1].device_id && !!d[1].keys?.[`${DeviceKeyAlgorithm.Curve25519}:${d[1].device_id}`]);
                             deviceId = devicesWithKeys[0]?.[1]?.device_id;
                         }
                     }
@@ -308,7 +307,7 @@ export class Intent {
                 // HACK: Workaround for unit tests
                 if (result['errcode']) {
                     // noinspection ExceptionCaughtLocallyJS
-                    throw { body: result };
+                    throw { body: result }; // eslint-disable-line no-throw-literal
                 }
             } catch (err) {
                 if (err instanceof MatrixError && err.errcode === "M_USER_IN_USE") {

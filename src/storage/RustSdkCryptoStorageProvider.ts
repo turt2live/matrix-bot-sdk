@@ -1,11 +1,12 @@
-import { ICryptoStorageProvider } from "./ICryptoStorageProvider";
-import { EncryptionEventContent } from "../models/events/EncryptionEvent";
 import * as lowdb from "lowdb";
 import * as FileSync from "lowdb/adapters/FileSync";
 import * as mkdirp from "mkdirp";
 import * as path from "path";
 import * as sha512 from "hash.js/lib/hash/sha/512";
-import * as sha256 from "hash.js/lib/hash/sha/256"
+import * as sha256 from "hash.js/lib/hash/sha/256";
+
+import { EncryptionEventContent } from "../models/events/EncryptionEvent";
+import { ICryptoStorageProvider } from "./ICryptoStorageProvider";
 import { IAppserviceCryptoStorageProvider } from "./IAppserviceStorageProvider";
 
 /**

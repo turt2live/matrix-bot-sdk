@@ -1,10 +1,11 @@
+import * as crypto from "crypto";
+
 import { OpenIDConnectToken } from "../models/OpenIDConnect";
 import { doHttpRequest } from "../http";
 import { timedIdentityClientFunctionCall } from "../metrics/decorators";
 import { Policies, TranslatedPolicy } from "../models/Policies";
 import { Metrics } from "../metrics/Metrics";
 import { Threepid } from "../models/Threepid";
-import * as crypto from "crypto";
 import { UnpaddedBase64 } from "../helpers/UnpaddedBase64";
 import { MatrixClient } from "../MatrixClient";
 import { MatrixProfile, MatrixProfileInfo } from "../models/MatrixProfile";
@@ -15,7 +16,6 @@ import { IdentityServerAccount, IdentityServerInvite } from "../models/IdentityS
  * @category Identity Servers
  */
 export class IdentityClient {
-
     /**
      * The metrics instance for this client. Note that metrics for the underlying MatrixClient will
      * not be available here.
@@ -183,7 +183,7 @@ export class IdentityClient {
 
         const inviteReq = {};
         for (const entry of Object.entries(req)) {
-            if (!!entry[1]) inviteReq[entry[0]] = entry[1];
+            if (entry[1]) inviteReq[entry[0]] = entry[1];
         }
 
         const qs = {};

@@ -3,7 +3,6 @@
  * @category Utilities
  */
 export class MatrixEntity {
-
     private entityLocalpart: string;
     private entityDomain: string;
 

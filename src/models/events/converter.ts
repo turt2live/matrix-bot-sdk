@@ -42,6 +42,6 @@ export function wrapRoomEvent(event: any): RoomEvent<any> {
             return new MessageEvent<MessageEventContent>(event);
         }
     } else {
-        return new RoomEvent<any>(event)
+        return new RoomEvent<any>(event);
     }
 }

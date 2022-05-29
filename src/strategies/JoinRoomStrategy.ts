@@ -9,7 +9,6 @@ export interface IJoinRoomStrategy {
  * @category Join strategies
  */
 export class SimpleRetryJoinStrategy implements IJoinRoomStrategy {
-
     // Note: The schedule must not have duplicate values to avoid problems in positioning.
     private schedule = [
         0,              // Right away
