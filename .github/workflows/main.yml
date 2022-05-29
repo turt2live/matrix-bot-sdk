@@ -1,75 +1,49 @@
-name: Main
+name: Static Analysis
 on:
   push:
   pull_request:
 jobs:
   # Global
   # ================================================
-
-  eslint-16:
-    name: 'ESLint Node 16'
+  eslint:
+    name: 'ESLint'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-node@v2
         with:
-          node-version: '16'
+          node-version: '16'  # Target desired node version
       - run: yarn install
       - run: yarn lint
 
-  # Node 16
+  # Node-specific
   # ================================================
-
-  build-16:
-    name: 'Build Node 16'
+  build:
+    strategy:
+      matrix:
+        node: [ 16, 18 ]
+    name: 'Build Node ${{ matrix.node }}'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-node@v2
         with:
-          node-version: '16'
+          node-version: ${{ matrix.node }}
       - run: yarn install
       - run: yarn build
       - run: yarn build:examples
 
-  tests-16:
-    name: 'Tests Node 16'
+  tests:
+    strategy:
+      matrix:
+        node: [ 16, 18 ]
+    name: 'Tests Node ${{ matrix.node }}'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-node@v2
         with:
-          node-version: '16'
-      - run: yarn install
-      - uses: nick-invision/retry@v2
-        with:
-          max_attempts: 5
-          timeout_minutes: 5
-          command: yarn test
-
-  # Node 18
-  # ================================================
-
-  build-14:
-    name: 'Build Node 18'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-node@v2
-        with:
-          node-version: '18'
-      - run: yarn install
-      - run: yarn build
-      - run: yarn build:examples
-
-  tests-14:
-    name: 'Tests Node 18'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-node@v2
-        with:
-          node-version: '18'
+          node-version: ${{ matrix.node }}
       - run: yarn install
       - uses: nick-invision/retry@v2
         with:
