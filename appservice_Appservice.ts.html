@@ -368,7 +368,7 @@ export class Appservice extends EventEmitter {
 
         this.intentsCache = new LRU({
             max: options.intentOptions.maxCached,
-            maxAge: options.intentOptions.maxAgeMs,
+            ttl: options.intentOptions.maxAgeMs,
         });
 
         this.registration = options.registration;
