@@ -578,7 +578,7 @@ export class Appservice extends EventEmitter {
     public setRoomDirectoryVisibility(networkId: string, roomId: string, visibility: "public" | "private") {
         roomId = encodeURIComponent(roomId);
         networkId = encodeURIComponent(networkId);
-        return this.botClient.doRequest("PUT", `/_matrix/client/r0/directory/list/appservice/${networkId}/${roomId}`, null, {
+        return this.botClient.doRequest("PUT", `/_matrix/client/v3/directory/list/appservice/${networkId}/${roomId}`, null, {
             visibility,
         });
     }

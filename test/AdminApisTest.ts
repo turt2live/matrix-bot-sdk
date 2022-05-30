@@ -34,8 +34,8 @@ describe('AdminApis', () => {
                 },
             };
 
-            http.when("GET", "/_matrix/client/r0/admin/whois").respond(200, (path, content) => {
-                expect(path).toEqual(`${hsUrl}/_matrix/client/r0/admin/whois/${encodeURIComponent(userId)}`);
+            http.when("GET", "/_matrix/client/v3/admin/whois").respond(200, (path, content) => {
+                expect(path).toEqual(`${hsUrl}/_matrix/client/v3/admin/whois/${encodeURIComponent(userId)}`);
                 return response;
             });
 

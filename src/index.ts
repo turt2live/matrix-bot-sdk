@@ -52,6 +52,7 @@ export * from "./models/Crypto";
 export * from "./models/MSC2176";
 export * from "./models/Account";
 export * from "./models/PowerLevelAction";
+export * from "./models/ServerVersions";
 
 // Unstable models
 export * from "./models/unstable/MediaInfo";

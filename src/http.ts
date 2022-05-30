@@ -9,7 +9,7 @@ let lastRequestId = 0;
  * @category Unit testing
  * @param {string} baseUrl The base URL to apply to the call.
  * @param {"GET"|"POST"|"PUT"|"DELETE"} method The HTTP method to use in the request
- * @param {string} endpoint The endpoint to call. For example: "/_matrix/client/r0/account/whoami"
+ * @param {string} endpoint The endpoint to call. For example: "/_matrix/client/v3/account/whoami"
  * @param {any} qs The query string to send. Optional.
  * @param {any} body The request body to send. Optional. Will be converted to JSON unless the type is a Buffer.
  * @param {any} headers Additional headers to send in the request.

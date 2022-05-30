@@ -166,7 +166,7 @@ describe('Intent', () => {
                 },
             };
 
-            http.when("POST", "/_matrix/client/r0/register").respond(200, (path, content) => {
+            http.when("POST", "/_matrix/client/v3/register").respond(200, (path, content) => {
                 expect(content).toMatchObject({ type: "m.login.application_service", username: "someone" });
                 return {};
             });
@@ -206,7 +206,7 @@ describe('Intent', () => {
             };
 
             // HACK: 200 OK because the mock lib can't handle 400+response body
-            http.when("POST", "/_matrix/client/r0/register").respond(200, (path, content) => {
+            http.when("POST", "/_matrix/client/v3/register").respond(200, (path, content) => {
                 expect(content).toMatchObject({ type: "m.login.application_service", username: "someone" });
                 return { errcode: "M_USER_IN_USE", error: "User ID already in use" };
             });
@@ -245,7 +245,7 @@ describe('Intent', () => {
                 },
             };
 
-            http.when("POST", "/_matrix/client/r0/register").respond(500, (path, content) => {
+            http.when("POST", "/_matrix/client/v3/register").respond(500, (path, content) => {
                 expect(content).toMatchObject({ type: "m.login.application_service", username: "someone" });
                 return { errcode: "M_UNKNOWN", error: "It broke" };
             });

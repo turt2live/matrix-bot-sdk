@@ -55,6 +55,6 @@ export class AdminApis {
      * @returns {Promise<WhoisInfo>} resolves to the whois information
      */
     public whoisUser(userId: string): Promise<WhoisInfo> {
-        return this.client.doRequest("GET", "/_matrix/client/r0/admin/whois/" + encodeURIComponent(userId));
+        return this.client.doRequest("GET", "/_matrix/client/v3/admin/whois/" + encodeURIComponent(userId));
     }
 }
