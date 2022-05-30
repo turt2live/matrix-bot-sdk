@@ -5482,7 +5482,7 @@ describe('MatrixClient', () => {
             const { client, http } = createTestClient();
             const urlPart = "example.org/testing";
             const mxcUrl = "mxc://" + urlPart;
-            // const fileContents = new Buffer("12345");
+            // const fileContents = Buffer.from("12345");
 
             // noinspection TypeScriptValidateJSTypes
             http.when("GET", "/_matrix/media/v3/download/").respond(200, (path, _, req) => {

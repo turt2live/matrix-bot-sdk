@@ -2,13 +2,13 @@ import { UnpaddedBase64 } from "../../src";
 
 describe('UnpaddedBase64', () => {
     it('should encode buffers', () => {
-        expect(UnpaddedBase64.encodeBuffer(new Buffer(""))).toEqual("");
-        expect(UnpaddedBase64.encodeBuffer(new Buffer("f"))).toEqual("Zg");
-        expect(UnpaddedBase64.encodeBuffer(new Buffer("fo"))).toEqual("Zm8");
-        expect(UnpaddedBase64.encodeBuffer(new Buffer("foo"))).toEqual("Zm9v");
-        expect(UnpaddedBase64.encodeBuffer(new Buffer("foob"))).toEqual("Zm9vYg");
-        expect(UnpaddedBase64.encodeBuffer(new Buffer("fooba"))).toEqual("Zm9vYmE");
-        expect(UnpaddedBase64.encodeBuffer(new Buffer("foobar"))).toEqual("Zm9vYmFy");
+        expect(UnpaddedBase64.encodeBuffer(Buffer.from(""))).toEqual("");
+        expect(UnpaddedBase64.encodeBuffer(Buffer.from("f"))).toEqual("Zg");
+        expect(UnpaddedBase64.encodeBuffer(Buffer.from("fo"))).toEqual("Zm8");
+        expect(UnpaddedBase64.encodeBuffer(Buffer.from("foo"))).toEqual("Zm9v");
+        expect(UnpaddedBase64.encodeBuffer(Buffer.from("foob"))).toEqual("Zm9vYg");
+        expect(UnpaddedBase64.encodeBuffer(Buffer.from("fooba"))).toEqual("Zm9vYmE");
+        expect(UnpaddedBase64.encodeBuffer(Buffer.from("foobar"))).toEqual("Zm9vYmFy");
     });
 
     it('should encode strings', () => {
@@ -21,7 +21,7 @@ describe('UnpaddedBase64', () => {
         expect(UnpaddedBase64.encodeString("foobar")).toEqual("Zm9vYmFy");
     });
     it('should encode buffers (url safe)', () => {
-        expect(UnpaddedBase64.encodeBufferUrlSafe(new Buffer("😄😄🎉👀👷‍♂️👼"))).toEqual("8J-YhPCfmITwn46J8J-RgPCfkbfigI3imYLvuI_wn5G8");
+        expect(UnpaddedBase64.encodeBufferUrlSafe(Buffer.from("😄😄🎉👀👷‍♂️👼"))).toEqual("8J-YhPCfmITwn46J8J-RgPCfkbfigI3imYLvuI_wn5G8");
     });
 
     it('should encode strings (url safe)', () => {

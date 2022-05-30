@@ -24,7 +24,7 @@ export class ProfileCache {
     constructor(maxEntries: number, maxAgeMs: number, private client: MatrixClient) {
         this.cache = new LRU({
             max: maxEntries,
-            maxAge: maxAgeMs,
+            ttl: maxAgeMs,
         });
     }
 
