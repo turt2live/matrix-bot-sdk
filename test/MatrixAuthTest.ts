@@ -28,7 +28,7 @@ describe('MatrixAuth', () => {
             const password = "P@ssw0rd";
             const accessToken = "1234";
 
-            http.when("POST", "/_matrix/client/r0/register").respond(200, (path, content) => {
+            http.when("POST", "/_matrix/client/v3/register").respond(200, (path, content) => {
                 expect(content).toMatchObject({ username, password });
                 return { access_token: accessToken };
             });
@@ -51,7 +51,7 @@ describe('MatrixAuth', () => {
             const sessionId = "5678";
 
             // First is UIA
-            http.when("POST", "/_matrix/client/r0/register").respond(401, (path, content) => {
+            http.when("POST", "/_matrix/client/v3/register").respond(401, (path, content) => {
                 expect(content).toMatchObject({ username, password });
                 return {
                     session: sessionId,
@@ -61,7 +61,7 @@ describe('MatrixAuth', () => {
                     params: {},
                 };
             });
-            http.when("POST", "/_matrix/client/r0/register").respond(200, (path, content) => {
+            http.when("POST", "/_matrix/client/v3/register").respond(200, (path, content) => {
                 expect(content).toMatchObject({
                     username,
                     password,
@@ -87,7 +87,7 @@ describe('MatrixAuth', () => {
             const password = "P@ssw0rd";
             const accessToken = "1234";
 
-            http.when("POST", "/_matrix/client/r0/login").respond(200, (path, content) => {
+            http.when("POST", "/_matrix/client/v3/login").respond(200, (path, content) => {
                 expect(content).toMatchObject({
                     type: "m.login.password",
                     identifier: {

@@ -21,6 +21,7 @@ import {
     RoomDirectoryLookupResponse,
     RoomEvent,
     RustSdkCryptoStorageProvider,
+    ServerVersions,
     setRequestFn,
 } from "../src";
 import { createTestClient, expectArrayEquals, TEST_DEVICE_ID } from "./TestUtils";
@@ -310,6 +311,113 @@ describe('MatrixClient', () => {
         });
     });
 
+    describe('getServerVersions', () => {
+        it('should call the right endpoint', async () => {
+            const { client, http } = createTestClient();
+
+            const versionsResponse: ServerVersions = {
+                unstable_features: {
+                    "org.example.feature1": true,
+                    "org.example.feature2": false,
+                },
+                versions: ["r0.6.1", "r0.5.0", "v1.1", "v1.2"],
+            };
+
+            http.when("GET", "/_matrix/client/versions").respond(200, versionsResponse);
+
+            const [result] = await Promise.all([client.getServerVersions(), http.flushAllExpected()]);
+            expect(result).toEqual(versionsResponse);
+        });
+
+        it('should cache the response', async () => {
+            const { client, http } = createTestClient();
+
+            const versionsResponse: ServerVersions = {
+                unstable_features: {
+                    "org.example.feature1": true,
+                    "org.example.feature2": false,
+                },
+                versions: ["r0.6.1", "r0.5.0", "v1.1", "v1.2"],
+            };
+
+            http.when("GET", "/_matrix/client/versions").respond(200, versionsResponse);
+
+            const [result] = await Promise.all([client.getServerVersions(), http.flushAllExpected()]);
+            expect(result).toEqual(versionsResponse);
+            const result2 = await client.getServerVersions();
+            expect(result2).toBe(result); // looking for same pointer
+
+            // clear the timer with private member access
+            (<any>client).versionsLastFetched = 0;
+            http.when("GET", "/_matrix/client/versions").respond(200, versionsResponse);
+
+            const [result3] = await Promise.all([client.getServerVersions(), http.flushAllExpected()]);
+            expect(result3).toEqual(versionsResponse);
+        });
+    });
+
+    describe('doesServerSupportUnstableFeature', () => {
+        test.each(<[ServerVersions["unstable_features"], string, boolean][]>[
+            [null, "org.example.feature", false],
+            [undefined, "org.example.feature", false],
+            [{}, "org.example.feature", false],
+            [{ "org.example.feature": true }, "org.example.feature", true],
+            [{ "org.example.feature": false }, "org.example.feature", false],
+            [{ "org.example.wrong": true }, "org.example.feature", false],
+            [{ "org.example.wrong": false }, "org.example.feature", false],
+        ])("should find that %p has %p as %p", async (versions, flag, target) => {
+            const { client, http } = createTestClient();
+
+            const versionsResponse: ServerVersions = {
+                versions: ["v1.1"],
+                unstable_features: versions,
+            };
+
+            http.when("GET", "/_matrix/client/versions").respond(200, versionsResponse);
+
+            const [result] = await Promise.all([client.doesServerSupportUnstableFeature(flag), http.flushAllExpected()]);
+            expect(result).toEqual(target);
+        });
+    });
+
+    describe('doesServerSupportVersion', () => {
+        test.each(<[ServerVersions["versions"], string, boolean][]>[
+            [[], "v1.1", false],
+            [["v1.2"], "v1.1", false],
+            [["v1.1", "v1.2", "v1.3"], "v1.2", true],
+        ])("should find that %p has %p as %p", async (versions, version, target) => {
+            const { client, http } = createTestClient();
+
+            const versionsResponse: ServerVersions = {
+                versions: versions,
+            };
+
+            http.when("GET", "/_matrix/client/versions").respond(200, versionsResponse);
+
+            const [result] = await Promise.all([client.doesServerSupportVersion(version), http.flushAllExpected()]);
+            expect(result).toEqual(target);
+        });
+    });
+
+    describe('doesServerSupportAnyOneVersion', () => {
+        test.each(<[ServerVersions["versions"], string[], boolean][]>[
+            [[], ["v1.1", "v1.2"], false],
+            [["v1.3"], ["v1.1", "v1.2"], false],
+            [["v1.1", "v1.2", "v1.3"], ["v1.2", "v1.3"], true],
+        ])("should find that %p has %p as %p", async (versions, searchVersions, target) => {
+            const { client, http } = createTestClient();
+
+            const versionsResponse: ServerVersions = {
+                versions: versions,
+            };
+
+            http.when("GET", "/_matrix/client/versions").respond(200, versionsResponse);
+
+            const [result] = await Promise.all([client.doesServerSupportAnyOneVersion(searchVersions), http.flushAllExpected()]);
+            expect(result).toEqual(target);
+        });
+    });
+
     describe('getOpenIDConnectToken', () => {
         it('should call the right endpoint', async () => {
             const { client, http, hsUrl } = createTestClient();
@@ -325,8 +433,8 @@ describe('MatrixClient', () => {
             client.getUserId = () => Promise.resolve(userId);
 
             // noinspection TypeScriptValidateJSTypes
-            http.when("POST", "/_matrix/client/r0/user").respond(200, (path) => {
-                expect(path).toEqual(`${hsUrl}/_matrix/client/r0/user/${encodeURIComponent(userId)}/openid/request_token`);
+            http.when("POST", "/_matrix/client/v3/user").respond(200, (path) => {
+                expect(path).toEqual(`${hsUrl}/_matrix/client/v3/user/${encodeURIComponent(userId)}/openid/request_token`);
                 return testToken;
             });
 
@@ -374,8 +482,8 @@ describe('MatrixClient', () => {
             client.getUserId = () => Promise.resolve(userId);
 
             // noinspection TypeScriptValidateJSTypes
-            http.when("GET", "/_matrix/client/r0/user").respond(200, (path) => {
-                expect(path).toEqual(`${hsUrl}/_matrix/client/r0/user/${encodeURIComponent(userId)}/account_data/${encodeURIComponent(eventType)}`);
+            http.when("GET", "/_matrix/client/v3/user").respond(200, (path) => {
+                expect(path).toEqual(`${hsUrl}/_matrix/client/v3/user/${encodeURIComponent(userId)}/account_data/${encodeURIComponent(eventType)}`);
                 return {};
             });
 
@@ -393,8 +501,8 @@ describe('MatrixClient', () => {
             client.getUserId = () => Promise.resolve(userId);
 
             // noinspection TypeScriptValidateJSTypes
-            http.when("GET", "/_matrix/client/r0/user").respond(200, (path) => {
-                expect(path).toEqual(`${hsUrl}/_matrix/client/r0/user/${encodeURIComponent(userId)}/account_data/${encodeURIComponent(eventType)}`);
+            http.when("GET", "/_matrix/client/v3/user").respond(200, (path) => {
+                expect(path).toEqual(`${hsUrl}/_matrix/client/v3/user/${encodeURIComponent(userId)}/account_data/${encodeURIComponent(eventType)}`);
                 return {};
             });
 
@@ -411,7 +519,7 @@ describe('MatrixClient', () => {
             client.getUserId = () => Promise.resolve(userId);
 
             // noinspection TypeScriptValidateJSTypes
-            http.when("GET", "/_matrix/client/r0/user").respond(404, {});
+            http.when("GET", "/_matrix/client/v3/user").respond(404, {});
 
             const [ret] = await Promise.all([client.getSafeAccountData(eventType, defaultContent), http.flushAllExpected()]);
             expect(ret).toBe(defaultContent);
@@ -433,8 +541,8 @@ describe('MatrixClient', () => {
             client.getUserId = () => Promise.resolve(userId);
 
             // noinspection TypeScriptValidateJSTypes
-            http.when("GET", "/_matrix/client/r0/presence").respond(200, (path) => {
-                expect(path).toEqual(`${hsUrl}/_matrix/client/r0/presence/${encodeURIComponent(userId)}/status`);
+            http.when("GET", "/_matrix/client/v3/presence").respond(200, (path) => {
+                expect(path).toEqual(`${hsUrl}/_matrix/client/v3/presence/${encodeURIComponent(userId)}/status`);
                 return presenceObj;
             });
 
@@ -456,8 +564,8 @@ describe('MatrixClient', () => {
             };
 
             // noinspection TypeScriptValidateJSTypes
-            http.when("GET", "/_matrix/client/r0/presence").respond(200, (path) => {
-                expect(path).toEqual(`${hsUrl}/_matrix/client/r0/presence/${encodeURIComponent(userId)}/status`);
+            http.when("GET", "/_matrix/client/v3/presence").respond(200, (path) => {
+                expect(path).toEqual(`${hsUrl}/_matrix/client/v3/presence/${encodeURIComponent(userId)}/status`);
                 return presenceObj;
             });
 
@@ -477,8 +585,8 @@ describe('MatrixClient', () => {
             client.getUserId = () => Promise.resolve(userId);
 
             // noinspection TypeScriptValidateJSTypes
-            http.when("PUT", "/_matrix/client/r0/presence").respond(200, (path, obj) => {
-                expect(path).toEqual(`${hsUrl}/_matrix/client/r0/presence/${encodeURIComponent(userId)}/status`);
+            http.when("PUT", "/_matrix/client/v3/presence").respond(200, (path, obj) => {
+                expect(path).toEqual(`${hsUrl}/_matrix/client/v3/presence/${encodeURIComponent(userId)}/status`);
                 expect(obj).toMatchObject({
                     presence: presence,
                     status_msg: message,
@@ -498,8 +606,8 @@ describe('MatrixClient', () => {
             client.getUserId = () => Promise.resolve(userId);
 
             // noinspection TypeScriptValidateJSTypes
-            http.when("PUT", "/_matrix/client/r0/presence").respond(200, (path, obj) => {
-                expect(path).toEqual(`${hsUrl}/_matrix/client/r0/presence/${encodeURIComponent(userId)}/status`);
+            http.when("PUT", "/_matrix/client/v3/presence").respond(200, (path, obj) => {
+                expect(path).toEqual(`${hsUrl}/_matrix/client/v3/presence/${encodeURIComponent(userId)}/status`);
                 expect(obj).toEqual({
                     presence: presence,
                 });
@@ -521,9 +629,9 @@ describe('MatrixClient', () => {
             client.getUserId = () => Promise.resolve(userId);
 
             // noinspection TypeScriptValidateJSTypes
-            http.when("GET", "/_matrix/client/r0/user").respond(200, (path) => {
+            http.when("GET", "/_matrix/client/v3/user").respond(200, (path) => {
                 // eslint-disable-next-line max-len
-                expect(path).toEqual(`${hsUrl}/_matrix/client/r0/user/${encodeURIComponent(userId)}/rooms/${encodeURIComponent(roomId)}/account_data/${encodeURIComponent(eventType)}`);
+                expect(path).toEqual(`${hsUrl}/_matrix/client/v3/user/${encodeURIComponent(userId)}/rooms/${encodeURIComponent(roomId)}/account_data/${encodeURIComponent(eventType)}`);
                 return {};
             });
 
@@ -542,9 +650,9 @@ describe('MatrixClient', () => {
             client.getUserId = () => Promise.resolve(userId);
 
             // noinspection TypeScriptValidateJSTypes
-            http.when("GET", "/_matrix/client/r0/user").respond(200, (path) => {
+            http.when("GET", "/_matrix/client/v3/user").respond(200, (path) => {
                 // eslint-disable-next-line max-len
-                expect(path).toEqual(`${hsUrl}/_matrix/client/r0/user/${encodeURIComponent(userId)}/rooms/${encodeURIComponent(roomId)}/account_data/${encodeURIComponent(eventType)}`);
+                expect(path).toEqual(`${hsUrl}/_matrix/client/v3/user/${encodeURIComponent(userId)}/rooms/${encodeURIComponent(roomId)}/account_data/${encodeURIComponent(eventType)}`);
                 return {};
             });
 
@@ -562,7 +670,7 @@ describe('MatrixClient', () => {
             client.getUserId = () => Promise.resolve(userId);
 
             // noinspection TypeScriptValidateJSTypes
-            http.when("GET", "/_matrix/client/r0/user").respond(404, {});
+            http.when("GET", "/_matrix/client/v3/user").respond(404, {});
 
             const [ret] = await Promise.all([client.getSafeRoomAccountData(eventType, roomId, defaultContent), http.flushAllExpected()]);
             expect(ret).toBe(defaultContent);
@@ -580,8 +688,8 @@ describe('MatrixClient', () => {
             client.getUserId = () => Promise.resolve(userId);
 
             // noinspection TypeScriptValidateJSTypes
-            http.when("PUT", "/_matrix/client/r0/user").respond(200, (path, content) => {
-                expect(path).toEqual(`${hsUrl}/_matrix/client/r0/user/${encodeURIComponent(userId)}/account_data/${encodeURIComponent(eventType)}`);
+            http.when("PUT", "/_matrix/client/v3/user").respond(200, (path, content) => {
+                expect(path).toEqual(`${hsUrl}/_matrix/client/v3/user/${encodeURIComponent(userId)}/account_data/${encodeURIComponent(eventType)}`);
                 expect(content).toMatchObject(eventContent);
                 return {};
             });
@@ -602,9 +710,9 @@ describe('MatrixClient', () => {
             client.getUserId = () => Promise.resolve(userId);
 
             // noinspection TypeScriptValidateJSTypes
-            http.when("PUT", "/_matrix/client/r0/user").respond(200, (path, content) => {
+            http.when("PUT", "/_matrix/client/v3/user").respond(200, (path, content) => {
                 // eslint-disable-next-line max-len
-                expect(path).toEqual(`${hsUrl}/_matrix/client/r0/user/${encodeURIComponent(userId)}/rooms/${encodeURIComponent(roomId)}/account_data/${encodeURIComponent(eventType)}`);
+                expect(path).toEqual(`${hsUrl}/_matrix/client/v3/user/${encodeURIComponent(userId)}/rooms/${encodeURIComponent(roomId)}/account_data/${encodeURIComponent(eventType)}`);
                 expect(content).toMatchObject(eventContent);
                 return {};
             });
@@ -620,7 +728,7 @@ describe('MatrixClient', () => {
             const roomId = "!abc:example.org";
 
             // noinspection TypeScriptValidateJSTypes
-            http.when("GET", "/_matrix/client/r0/rooms/").respond(404, {});
+            http.when("GET", "/_matrix/client/v3/rooms/").respond(404, {});
 
             const [published] = await Promise.all([client.getPublishedAlias(roomId), http.flushAllExpected()]);
             expect(published).toBeFalsy();
@@ -632,7 +740,7 @@ describe('MatrixClient', () => {
             const roomId = "!abc:example.org";
 
             // noinspection TypeScriptValidateJSTypes
-            http.when("GET", "/_matrix/client/r0/rooms/").respond(200, {});
+            http.when("GET", "/_matrix/client/v3/rooms/").respond(200, {});
 
             const [published] = await Promise.all([client.getPublishedAlias(roomId), http.flushAllExpected()]);
             expect(published).toBeFalsy();
@@ -646,7 +754,7 @@ describe('MatrixClient', () => {
             const alias2 = "#test2:example.org";
 
             // noinspection TypeScriptValidateJSTypes
-            http.when("GET", "/_matrix/client/r0/rooms/").respond(200, {
+            http.when("GET", "/_matrix/client/v3/rooms/").respond(200, {
                 alias: alias1,
                 alt_aliases: [alias2],
             });
@@ -663,7 +771,7 @@ describe('MatrixClient', () => {
             const alias2 = "#test2:example.org";
 
             // noinspection TypeScriptValidateJSTypes
-            http.when("GET", "/_matrix/client/r0/rooms/").respond(200, {
+            http.when("GET", "/_matrix/client/v3/rooms/").respond(200, {
                 alt_aliases: [alias2, alias1],
             });
 
@@ -680,8 +788,8 @@ describe('MatrixClient', () => {
             const roomId = "!abc:example.org";
 
             // noinspection TypeScriptValidateJSTypes
-            http.when("PUT", "/_matrix/client/r0/directory/room/").respond(200, (path, content) => {
-                expect(path).toEqual(`${hsUrl}/_matrix/client/r0/directory/room/${encodeURIComponent(alias)}`);
+            http.when("PUT", "/_matrix/client/v3/directory/room/").respond(200, (path, content) => {
+                expect(path).toEqual(`${hsUrl}/_matrix/client/v3/directory/room/${encodeURIComponent(alias)}`);
                 expect(content).toMatchObject({ room_id: roomId });
                 return {};
             });
@@ -697,8 +805,8 @@ describe('MatrixClient', () => {
             const alias = "#test:example.org";
 
             // noinspection TypeScriptValidateJSTypes
-            http.when("DELETE", "/_matrix/client/r0/directory/room/").respond(200, (path) => {
-                expect(path).toEqual(`${hsUrl}/_matrix/client/r0/directory/room/${encodeURIComponent(alias)}`);
+            http.when("DELETE", "/_matrix/client/v3/directory/room/").respond(200, (path) => {
+                expect(path).toEqual(`${hsUrl}/_matrix/client/v3/directory/room/${encodeURIComponent(alias)}`);
                 return {};
             });
 
@@ -714,8 +822,8 @@ describe('MatrixClient', () => {
             const visibility = "public";
 
             // noinspection TypeScriptValidateJSTypes
-            http.when("PUT", "/_matrix/client/r0/directory/list/room/").respond(200, (path, content) => {
-                expect(path).toEqual(`${hsUrl}/_matrix/client/r0/directory/list/room/${encodeURIComponent(roomId)}`);
+            http.when("PUT", "/_matrix/client/v3/directory/list/room/").respond(200, (path, content) => {
+                expect(path).toEqual(`${hsUrl}/_matrix/client/v3/directory/list/room/${encodeURIComponent(roomId)}`);
                 expect(content).toMatchObject({ visibility: visibility });
                 return {};
             });
@@ -731,8 +839,8 @@ describe('MatrixClient', () => {
             const roomId = "!test:example.org";
 
             // noinspection TypeScriptValidateJSTypes
-            http.when("GET", "/_matrix/client/r0/directory/list/room/").respond(200, (path) => {
-                expect(path).toEqual(`${hsUrl}/_matrix/client/r0/directory/list/room/${encodeURIComponent(roomId)}`);
+            http.when("GET", "/_matrix/client/v3/directory/list/room/").respond(200, (path) => {
+                expect(path).toEqual(`${hsUrl}/_matrix/client/v3/directory/list/room/${encodeURIComponent(roomId)}`);
                 return {};
             });
 
@@ -746,7 +854,7 @@ describe('MatrixClient', () => {
             const visibility = "public";
 
             // noinspection TypeScriptValidateJSTypes
-            http.when("GET", "/_matrix/client/r0/directory/list/room/").respond(200, { visibility: visibility });
+            http.when("GET", "/_matrix/client/v3/directory/list/room/").respond(200, { visibility: visibility });
 
             const [result] = await Promise.all([client.getDirectoryVisibility(roomId), http.flushAllExpected()]);
             expect(result).toEqual(visibility);
@@ -802,8 +910,8 @@ describe('MatrixClient', () => {
             const servers = ["example.org", "localhost"];
 
             // noinspection TypeScriptValidateJSTypes
-            http.when("GET", "/_matrix/client/r0/directory/room/").respond(200, (path) => {
-                expect(path).toEqual(`${hsUrl}/_matrix/client/r0/directory/room/${encodeURIComponent(alias)}`);
+            http.when("GET", "/_matrix/client/v3/directory/room/").respond(200, (path) => {
+                expect(path).toEqual(`${hsUrl}/_matrix/client/v3/directory/room/${encodeURIComponent(alias)}`);
                 return { room_id: roomId, servers: servers };
             });
 
@@ -818,7 +926,7 @@ describe('MatrixClient', () => {
             const servers = ["example.org", "localhost"];
 
             // noinspection TypeScriptValidateJSTypes
-            http.when("GET", "/_matrix/client/r0/directory/room/").respond(200, { room_id: roomId, servers: servers });
+            http.when("GET", "/_matrix/client/v3/directory/room/").respond(200, { room_id: roomId, servers: servers });
 
             const [result] = await Promise.all([client.lookupRoomAlias(alias), http.flushAllExpected()]);
             expect(result).toMatchObject({ roomId: roomId, residentServers: servers });
@@ -833,8 +941,8 @@ describe('MatrixClient', () => {
             const userId = "@example:example.org";
 
             // noinspection TypeScriptValidateJSTypes
-            http.when("POST", "/_matrix/client/r0/rooms").respond(200, (path, content) => {
-                expect(path).toEqual(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/invite`);
+            http.when("POST", "/_matrix/client/v3/rooms").respond(200, (path, content) => {
+                expect(path).toEqual(`${hsUrl}/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/invite`);
                 expect(content).toMatchObject({ user_id: userId });
                 return {};
             });
@@ -851,8 +959,8 @@ describe('MatrixClient', () => {
             const userId = "@example:example.org";
 
             // noinspection TypeScriptValidateJSTypes
-            http.when("POST", "/_matrix/client/r0/rooms").respond(200, (path, content) => {
-                expect(path).toEqual(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/kick`);
+            http.when("POST", "/_matrix/client/v3/rooms").respond(200, (path, content) => {
+                expect(path).toEqual(`${hsUrl}/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/kick`);
                 expect(content).toMatchObject({ user_id: userId });
                 return {};
             });
@@ -868,8 +976,8 @@ describe('MatrixClient', () => {
             const reason = "Excessive unit testing";
 
             // noinspection TypeScriptValidateJSTypes
-            http.when("POST", "/_matrix/client/r0/rooms").respond(200, (path, content) => {
-                expect(path).toEqual(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/kick`);
+            http.when("POST", "/_matrix/client/v3/rooms").respond(200, (path, content) => {
+                expect(path).toEqual(`${hsUrl}/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/kick`);
                 expect(content).toMatchObject({ user_id: userId, reason: reason });
                 return {};
             });
@@ -886,8 +994,8 @@ describe('MatrixClient', () => {
             const userId = "@example:example.org";
 
             // noinspection TypeScriptValidateJSTypes
-            http.when("POST", "/_matrix/client/r0/rooms").respond(200, (path, content) => {
-                expect(path).toEqual(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/ban`);
+            http.when("POST", "/_matrix/client/v3/rooms").respond(200, (path, content) => {
+                expect(path).toEqual(`${hsUrl}/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/ban`);
                 expect(content).toMatchObject({ user_id: userId });
                 return {};
             });
@@ -903,8 +1011,8 @@ describe('MatrixClient', () => {
             const reason = "Excessive unit testing";
 
             // noinspection TypeScriptValidateJSTypes
-            http.when("POST", "/_matrix/client/r0/rooms").respond(200, (path, content) => {
-                expect(path).toEqual(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/ban`);
+            http.when("POST", "/_matrix/client/v3/rooms").respond(200, (path, content) => {
+                expect(path).toEqual(`${hsUrl}/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/ban`);
                 expect(content).toMatchObject({ user_id: userId, reason: reason });
                 return {};
             });
@@ -921,8 +1029,8 @@ describe('MatrixClient', () => {
             const userId = "@example:example.org";
 
             // noinspection TypeScriptValidateJSTypes
-            http.when("POST", "/_matrix/client/r0/rooms").respond(200, (path, content) => {
-                expect(path).toEqual(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/unban`);
+            http.when("POST", "/_matrix/client/v3/rooms").respond(200, (path, content) => {
+                expect(path).toEqual(`${hsUrl}/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/unban`);
                 expect(content).toMatchObject({ user_id: userId });
                 return {};
             });
@@ -952,7 +1060,7 @@ describe('MatrixClient', () => {
             };
 
             // noinspection TypeScriptValidateJSTypes
-            http.when("GET", "/_matrix/client/r0/account/whoami").respond(200, response);
+            http.when("GET", "/_matrix/client/v3/account/whoami").respond(200, response);
 
             const [result] = await Promise.all([client.getUserId(), http.flushAllExpected()]);
             expect(result).toEqual(userId);
@@ -969,7 +1077,7 @@ describe('MatrixClient', () => {
             };
 
             // noinspection TypeScriptValidateJSTypes
-            http.when("GET", "/_matrix/client/r0/account/whoami").respond(200, response);
+            http.when("GET", "/_matrix/client/v3/account/whoami").respond(200, response);
 
             const [result] = await Promise.all([client.getWhoAmI(), http.flushAllExpected()]);
             expect(result).toMatchObject(response);
@@ -990,12 +1098,12 @@ describe('MatrixClient', () => {
 
             // The sync handler checks which rooms it should ignore
             // noinspection TypeScriptValidateJSTypes
-            http.when("GET", "/_matrix/client/r0/joined_rooms").respond(200, { joined_rooms: [] });
+            http.when("GET", "/_matrix/client/v3/joined_rooms").respond(200, { joined_rooms: [] });
 
             const waitPromise = new Promise((resolve) => {
                 for (let i = 0; i <= max * 2; i++) {
                     // noinspection TypeScriptValidateJSTypes
-                    http.when("GET", "/_matrix/client/r0/sync").respond(200, () => {
+                    http.when("GET", "/_matrix/client/v3/sync").respond(200, () => {
                         expect(count).toBeLessThan(max + 1);
                         count++;
                         if (count === max) {
@@ -1036,10 +1144,10 @@ describe('MatrixClient', () => {
 
             // The sync handler checks which rooms it should ignore
             // noinspection TypeScriptValidateJSTypes
-            http.when("GET", "/_matrix/client/r0/joined_rooms").respond(200, { joined_rooms: [] });
+            http.when("GET", "/_matrix/client/v3/joined_rooms").respond(200, { joined_rooms: [] });
 
             // noinspection TypeScriptValidateJSTypes
-            http.when("GET", "/_matrix/client/r0/sync").respond(200, () => {
+            http.when("GET", "/_matrix/client/v3/sync").respond(200, () => {
                 client.stop();
                 return { next_batch: "123" };
             });
@@ -1071,11 +1179,11 @@ describe('MatrixClient', () => {
 
             // The sync handler checks which rooms it should ignore
             // noinspection TypeScriptValidateJSTypes
-            http.when("GET", "/_matrix/client/r0/joined_rooms").respond(200, { joined_rooms: [] });
+            http.when("GET", "/_matrix/client/v3/joined_rooms").respond(200, { joined_rooms: [] });
 
             // noinspection TypeScriptValidateJSTypes
-            http.when("POST", "/_matrix/client/r0/user").respond(200, (path, content) => {
-                expect(path).toEqual(`${hsUrl}/_matrix/client/r0/user/${encodeURIComponent(userId)}/filter`);
+            http.when("POST", "/_matrix/client/v3/user").respond(200, (path, content) => {
+                expect(path).toEqual(`${hsUrl}/_matrix/client/v3/user/${encodeURIComponent(userId)}/filter`);
                 expect(content).toMatchObject(filter);
                 client.stop(); // avoid a sync early
                 return { filter_id: filterId };
@@ -1109,11 +1217,11 @@ describe('MatrixClient', () => {
 
             // The sync handler checks which rooms it should ignore
             // noinspection TypeScriptValidateJSTypes
-            http.when("GET", "/_matrix/client/r0/joined_rooms").respond(200, { joined_rooms: [] });
+            http.when("GET", "/_matrix/client/v3/joined_rooms").respond(200, { joined_rooms: [] });
 
             // noinspection TypeScriptValidateJSTypes
-            http.when("POST", "/_matrix/client/r0/user").respond(200, (path, content) => {
-                expect(path).toEqual(`${hsUrl}/_matrix/client/r0/user/${encodeURIComponent(userId)}/filter`);
+            http.when("POST", "/_matrix/client/v3/user").respond(200, (path, content) => {
+                expect(path).toEqual(`${hsUrl}/_matrix/client/v3/user/${encodeURIComponent(userId)}/filter`);
                 expect(content).toMatchObject(filter);
                 client.stop(); // avoid a sync early
                 return { filter_id: filterId };
@@ -1142,10 +1250,10 @@ describe('MatrixClient', () => {
 
             // The sync handler checks which rooms it should ignore
             // noinspection TypeScriptValidateJSTypes
-            http.when("GET", "/_matrix/client/r0/joined_rooms").respond(200, { joined_rooms: [] });
+            http.when("GET", "/_matrix/client/v3/joined_rooms").respond(200, { joined_rooms: [] });
 
             // noinspection TypeScriptValidateJSTypes
-            http.when("GET", "/_matrix/client/r0/sync").respond(200, (path, content, req) => {
+            http.when("GET", "/_matrix/client/v3/sync").respond(200, (path, content, req) => {
                 expect(req).toBeDefined();
                 expect(req.opts.qs.filter).toEqual(filterId);
                 client.stop();
@@ -1180,16 +1288,16 @@ describe('MatrixClient', () => {
 
             // The sync handler checks which rooms it should ignore
             // noinspection TypeScriptValidateJSTypes
-            http.when("GET", "/_matrix/client/r0/joined_rooms").respond(200, { joined_rooms: [] });
+            http.when("GET", "/_matrix/client/v3/joined_rooms").respond(200, { joined_rooms: [] });
 
             // noinspection TypeScriptValidateJSTypes
-            http.when("GET", "/_matrix/client/r0/sync").respond(200, (path, content, req) => {
+            http.when("GET", "/_matrix/client/v3/sync").respond(200, (path, content, req) => {
                 expect(req).toBeDefined();
                 expect(req.opts.qs.since).toBeUndefined();
                 return { next_batch: secondToken };
             });
             // noinspection TypeScriptValidateJSTypes
-            http.when("GET", "/_matrix/client/r0/sync").respond(200, (path, content, req) => {
+            http.when("GET", "/_matrix/client/v3/sync").respond(200, (path, content, req) => {
                 expect(req).toBeDefined();
                 expect(req.opts.qs.since).toEqual(secondToken);
                 client.stop();
@@ -1226,10 +1334,10 @@ describe('MatrixClient', () => {
 
             // The sync handler checks which rooms it should ignore
             // noinspection TypeScriptValidateJSTypes
-            http.when("GET", "/_matrix/client/r0/joined_rooms").respond(200, { joined_rooms: [] });
+            http.when("GET", "/_matrix/client/v3/joined_rooms").respond(200, { joined_rooms: [] });
 
             // noinspection TypeScriptValidateJSTypes
-            http.when("GET", "/_matrix/client/r0/sync").respond(200, (path, content, req) => {
+            http.when("GET", "/_matrix/client/v3/sync").respond(200, (path, content, req) => {
                 expect(req).toBeDefined();
 
                 expect(req.opts.qs.since).toEqual(syncToken);
@@ -1262,17 +1370,17 @@ describe('MatrixClient', () => {
 
             // The sync handler checks which rooms it should ignore
             // noinspection TypeScriptValidateJSTypes
-            http.when("GET", "/_matrix/client/r0/joined_rooms").respond(200, { joined_rooms: [] });
+            http.when("GET", "/_matrix/client/v3/joined_rooms").respond(200, { joined_rooms: [] });
 
             // noinspection TypeScriptValidateJSTypes
-            http.when("GET", "/_matrix/client/r0/sync").respond(200, (path, content, req) => {
+            http.when("GET", "/_matrix/client/v3/sync").respond(200, (path, content, req) => {
                 expect(req).toBeDefined();
                 expect(req.opts.qs.presence).toBeUndefined();
                 client.syncingPresence = presence;
                 return { next_batch: "testing" };
             });
             // noinspection TypeScriptValidateJSTypes
-            http.when("GET", "/_matrix/client/r0/sync").respond(200, (path, content, req) => {
+            http.when("GET", "/_matrix/client/v3/sync").respond(200, (path, content, req) => {
                 expect(req).toBeDefined();
                 expect(req.opts.qs.presence).toEqual(presence);
                 client.stop();
@@ -2237,8 +2345,8 @@ describe('MatrixClient', () => {
             const event = { type: "m.room.message" };
 
             // noinspection TypeScriptValidateJSTypes
-            http.when("GET", "/_matrix/client/r0/rooms").respond(200, (path) => {
-                expect(path).toEqual(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/event/${encodeURIComponent(eventId)}`);
+            http.when("GET", "/_matrix/client/v3/rooms").respond(200, (path) => {
+                expect(path).toEqual(`${hsUrl}/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/event/${encodeURIComponent(eventId)}`);
                 return event;
             });
 
@@ -2263,8 +2371,8 @@ describe('MatrixClient', () => {
             client.addPreprocessor(processor);
 
             // noinspection TypeScriptValidateJSTypes
-            http.when("GET", "/_matrix/client/r0/rooms").respond(200, (path) => {
-                expect(path).toEqual(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/event/${encodeURIComponent(eventId)}`);
+            http.when("GET", "/_matrix/client/v3/rooms").respond(200, (path) => {
+                expect(path).toEqual(`${hsUrl}/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/event/${encodeURIComponent(eventId)}`);
                 return event;
             });
 
@@ -2305,8 +2413,8 @@ describe('MatrixClient', () => {
             (<any>client).processEvent = processSpy;
 
             // noinspection TypeScriptValidateJSTypes
-            http.when("GET", "/_matrix/client/r0/rooms").respond(200, (path) => {
-                expect(path).toEqual(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/event/${encodeURIComponent(eventId)}`);
+            http.when("GET", "/_matrix/client/v3/rooms").respond(200, (path) => {
+                expect(path).toEqual(`${hsUrl}/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/event/${encodeURIComponent(eventId)}`);
                 return event;
             });
 
@@ -2349,8 +2457,8 @@ describe('MatrixClient', () => {
             (<any>client).processEvent = processSpy;
 
             // noinspection TypeScriptValidateJSTypes
-            http.when("GET", "/_matrix/client/r0/rooms").respond(200, (path) => {
-                expect(path).toEqual(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/event/${encodeURIComponent(eventId)}`);
+            http.when("GET", "/_matrix/client/v3/rooms").respond(200, (path) => {
+                expect(path).toEqual(`${hsUrl}/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/event/${encodeURIComponent(eventId)}`);
                 return event;
             });
 
@@ -2371,8 +2479,8 @@ describe('MatrixClient', () => {
             const event = { type: "m.room.message" };
 
             // noinspection TypeScriptValidateJSTypes
-            http.when("GET", "/_matrix/client/r0/rooms").respond(200, (path) => {
-                expect(path).toEqual(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/event/${encodeURIComponent(eventId)}`);
+            http.when("GET", "/_matrix/client/v3/rooms").respond(200, (path) => {
+                expect(path).toEqual(`${hsUrl}/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/event/${encodeURIComponent(eventId)}`);
                 return event;
             });
 
@@ -2397,8 +2505,8 @@ describe('MatrixClient', () => {
             client.addPreprocessor(processor);
 
             // noinspection TypeScriptValidateJSTypes
-            http.when("GET", "/_matrix/client/r0/rooms").respond(200, (path) => {
-                expect(path).toEqual(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/event/${encodeURIComponent(eventId)}`);
+            http.when("GET", "/_matrix/client/v3/rooms").respond(200, (path) => {
+                expect(path).toEqual(`${hsUrl}/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/event/${encodeURIComponent(eventId)}`);
                 return event;
             });
 
@@ -2439,8 +2547,8 @@ describe('MatrixClient', () => {
             (<any>client).processEvent = processSpy;
 
             // noinspection TypeScriptValidateJSTypes
-            http.when("GET", "/_matrix/client/r0/rooms").respond(200, (path) => {
-                expect(path).toEqual(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/event/${encodeURIComponent(eventId)}`);
+            http.when("GET", "/_matrix/client/v3/rooms").respond(200, (path) => {
+                expect(path).toEqual(`${hsUrl}/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/event/${encodeURIComponent(eventId)}`);
                 return event;
             });
 
@@ -2460,8 +2568,8 @@ describe('MatrixClient', () => {
             const events = [{ type: "m.room.message" }, { type: "m.room.not_message" }];
 
             // noinspection TypeScriptValidateJSTypes
-            http.when("GET", "/_matrix/client/r0/rooms").respond(200, (path) => {
-                expect(path).toEqual(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/state`);
+            http.when("GET", "/_matrix/client/v3/rooms").respond(200, (path) => {
+                expect(path).toEqual(`${hsUrl}/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/state`);
                 return events;
             });
 
@@ -2489,8 +2597,8 @@ describe('MatrixClient', () => {
             client.addPreprocessor(processor);
 
             // noinspection TypeScriptValidateJSTypes
-            http.when("GET", "/_matrix/client/r0/rooms").respond(200, (path) => {
-                expect(path).toEqual(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/state`);
+            http.when("GET", "/_matrix/client/v3/rooms").respond(200, (path) => {
+                expect(path).toEqual(`${hsUrl}/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/state`);
                 return events;
             });
 
@@ -2517,8 +2625,8 @@ describe('MatrixClient', () => {
             const event = { type: "m.room.message" };
 
             // noinspection TypeScriptValidateJSTypes
-            http.when("GET", "/_matrix/client/r0/rooms").respond(200, (path) => {
-                expect(path).toEqual(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/state/${encodeURIComponent(eventType)}/`);
+            http.when("GET", "/_matrix/client/v3/rooms").respond(200, (path) => {
+                expect(path).toEqual(`${hsUrl}/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/state/${encodeURIComponent(eventType)}/`);
                 return event;
             });
 
@@ -2535,8 +2643,8 @@ describe('MatrixClient', () => {
             const stateKey = "testing";
 
             // noinspection TypeScriptValidateJSTypes
-            http.when("GET", "/_matrix/client/r0/rooms").respond(200, (path) => {
-                expect(path).toEqual(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/state/${encodeURIComponent(eventType)}/${stateKey}`);
+            http.when("GET", "/_matrix/client/v3/rooms").respond(200, (path) => {
+                expect(path).toEqual(`${hsUrl}/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/state/${encodeURIComponent(eventType)}/${stateKey}`);
                 return event;
             });
 
@@ -2561,8 +2669,8 @@ describe('MatrixClient', () => {
             client.addPreprocessor(processor);
 
             // noinspection TypeScriptValidateJSTypes
-            http.when("GET", "/_matrix/client/r0/rooms").respond(200, (path) => {
-                expect(path).toEqual(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/state/${encodeURIComponent(eventType)}/`);
+            http.when("GET", "/_matrix/client/v3/rooms").respond(200, (path) => {
+                expect(path).toEqual(`${hsUrl}/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/state/${encodeURIComponent(eventType)}/`);
                 return event;
             });
 
@@ -2589,8 +2697,8 @@ describe('MatrixClient', () => {
             client.addPreprocessor(processor);
 
             // noinspection TypeScriptValidateJSTypes
-            http.when("GET", "/_matrix/client/r0/rooms").respond(200, (path) => {
-                expect(path).toEqual(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/state/${encodeURIComponent(eventType)}/${stateKey}`);
+            http.when("GET", "/_matrix/client/v3/rooms").respond(200, (path) => {
+                expect(path).toEqual(`${hsUrl}/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/state/${encodeURIComponent(eventType)}/${stateKey}`);
                 return event;
             });
 
@@ -2626,8 +2734,8 @@ describe('MatrixClient', () => {
             const limit = 2;
 
             // noinspection TypeScriptValidateJSTypes
-            http.when("GET", "/_matrix/client/r0/rooms").respond(200, (path, content, req) => {
-                expect(path).toEqual(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/context/${encodeURIComponent(targetEvent.eventId)}`);
+            http.when("GET", "/_matrix/client/v3/rooms").respond(200, (path, content, req) => {
+                expect(path).toEqual(`${hsUrl}/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/context/${encodeURIComponent(targetEvent.eventId)}`);
                 expect(req.opts.qs['limit']).toEqual(limit);
                 return {
                     event: targetEvent,
@@ -2670,8 +2778,8 @@ describe('MatrixClient', () => {
             const profile = { displayname: "testing", avatar_url: "testing", extra: "testing" };
 
             // noinspection TypeScriptValidateJSTypes
-            http.when("GET", "/_matrix/client/r0/profile").respond(200, (path) => {
-                expect(path).toEqual(`${hsUrl}/_matrix/client/r0/profile/${encodeURIComponent(userId)}`);
+            http.when("GET", "/_matrix/client/v3/profile").respond(200, (path) => {
+                expect(path).toEqual(`${hsUrl}/_matrix/client/v3/profile/${encodeURIComponent(userId)}`);
                 return profile;
             });
 
@@ -2687,7 +2795,7 @@ describe('MatrixClient', () => {
             const roomId = "!something:example.org";
 
             // noinspection TypeScriptValidateJSTypes
-            http.when("POST", "/_matrix/client/r0/createRoom").respond(200, (path, content) => {
+            http.when("POST", "/_matrix/client/v3/createRoom").respond(200, (path, content) => {
                 expect(content).toMatchObject({});
                 return { room_id: roomId };
             });
@@ -2706,7 +2814,7 @@ describe('MatrixClient', () => {
             };
 
             // noinspection TypeScriptValidateJSTypes
-            http.when("POST", "/_matrix/client/r0/createRoom").respond(200, (path, content) => {
+            http.when("POST", "/_matrix/client/v3/createRoom").respond(200, (path, content) => {
                 expect(content).toMatchObject(properties);
                 return { room_id: roomId };
             });
@@ -2726,8 +2834,8 @@ describe('MatrixClient', () => {
             (<any>client).userId = userId; // avoid /whoami lookup
 
             // noinspection TypeScriptValidateJSTypes
-            http.when("PUT", "/_matrix/client/r0/profile").respond(200, (path, content) => {
-                expect(path).toEqual(`${hsUrl}/_matrix/client/r0/profile/${encodeURIComponent(userId)}/displayname`);
+            http.when("PUT", "/_matrix/client/v3/profile").respond(200, (path, content) => {
+                expect(path).toEqual(`${hsUrl}/_matrix/client/v3/profile/${encodeURIComponent(userId)}/displayname`);
                 expect(content).toMatchObject({ displayname: displayName });
                 return {};
             });
@@ -2746,8 +2854,8 @@ describe('MatrixClient', () => {
             (<any>client).userId = userId; // avoid /whoami lookup
 
             // noinspection TypeScriptValidateJSTypes
-            http.when("PUT", "/_matrix/client/r0/profile").respond(200, (path, content) => {
-                expect(path).toEqual(`${hsUrl}/_matrix/client/r0/profile/${encodeURIComponent(userId)}/avatar_url`);
+            http.when("PUT", "/_matrix/client/v3/profile").respond(200, (path, content) => {
+                expect(path).toEqual(`${hsUrl}/_matrix/client/v3/profile/${encodeURIComponent(userId)}/avatar_url`);
                 expect(content).toMatchObject({ avatar_url: displayName });
                 return {};
             });
@@ -2765,8 +2873,8 @@ describe('MatrixClient', () => {
             (<any>client).userId = "@joins:example.org"; // avoid /whoami lookup
 
             // noinspection TypeScriptValidateJSTypes
-            http.when("POST", "/_matrix/client/r0/join").respond(200, (path) => {
-                expect(path).toEqual(`${hsUrl}/_matrix/client/r0/join/${encodeURIComponent(roomId)}`);
+            http.when("POST", "/_matrix/client/v3/join").respond(200, (path) => {
+                expect(path).toEqual(`${hsUrl}/_matrix/client/v3/join/${encodeURIComponent(roomId)}`);
                 return { room_id: roomId };
             });
 
@@ -2783,8 +2891,8 @@ describe('MatrixClient', () => {
             (<any>client).userId = "@joins:example.org"; // avoid /whoami lookup
 
             // noinspection TypeScriptValidateJSTypes
-            http.when("POST", "/_matrix/client/r0/join").respond(200, (path, content, req) => {
-                expect(path).toEqual(`${hsUrl}/_matrix/client/r0/join/${encodeURIComponent(roomId)}`);
+            http.when("POST", "/_matrix/client/v3/join").respond(200, (path, content, req) => {
+                expect(path).toEqual(`${hsUrl}/_matrix/client/v3/join/${encodeURIComponent(roomId)}`);
                 expect(req.opts.qs['server_name'].length).toEqual(serverNames.length);
                 for (let i = 0; i < serverNames.length; i++) {
                     expect(req.opts.qs['server_name'][i]).toEqual(serverNames[i]);
@@ -2805,8 +2913,8 @@ describe('MatrixClient', () => {
             (<any>client).userId = "@joins:example.org"; // avoid /whoami lookup
 
             // noinspection TypeScriptValidateJSTypes
-            http.when("POST", "/_matrix/client/r0/join").respond(200, (path) => {
-                expect(path).toEqual(`${hsUrl}/_matrix/client/r0/join/${encodeURIComponent(roomAlias)}`);
+            http.when("POST", "/_matrix/client/v3/join").respond(200, (path) => {
+                expect(path).toEqual(`${hsUrl}/_matrix/client/v3/join/${encodeURIComponent(roomAlias)}`);
                 return { room_id: roomId };
             });
 
@@ -2833,8 +2941,8 @@ describe('MatrixClient', () => {
             const strategySpy = simple.mock(strategy, "joinRoom").callOriginal();
 
             // noinspection TypeScriptValidateJSTypes
-            http.when("POST", "/_matrix/client/r0/join").respond(200, (path) => {
-                expect(path).toEqual(`${hsUrl}/_matrix/client/r0/join/${encodeURIComponent(roomId)}`);
+            http.when("POST", "/_matrix/client/v3/join").respond(200, (path) => {
+                expect(path).toEqual(`${hsUrl}/_matrix/client/v3/join/${encodeURIComponent(roomId)}`);
                 return { room_id: roomId };
             });
 
@@ -2863,8 +2971,8 @@ describe('MatrixClient', () => {
             const strategySpy = simple.mock(strategy, "joinRoom").callOriginal();
 
             // noinspection TypeScriptValidateJSTypes
-            http.when("POST", "/_matrix/client/r0/join").respond(200, (path) => {
-                expect(path).toEqual(`${hsUrl}/_matrix/client/r0/join/${encodeURIComponent(roomId)}`);
+            http.when("POST", "/_matrix/client/v3/join").respond(200, (path) => {
+                expect(path).toEqual(`${hsUrl}/_matrix/client/v3/join/${encodeURIComponent(roomId)}`);
                 return { room_id: roomId };
             });
 
@@ -2881,8 +2989,8 @@ describe('MatrixClient', () => {
             const roomIds = ["!abc:example.org", "!123:example.org"];
 
             // noinspection TypeScriptValidateJSTypes
-            http.when("GET", "/_matrix/client/r0/joined_rooms").respond(200, (path) => {
-                expect(path).toEqual(`${hsUrl}/_matrix/client/r0/joined_rooms`);
+            http.when("GET", "/_matrix/client/v3/joined_rooms").respond(200, (path) => {
+                expect(path).toEqual(`${hsUrl}/_matrix/client/v3/joined_rooms`);
                 return { joined_rooms: roomIds };
             });
 
@@ -2899,8 +3007,8 @@ describe('MatrixClient', () => {
             const members = ["@alice:example.org", "@bob:example.org"];
 
             // noinspection TypeScriptValidateJSTypes
-            http.when("GET", "/_matrix/client/r0/rooms").respond(200, (path) => {
-                expect(path).toEqual(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/joined_members`);
+            http.when("GET", "/_matrix/client/v3/rooms").respond(200, (path) => {
+                expect(path).toEqual(`${hsUrl}/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/joined_members`);
                 const obj = {};
                 for (const member of members) obj[member] = { membership: "join" };
                 return { joined: obj };
@@ -2927,8 +3035,8 @@ describe('MatrixClient', () => {
             };
 
             // noinspection TypeScriptValidateJSTypes
-            http.when("GET", "/_matrix/client/r0/rooms").respond(200, path => {
-                expect(path).toEqual(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/joined_members`);
+            http.when("GET", "/_matrix/client/v3/rooms").respond(200, path => {
+                expect(path).toEqual(`${hsUrl}/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/joined_members`);
                 return { joined: members };
             });
 
@@ -2961,8 +3069,8 @@ describe('MatrixClient', () => {
             ];
 
             // noinspection TypeScriptValidateJSTypes
-            http.when("GET", "/_matrix/client/r0/rooms").respond(200, (path) => {
-                expect(path).toEqual(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/members`);
+            http.when("GET", "/_matrix/client/v3/rooms").respond(200, (path) => {
+                expect(path).toEqual(`${hsUrl}/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/members`);
                 return { chunk: memberEvents };
             });
 
@@ -2999,8 +3107,8 @@ describe('MatrixClient', () => {
             const atToken = "test_token";
 
             // noinspection TypeScriptValidateJSTypes
-            http.when("GET", "/_matrix/client/r0/rooms").respond(200, (path, content, req) => {
-                expect(path).toEqual(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/members`);
+            http.when("GET", "/_matrix/client/v3/rooms").respond(200, (path, content, req) => {
+                expect(path).toEqual(`${hsUrl}/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/members`);
                 expect(req.opts.qs.at).toEqual(atToken);
                 return { chunk: memberEvents };
             });
@@ -3039,8 +3147,8 @@ describe('MatrixClient', () => {
             const forNotMemberships: Membership[] = ['ban'];
 
             // noinspection TypeScriptValidateJSTypes
-            http.when("GET", "/_matrix/client/r0/rooms").respond(200, (path, content, req) => {
-                expect(path).toEqual(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/members`);
+            http.when("GET", "/_matrix/client/v3/rooms").respond(200, (path, content, req) => {
+                expect(path).toEqual(`${hsUrl}/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/members`);
                 expectArrayEquals(forMemberships, req.opts.qs.membership);
                 expectArrayEquals(forNotMemberships, req.opts.qs.not_membership);
                 return { chunk: memberEvents };
@@ -3063,8 +3171,8 @@ describe('MatrixClient', () => {
             const roomId = "!testing:example.org";
 
             // noinspection TypeScriptValidateJSTypes
-            http.when("POST", "/_matrix/client/r0/rooms").respond(200, (path) => {
-                expect(path).toEqual(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/leave`);
+            http.when("POST", "/_matrix/client/v3/rooms").respond(200, (path) => {
+                expect(path).toEqual(`${hsUrl}/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/leave`);
                 return {};
             });
 
@@ -3080,8 +3188,8 @@ describe('MatrixClient', () => {
             const eventId = "$something:example.org";
 
             // noinspection TypeScriptValidateJSTypes
-            http.when("POST", "/_matrix/client/r0/rooms").respond(200, (path) => {
-                expect(path).toEqual(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/receipt/m.read/${encodeURIComponent(eventId)}`);
+            http.when("POST", "/_matrix/client/v3/rooms").respond(200, (path) => {
+                expect(path).toEqual(`${hsUrl}/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/receipt/m.read/${encodeURIComponent(eventId)}`);
                 return {};
             });
 
@@ -3101,8 +3209,8 @@ describe('MatrixClient', () => {
             client.getUserId = () => Promise.resolve(userId);
 
             // noinspection TypeScriptValidateJSTypes
-            http.when("PUT", "/_matrix/client/r0/rooms").respond(200, (path, content) => {
-                expect(path).toEqual(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/typing/${encodeURIComponent(userId)}`);
+            http.when("PUT", "/_matrix/client/v3/rooms").respond(200, (path, content) => {
+                expect(path).toEqual(`${hsUrl}/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/typing/${encodeURIComponent(userId)}`);
                 expect(content).toMatchObject({ typing: typing, timeout: timeout });
                 return {};
             });
@@ -3142,8 +3250,8 @@ describe('MatrixClient', () => {
             };
 
             // noinspection TypeScriptValidateJSTypes
-            http.when("PUT", "/_matrix/client/r0/rooms").respond(200, (path, content) => {
-                const idx = path.indexOf(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/send/m.room.message/`);
+            http.when("PUT", "/_matrix/client/v3/rooms").respond(200, (path, content) => {
+                const idx = path.indexOf(`${hsUrl}/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/send/m.room.message/`);
                 expect(idx).toBe(0);
                 expect(content).toMatchObject(expectedContent);
                 return { event_id: eventId };
@@ -3195,8 +3303,8 @@ describe('MatrixClient', () => {
             };
 
             // noinspection TypeScriptValidateJSTypes
-            http.when("PUT", "/_matrix/client/r0/rooms").respond(200, (path, content) => {
-                const idx = path.indexOf(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/send/m.room.encrypted/`);
+            http.when("PUT", "/_matrix/client/v3/rooms").respond(200, (path, content) => {
+                const idx = path.indexOf(`${hsUrl}/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/send/m.room.encrypted/`);
                 expect(idx).toBe(0);
                 expect(content).toMatchObject(expectedContent);
                 return { event_id: eventId };
@@ -3238,8 +3346,8 @@ describe('MatrixClient', () => {
             client.crypto.isRoomEncrypted = async () => false; // for this test
 
             // noinspection TypeScriptValidateJSTypes
-            http.when("PUT", "/_matrix/client/r0/rooms").respond(200, (path, content) => {
-                const idx = path.indexOf(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/send/m.room.message/`);
+            http.when("PUT", "/_matrix/client/v3/rooms").respond(200, (path, content) => {
+                const idx = path.indexOf(`${hsUrl}/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/send/m.room.message/`);
                 expect(idx).toBe(0);
                 expect(content).toMatchObject(expectedContent);
                 return { event_id: eventId };
@@ -3279,8 +3387,8 @@ describe('MatrixClient', () => {
             };
 
             // noinspection TypeScriptValidateJSTypes
-            http.when("PUT", "/_matrix/client/r0/rooms").respond(200, (path, content) => {
-                const idx = path.indexOf(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/send/m.room.message/`);
+            http.when("PUT", "/_matrix/client/v3/rooms").respond(200, (path, content) => {
+                const idx = path.indexOf(`${hsUrl}/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/send/m.room.message/`);
                 expect(idx).toBe(0);
                 expect(content).toMatchObject(expectedContent);
                 return { event_id: eventId };
@@ -3322,8 +3430,8 @@ describe('MatrixClient', () => {
             };
 
             // noinspection TypeScriptValidateJSTypes
-            http.when("PUT", "/_matrix/client/r0/rooms").respond(200, (path, content) => {
-                const idx = path.indexOf(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/send/m.room.message/`);
+            http.when("PUT", "/_matrix/client/v3/rooms").respond(200, (path, content) => {
+                const idx = path.indexOf(`${hsUrl}/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/send/m.room.message/`);
                 expect(idx).toBe(0);
                 expect(content).toMatchObject(expectedContent);
                 return { event_id: eventId };
@@ -3375,8 +3483,8 @@ describe('MatrixClient', () => {
             };
 
             // noinspection TypeScriptValidateJSTypes
-            http.when("PUT", "/_matrix/client/r0/rooms").respond(200, (path, content) => {
-                const idx = path.indexOf(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/send/m.room.encrypted/`);
+            http.when("PUT", "/_matrix/client/v3/rooms").respond(200, (path, content) => {
+                const idx = path.indexOf(`${hsUrl}/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/send/m.room.encrypted/`);
                 expect(idx).toBe(0);
                 expect(content).toMatchObject(expectedContent);
                 return { event_id: eventId };
@@ -3418,8 +3526,8 @@ describe('MatrixClient', () => {
             client.crypto.isRoomEncrypted = async () => false; // for this test
 
             // noinspection TypeScriptValidateJSTypes
-            http.when("PUT", "/_matrix/client/r0/rooms").respond(200, (path, content) => {
-                const idx = path.indexOf(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/send/m.room.message/`);
+            http.when("PUT", "/_matrix/client/v3/rooms").respond(200, (path, content) => {
+                const idx = path.indexOf(`${hsUrl}/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/send/m.room.message/`);
                 expect(idx).toBe(0);
                 expect(content).toMatchObject(expectedContent);
                 return { event_id: eventId };
@@ -3461,8 +3569,8 @@ describe('MatrixClient', () => {
             };
 
             // noinspection TypeScriptValidateJSTypes
-            http.when("PUT", "/_matrix/client/r0/rooms").respond(200, (path, content) => {
-                const idx = path.indexOf(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/send/m.room.message/`);
+            http.when("PUT", "/_matrix/client/v3/rooms").respond(200, (path, content) => {
+                const idx = path.indexOf(`${hsUrl}/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/send/m.room.message/`);
                 expect(idx).toBe(0);
                 expect(content).toMatchObject(expectedContent);
                 return { event_id: eventId };
@@ -3514,8 +3622,8 @@ describe('MatrixClient', () => {
             };
 
             // noinspection TypeScriptValidateJSTypes
-            http.when("PUT", "/_matrix/client/r0/rooms").respond(200, (path, content) => {
-                const idx = path.indexOf(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/send/m.room.encrypted/`);
+            http.when("PUT", "/_matrix/client/v3/rooms").respond(200, (path, content) => {
+                const idx = path.indexOf(`${hsUrl}/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/send/m.room.encrypted/`);
                 expect(idx).toBe(0);
                 expect(content).toMatchObject(expectedContent);
                 return { event_id: eventId };
@@ -3557,8 +3665,8 @@ describe('MatrixClient', () => {
             client.crypto.isRoomEncrypted = async () => false; // for this test
 
             // noinspection TypeScriptValidateJSTypes
-            http.when("PUT", "/_matrix/client/r0/rooms").respond(200, (path, content) => {
-                const idx = path.indexOf(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/send/m.room.message/`);
+            http.when("PUT", "/_matrix/client/v3/rooms").respond(200, (path, content) => {
+                const idx = path.indexOf(`${hsUrl}/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/send/m.room.message/`);
                 expect(idx).toBe(0);
                 expect(content).toMatchObject(expectedContent);
                 return { event_id: eventId };
@@ -3598,8 +3706,8 @@ describe('MatrixClient', () => {
             };
 
             // noinspection TypeScriptValidateJSTypes
-            http.when("PUT", "/_matrix/client/r0/rooms").respond(200, (path, content) => {
-                const idx = path.indexOf(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/send/m.room.message/`);
+            http.when("PUT", "/_matrix/client/v3/rooms").respond(200, (path, content) => {
+                const idx = path.indexOf(`${hsUrl}/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/send/m.room.message/`);
                 expect(idx).toBe(0);
                 expect(content).toMatchObject(expectedContent);
                 return { event_id: eventId };
@@ -3641,8 +3749,8 @@ describe('MatrixClient', () => {
             };
 
             // noinspection TypeScriptValidateJSTypes
-            http.when("PUT", "/_matrix/client/r0/rooms").respond(200, (path, content) => {
-                const idx = path.indexOf(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/send/m.room.message/`);
+            http.when("PUT", "/_matrix/client/v3/rooms").respond(200, (path, content) => {
+                const idx = path.indexOf(`${hsUrl}/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/send/m.room.message/`);
                 expect(idx).toBe(0);
                 expect(content).toMatchObject(expectedContent);
                 return { event_id: eventId };
@@ -3694,8 +3802,8 @@ describe('MatrixClient', () => {
             };
 
             // noinspection TypeScriptValidateJSTypes
-            http.when("PUT", "/_matrix/client/r0/rooms").respond(200, (path, content) => {
-                const idx = path.indexOf(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/send/m.room.encrypted/`);
+            http.when("PUT", "/_matrix/client/v3/rooms").respond(200, (path, content) => {
+                const idx = path.indexOf(`${hsUrl}/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/send/m.room.encrypted/`);
                 expect(idx).toBe(0);
                 expect(content).toMatchObject(expectedContent);
                 return { event_id: eventId };
@@ -3737,8 +3845,8 @@ describe('MatrixClient', () => {
             client.crypto.isRoomEncrypted = async () => false; // for this test
 
             // noinspection TypeScriptValidateJSTypes
-            http.when("PUT", "/_matrix/client/r0/rooms").respond(200, (path, content) => {
-                const idx = path.indexOf(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/send/m.room.message/`);
+            http.when("PUT", "/_matrix/client/v3/rooms").respond(200, (path, content) => {
+                const idx = path.indexOf(`${hsUrl}/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/send/m.room.message/`);
                 expect(idx).toBe(0);
                 expect(content).toMatchObject(expectedContent);
                 return { event_id: eventId };
@@ -3761,8 +3869,8 @@ describe('MatrixClient', () => {
             };
 
             // noinspection TypeScriptValidateJSTypes
-            http.when("PUT", "/_matrix/client/r0/rooms").respond(200, (path, content) => {
-                const idx = path.indexOf(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/send/m.room.message/`);
+            http.when("PUT", "/_matrix/client/v3/rooms").respond(200, (path, content) => {
+                const idx = path.indexOf(`${hsUrl}/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/send/m.room.message/`);
                 expect(idx).toBe(0);
                 expect(content).toMatchObject(eventContent);
                 return { event_id: eventId };
@@ -3796,8 +3904,8 @@ describe('MatrixClient', () => {
             };
 
             // noinspection TypeScriptValidateJSTypes
-            http.when("PUT", "/_matrix/client/r0/rooms").respond(200, (path, content) => {
-                const idx = path.indexOf(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/send/m.room.encrypted/`);
+            http.when("PUT", "/_matrix/client/v3/rooms").respond(200, (path, content) => {
+                const idx = path.indexOf(`${hsUrl}/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/send/m.room.encrypted/`);
                 expect(idx).toBe(0);
                 expect(content).toMatchObject(eventContent);
                 return { event_id: eventId };
@@ -3820,8 +3928,8 @@ describe('MatrixClient', () => {
             client.crypto.isRoomEncrypted = async () => false; // for this test
 
             // noinspection TypeScriptValidateJSTypes
-            http.when("PUT", "/_matrix/client/r0/rooms").respond(200, (path, content) => {
-                const idx = path.indexOf(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/send/m.room.message/`);
+            http.when("PUT", "/_matrix/client/v3/rooms").respond(200, (path, content) => {
+                const idx = path.indexOf(`${hsUrl}/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/send/m.room.message/`);
                 expect(idx).toBe(0);
                 expect(content).toMatchObject(eventContent);
                 return { event_id: eventId };
@@ -3846,8 +3954,8 @@ describe('MatrixClient', () => {
             };
 
             // noinspection TypeScriptValidateJSTypes
-            http.when("PUT", "/_matrix/client/r0/rooms").respond(200, (path, content) => {
-                const idx = path.indexOf(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/send/m.room.message/`);
+            http.when("PUT", "/_matrix/client/v3/rooms").respond(200, (path, content) => {
+                const idx = path.indexOf(`${hsUrl}/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/send/m.room.message/`);
                 expect(idx).toBe(0);
                 expect(content).toMatchObject(eventContent);
                 return { event_id: eventId };
@@ -3883,8 +3991,8 @@ describe('MatrixClient', () => {
             };
 
             // noinspection TypeScriptValidateJSTypes
-            http.when("PUT", "/_matrix/client/r0/rooms").respond(200, (path, content) => {
-                const idx = path.indexOf(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/send/m.room.encrypted/`);
+            http.when("PUT", "/_matrix/client/v3/rooms").respond(200, (path, content) => {
+                const idx = path.indexOf(`${hsUrl}/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/send/m.room.encrypted/`);
                 expect(idx).toBe(0);
                 expect(content).toMatchObject(eventContent);
                 return { event_id: eventId };
@@ -3909,8 +4017,8 @@ describe('MatrixClient', () => {
             client.crypto.isRoomEncrypted = async () => false; // for this test
 
             // noinspection TypeScriptValidateJSTypes
-            http.when("PUT", "/_matrix/client/r0/rooms").respond(200, (path, content) => {
-                const idx = path.indexOf(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/send/m.room.message/`);
+            http.when("PUT", "/_matrix/client/v3/rooms").respond(200, (path, content) => {
+                const idx = path.indexOf(`${hsUrl}/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/send/m.room.message/`);
                 expect(idx).toBe(0);
                 expect(content).toMatchObject(eventContent);
                 return { event_id: eventId };
@@ -3933,8 +4041,8 @@ describe('MatrixClient', () => {
             };
 
             // noinspection TypeScriptValidateJSTypes
-            http.when("PUT", "/_matrix/client/r0/rooms").respond(200, (path, content) => {
-                const idx = path.indexOf(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/send/m.room.message/`);
+            http.when("PUT", "/_matrix/client/v3/rooms").respond(200, (path, content) => {
+                const idx = path.indexOf(`${hsUrl}/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/send/m.room.message/`);
                 expect(idx).toBe(0);
                 expect(content).toMatchObject(eventContent);
                 return { event_id: eventId };
@@ -3968,8 +4076,8 @@ describe('MatrixClient', () => {
             };
 
             // noinspection TypeScriptValidateJSTypes
-            http.when("PUT", "/_matrix/client/r0/rooms").respond(200, (path, content) => {
-                const idx = path.indexOf(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/send/m.room.encrypted/`);
+            http.when("PUT", "/_matrix/client/v3/rooms").respond(200, (path, content) => {
+                const idx = path.indexOf(`${hsUrl}/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/send/m.room.encrypted/`);
                 expect(idx).toBe(0);
                 expect(content).toMatchObject(eventContent);
                 return { event_id: eventId };
@@ -3992,8 +4100,8 @@ describe('MatrixClient', () => {
             client.crypto.isRoomEncrypted = async () => false; // for this test
 
             // noinspection TypeScriptValidateJSTypes
-            http.when("PUT", "/_matrix/client/r0/rooms").respond(200, (path, content) => {
-                const idx = path.indexOf(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/send/m.room.message/`);
+            http.when("PUT", "/_matrix/client/v3/rooms").respond(200, (path, content) => {
+                const idx = path.indexOf(`${hsUrl}/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/send/m.room.message/`);
                 expect(idx).toBe(0);
                 expect(content).toMatchObject(eventContent);
                 return { event_id: eventId };
@@ -4018,8 +4126,8 @@ describe('MatrixClient', () => {
             };
 
             // noinspection TypeScriptValidateJSTypes
-            http.when("PUT", "/_matrix/client/r0/rooms").respond(200, (path, content) => {
-                const idx = path.indexOf(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/send/m.room.message/`);
+            http.when("PUT", "/_matrix/client/v3/rooms").respond(200, (path, content) => {
+                const idx = path.indexOf(`${hsUrl}/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/send/m.room.message/`);
                 expect(idx).toBe(0);
                 expect(content).toMatchObject(eventContent);
                 return { event_id: eventId };
@@ -4055,8 +4163,8 @@ describe('MatrixClient', () => {
             };
 
             // noinspection TypeScriptValidateJSTypes
-            http.when("PUT", "/_matrix/client/r0/rooms").respond(200, (path, content) => {
-                const idx = path.indexOf(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/send/m.room.encrypted/`);
+            http.when("PUT", "/_matrix/client/v3/rooms").respond(200, (path, content) => {
+                const idx = path.indexOf(`${hsUrl}/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/send/m.room.encrypted/`);
                 expect(idx).toBe(0);
                 expect(content).toMatchObject(eventContent);
                 return { event_id: eventId };
@@ -4081,8 +4189,8 @@ describe('MatrixClient', () => {
             client.crypto.isRoomEncrypted = async () => false; // for this test
 
             // noinspection TypeScriptValidateJSTypes
-            http.when("PUT", "/_matrix/client/r0/rooms").respond(200, (path, content) => {
-                const idx = path.indexOf(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/send/m.room.message/`);
+            http.when("PUT", "/_matrix/client/v3/rooms").respond(200, (path, content) => {
+                const idx = path.indexOf(`${hsUrl}/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/send/m.room.message/`);
                 expect(idx).toBe(0);
                 expect(content).toMatchObject(eventContent);
                 return { event_id: eventId };
@@ -4106,8 +4214,8 @@ describe('MatrixClient', () => {
             };
 
             // noinspection TypeScriptValidateJSTypes
-            http.when("PUT", "/_matrix/client/r0/rooms").respond(200, (path, content) => {
-                const idx = path.indexOf(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/send/m.room.message/`);
+            http.when("PUT", "/_matrix/client/v3/rooms").respond(200, (path, content) => {
+                const idx = path.indexOf(`${hsUrl}/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/send/m.room.message/`);
                 expect(idx).toBe(0);
                 expect(content).toMatchObject(eventContent);
                 return { event_id: eventId };
@@ -4142,8 +4250,8 @@ describe('MatrixClient', () => {
             };
 
             // noinspection TypeScriptValidateJSTypes
-            http.when("PUT", "/_matrix/client/r0/rooms").respond(200, (path, content) => {
-                const idx = path.indexOf(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/send/m.room.encrypted/`);
+            http.when("PUT", "/_matrix/client/v3/rooms").respond(200, (path, content) => {
+                const idx = path.indexOf(`${hsUrl}/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/send/m.room.encrypted/`);
                 expect(idx).toBe(0);
                 expect(content).toMatchObject(eventContent);
                 return { event_id: eventId };
@@ -4167,8 +4275,8 @@ describe('MatrixClient', () => {
             client.crypto.isRoomEncrypted = async () => false; // for this test
 
             // noinspection TypeScriptValidateJSTypes
-            http.when("PUT", "/_matrix/client/r0/rooms").respond(200, (path, content) => {
-                const idx = path.indexOf(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/send/m.room.message/`);
+            http.when("PUT", "/_matrix/client/v3/rooms").respond(200, (path, content) => {
+                const idx = path.indexOf(`${hsUrl}/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/send/m.room.message/`);
                 expect(idx).toBe(0);
                 expect(content).toMatchObject(eventContent);
                 return { event_id: eventId };
@@ -4192,8 +4300,8 @@ describe('MatrixClient', () => {
             };
 
             // noinspection TypeScriptValidateJSTypes
-            http.when("PUT", "/_matrix/client/r0/rooms").respond(200, (path, content) => {
-                const idx = path.indexOf(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/send/${encodeURIComponent(eventType)}/`);
+            http.when("PUT", "/_matrix/client/v3/rooms").respond(200, (path, content) => {
+                const idx = path.indexOf(`${hsUrl}/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/send/${encodeURIComponent(eventType)}/`);
                 expect(idx).toBe(0);
                 expect(content).toMatchObject(eventContent);
                 return { event_id: eventId };
@@ -4229,8 +4337,8 @@ describe('MatrixClient', () => {
             };
 
             // noinspection TypeScriptValidateJSTypes
-            http.when("PUT", "/_matrix/client/r0/rooms").respond(200, (path, content) => {
-                const idx = path.indexOf(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/send/${encodeURIComponent(sEventType)}/`);
+            http.when("PUT", "/_matrix/client/v3/rooms").respond(200, (path, content) => {
+                const idx = path.indexOf(`${hsUrl}/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/send/${encodeURIComponent(sEventType)}/`);
                 expect(idx).toBe(0);
                 expect(content).toMatchObject(eventContent);
                 return { event_id: eventId };
@@ -4254,8 +4362,8 @@ describe('MatrixClient', () => {
             client.crypto.isRoomEncrypted = async () => false; // for this test
 
             // noinspection TypeScriptValidateJSTypes
-            http.when("PUT", "/_matrix/client/r0/rooms").respond(200, (path, content) => {
-                const idx = path.indexOf(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/send/${encodeURIComponent(eventType)}/`);
+            http.when("PUT", "/_matrix/client/v3/rooms").respond(200, (path, content) => {
+                const idx = path.indexOf(`${hsUrl}/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/send/${encodeURIComponent(eventType)}/`);
                 expect(idx).toBe(0);
                 expect(content).toMatchObject(eventContent);
                 return { event_id: eventId };
@@ -4279,8 +4387,8 @@ describe('MatrixClient', () => {
             };
 
             // noinspection TypeScriptValidateJSTypes
-            http.when("PUT", "/_matrix/client/r0/rooms").respond(200, (path, content) => {
-                const idx = path.indexOf(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/send/${encodeURIComponent(eventType)}/`);
+            http.when("PUT", "/_matrix/client/v3/rooms").respond(200, (path, content) => {
+                const idx = path.indexOf(`${hsUrl}/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/send/${encodeURIComponent(eventType)}/`);
                 expect(idx).toBe(0);
                 expect(content).toMatchObject(eventContent);
                 return { event_id: eventId };
@@ -4304,8 +4412,8 @@ describe('MatrixClient', () => {
             client.crypto.isRoomEncrypted = async () => true; // for this test
 
             // noinspection TypeScriptValidateJSTypes
-            http.when("PUT", "/_matrix/client/r0/rooms").respond(200, (path, content) => {
-                const idx = path.indexOf(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/send/${encodeURIComponent(eventType)}/`);
+            http.when("PUT", "/_matrix/client/v3/rooms").respond(200, (path, content) => {
+                const idx = path.indexOf(`${hsUrl}/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/send/${encodeURIComponent(eventType)}/`);
                 expect(idx).toBe(0);
                 expect(content).toMatchObject(eventContent);
                 return { event_id: eventId };
@@ -4331,8 +4439,8 @@ describe('MatrixClient', () => {
             };
 
             // noinspection TypeScriptValidateJSTypes
-            http.when("PUT", "/_matrix/client/r0/rooms").respond(200, (path, content) => {
-                const idx = path.indexOf(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/state/${encodeURIComponent(eventType)}/`);
+            http.when("PUT", "/_matrix/client/v3/rooms").respond(200, (path, content) => {
+                const idx = path.indexOf(`${hsUrl}/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/state/${encodeURIComponent(eventType)}/`);
                 expect(idx).toBe(0);
                 expect(content).toMatchObject(eventContent);
                 return { event_id: eventId };
@@ -4356,8 +4464,8 @@ describe('MatrixClient', () => {
             };
 
             // noinspection TypeScriptValidateJSTypes
-            http.when("PUT", "/_matrix/client/r0/rooms").respond(200, (path, content) => {
-                const idx = path.indexOf(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/state/${encodeURIComponent(eventType)}/`);
+            http.when("PUT", "/_matrix/client/v3/rooms").respond(200, (path, content) => {
+                const idx = path.indexOf(`${hsUrl}/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/state/${encodeURIComponent(eventType)}/`);
                 expect(idx).toBe(0);
                 expect(content).toMatchObject(eventContent);
                 return { event_id: eventId };
@@ -4377,8 +4485,8 @@ describe('MatrixClient', () => {
             const reason = "Zvarri!";
 
             // noinspection TypeScriptValidateJSTypes
-            http.when("PUT", "/_matrix/client/r0/rooms").respond(200, (path, content) => {
-                const idx = path.indexOf(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/redact/${encodeURIComponent(eventId)}/`);
+            http.when("PUT", "/_matrix/client/v3/rooms").respond(200, (path, content) => {
+                const idx = path.indexOf(`${hsUrl}/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/redact/${encodeURIComponent(eventId)}/`);
                 expect(idx).toBe(0);
                 expect(content).toMatchObject({ reason });
                 return { event_id: eventId };
@@ -5263,7 +5371,7 @@ describe('MatrixClient', () => {
             const mxc = `mxc://${domain}/${mediaId}`;
 
             const http = client.mxcToHttp(mxc);
-            expect(http).toBe(`${hsUrl}/_matrix/media/r0/download/${encodeURIComponent(domain)}/${encodeURIComponent(mediaId)}`);
+            expect(http).toBe(`${hsUrl}/_matrix/media/v3/download/${encodeURIComponent(domain)}/${encodeURIComponent(mediaId)}`);
         });
 
         it('should error for non-MXC URIs', async () => {
@@ -5297,7 +5405,7 @@ describe('MatrixClient', () => {
 
             const http = client.mxcToHttpThumbnail(mxc, width, height, method);
             // eslint-disable-next-line max-len
-            expect(http).toBe(`${hsUrl}/_matrix/media/r0/thumbnail/${encodeURIComponent(domain)}/${encodeURIComponent(mediaId)}?width=${width}&height=${height}&method=${encodeURIComponent(method)}`);
+            expect(http).toBe(`${hsUrl}/_matrix/media/v3/thumbnail/${encodeURIComponent(domain)}/${encodeURIComponent(mediaId)}?width=${width}&height=${height}&method=${encodeURIComponent(method)}`);
         });
 
         it('should error for non-MXC URIs', async () => {
@@ -5333,7 +5441,7 @@ describe('MatrixClient', () => {
             Buffer.isBuffer = <any>(i => i === data);
 
             // noinspection TypeScriptValidateJSTypes
-            http.when("POST", "/_matrix/media/r0/upload").respond(200, (path, content, req) => {
+            http.when("POST", "/_matrix/media/v3/upload").respond(200, (path, content, req) => {
                 expect(content).toBeDefined();
                 expect(req.opts.qs.filename).toEqual(filename);
                 expect(req.opts.headers["Content-Type"]).toEqual(contentType);
@@ -5356,7 +5464,7 @@ describe('MatrixClient', () => {
             Buffer.isBuffer = <any>(i => i === data);
 
             // noinspection TypeScriptValidateJSTypes
-            http.when("POST", "/_matrix/media/r0/upload").respond(200, (path, content, req) => {
+            http.when("POST", "/_matrix/media/v3/upload").respond(200, (path, content, req) => {
                 expect(content).toBeDefined();
                 expect(req.opts.qs.filename).toEqual(filename);
                 expect(req.opts.headers["Content-Type"]).toEqual(contentType);
@@ -5377,8 +5485,8 @@ describe('MatrixClient', () => {
             // const fileContents = new Buffer("12345");
 
             // noinspection TypeScriptValidateJSTypes
-            http.when("GET", "/_matrix/media/r0/download/").respond(200, (path, _, req) => {
-                expect(path).toContain("/_matrix/media/r0/download/" + urlPart);
+            http.when("GET", "/_matrix/media/v3/download/").respond(200, (path, _, req) => {
+                expect(path).toContain("/_matrix/media/v3/download/" + urlPart);
                 expect(req.opts.encoding).toEqual(null);
                 // TODO: Honestly, I have no idea how to coerce the mock library to return headers or buffers,
                 // so this is left as a fun activity.
@@ -5414,7 +5522,7 @@ describe('MatrixClient', () => {
             });
 
             // noinspection TypeScriptValidateJSTypes
-            http.when("POST", "/_matrix/media/r0/upload").respond(200, (path, content, req) => {
+            http.when("POST", "/_matrix/media/v3/upload").respond(200, (path, content, req) => {
                 expect(content).toBeDefined();
                 // HACK: We know the mock library will return JSON
                 expect(req.opts.headers["Content-Type"]).toEqual("application/json");
@@ -6230,7 +6338,7 @@ describe('MatrixClient', () => {
             };
 
             // noinspection TypeScriptValidateJSTypes
-            http.when("POST", "/_matrix/client/r0/createRoom").respond(200, (path, content) => {
+            http.when("POST", "/_matrix/client/v3/createRoom").respond(200, (path, content) => {
                 expect(content).toMatchObject(expectedRequest);
                 return { room_id: roomId };
             });
@@ -6278,7 +6386,7 @@ describe('MatrixClient', () => {
             };
 
             // noinspection TypeScriptValidateJSTypes
-            http.when("POST", "/_matrix/client/r0/createRoom").respond(200, (path, content) => {
+            http.when("POST", "/_matrix/client/v3/createRoom").respond(200, (path, content) => {
                 expect(content).toMatchObject(expectedRequest);
                 return { room_id: roomId };
             });
@@ -6403,7 +6511,7 @@ describe('MatrixClient', () => {
             };
 
             // noinspection TypeScriptValidateJSTypes
-            http.when("POST", "/_matrix/client/r0/keys/upload").respond(200, (path, content) => {
+            http.when("POST", "/_matrix/client/v3/keys/upload").respond(200, (path, content) => {
                 expect(content).toMatchObject({
                     device_keys: {
                         user_id: userId,
@@ -6460,7 +6568,7 @@ describe('MatrixClient', () => {
             };
 
             // noinspection TypeScriptValidateJSTypes
-            http.when("POST", "/_matrix/client/r0/keys/upload").respond(200, (path, content) => {
+            http.when("POST", "/_matrix/client/v3/keys/upload").respond(200, (path, content) => {
                 expect(content).toMatchObject({
                     one_time_keys: keys,
                 });
@@ -6495,7 +6603,7 @@ describe('MatrixClient', () => {
             };
 
             // noinspection TypeScriptValidateJSTypes
-            http.when("POST", "/_matrix/client/r0/keys/upload").respond(200, (path, content) => {
+            http.when("POST", "/_matrix/client/v3/keys/upload").respond(200, (path, content) => {
                 expect(content).toMatchObject({});
                 return { one_time_key_counts: counts };
             });
@@ -6530,7 +6638,7 @@ describe('MatrixClient', () => {
             };
 
             // noinspection TypeScriptValidateJSTypes
-            http.when("POST", "/_matrix/client/r0/keys/query").respond(200, (path, content) => {
+            http.when("POST", "/_matrix/client/v3/keys/query").respond(200, (path, content) => {
                 expect(content).toMatchObject({ timeout, device_keys: requestBody });
                 return response;
             });
@@ -6563,7 +6671,7 @@ describe('MatrixClient', () => {
             };
 
             // noinspection TypeScriptValidateJSTypes
-            http.when("POST", "/_matrix/client/r0/keys/query").respond(200, (path, content) => {
+            http.when("POST", "/_matrix/client/v3/keys/query").respond(200, (path, content) => {
                 expect(content).toMatchObject({ timeout: 10000, device_keys: requestBody });
                 return response;
             });
@@ -6614,7 +6722,7 @@ describe('MatrixClient', () => {
             };
 
             // noinspection TypeScriptValidateJSTypes
-            http.when("POST", "/_matrix/client/r0/keys/claim").respond(200, (path, content) => {
+            http.when("POST", "/_matrix/client/v3/keys/claim").respond(200, (path, content) => {
                 expect(content).toMatchObject({
                     timeout: 10000,
                     one_time_keys: request,
@@ -6656,7 +6764,7 @@ describe('MatrixClient', () => {
             const timeout = 60;
 
             // noinspection TypeScriptValidateJSTypes
-            http.when("POST", "/_matrix/client/r0/keys/claim").respond(200, (path, content) => {
+            http.when("POST", "/_matrix/client/v3/keys/claim").respond(200, (path, content) => {
                 expect(content).toMatchObject({
                     timeout: timeout,
                     one_time_keys: request,
@@ -6689,8 +6797,8 @@ describe('MatrixClient', () => {
             };
 
             // noinspection TypeScriptValidateJSTypes
-            http.when("PUT", "/_matrix/client/r0/sendToDevice").respond(200, (path, content) => {
-                const idx = path.indexOf(`${hsUrl}/_matrix/client/r0/sendToDevice/${encodeURIComponent(type)}/`);
+            http.when("PUT", "/_matrix/client/v3/sendToDevice").respond(200, (path, content) => {
+                const idx = path.indexOf(`${hsUrl}/_matrix/client/v3/sendToDevice/${encodeURIComponent(type)}/`);
                 expect(idx).toBe(0);
                 expect(content).toMatchObject({ messages });
                 return {};
@@ -6708,7 +6816,7 @@ describe('MatrixClient', () => {
             const devices = ["schema not followed for simplicity"];
 
             // noinspection TypeScriptValidateJSTypes
-            http.when("GET", "/_matrix/client/r0/devices").respond(200, () => {
+            http.when("GET", "/_matrix/client/v3/devices").respond(200, () => {
                 return { devices };
             });
 

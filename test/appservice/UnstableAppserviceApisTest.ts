@@ -72,8 +72,8 @@ describe('UnstableAppserviceApis', () => {
             };
             const ts = 5000;
 
-            http.when("PUT", "/_matrix/client/r0/rooms").respond(200, (path, content, { opts }) => {
-                const idx = path.indexOf(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/send/${encodeURIComponent(eventType)}/`);
+            http.when("PUT", "/_matrix/client/v3/rooms").respond(200, (path, content, { opts }) => {
+                const idx = path.indexOf(`${hsUrl}/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/send/${encodeURIComponent(eventType)}/`);
                 expect(idx).toBe(0);
                 expect(content).toMatchObject(eventContent);
                 expect(opts.qs).toMatchObject({ ts });
@@ -100,8 +100,8 @@ describe('UnstableAppserviceApis', () => {
             };
             const ts = 5000;
 
-            http.when("PUT", "/_matrix/client/r0/rooms").respond(200, (path, content, { opts }) => {
-                const idx = path.indexOf(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/state/${encodeURIComponent(eventType)}/`);
+            http.when("PUT", "/_matrix/client/v3/rooms").respond(200, (path, content, { opts }) => {
+                const idx = path.indexOf(`${hsUrl}/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/state/${encodeURIComponent(eventType)}/`);
                 expect(idx).toBe(0);
                 expect(content).toMatchObject(eventContent);
                 expect(opts.qs).toMatchObject({ ts });

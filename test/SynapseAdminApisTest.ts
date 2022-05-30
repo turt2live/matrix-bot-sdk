@@ -73,7 +73,7 @@ describe('SynapseAdminApis', () => {
             const userId = "@someone:example.org";
             const response = { admin: true };
 
-            http.when("GET", "/_matrix/client/r0/account/whoami").respond(200, (path, content) => {
+            http.when("GET", "/_matrix/client/v3/account/whoami").respond(200, (path, content) => {
                 return { user_id: userId };
             });
             http.when("GET", "/_synapse/admin/v1/users").respond(200, (path, content) => {
@@ -90,7 +90,7 @@ describe('SynapseAdminApis', () => {
 
             const userId = "@someone:example.org";
 
-            http.when("GET", "/_matrix/client/r0/account/whoami").respond(200, (path, content) => {
+            http.when("GET", "/_matrix/client/v3/account/whoami").respond(200, (path, content) => {
                 return { user_id: userId };
             });
             http.when("GET", "/_synapse/admin/v1/users").respond(200, (path, content) => {

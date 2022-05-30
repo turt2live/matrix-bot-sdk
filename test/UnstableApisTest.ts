@@ -416,8 +416,8 @@ describe('UnstableApis', () => {
                 },
             };
 
-            http.when("PUT", "/_matrix/client/r0/rooms").respond(200, (path, content) => {
-                const idx = path.indexOf(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/send/m.reaction/`);
+            http.when("PUT", "/_matrix/client/v3/rooms").respond(200, (path, content) => {
+                const idx = path.indexOf(`${hsUrl}/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/send/m.reaction/`);
                 expect(idx).toBe(0);
                 expect(content).toMatchObject(expectedReaction);
                 return { event_id: newEventId };

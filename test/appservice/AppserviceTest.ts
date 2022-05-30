@@ -1774,13 +1774,13 @@ describe('Appservice', () => {
 
             // eslint-disable-next-line no-inner-declarations
             async function doCall(route: string, opts: any = {}) {
-                http.when("PUT", "/_matrix/client/r0/profile").respond(200, (path, content) => {
-                    expect(path).toEqual(`${hsUrl}/_matrix/client/r0/profile/${encodeURIComponent(userId)}/displayname`);
+                http.when("PUT", "/_matrix/client/v3/profile").respond(200, (path, content) => {
+                    expect(path).toEqual(`${hsUrl}/_matrix/client/v3/profile/${encodeURIComponent(userId)}/displayname`);
                     expect(content).toMatchObject({ displayname: displayName });
                     return {};
                 });
-                http.when("PUT", "/_matrix/client/r0/profile").respond(200, (path, content) => {
-                    expect(path).toEqual(`${hsUrl}/_matrix/client/r0/profile/${encodeURIComponent(userId)}/avatar_url`);
+                http.when("PUT", "/_matrix/client/v3/profile").respond(200, (path, content) => {
+                    expect(path).toEqual(`${hsUrl}/_matrix/client/v3/profile/${encodeURIComponent(userId)}/avatar_url`);
                     expect(content).toMatchObject({ avatar_url: avatarUrl });
                     return {};
                 });
@@ -1858,13 +1858,13 @@ describe('Appservice', () => {
 
             // eslint-disable-next-line no-inner-declarations
             async function doCall(route: string, opts: any = {}) {
-                http.when("PUT", "/_matrix/client/r0/profile").respond(200, (path, content) => {
-                    expect(path).toEqual(`${hsUrl}/_matrix/client/r0/profile/${encodeURIComponent(userId)}/displayname`);
+                http.when("PUT", "/_matrix/client/v3/profile").respond(200, (path, content) => {
+                    expect(path).toEqual(`${hsUrl}/_matrix/client/v3/profile/${encodeURIComponent(userId)}/displayname`);
                     expect(content).toMatchObject({ displayname: displayName });
                     return {};
                 });
-                http.when("PUT", "/_matrix/client/r0/profile").respond(200, (path, content) => {
-                    expect(path).toEqual(`${hsUrl}/_matrix/client/r0/profile/${encodeURIComponent(userId)}/avatar_url`);
+                http.when("PUT", "/_matrix/client/v3/profile").respond(200, (path, content) => {
+                    expect(path).toEqual(`${hsUrl}/_matrix/client/v3/profile/${encodeURIComponent(userId)}/avatar_url`);
                     expect(content).toMatchObject({ avatar_url: avatarUrl });
                     return {};
                 });
@@ -2727,8 +2727,8 @@ describe('Appservice', () => {
         const http = new MockHttpBackend();
         setRequestFn(http.requestFn);
 
-        http.when("PUT", "/_matrix/client/r0/directory/list/appservice").respond(200, (path, content) => {
-            expect(path).toEqual(`${hsUrl}/_matrix/client/r0/directory/list/appservice/${encodeURIComponent(networkId)}/${encodeURIComponent(roomId)}`);
+        http.when("PUT", "/_matrix/client/v3/directory/list/appservice").respond(200, (path, content) => {
+            expect(path).toEqual(`${hsUrl}/_matrix/client/v3/directory/list/appservice/${encodeURIComponent(networkId)}/${encodeURIComponent(roomId)}`);
             expect(content).toMatchObject({ visibility: "public" });
             return {};
         });

@@ -48,7 +48,7 @@ export class MatrixAuth {
         let response;
 
         try {
-            response = await this.createTemplateClient().doRequest("POST", "/_matrix/client/r0/register", null, body);
+            response = await this.createTemplateClient().doRequest("POST", "/_matrix/client/v3/register", null, body);
         } catch (e) {
             if (e.statusCode === 401) {
                 if (typeof (e.body) === "string") e.body = JSON.parse(e.body);
@@ -83,7 +83,7 @@ export class MatrixAuth {
                     type: expectedFlow[0], // HACK: We assume we only have one entry here
                     session: sessionId,
                 };
-                response = await this.createTemplateClient().doRequest("POST", "/_matrix/client/r0/register", null, body);
+                response = await this.createTemplateClient().doRequest("POST", "/_matrix/client/v3/register", null, body);
             }
         }
 
@@ -115,7 +115,7 @@ export class MatrixAuth {
             initial_device_display_name: deviceName,
         };
 
-        const response = await this.createTemplateClient().doRequest("POST", "/_matrix/client/r0/login", null, body);
+        const response = await this.createTemplateClient().doRequest("POST", "/_matrix/client/v3/login", null, body);
         const accessToken = response["access_token"];
         if (!accessToken) throw new Error("Expected access token in response - got nothing");
 

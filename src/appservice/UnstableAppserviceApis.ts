@@ -41,7 +41,7 @@ export class UnstableAppserviceApis {
      */
     public async sendEventWithTimestamp(roomId: string, eventType: string, content: any, ts: number) {
         const txnId = `${(new Date().getTime())}__inc_appts${++this.requestId}`;
-        const path = `/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/send/${encodeURIComponent(eventType)}/${encodeURIComponent(txnId)}`;
+        const path = `/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/send/${encodeURIComponent(eventType)}/${encodeURIComponent(txnId)}`;
         const response = await this.client.doRequest("PUT", path, { ts }, content);
         return response.event_id;
     }
@@ -56,7 +56,7 @@ export class UnstableAppserviceApis {
      * @returns {Promise<string>} resolves to the event ID that represents the message
      */
     public async sendStateEventWithTimestamp(roomId: string, type: string, stateKey: string, content: any, ts: number): Promise<string> {
-        const path = `/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/state/${encodeURIComponent(type)}/${encodeURIComponent(stateKey)}`;
+        const path = `/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/state/${encodeURIComponent(type)}/${encodeURIComponent(stateKey)}`;
         const response = await this.client.doRequest("PUT", path, { ts }, content);
         return response.event_id;
     }
