@@ -269,7 +269,7 @@ export class Intent {
                                 },
                             };
                             this.client.impersonateUserId(null); // avoid confusing homeserver
-                            const res = await this.client.doRequest("POST", "/_matrix/client/r0/login", {}, loginBody);
+                            const res = await this.client.doRequest("POST", "/_matrix/client/v3/login", {}, loginBody);
                             this.makeClient(true, res['access_token']);
                             storage.storeValue("accessToken", this.client.accessToken);
                             prepared = true;
@@ -414,7 +414,7 @@ export class Intent {
     public async ensureRegistered() {
         if (!(await Promise.resolve(this.storage.isUserRegistered(this.userId)))) {
             try {
-                const result = await this.client.doRequest("POST", "/_matrix/client/r0/register", null, {
+                const result = await this.client.doRequest("POST", "/_matrix/client/v3/register", null, {
                     type: "m.login.application_service",
                     username: this.userId.substring(1).split(":")[0],
                 });
