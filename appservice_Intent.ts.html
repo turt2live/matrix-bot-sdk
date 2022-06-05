@@ -262,7 +262,7 @@ export class Intent {
                         const accessToken = await Promise.resolve(storage?.readValue("accessToken"));
                         if (!accessToken) {
                             const loginBody = {
-                                type: "uk.half-shot.msc2778.login.application_service",
+                                type: "m.login.application_service",
                                 identifier: {
                                     type: "m.id.user",
                                     user: this.userId,
