@@ -54,29 +54,36 @@ export class MSC3401Call {
             throw new Error("Crypto is required for VoIP");
         }
 
-        this.client.on("edu", async (edu) => {console.log(edu);
+        this.client.on("edu", async (edu) => {
             if (edu["type"] === "m.call.invite" && edu["content"]?.["conf_id"] === this.callEvent.callId) {
                 LogService.info("MSC3401Call", `${this.callEvent.callId} offer received`);
                 this.rtcCallId = edu["content"]["call_id"];
                 this.rtc.setRemoteDescription(new RTCSessionDescription(edu.content.offer));
-                await this.broadcastCallAnswer();
             } else if (edu["type"] === "m.call.candidates" && edu["content"]?.["conf_id"] === this.callEvent.callId) {
                 for (const candidate of edu["content"]["candidates"]) {
-                    console.log(candidate);
+                    if (!candidate.candidate) continue;
                     this.rtc.addIceCandidate(new RTCIceCandidate(candidate));
+                }
+                if (this.rtc.signalingState === "have-remote-offer") {
+                    await this.broadcastCallAnswer();
                 }
             }
         });
+
+        let queuedCandidates: RTCIceCandidate[] = [];
+        this.rtc.onicecandidate = async (ev) => {
+            if (!ev.candidate) {
+                await this.broadcastCandidates(queuedCandidates);
+                queuedCandidates = [];
+            } else {
+                queuedCandidates.push(ev.candidate);
+            }
+        };
     }
 
     private async getSelfMember(): Promise<MSC3401CallMemberEvent> {
         const userId = await this.client.getUserId();
         return this.members.find(m => m.forUserId === userId);
-    }
-
-    public async terminate() {
-        this.callEvent.content["m.terminated"] = true;
-        return this.client.sendStateEvent(this.roomId, this.callEvent.type, this.callEvent.stateKey, this.callEvent.content);
     }
 
     public async join() {
@@ -100,7 +107,7 @@ export class MSC3401Call {
         await this.scanMembers();
     }
 
-    public async scanMembers() {
+    private async scanMembers() {
         this.members = [];
         const members = await this.client.getJoinedRoomMembers(this.roomId);
         for (const member of members) {
@@ -115,7 +122,7 @@ export class MSC3401Call {
         }
     }
 
-    public async handleMember(member: MSC3401CallMemberEvent) {
+    private async handleMember(member: MSC3401CallMemberEvent) {
         this.members = [
             ...this.members.filter(m => m.forUserId !== member.forUserId),
             member,
@@ -134,17 +141,37 @@ export class MSC3401Call {
         // TODO: Establish olm sessions too
     }
 
+    private async doBroadcast(type: string, message: object) {
+        const selfUserId = await this.client.getUserId();
+        const joinedMembers = this.members.filter(m => m.isInCall && m.forUserId !== selfUserId);
+
+        const messages = {};
+        for (const target of joinedMembers) {
+            if (!messages[target.forUserId]) messages[target.forUserId] = {};
+
+            const userMap = messages[target.forUserId];
+            for (const [deviceId, sessionId] of Object.entries(target.deviceIdSessions)) {
+                userMap[deviceId] = {
+                    ...message,
+                    party_id: deviceId,
+                    device_id: deviceId,
+                    dest_session_id: sessionId,
+                };
+            }
+
+            await this.client.sendToDevices(type, messages);
+        }
+    }
+
     private async broadcastCallAnswer() {
         const selfUserId = await this.client.getUserId();
         const selfDeviceId = this.client.crypto.clientDeviceId;
-        console.log(this.members);
-        const joinedMembers = this.members.filter(m => m.isInCall && m.forUserId !== selfUserId);
         const selfMember = this.members.find(m => m.isInCall && m.forUserId === selfUserId);
 
         const answer = await this.rtc.createAnswer();
         await this.rtc.setLocalDescription(answer);
 
-        const answerMessage = {
+        await this.doBroadcast("m.call.answer", {
             answer: {
                 sdp: answer.sdp,
                 type: answer.type,
@@ -158,23 +185,21 @@ export class MSC3401Call {
             },
             sender_session_id: selfMember.deviceIdSessions[selfDeviceId],
             call_id: this.rtcCallId,
-        };
+        });
+    }
 
-        const messages = {};
-        for (const target of joinedMembers) {
-            if (!messages[target.forUserId]) messages[target.forUserId] = {};
+    private async broadcastCandidates(candidates: RTCIceCandidate[]) {
+        const selfUserId = await this.client.getUserId();
+        const selfDeviceId = this.client.crypto.clientDeviceId;
+        const selfMember = this.members.find(m => m.isInCall && m.forUserId === selfUserId);
 
-            const userMap = messages[target.forUserId];
-            for (const [deviceId, sessionId] of Object.entries(target.deviceIdSessions)) {
-                userMap[deviceId] = {
-                    ...answerMessage,
-                    party_id: deviceId,
-                    device_id: deviceId,
-                    dest_session_id: sessionId,
-                };
-            }
-
-            await this.client.sendToDevices("m.call.answer", messages);
-        }
+        await this.doBroadcast("m.call.candidates", {
+            candidates: candidates.map(c => ({ candidate: c.candidate, sdpMid: c.sdpMid, sdpMLineIndex: c.sdpMLineIndex })),
+            conf_id: this.callEvent.callId,
+            seq: 1,
+            version: 1,
+            sender_session_id: selfMember.deviceIdSessions[selfDeviceId],
+            call_id: this.rtcCallId,
+        });
     }
 }
