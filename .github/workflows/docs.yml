@@ -3,20 +3,18 @@ on:
   push:
     branches:
       - master
-    # TODO: Keep all historical builds (like the js-sdk)
-    #tags: ['v*']
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
-    - uses: actions/setup-node@v2
+    - uses: actions/checkout@v3
+    - uses: actions/setup-node@v3
       with:
-        node-version: '14'
+        node-version: '16'
     - run: yarn install
     - run: yarn docs
     - name: Build and deploy docs
-      uses: JamesIves/github-pages-deploy-action@4.1.7
+      uses: JamesIves/github-pages-deploy-action@v4
       with:
         branch: gh-pages
         folder: .jsdoc/matrix-bot-sdk/develop

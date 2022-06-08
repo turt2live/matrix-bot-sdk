@@ -1,7 +1,7 @@
 import { extractRequestError, LogService } from "..";
 
 export interface IJoinRoomStrategy {
-    joinRoom(roomIdOrAlias: string, userId: string, apiCall: (roomIdOrAlias: string) => Promise<string>): Promise<string>;
+    joinRoom(roomIdOrAlias: string, userId: string, apiCall: (targetRoomIdOrAlias: string) => Promise<string>): Promise<string>;
 }
 
 /**
@@ -9,7 +9,6 @@ export interface IJoinRoomStrategy {
  * @category Join strategies
  */
 export class SimpleRetryJoinStrategy implements IJoinRoomStrategy {
-
     // Note: The schedule must not have duplicate values to avoid problems in positioning.
     private schedule = [
         0,              // Right away
@@ -19,7 +18,7 @@ export class SimpleRetryJoinStrategy implements IJoinRoomStrategy {
         15 * 60 * 1000, // 15 minutes
     ];
 
-    public joinRoom(roomIdOrAlias: string, userId: string, apiCall: (roomIdOrAlias: string) => Promise<string>): Promise<string> {
+    public joinRoom(roomIdOrAlias: string, userId: string, apiCall: (targetRoomIdOrAlias: string) => Promise<string>): Promise<string> {
         let currentSchedule = this.schedule[0];
 
         const doJoin = () => waitPromise(currentSchedule).then(() => apiCall(roomIdOrAlias));

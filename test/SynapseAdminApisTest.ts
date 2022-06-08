@@ -1,4 +1,5 @@
-import * as expect from "expect";
+import * as MockHttpBackend from 'matrix-mock-request';
+
 import {
     IStorageProvider,
     MatrixClient,
@@ -10,98 +11,101 @@ import {
     SynapseRoomProperty,
     SynapseUser,
     SynapseUserList,
-    SynapseUserProperties
+    SynapseUserProperties,
 } from "../src";
-import * as MockHttpBackend from 'matrix-mock-request';
-import { createTestClient } from "./MatrixClientTest";
+import { createTestClient } from "./TestUtils";
 
-export function createTestSynapseAdminClient(storage: IStorageProvider = null): { client: SynapseAdminApis, mxClient: MatrixClient, http: MockHttpBackend, hsUrl: string, accessToken: string } {
+export function createTestSynapseAdminClient(
+    storage: IStorageProvider = null,
+): {
+    client: SynapseAdminApis;
+    mxClient: MatrixClient;
+    http: MockHttpBackend;
+    hsUrl: string;
+    accessToken: string;
+} {
     const result = createTestClient(storage);
     const mxClient = result.client;
     const client = new SynapseAdminApis(mxClient);
 
     delete result.client;
 
-    return {...result, client, mxClient};
+    return { ...result, client, mxClient };
 }
 
 describe('SynapseAdminApis', () => {
     describe('isAdmin', () => {
         it('should call the right endpoint', async () => {
-            const {client, http, hsUrl} = createTestSynapseAdminClient();
+            const { client, http, hsUrl } = createTestSynapseAdminClient();
 
             const userId = "@someone:example.org";
-            const response = {admin: true};
+            const response = { admin: true };
 
             http.when("GET", "/_synapse/admin/v1/users").respond(200, (path, content) => {
                 expect(path).toEqual(`${hsUrl}/_synapse/admin/v1/users/${encodeURIComponent(userId)}/admin`);
                 return response;
             });
 
-            http.flushAllExpected();
-            const result = await client.isAdmin(userId);
+            const [result] = await Promise.all([client.isAdmin(userId), http.flushAllExpected()]);
             expect(result).toEqual(response.admin);
         });
 
         it('should return false when the user is not an admin', async () => {
-            const {client, http, hsUrl} = createTestSynapseAdminClient();
+            const { client, http, hsUrl } = createTestSynapseAdminClient();
 
             const userId = "@someone:example.org";
-            const response = {admin: false};
+            const response = { admin: false };
 
             http.when("GET", "/_synapse/admin/v1/users").respond(200, (path, content) => {
                 expect(path).toEqual(`${hsUrl}/_synapse/admin/v1/users/${encodeURIComponent(userId)}/admin`);
                 return response;
             });
 
-            http.flushAllExpected();
-            const result = await client.isAdmin(userId);
+            const [result] = await Promise.all([client.isAdmin(userId), http.flushAllExpected()]);
             expect(result).toEqual(response.admin);
         });
     });
 
     describe('isSelfAdmin', () => {
         it('should call the right endpoint', async () => {
-            const {client, http, hsUrl} = createTestSynapseAdminClient();
+            const { client, http, hsUrl } = createTestSynapseAdminClient();
 
             const userId = "@someone:example.org";
-            const response = {admin: true};
+            const response = { admin: true };
 
-            http.when("GET", "/_matrix/client/r0/account/whoami").respond(200, (path, content) => {
-                return {user_id: userId};
+            http.when("GET", "/_matrix/client/v3/account/whoami").respond(200, (path, content) => {
+                return { user_id: userId };
             });
             http.when("GET", "/_synapse/admin/v1/users").respond(200, (path, content) => {
                 expect(path).toEqual(`${hsUrl}/_synapse/admin/v1/users/${encodeURIComponent(userId)}/admin`);
                 return response;
             });
 
-            http.flushAllExpected();
-            const result = await client.isSelfAdmin();
+            const [result] = await Promise.all([client.isSelfAdmin(), http.flushAllExpected()]);
             expect(result).toEqual(response.admin);
         });
 
         it('should return false if the client is not an admin', async () => {
-            const {client, http, hsUrl} = createTestSynapseAdminClient();
+            const { client, http, hsUrl } = createTestSynapseAdminClient();
 
             const userId = "@someone:example.org";
 
-            http.when("GET", "/_matrix/client/r0/account/whoami").respond(200, (path, content) => {
-                return {user_id: userId};
+            http.when("GET", "/_matrix/client/v3/account/whoami").respond(200, (path, content) => {
+                return { user_id: userId };
             });
             http.when("GET", "/_synapse/admin/v1/users").respond(200, (path, content) => {
                 expect(path).toEqual(`${hsUrl}/_synapse/admin/v1/users/${encodeURIComponent(userId)}/admin`);
-                return {errcode: "M_FORBIDDEN", error: "You are not a server admin"};
+                return { errcode: "M_FORBIDDEN", error: "You are not a server admin" };
             });
 
-            http.flushAllExpected();
-            const result = await client.isSelfAdmin();
+            const [result] = await Promise.all([client.isSelfAdmin(), http.flushAllExpected()]);
             expect(result).toEqual(false);
         });
     });
 
     describe('getUser', () => {
         it('should call the right endpoint', async () => {
-            const {client, http, hsUrl} = createTestSynapseAdminClient();
+            const { client, http, hsUrl } = createTestSynapseAdminClient();
 
             const userId = "@someone:example.org";
             const response: SynapseUser = {
@@ -120,24 +124,22 @@ describe('SynapseAdminApis', () => {
                 return response;
             });
 
-            http.flushAllExpected();
-            const result = await client.getUser(userId);
+            const [result] = await Promise.all([client.getUser(userId), http.flushAllExpected()]);
             expect(result).toEqual(response);
         });
 
         it('should throw if the user cannot be found', async () => {
-            const {client, http, hsUrl} = createTestSynapseAdminClient();
+            const { client, http, hsUrl } = createTestSynapseAdminClient();
 
             const userId = "@someone:example.org";
 
             http.when("GET", "/_synapse/admin/v2/users").respond(404, (path) => {
                 expect(path).toEqual(`${hsUrl}/_synapse/admin/v2/users/${encodeURIComponent(userId)}`);
-                return {error: "User not found", errcode: "M_NOT_FOUND"};
+                return { error: "User not found", errcode: "M_NOT_FOUND" };
             });
 
-            http.flushAllExpected();
             try {
-                await client.getUser(userId);
+                await Promise.all([client.getUser(userId), http.flushAllExpected()]);
             } catch (ex) {
                 expect(ex.statusCode).toBe(404);
                 return;
@@ -148,7 +150,7 @@ describe('SynapseAdminApis', () => {
 
     describe('upsertUser', () => {
         it('should call the right endpoint', async () => {
-            const {client, http, hsUrl} = createTestSynapseAdminClient();
+            const { client, http, hsUrl } = createTestSynapseAdminClient();
 
             const userId = "@someone:example.org";
             const response: SynapseUser = {
@@ -165,7 +167,7 @@ describe('SynapseAdminApis', () => {
             const request: SynapseUserProperties = {
                 ...response,
                 password: "foobar",
-            }
+            };
 
             http.when("PUT", "/_synapse/admin/v2/users").respond(200, (path, content) => {
                 expect(path).toEqual(`${hsUrl}/_synapse/admin/v2/users/${encodeURIComponent(userId)}`);
@@ -173,15 +175,14 @@ describe('SynapseAdminApis', () => {
                 return response;
             });
 
-            http.flushAllExpected();
-            const result = await client.upsertUser(userId, request);
+            const [result] = await Promise.all([client.upsertUser(userId, request), http.flushAllExpected()]);
             expect(result).toEqual(response);
         });
     });
 
     describe('listUsers', () => {
         it('should call the right endpoint', async () => {
-            const {client, http, hsUrl} = createTestSynapseAdminClient();
+            const { client, http, hsUrl } = createTestSynapseAdminClient();
 
             const response: SynapseUserList = {
                 users: [{
@@ -192,7 +193,7 @@ describe('SynapseAdminApis', () => {
                     deactivated: 0,
                     is_guest: 0,
                     user_type: null,
-                    password_hash: "$hashbrown"
+                    password_hash: "$hashbrown",
                 }],
                 next_token: "foo",
                 total: 1,
@@ -204,7 +205,7 @@ describe('SynapseAdminApis', () => {
                 name: "bar",
                 guests: true,
                 deactivated: false,
-            }
+            };
 
             http.when("GET", "/_synapse/admin/v2/users").respond(200, (path, _content, req) => {
                 expect(req.opts.qs).toEqual(request);
@@ -212,17 +213,16 @@ describe('SynapseAdminApis', () => {
                 return response;
             });
 
-            http.flushAllExpected();
-            const result = await client.listUsers(
-                request.from, request.limit, request.name, request.guests, request.deactivated
-            );
+            const [result] = await Promise.all([client.listUsers(
+                request.from, request.limit, request.name, request.guests, request.deactivated,
+            ), http.flushAllExpected()]);
             expect(result).toEqual(response);
         });
     });
 
     describe('listAllUsers', () => {
         it('should call the right endpoint', async () => {
-            const {client, http, hsUrl} = createTestSynapseAdminClient();
+            const { client, http, hsUrl } = createTestSynapseAdminClient();
 
             const user1 = {
                 name: "@someone:example.org",
@@ -232,7 +232,7 @@ describe('SynapseAdminApis', () => {
                 deactivated: 0,
                 is_guest: 0,
                 user_type: null,
-                password_hash: "$hashbrown"
+                password_hash: "$hashbrown",
             };
 
             const user2 = {
@@ -243,7 +243,7 @@ describe('SynapseAdminApis', () => {
                 deactivated: 0,
                 is_guest: 0,
                 user_type: null,
-                password_hash: "$mmmm-hashbrown"
+                password_hash: "$mmmm-hashbrown",
             };
 
             const request = {
@@ -251,7 +251,7 @@ describe('SynapseAdminApis', () => {
                 name: "bar",
                 guests: true,
                 deactivated: false,
-            }
+            };
 
             http.when("GET", "/_synapse/admin/v2/users").respond(200, (path, _content, req) => {
                 expect(path).toEqual(`${hsUrl}/_synapse/admin/v2/users`);
@@ -260,30 +260,32 @@ describe('SynapseAdminApis', () => {
                     next_token: 'from-token',
                     total: 2,
                     users: [user1],
-                }
+                };
             });
-            const iterable = await client.listAllUsers({ name: "bar", guests: true, deactivated: false, limit: 1});
-            http.flushAllExpected();
+            const iterable = await client.listAllUsers({ name: "bar", guests: true, deactivated: false, limit: 1 });
+            const flush = http.flushAllExpected();
             const resultUser1 = await iterable.next();
-            expect(resultUser1).toEqual({done: false, value: user1});
-            
+            expect(resultUser1).toEqual({ done: false, value: user1 });
+
             http.when("GET", "/_synapse/admin/v2/users").respond(200, (path, _content, req) => {
                 expect(path).toEqual(`${hsUrl}/_synapse/admin/v2/users`);
-                expect(req.opts.qs).toEqual({...request, from: 'from-token'});
+                expect(req.opts.qs).toEqual({ ...request, from: 'from-token' });
                 return {
                     total: 2,
                     users: [user2],
-                }
+                };
             });
             const resultUser2 = await iterable.next();
-            expect(resultUser2).toEqual({done: false, value: user2});
-            expect(await iterable.next()).toEqual({done: true});
+            expect(resultUser2).toEqual({ done: false, value: user2 });
+            expect(await iterable.next()).toEqual({ done: true });
+
+            await flush;
         });
     });
 
     describe('listRooms', () => {
         it('should call the right endpoint', async () => {
-            const {client, http, hsUrl} = createTestSynapseAdminClient();
+            const { client, http, hsUrl } = createTestSynapseAdminClient();
 
             const response: SynapseRoomList = {
                 rooms: [{
@@ -322,55 +324,52 @@ describe('SynapseAdminApis', () => {
                 return response;
             });
 
-            http.flushAllExpected();
-            const result = await client.listRooms(
+            const [result] = await Promise.all([client.listRooms(
                 request.search_term, request.from, request.limit, request.order_by, request.dir === 'b',
-            );
+            ), http.flushAllExpected()]);
             expect(result).toEqual(response);
         });
 
         describe('getRoomState', () => {
             it('should call the right endpoint', async () => {
-                const {client, http, hsUrl} = createTestSynapseAdminClient();
+                const { client, http, hsUrl } = createTestSynapseAdminClient();
 
                 const roomId = "!room:example.org";
                 const state = [
-                    {type: "m.room.create", content: {}, state_key: ""},
-                    {type: "m.room.member", content: {membership: "join"}, state_key: "@alice:example.org"},
-                    {type: "m.room.member", content: {membership: "leave"}, state_key: "@bob:example.org"},
+                    { type: "m.room.create", content: {}, state_key: "" },
+                    { type: "m.room.member", content: { membership: "join" }, state_key: "@alice:example.org" },
+                    { type: "m.room.member", content: { membership: "leave" }, state_key: "@bob:example.org" },
                 ];
 
                 http.when("GET", "/_synapse/admin/v1/rooms").respond(200, (path, _content, req) => {
                     expect(path).toEqual(`${hsUrl}/_synapse/admin/v1/rooms/${encodeURIComponent(roomId)}/state`);
-                    return {state};
+                    return { state };
                 });
 
-                http.flushAllExpected();
-                const result = await client.getRoomState(roomId);
+                const [result] = await Promise.all([client.getRoomState(roomId), http.flushAllExpected()]);
                 expect(result).toMatchObject(state);
             });
         });
 
         describe('deleteRoom', () => {
             it('should call the right endpoint', async () => {
-                const {client, http, hsUrl} = createTestSynapseAdminClient();
+                const { client, http, hsUrl } = createTestSynapseAdminClient();
 
                 const roomId = "!room:example.org";
 
                 http.when("DELETE", "/_synapse/admin/v2/rooms").respond(200, (path, _content, req) => {
-                    expect(JSON.parse(req.opts.body)).toMatchObject({purge: true});
+                    expect(JSON.parse(req.opts.body)).toMatchObject({ purge: true });
                     expect(path).toEqual(`${hsUrl}/_synapse/admin/v2/rooms/${encodeURIComponent(roomId)}`);
                     return {};
                 });
 
-                http.flushAllExpected();
-                await client.deleteRoom(roomId);
+                await Promise.all([client.deleteRoom(roomId), http.flushAllExpected()]);
             });
         });
 
         describe('getDeleteRoomState', () => {
             it('should call the right endpoint', async () => {
-                const {client, http, hsUrl} = createTestSynapseAdminClient();
+                const { client, http, hsUrl } = createTestSynapseAdminClient();
 
                 const roomId = "!room:example.org";
                 const state = [
@@ -382,23 +381,23 @@ describe('SynapseAdminApis', () => {
                             "kicked_users": [],
                             "failed_to_kick_users": [],
                             "local_aliases": [],
-                            "new_room_id": null
-                        }
+                            "new_room_id": null,
+                        },
                     }, {
                         "delete_id": "delete_id2",
                         "status": "purging",
                         "shutdown_room": {
                             "kicked_users": [
-                                "@foobar:example.com"
+                                "@foobar:example.com",
                             ],
                             "failed_to_kick_users": [],
                             "local_aliases": [
                                 "#badroom:example.com",
-                                "#evilsaloon:example.com"
+                                "#evilsaloon:example.com",
                             ],
-                            "new_room_id": "!newroomid:example.com"
-                        }
-                    }
+                            "new_room_id": "!newroomid:example.com",
+                        },
+                    },
                 ];
 
                 http.when("GET", "/_synapse/admin/v2/rooms").respond(200, (path, _content, req) => {
@@ -406,37 +405,35 @@ describe('SynapseAdminApis', () => {
                     return { results: state };
                 });
 
-                http.flushAllExpected();
-                const result = await client.getDeleteRoomState(roomId);
+                const [result] = await Promise.all([client.getDeleteRoomState(roomId), http.flushAllExpected()]);
                 expect(result).toMatchObject(state);
             });
         });
 
         describe('listRegistrationTokens', () => {
             it('should call the right endpoint', async () => {
-                const {client, http, hsUrl} = createTestSynapseAdminClient();
+                const { client, http } = createTestSynapseAdminClient();
 
                 const tokens: SynapseRegistrationToken[] = [
-                    {token: "foo", uses_allowed: null, pending: 5, completed: 25, expiry_time: null},
-                    {token: "bar", uses_allowed: 15, pending: 5, completed: 8, expiry_time: 10000000}
+                    { token: "foo", uses_allowed: null, pending: 5, completed: 25, expiry_time: null },
+                    { token: "bar", uses_allowed: 15, pending: 5, completed: 8, expiry_time: 10000000 },
                 ];
 
                 http.when("GET", "/_synapse/admin/v1/registration_tokens").respond(200, () => {
-                    return {registration_tokens: tokens};
+                    return { registration_tokens: tokens };
                 });
 
-                http.flushAllExpected();
-                const result = await client.listRegistrationTokens();
+                const [result] = await Promise.all([client.listRegistrationTokens(), http.flushAllExpected()]);
                 expect(result).toEqual(tokens);
             });
         });
 
         describe('getRegistrationToken', () => {
             it('should call the right endpoint', async () => {
-                const {client, http, hsUrl} = createTestSynapseAdminClient();
+                const { client, http } = createTestSynapseAdminClient();
 
                 const token: SynapseRegistrationToken = {
-                    token: "foo", uses_allowed: null, pending: 5, completed: 25, expiry_time: null
+                    token: "foo", uses_allowed: null, pending: 5, completed: 25, expiry_time: null,
                 };
 
                 http.when("GET", "/_synapse/admin/v1/registration_tokens/foo").respond(200, () => {
@@ -446,75 +443,75 @@ describe('SynapseAdminApis', () => {
                 http.when("GET", "/_synapse/admin/v1/registration_tokens/not-a-token").respond(404, (path) => {
                     return {
                         errcode: "M_NOT_FOUND",
-                        error: "No such registration token: not-a-token"
-                    }
+                        error: "No such registration token: not-a-token",
+                    };
                 });
 
-                http.flushAllExpected();
+                const flush = http.flushAllExpected();
+
                 const result = await client.getRegistrationToken(token.token);
                 expect(result).toEqual(token);
 
                 const resultNull = await client.getRegistrationToken("not-a-token");
                 expect(resultNull).toEqual(null);
+
+                await flush;
             });
         });
 
         describe('createRegistrationToken', () => {
             it('should call the right endpoint', async () => {
-                const {client, http, hsUrl} = createTestSynapseAdminClient();
+                const { client, http } = createTestSynapseAdminClient();
 
                 const responseToken: SynapseRegistrationToken = {
-                    token: "foo", uses_allowed: null, pending: 5, completed: 25, expiry_time: null
+                    token: "foo", uses_allowed: null, pending: 5, completed: 25, expiry_time: null,
                 };
                 const options: SynapseRegistrationTokenOptions = {
                     token: "foo",
                     uses_allowed: null,
-                }
+                };
 
                 http.when("POST", "/_synapse/admin/v1/registration_tokens/new").respond(200, (_path, content) => {
                     expect(options).toMatchObject(content);
                     return responseToken;
                 });
 
-                http.flushAllExpected();
-                const result = await client.createRegistrationToken(options);
+                const [result] = await Promise.all([client.createRegistrationToken(options), http.flushAllExpected()]);
                 expect(result).toEqual(responseToken);
             });
         });
 
         describe('updateRegistrationToken', () => {
             it('should call the right endpoint', async () => {
-                const {client, http, hsUrl} = createTestSynapseAdminClient();
+                const { client, http } = createTestSynapseAdminClient();
 
                 const responseToken: SynapseRegistrationToken = {
-                    token: "foo", uses_allowed: null, pending: 5, completed: 25, expiry_time: null
+                    token: "foo", uses_allowed: null, pending: 5, completed: 25, expiry_time: null,
                 };
-            
+
                 const options: SynapseRegistrationTokenUpdateOptions = {
                     uses_allowed: null,
-                }
+                };
 
                 http.when("PUT", "/_synapse/admin/v1/registration_tokens/foo").respond(200, (_path, content) => {
                     expect(options).toMatchObject(content);
                     return responseToken;
                 });
 
-                http.flushAllExpected();
-                const result = await client.updateRegistrationToken("foo", options);
+                const [result] = await Promise.all([client.updateRegistrationToken("foo", options), http.flushAllExpected()]);
                 expect(result).toEqual(responseToken);
             });
         });
 
         describe('deleteRegistrationToken', () => {
             it('should call the right endpoint', async () => {
-                const {client, http, hsUrl} = createTestSynapseAdminClient();
+                const { client, http } = createTestSynapseAdminClient();
 
                 http.when("DELETE", "/_synapse/admin/v1/registration_tokens/foo").respond(200, () => {
                     return {};
                 });
 
-                http.flushAllExpected();
-                await client.deleteRegistrationToken("foo");
+                await Promise.all([client.deleteRegistrationToken("foo"), http.flushAllExpected()]);
             });
         });
     });

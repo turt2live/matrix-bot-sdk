@@ -1,58 +1,64 @@
-import * as expect from "expect";
-import { GroupProfile, IStorageProvider, MatrixClient, UnstableApis } from "../src";
 import * as MockHttpBackend from 'matrix-mock-request';
-import { createTestClient } from "./MatrixClientTest";
 
-export function createTestUnstableClient(storage: IStorageProvider = null): { client: UnstableApis, mxClient: MatrixClient, http: MockHttpBackend, hsUrl: string, accessToken: string } {
+import { GroupProfile, IStorageProvider, MatrixClient, MSC2380MediaInfo, UnstableApis } from "../src";
+import { createTestClient } from "./TestUtils";
+
+export function createTestUnstableClient(
+    storage: IStorageProvider = null,
+): {
+    client: UnstableApis;
+    mxClient: MatrixClient;
+    http: MockHttpBackend;
+    hsUrl: string;
+    accessToken: string;
+} {
     const result = createTestClient(storage);
     const mxClient = result.client;
     const client = new UnstableApis(mxClient);
 
     delete result.client;
 
-    return {...result, client, mxClient};
+    return { ...result, client, mxClient };
 }
 
 describe('UnstableApis', () => {
     describe('getRoomAliases', () => {
         it('should call the right endpoint', async () => {
-            const {client, http, hsUrl} = createTestUnstableClient();
+            const { client, http, hsUrl } = createTestUnstableClient();
 
             const aliases = ["#test:example.org", "#test2:example.org"];
             const roomId = "!room:example.org";
 
             http.when("GET", "/_matrix/client/unstable/org.matrix.msc2432/rooms").respond(200, (path, content) => {
                 expect(path).toEqual(`${hsUrl}/_matrix/client/unstable/org.matrix.msc2432/rooms/${encodeURIComponent(roomId)}/aliases`);
-                return {aliases: aliases};
+                return { aliases: aliases };
             });
 
-            http.flushAllExpected();
-            const result = await client.getRoomAliases(roomId);
+            const [result] = await Promise.all([client.getRoomAliases(roomId), http.flushAllExpected()]);
             expect(result).toMatchObject(aliases);
         });
     });
 
     describe('createGroup', () => {
         it('should call the right endpoint', async () => {
-            const {client, http} = createTestUnstableClient();
+            const { client, http } = createTestUnstableClient();
 
             const groupId = "+testing:example.org";
             const localpart = "testing";
 
             http.when("POST", "/_matrix/client/unstable/create_group").respond(200, (path, content) => {
-                expect(content).toMatchObject({localpart: localpart});
-                return {group_id: groupId};
+                expect(content).toMatchObject({ localpart: localpart });
+                return { group_id: groupId };
             });
 
-            http.flushAllExpected();
-            const result = await client.createGroup(localpart);
+            const [result] = await Promise.all([client.createGroup(localpart), http.flushAllExpected()]);
             expect(result).toEqual(groupId);
         });
     });
 
     describe('inviteUserToGroup', () => {
         it('should call the right endpoint', async () => {
-            const {client, http, hsUrl} = createTestUnstableClient();
+            const { client, http, hsUrl } = createTestUnstableClient();
 
             const groupId = "+testing:example.org";
             const userId = "@someone:example.org";
@@ -61,18 +67,17 @@ describe('UnstableApis', () => {
             http.when("PUT", "/_matrix/client/unstable/groups").respond(200, (path, content) => {
                 expect(path).toEqual(`${hsUrl}/_matrix/client/unstable/groups/${encodeURIComponent(groupId)}/admin/users/invite/${encodeURIComponent(userId)}`);
                 expect(content).toMatchObject({});
-                return {state: state};
+                return { state: state };
             });
 
-            http.flushAllExpected();
-            const result = await client.inviteUserToGroup(groupId, userId);
+            const [result] = await Promise.all([client.inviteUserToGroup(groupId, userId), http.flushAllExpected()]);
             expect(result).toEqual(state);
         });
     });
 
     describe('kickUserFromGroup', () => {
         it('should call the right endpoint', async () => {
-            const {client, http, hsUrl} = createTestUnstableClient();
+            const { client, http, hsUrl } = createTestUnstableClient();
 
             const groupId = "+testing:example.org";
             const userId = "@someone:example.org";
@@ -83,15 +88,14 @@ describe('UnstableApis', () => {
                 return {};
             });
 
-            http.flushAllExpected();
-            const result = await client.kickUserFromGroup(groupId, userId);
+            const [result] = await Promise.all([client.kickUserFromGroup(groupId, userId), http.flushAllExpected()]);
             expect(result).toMatchObject({});
         });
     });
 
     describe('setGroupProfile', () => {
         it('should call the right endpoint', async () => {
-            const {client, http, hsUrl} = createTestUnstableClient();
+            const { client, http, hsUrl } = createTestUnstableClient();
 
             const groupId = "+testing:example.org";
             const profile: GroupProfile = {
@@ -107,32 +111,30 @@ describe('UnstableApis', () => {
                 return {};
             });
 
-            http.flushAllExpected();
-            await client.setGroupProfile(groupId, profile);
+            await Promise.all([client.setGroupProfile(groupId, profile), http.flushAllExpected()]);
         });
     });
 
     describe('setGroupJoinPolicy', () => {
         it('should call the right endpoint', async () => {
-            const {client, http, hsUrl} = createTestUnstableClient();
+            const { client, http, hsUrl } = createTestUnstableClient();
 
             const groupId = "+testing:example.org";
             const policy = "invite";
 
             http.when("PUT", "/_matrix/client/unstable/groups").respond(200, (path, content) => {
                 expect(path).toEqual(`${hsUrl}/_matrix/client/unstable/groups/${encodeURIComponent(groupId)}/settings/m.join_policy`);
-                expect(content).toMatchObject({"m.join_policy": {type: policy}});
+                expect(content).toMatchObject({ "m.join_policy": { type: policy } });
                 return {};
             });
 
-            http.flushAllExpected();
-            await client.setGroupJoinPolicy(groupId, policy);
+            await Promise.all([client.setGroupJoinPolicy(groupId, policy), http.flushAllExpected()]);
         });
     });
 
     describe('addRoomToGroup', () => {
         it('should call the right endpoint', async () => {
-            const {client, http, hsUrl} = createTestUnstableClient();
+            const { client, http, hsUrl } = createTestUnstableClient();
 
             const groupId = "+testing:example.org";
             const roomId = "!someroom:example.org";
@@ -143,15 +145,14 @@ describe('UnstableApis', () => {
                 return {};
             });
 
-            http.flushAllExpected();
-            const result = await client.addRoomToGroup(groupId, roomId);
+            const [result] = await Promise.all([client.addRoomToGroup(groupId, roomId), http.flushAllExpected()]);
             expect(result).toMatchObject({});
         });
     });
 
     describe('updateGroupRoomVisibility', () => {
         it('should call the right endpoint for private rooms', async () => {
-            const {client, http, hsUrl} = createTestUnstableClient();
+            const { client, http, hsUrl } = createTestUnstableClient();
 
             const groupId = "+testing:example.org";
             const roomId = "!someroom:example.org";
@@ -162,13 +163,12 @@ describe('UnstableApis', () => {
                 return {};
             });
 
-            http.flushAllExpected();
-            const result = await client.updateGroupRoomVisibility(groupId, roomId, false);
+            const [result] = await Promise.all([client.updateGroupRoomVisibility(groupId, roomId, false), http.flushAllExpected()]);
             expect(result).toMatchObject({});
         });
 
         it('should call the right endpoint for public rooms', async () => {
-            const {client, http, hsUrl} = createTestUnstableClient();
+            const { client, http, hsUrl } = createTestUnstableClient();
 
             const groupId = "+testing:example.org";
             const roomId = "!someroom:example.org";
@@ -179,15 +179,14 @@ describe('UnstableApis', () => {
                 return {};
             });
 
-            http.flushAllExpected();
-            const result = await client.updateGroupRoomVisibility(groupId, roomId, true);
+            const [result] = await Promise.all([client.updateGroupRoomVisibility(groupId, roomId, true), http.flushAllExpected()]);
             expect(result).toMatchObject({});
         });
     });
 
     describe('removeRoomFromGroup', () => {
         it('should call the right endpoint', async () => {
-            const {client, http, hsUrl} = createTestUnstableClient();
+            const { client, http, hsUrl } = createTestUnstableClient();
 
             const groupId = "+testing:example.org";
             const roomId = "!someroom:example.org";
@@ -197,15 +196,14 @@ describe('UnstableApis', () => {
                 return {};
             });
 
-            http.flushAllExpected();
-            const result = await client.removeRoomFromGroup(groupId, roomId);
+            const [result] = await Promise.all([client.removeRoomFromGroup(groupId, roomId), http.flushAllExpected()]);
             expect(result).toMatchObject({});
         });
     });
 
     describe('getGroupProfile', () => {
         it('should call the right endpoint', async () => {
-            const {client, http, hsUrl} = createTestUnstableClient();
+            const { client, http, hsUrl } = createTestUnstableClient();
 
             const groupId = "+testing:example.org";
 
@@ -219,8 +217,7 @@ describe('UnstableApis', () => {
                 };
             });
 
-            http.flushAllExpected();
-            const result = await client.getGroupProfile(groupId);
+            const [result] = await Promise.all([client.getGroupProfile(groupId), http.flushAllExpected()]);
             expect(result.name).toEqual("Test Group");
             expect(result.avatar_url).toEqual("mxc://some/avatar");
             expect(result.short_description).toEqual("Short description of group");
@@ -230,7 +227,7 @@ describe('UnstableApis', () => {
 
     describe('getGroupUsers', () => {
         it('should call the right endpoint', async () => {
-            const {client, http, hsUrl} = createTestUnstableClient();
+            const { client, http, hsUrl } = createTestUnstableClient();
 
             const groupId = "+testing:example.org";
             const joinedUser = "@someuser:example.org";
@@ -246,8 +243,7 @@ describe('UnstableApis', () => {
                 };
             });
 
-            http.flushAllExpected();
-            const result = await client.getGroupUsers(groupId);
+            const [result] = await Promise.all([client.getGroupUsers(groupId), http.flushAllExpected()]);
             expect(result.length).toEqual(1);
             expect(result[0].user_id).toEqual(joinedUser);
         });
@@ -255,7 +251,7 @@ describe('UnstableApis', () => {
 
     describe('getGroupInvitedUsers', () => {
         it('should call the right endpoint', async () => {
-            const {client, http, hsUrl} = createTestUnstableClient();
+            const { client, http, hsUrl } = createTestUnstableClient();
 
             const groupId = "+testing:example.org";
             const invitedUser = "@someuser:example.org";
@@ -271,8 +267,7 @@ describe('UnstableApis', () => {
                 };
             });
 
-            http.flushAllExpected();
-            const result = await client.getGroupInvitedUsers(groupId);
+            const [result] = await Promise.all([client.getGroupInvitedUsers(groupId), http.flushAllExpected()]);
             expect(result.length).toEqual(1);
             expect(result[0].user_id).toEqual(invitedUser);
         });
@@ -280,7 +275,7 @@ describe('UnstableApis', () => {
 
     describe('getGroupRooms', () => {
         it('should call the right endpoint', async () => {
-            const {client, http, hsUrl} = createTestUnstableClient();
+            const { client, http, hsUrl } = createTestUnstableClient();
 
             const groupId = "+testing:example.org";
             const roomId = "!someroom:example.org";
@@ -296,8 +291,7 @@ describe('UnstableApis', () => {
                 };
             });
 
-            http.flushAllExpected();
-            const result = await client.getGroupRooms(groupId);
+            const [result] = await Promise.all([client.getGroupRooms(groupId), http.flushAllExpected()]);
             expect(result.length).toEqual(1);
             expect(result[0].room_id).toEqual(roomId);
         });
@@ -305,7 +299,7 @@ describe('UnstableApis', () => {
 
     describe('acceptGroupInvite', () => {
         it('should call the right endpoint', async () => {
-            const {client, http, hsUrl} = createTestUnstableClient();
+            const { client, http, hsUrl } = createTestUnstableClient();
 
             const groupId = "+testing:example.org";
 
@@ -314,15 +308,14 @@ describe('UnstableApis', () => {
                 return {};
             });
 
-            http.flushAllExpected();
-            const result = await client.acceptGroupInvite(groupId);
+            const [result] = await Promise.all([client.acceptGroupInvite(groupId), http.flushAllExpected()]);
             expect(result).toMatchObject({});
         });
     });
 
     describe('joinGroup', () => {
         it('should call the right endpoint', async () => {
-            const {client, http, hsUrl} = createTestUnstableClient();
+            const { client, http, hsUrl } = createTestUnstableClient();
 
             const groupId = "+testing:example.org";
 
@@ -331,15 +324,14 @@ describe('UnstableApis', () => {
                 return {};
             });
 
-            http.flushAllExpected();
-            const result = await client.joinGroup(groupId);
+            const [result] = await Promise.all([client.joinGroup(groupId), http.flushAllExpected()]);
             expect(result).toMatchObject({});
         });
     });
 
     describe('leaveGroup', () => {
         it('should call the right endpoint', async () => {
-            const {client, http, hsUrl} = createTestUnstableClient();
+            const { client, http, hsUrl } = createTestUnstableClient();
 
             const groupId = "+testing:example.org";
 
@@ -348,15 +340,14 @@ describe('UnstableApis', () => {
                 return {};
             });
 
-            http.flushAllExpected();
-            const result = await client.leaveGroup(groupId);
+            const [result] = await Promise.all([client.leaveGroup(groupId), http.flushAllExpected()]);
             expect(result).toMatchObject({});
         });
     });
 
     describe('setGroupPublicity', () => {
         it('should call the right endpoint', async () => {
-            const {client, http, hsUrl} = createTestUnstableClient();
+            const { client, http, hsUrl } = createTestUnstableClient();
 
             const groupId = "+testing:example.org";
 
@@ -366,15 +357,14 @@ describe('UnstableApis', () => {
                 return {};
             });
 
-            http.flushAllExpected();
-            const result = await client.setGroupPublicity(groupId, true);
+            const [result] = await Promise.all([client.setGroupPublicity(groupId, true), http.flushAllExpected()]);
             expect(result).toMatchObject({});
         });
     });
 
     describe('getJoinedGroups', () => {
         it('should call the right endpoint', async () => {
-            const {client, http, hsUrl} = createTestUnstableClient();
+            const { client, http } = createTestUnstableClient();
 
             const groupId = "+testing:example.org";
 
@@ -384,8 +374,7 @@ describe('UnstableApis', () => {
                 };
             });
 
-            http.flushAllExpected();
-            const result = await client.getJoinedGroups();
+            const [result] = await Promise.all([client.getJoinedGroups(), http.flushAllExpected()]);
             expect(result.length).toEqual(1);
             expect(result[0]).toEqual(groupId);
         });
@@ -393,7 +382,7 @@ describe('UnstableApis', () => {
 
     describe('getPublicisedGroups', () => {
         it('should call the right endpoint', async () => {
-            const {client, http, hsUrl} = createTestUnstableClient();
+            const { client, http, hsUrl } = createTestUnstableClient();
 
             const userId = "@someuser:example.org";
             const groupId = "+testing:example.org";
@@ -405,8 +394,7 @@ describe('UnstableApis', () => {
                 };
             });
 
-            http.flushAllExpected();
-            const result = await client.getPublicisedGroups(userId);
+            const [result] = await Promise.all([client.getPublicisedGroups(userId), http.flushAllExpected()]);
             expect(result.length).toEqual(1);
             expect(result[0]).toEqual(groupId);
         });
@@ -414,7 +402,7 @@ describe('UnstableApis', () => {
 
     describe('addReactionToEvent', () => {
         it('should send an m.reaction event', async () => {
-            const {client, http, hsUrl} = createTestUnstableClient();
+            const { client, http, hsUrl } = createTestUnstableClient();
 
             const roomId = "!test:example.org";
             const originalEventId = "$orig:example.org";
@@ -428,16 +416,82 @@ describe('UnstableApis', () => {
                 },
             };
 
-            http.when("PUT", "/_matrix/client/r0/rooms").respond(200, (path, content) => {
-                const idx = path.indexOf(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/send/m.reaction/`);
+            http.when("PUT", "/_matrix/client/v3/rooms").respond(200, (path, content) => {
+                const idx = path.indexOf(`${hsUrl}/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/send/m.reaction/`);
                 expect(idx).toBe(0);
                 expect(content).toMatchObject(expectedReaction);
-                return {event_id: newEventId};
+                return { event_id: newEventId };
             });
 
-            http.flushAllExpected();
-            const result = await client.addReactionToEvent(roomId, originalEventId, emoji);
+            const [result] = await Promise.all([client.addReactionToEvent(roomId, originalEventId, emoji), http.flushAllExpected()]);
             expect(result).toEqual(newEventId);
+        });
+    });
+
+    describe('getRelationsForEvent', () => {
+        test.each([
+            [null, null],
+            ['org.example.relation', null],
+            ['org.example.relation', 'org.example.event_type'],
+        ])("should call the right endpoint for rel=%p and type=%p", async (relType, eventType) => {
+            const { client, http, hsUrl } = createTestUnstableClient();
+
+            const roomId = "!room:example.org";
+            const eventId = "$event";
+            const response = {
+                original_event: { eventContents: true },
+                chunk: [
+                    { eventContents: true },
+                    { eventContents: true },
+                    { eventContents: true },
+                ],
+            };
+
+            http.when("GET", "/_matrix/client/unstable/rooms").respond(200, (path, content) => {
+                const relTypeComponent = relType ? `/${encodeURIComponent(relType)}` : '';
+                const eventTypeComponent = eventType ? `/${encodeURIComponent(eventType)}` : '';
+                // eslint-disable-next-line max-len
+                const idx = path.indexOf(`${hsUrl}/_matrix/client/unstable/rooms/${encodeURIComponent(roomId)}/relations/${encodeURIComponent(eventId)}${relTypeComponent}${eventTypeComponent}`);
+                expect(idx).toBe(0);
+                return response;
+            });
+
+            const [result] = await Promise.all([client.getRelationsForEvent(roomId, eventId, relType, eventType), http.flushAllExpected()]);
+            expect(result).toEqual(response);
+        });
+    });
+
+    describe('getMediaInfo', () => {
+        it('should call the right endpoint', async () => {
+            const { client, http, hsUrl } = createTestUnstableClient();
+
+            const domain = "example.org";
+            const mediaId = "abc123";
+            const mxc = `mxc://${domain}/${mediaId}`;
+            const response: MSC2380MediaInfo = {
+                content_type: "image/png",
+                size: 12,
+            };
+
+            http.when("GET", "/_matrix/media/unstable/info").respond(200, (path, content) => {
+                const idx = path.indexOf(`${hsUrl}/_matrix/media/unstable/info/${encodeURIComponent(domain)}/${encodeURIComponent(mediaId)}`);
+                expect(idx).toBe(0);
+                return response;
+            });
+
+            const [result] = await Promise.all([client.getMediaInfo(mxc), http.flushAllExpected()]);
+            expect(result).toEqual(response);
+        });
+
+        test.each([
+            ["invalid", "'mxcUrl' does not begin with mxc://"],
+            ["mxc://", "Missing domain or media ID"],
+            ["mxc://domainonly", "Missing domain or media ID"],
+            ["mxc://emptymedia/", "Missing domain or media ID"],
+        ])("should fail if the MXC URI is invalid: %p / %p", async (val, err) => {
+            const { client } = createTestUnstableClient();
+
+            await expect(client.getMediaInfo(val)).rejects.toThrow(err);
         });
     });
 });

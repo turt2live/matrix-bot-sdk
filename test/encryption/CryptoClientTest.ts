@@ -1,5 +1,6 @@
-import * as expect from "expect";
 import * as simple from "simple-mock";
+import { OlmMachine, Signatures } from "@turt2live/matrix-sdk-crypto-nodejs";
+
 import {
     ConsoleLogger,
     DeviceKeyAlgorithm,
@@ -8,9 +9,8 @@ import {
     MatrixClient,
     RoomEncryptionAlgorithm,
 } from "../../src";
-import { createTestClient, TEST_DEVICE_ID } from "../MatrixClientTest";
 import { InternalOlmMachineFactory } from "../../src/e2ee/InternalOlmMachineFactory";
-import { OlmMachine, Signatures } from "@turt2live/matrix-sdk-crypto-nodejs";
+import { createTestClient, TEST_DEVICE_ID } from "../TestUtils";
 
 describe('CryptoClient', () => {
     afterEach(() => {
@@ -115,7 +115,7 @@ describe('CryptoClient', () => {
             const { client } = createTestClient(null, userId, true);
 
             await client.cryptoStore.setDeviceId(TEST_DEVICE_ID);
-            client.getRoomStateEvent = () => Promise.reject("return value not used");
+            client.getRoomStateEvent = () => Promise.reject(new Error("not used"));
             await client.crypto.prepare([]);
 
             const result = await client.crypto.isRoomEncrypted("!new:example.org");
@@ -132,7 +132,7 @@ describe('CryptoClient', () => {
             const { client } = createTestClient(null, userId, true);
 
             await client.cryptoStore.setDeviceId(TEST_DEVICE_ID);
-            client.getRoomStateEvent = () => Promise.reject("implying 404");
+            client.getRoomStateEvent = () => Promise.reject(new Error("implied 404"));
             await client.crypto.prepare([]);
 
             const result = await client.crypto.isRoomEncrypted("!new:example.org");
@@ -397,13 +397,13 @@ describe('CryptoClient', () => {
                 k: "l3OtQ3IJzfJa85j2WMsqNu7J--C-I1hzPxFvinR48mM",
                 key_ops: [
                     "encrypt",
-                    "decrypt"
+                    "decrypt",
                 ],
-                kty: "oct"
+                kty: "oct",
             },
             iv: "KJQOebQS1wwAAAAAAAAAAA",
             hashes: {
-                sha256: "Qe4YzmVoPaEcLQeZwFZ4iMp/dlgeFph6mi5DmCaCOzg"
+                sha256: "Qe4YzmVoPaEcLQeZwFZ4iMp/dlgeFph6mi5DmCaCOzg",
             },
             url: "mxc://localhost/uiWuISEVWixompuiiYyUoGrx",
         };
@@ -450,7 +450,7 @@ describe('CryptoClient', () => {
 
             const downloadSpy = simple.stub().callFn(async (u) => {
                 expect(u).toEqual(mxc);
-                return {data: encrypted.buffer, contentType: "application/octet-stream"};
+                return { data: encrypted.buffer, contentType: "application/octet-stream" };
             });
             client.downloadContent = downloadSpy;
 
@@ -467,7 +467,7 @@ describe('CryptoClient', () => {
 
             const downloadSpy = simple.stub().callFn(async (u) => {
                 expect(u).toEqual(testFile.url);
-                return {data: Buffer.from(mediaFileContents), contentType: "application/octet-stream"};
+                return { data: Buffer.from(mediaFileContents), contentType: "application/octet-stream" };
             });
             client.downloadContent = downloadSpy;
 

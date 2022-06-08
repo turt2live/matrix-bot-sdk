@@ -1,7 +1,7 @@
-import * as expect from "expect";
-import { MentionPill } from "../../src";
-import { createTestClient } from "../MatrixClientTest";
 import * as simple from "simple-mock";
+
+import { MentionPill } from "../../src";
+import { createTestClient } from "../TestUtils";
 
 describe('MentionPill', () => {
     describe('forUser', () => {
@@ -30,7 +30,7 @@ describe('MentionPill', () => {
         });
 
         it('should generate a pill for a user using their profile', async () => {
-            const {client} = createTestClient();
+            const { client } = createTestClient();
 
             const userId = "@test:example.org";
             const displayName = "John Doe";
@@ -39,7 +39,7 @@ describe('MentionPill', () => {
 
             const profileSpy = simple.mock(client, "getUserProfile").callFn((uid) => {
                 expect(uid).toEqual(userId);
-                return {displayname: displayName};
+                return { displayname: displayName };
             });
             const stateSpy = simple.mock(client, "getRoomStateEvent").callFn((rid, eventType, stateKey) => {
                 throw new Error("Unexpected call");
@@ -54,7 +54,7 @@ describe('MentionPill', () => {
         });
 
         it('should generate a pill for a user using their profile in a room', async () => {
-            const {client} = createTestClient();
+            const { client } = createTestClient();
 
             const userId = "@test:example.org";
             const roomId = "!somewhere:example.org";
@@ -69,7 +69,7 @@ describe('MentionPill', () => {
                 expect(rid).toBe(roomId);
                 expect(eventType).toBe("m.room.member");
                 expect(stateKey).toBe(userId);
-                return {displayname: displayName};
+                return { displayname: displayName };
             });
 
             const mention = await MentionPill.forUser(userId, roomId, client);
@@ -81,11 +81,9 @@ describe('MentionPill', () => {
         });
 
         it('should generate use the user ID when the profile errors (profile endpoint)', async () => {
-            const {client} = createTestClient();
+            const { client } = createTestClient();
 
             const userId = "@test:example.org";
-            const roomId = "!somewhere:example.org";
-            const displayName = "John Doe";
             const expectedHtml = `<a href="https://matrix.to/#/${userId}">${userId}</a>`;
             const expectedText = userId;
 
@@ -105,11 +103,10 @@ describe('MentionPill', () => {
         });
 
         it('should generate use the user ID when the profile errors (room endpoint)', async () => {
-            const {client} = createTestClient();
+            const { client } = createTestClient();
 
             const userId = "@test:example.org";
             const roomId = "!somewhere:example.org";
-            const displayName = "John Doe";
             const expectedHtml = `<a href="https://matrix.to/#/${userId}">${userId}</a>`;
             const expectedText = userId;
 
@@ -153,7 +150,7 @@ describe('MentionPill', () => {
         });
 
         it('should try to fetch the canonical alias for a room', async () => {
-            const {client} = createTestClient();
+            const { client } = createTestClient();
 
             const roomAlias = "#alias:example.org";
             const canonicalAlias = "#canonical:example.org";
@@ -169,13 +166,15 @@ describe('MentionPill', () => {
                 expect(sRoomId).toBe(roomId);
                 expect(type).toBe("m.room.canonical_alias");
                 expect(stateKey).toBe("");
-                return {alias: canonicalAlias};
+                return { alias: canonicalAlias };
             });
 
             const mention = await MentionPill.forRoom(roomAlias, client);
             expect(mention).toBeDefined();
             expect(mention.html).toBe(expectedHtml);
             expect(mention.text).toBe(expectedText);
+            expect(getStateSpy.callCount).toBe(1);
+            expect(resolveSpy.callCount).toBe(1);
         });
     });
 });

@@ -1,17 +1,16 @@
-import * as expect from "expect";
-import { Appservice, ProfileCache } from "../../src";
-import { createTestClient } from "../MatrixClientTest";
 import * as simple from "simple-mock";
-import { testDelay } from "../TestUtils";
+
+import { Appservice, ProfileCache } from "../../src";
+import { createTestClient, testDelay } from "../TestUtils";
 
 describe('ProfileCache', () => {
     it('should request the profile if it is not cached', async () => {
         const userId = "@test:example.org";
         const roomId = "!room:example.org";
-        const roomProfile = {displayname: "Alice", avatar_url: "mxc://example.org/abc"};
-        const generalProfile = {displayname: "Bob", avatar_url: "mxc://example.org/123"};
+        const roomProfile = { displayname: "Alice", avatar_url: "mxc://example.org/abc" };
+        const generalProfile = { displayname: "Bob", avatar_url: "mxc://example.org/123" };
 
-        const {client} = createTestClient();
+        const { client } = createTestClient();
 
         const getStateEventSpy = simple.mock(client, "getRoomStateEvent").callFn((rid, type, stateKey) => {
             expect(rid).toBe(roomId);
@@ -61,13 +60,13 @@ describe('ProfileCache', () => {
     it('should watch for membership updates with a MatrixClient', async () => {
         const userId = "@test:example.org";
         const roomId = "!room:example.org";
-        const roomProfile = {displayname: "Alice", avatar_url: "mxc://example.org/abc"};
-        let generalProfile = {displayname: "Bob", avatar_url: "mxc://example.org/123"};
-        const altRoomProfile = {displayname: "Charlie", avatar_url: "mxc://example.org/456"};
-        const membershipEvent = {state_key: userId, type: 'm.room.member', content: altRoomProfile};
+        const roomProfile = { displayname: "Alice", avatar_url: "mxc://example.org/abc" };
+        let generalProfile = { displayname: "Bob", avatar_url: "mxc://example.org/123" };
+        const altRoomProfile = { displayname: "Charlie", avatar_url: "mxc://example.org/456" };
+        const membershipEvent = { state_key: userId, type: 'm.room.member', content: altRoomProfile };
 
-        const {client: client1} = createTestClient();
-        const {client: client2} = createTestClient();
+        const { client: client1 } = createTestClient();
+        const { client: client2 } = createTestClient();
 
         const getStateEventSpy1 = simple.mock(client1, "getRoomStateEvent").callFn((rid, type, stateKey) => {
             expect(rid).toBe(roomId);
@@ -137,7 +136,7 @@ describe('ProfileCache', () => {
         expect(getProfileSpy2.callCount).toBe(0);
 
         // Change the profile slightly and expect it to update
-        generalProfile = {displayname: "Daniel", avatar_url: "mxc://example.org/def"};
+        generalProfile = { displayname: "Daniel", avatar_url: "mxc://example.org/def" };
         client2.emit("room.event", roomId, membershipEvent);
         await testDelay(100); // Let the promises settle.
         expect(getStateEventSpy1.callCount).toBe(1);
@@ -157,13 +156,13 @@ describe('ProfileCache', () => {
     it('should watch for membership updates with an appservice', async () => {
         const userId = "@test:example.org";
         const roomId = "!room:example.org";
-        const roomProfile = {displayname: "Alice", avatar_url: "mxc://example.org/abc"};
-        let generalProfile = {displayname: "Bob", avatar_url: "mxc://example.org/123"};
-        const altRoomProfile = {displayname: "Charlie", avatar_url: "mxc://example.org/456"};
-        const membershipEvent = {state_key: userId, type: 'm.room.member', content: altRoomProfile};
+        const roomProfile = { displayname: "Alice", avatar_url: "mxc://example.org/abc" };
+        let generalProfile = { displayname: "Bob", avatar_url: "mxc://example.org/123" };
+        const altRoomProfile = { displayname: "Charlie", avatar_url: "mxc://example.org/456" };
+        const membershipEvent = { state_key: userId, type: 'm.room.member', content: altRoomProfile };
 
-        const {client: client1} = createTestClient();
-        const {client: client2} = createTestClient();
+        const { client: client1 } = createTestClient();
+        const { client: client2 } = createTestClient();
         const appservice = new Appservice({
             port: 0,
             bindAddress: '127.0.0.1',
@@ -174,7 +173,7 @@ describe('ProfileCache', () => {
                 hs_token: "",
                 sender_localpart: "_bot_",
                 namespaces: {
-                    users: [{exclusive: true, regex: "@_prefix_.*:.+"}],
+                    users: [{ exclusive: true, regex: "@_prefix_.*:.+" }],
                     rooms: [],
                     aliases: [],
                 },
@@ -256,7 +255,7 @@ describe('ProfileCache', () => {
         expect(getProfileSpy2.callCount).toBe(0);
 
         // Change the profile slightly and expect it to update
-        generalProfile = {displayname: "Daniel", avatar_url: "mxc://example.org/def"};
+        generalProfile = { displayname: "Daniel", avatar_url: "mxc://example.org/def" };
         appservice.emit("room.event", roomId, membershipEvent);
         await testDelay(100); // Let the promises settle.
         expect(clientFnSpy.callCount).toBe(3);

@@ -2,9 +2,9 @@ import {
     Appservice,
     AutojoinRoomsMixin,
     IAppserviceOptions,
-    IAppserviceRegistration,
+    IAppserviceRegistration, LogService,
     MemoryStorageProvider,
-    SimpleRetryJoinStrategy
+    SimpleRetryJoinStrategy,
 } from "../src";
 
 const registration: IAppserviceRegistration = {
@@ -22,7 +22,7 @@ const registration: IAppserviceRegistration = {
     },
 };
 
-console.log("Setting up appservice with in-memory storage");
+LogService.info("index", "Setting up appservice with in-memory storage");
 
 const storage = new MemoryStorageProvider();
 
@@ -41,7 +41,7 @@ const appservice = new Appservice(options);
 AutojoinRoomsMixin.setupOnAppservice(appservice);
 
 appservice.on("room.event", (roomId, event) => {
-    console.log(`Received event ${event["event_id"]} (${event["type"]}) from ${event["sender"]} in ${roomId}`);
+    LogService.info("index", `Received event ${event["event_id"]} (${event["type"]}) from ${event["sender"]} in ${roomId}`);
 });
 
 appservice.on("room.message", (roomId, event) => {
@@ -49,7 +49,7 @@ appservice.on("room.message", (roomId, event) => {
     if (event["content"]["msgtype"] !== "m.text") return;
 
     const body = event["content"]["body"];
-    console.log(`Received message ${event["event_id"]} from ${event["sender"]} in ${roomId}: ${body}`);
+    LogService.info("index", `Received message ${event["event_id"]} from ${event["sender"]} in ${roomId}: ${body}`);
 
     // We'll create fake ghosts based on the event ID. Typically these users would be mapped
     // by some other means and not arbitrarily. The ghost here also echos whatever the original
@@ -63,7 +63,7 @@ appservice.on("query.user", (userId, createUser) => {
     // user should be created. To do that, give an object or Promise of an object in the
     // form below to the createUser function (as shown). To prevent the creation of a user,
     // pass false to createUser, like so: createUser(false);
-    console.log(`Received query for user ${userId}`);
+    LogService.info("index", `Received query for user ${userId}`);
     createUser({
         display_name: "Test User",
         avatar_mxc: "mxc://localhost/somewhere",
@@ -77,7 +77,7 @@ appservice.on("query.room", (roomAlias, createRoom) => {
     // function (as shown). To prevent creation of a room, pass false to createRoom like
     // so: createRoom(false); The object (with minor modifications) will be passed to
     // the /createRoom API.
-    console.log(`Received query for alias ${roomAlias}`);
+    LogService.info("index", `Received query for alias ${roomAlias}`);
     createRoom({
         name: "Hello World",
         topic: "This is an example room",
@@ -91,15 +91,15 @@ appservice.on("query.room", (roomAlias, createRoom) => {
 // for everyone.
 
 appservice.on("room.invite", (roomId, inviteEvent) => {
-    console.log(`Received invite for ${inviteEvent["state_key"]} to ${roomId}`);
+    LogService.info("index", `Received invite for ${inviteEvent["state_key"]} to ${roomId}`);
 });
 
 appservice.on("room.join", (roomId, joinEvent) => {
-    console.log(`Joined ${roomId} as ${joinEvent["state_key"]}`);
+    LogService.info("index", `Joined ${roomId} as ${joinEvent["state_key"]}`);
 });
 
 appservice.on("room.leave", (roomId, leaveEvent) => {
-    console.log(`Left ${roomId} as ${leaveEvent["state_key"]}`);
+    LogService.info("index", `Left ${roomId} as ${leaveEvent["state_key"]}`);
 });
 
-appservice.begin().then(() => console.log("Appservice started"));
+appservice.begin().then(() => LogService.info("index", "Appservice started"));

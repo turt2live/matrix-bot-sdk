@@ -1,7 +1,7 @@
-import * as expect from "expect";
-import { IStorageProvider, MatrixClient, setRequestFn, SynchronousMatrixClient } from "../src";
 import * as simple from "simple-mock";
 import * as MockHttpBackend from 'matrix-mock-request';
+
+import { IStorageProvider, MatrixClient, setRequestFn, SynchronousMatrixClient } from "../src";
 
 class TestSyncMatrixClient extends SynchronousMatrixClient {
     constructor(client: MatrixClient) {
@@ -10,7 +10,7 @@ class TestSyncMatrixClient extends SynchronousMatrixClient {
 
     public async doProcessSync(raw: any) {
         // HACK: We shouldn't have to do this, and should be testing the startSyncInterval function
-        const fn = (<any>this).handleEvent.bind(this);
+        const fn = (<any> this).handleEvent.bind(this);
         return super.processSync(raw, fn);
     }
 }
@@ -22,7 +22,7 @@ export function createSyncTestClient(storage: IStorageProvider = null): { client
     const client = new MatrixClient(hsUrl, accessToken, storage);
     setRequestFn(http.requestFn);
 
-    return {http, hsUrl, accessToken, client: new TestSyncMatrixClient(client)};
+    return { http, hsUrl, accessToken, client: new TestSyncMatrixClient(client) };
 }
 
 describe('SynchronousMatrixClient', () => {
@@ -32,7 +32,7 @@ describe('SynchronousMatrixClient', () => {
         }
 
         it('should process non-room account data', async () => {
-            const {client: realClient} = createSyncTestClient();
+            const { client: realClient } = createSyncTestClient();
             const client = <ProcessSyncClient>(<any>realClient);
 
             const userId = "@syncing:example.org";
@@ -55,13 +55,13 @@ describe('SynchronousMatrixClient', () => {
             });
             realClient.on("account_data", spy);
 
-            await realClient.doProcessSync({account_data: {events: events}});
+            await realClient.doProcessSync({ account_data: { events: events } });
             expect(spy.callCount).toBe(1);
             expect(syncSpy.callCount).toBe(1);
         });
 
         it('should process left rooms', async () => {
-            const {client: realClient} = createSyncTestClient();
+            const { client: realClient } = createSyncTestClient();
             const client = <ProcessSyncClient>(<any>realClient);
 
             const userId = "@syncing:example.org";
@@ -70,7 +70,7 @@ describe('SynchronousMatrixClient', () => {
                 {
                     type: "m.room.member",
                     state_key: userId,
-                    unsigned: {age: 0},
+                    unsigned: { age: 0 },
                 },
             ];
 
@@ -87,14 +87,14 @@ describe('SynchronousMatrixClient', () => {
             realClient.on("room.leave", spy);
 
             const roomsObj = {};
-            roomsObj[roomId] = {timeline: {events: events}};
-            await realClient.doProcessSync({rooms: {leave: roomsObj}});
+            roomsObj[roomId] = { timeline: { events: events } };
+            await realClient.doProcessSync({ rooms: { leave: roomsObj } });
             expect(spy.callCount).toBe(1);
             expect(syncSpy.callCount).toBe(1);
         });
 
         it('should process left rooms account data', async () => {
-            const {client: realClient} = createSyncTestClient();
+            const { client: realClient } = createSyncTestClient();
             const client = <ProcessSyncClient>(<any>realClient);
 
             const userId = "@syncing:example.org";
@@ -121,14 +121,14 @@ describe('SynchronousMatrixClient', () => {
             realClient.on("room.account_data", spy);
 
             const roomsObj = {};
-            roomsObj[roomId] = {account_data: {events: events}};
-            await realClient.doProcessSync({rooms: {leave: roomsObj}});
+            roomsObj[roomId] = { account_data: { events: events } };
+            await realClient.doProcessSync({ rooms: { leave: roomsObj } });
             expect(spy.callCount).toBe(1);
             expect(syncSpy.callCount).toBe(1);
         });
 
         it('should use the most recent leave event', async () => {
-            const {client: realClient} = createSyncTestClient();
+            const { client: realClient } = createSyncTestClient();
             const client = <ProcessSyncClient>(<any>realClient);
 
             const userId = "@syncing:example.org";
@@ -137,17 +137,17 @@ describe('SynchronousMatrixClient', () => {
                 {
                     type: "m.room.member",
                     state_key: userId,
-                    unsigned: {age: 2},
+                    unsigned: { age: 2 },
                 },
                 {
                     type: "m.room.member",
                     state_key: userId,
-                    unsigned: {age: 1},
+                    unsigned: { age: 1 },
                 },
                 {
                     type: "m.room.member",
                     state_key: userId,
-                    unsigned: {age: 3},
+                    unsigned: { age: 3 },
                 },
             ];
 
@@ -164,14 +164,14 @@ describe('SynchronousMatrixClient', () => {
             realClient.on("room.leave", spy);
 
             const roomsObj = {};
-            roomsObj[roomId] = {timeline: {events: events}};
-            await realClient.doProcessSync({rooms: {leave: roomsObj}});
+            roomsObj[roomId] = { timeline: { events: events } };
+            await realClient.doProcessSync({ rooms: { leave: roomsObj } });
             expect(spy.callCount).toBe(1);
             expect(syncSpy.callCount).toBe(1);
         });
 
         it('should not be affected by irrelevant events during leaves', async () => {
-            const {client: realClient} = createSyncTestClient();
+            const { client: realClient } = createSyncTestClient();
             const client = <ProcessSyncClient>(<any>realClient);
 
             const userId = "@syncing:example.org";
@@ -180,17 +180,17 @@ describe('SynchronousMatrixClient', () => {
                 {
                     type: "m.room.not_member",
                     state_key: userId,
-                    unsigned: {age: 1},
+                    unsigned: { age: 1 },
                 },
                 {
                     type: "m.room.member",
                     state_key: userId,
-                    unsigned: {age: 1},
+                    unsigned: { age: 1 },
                 },
                 {
                     type: "m.room.member",
                     state_key: userId + "_wrong_member",
-                    unsigned: {age: 1},
+                    unsigned: { age: 1 },
                 },
             ];
 
@@ -207,14 +207,14 @@ describe('SynchronousMatrixClient', () => {
             realClient.on("room.leave", spy);
 
             const roomsObj = {};
-            roomsObj[roomId] = {timeline: {events: events}};
-            await realClient.doProcessSync({rooms: {leave: roomsObj}});
+            roomsObj[roomId] = { timeline: { events: events } };
+            await realClient.doProcessSync({ rooms: { leave: roomsObj } });
             expect(spy.callCount).toBe(1);
             expect(syncSpy.callCount).toBe(1);
         });
 
         it('should not process leaves detached from events', async () => {
-            const {client: realClient} = createSyncTestClient();
+            const { client: realClient } = createSyncTestClient();
             const client = <ProcessSyncClient>(<any>realClient);
 
             const userId = "@syncing:example.org";
@@ -223,7 +223,7 @@ describe('SynchronousMatrixClient', () => {
                 {
                     type: "m.room.not_member",
                     state_key: userId,
-                    unsigned: {age: 1},
+                    unsigned: { age: 1 },
                 },
                 // Intentionally don't include a membership event
                 // {
@@ -234,7 +234,7 @@ describe('SynchronousMatrixClient', () => {
                 {
                     type: "m.room.member",
                     state_key: userId + "_wrong_member",
-                    unsigned: {age: 1},
+                    unsigned: { age: 1 },
                 },
             ];
 
@@ -251,14 +251,14 @@ describe('SynchronousMatrixClient', () => {
             realClient.on("room.leave", spy);
 
             const roomsObj = {};
-            roomsObj[roomId] = {timeline: {events: events}};
-            await realClient.doProcessSync({rooms: {leave: roomsObj}});
+            roomsObj[roomId] = { timeline: { events: events } };
+            await realClient.doProcessSync({ rooms: { leave: roomsObj } });
             expect(spy.callCount).toBe(0);
             expect(syncSpy.callCount).toBe(0);
         });
 
         it('should not get hung up on not having an age available for leaves', async () => {
-            const {client: realClient} = createSyncTestClient();
+            const { client: realClient } = createSyncTestClient();
             const client = <ProcessSyncClient>(<any>realClient);
 
             const userId = "@syncing:example.org";
@@ -267,7 +267,7 @@ describe('SynchronousMatrixClient', () => {
                 {
                     type: "m.room.member",
                     state_key: userId,
-                }
+                },
             ];
 
             client.userId = userId;
@@ -283,14 +283,14 @@ describe('SynchronousMatrixClient', () => {
             realClient.on("room.leave", spy);
 
             const roomsObj = {};
-            roomsObj[roomId] = {timeline: {events: events}};
-            await realClient.doProcessSync({rooms: {leave: roomsObj}});
+            roomsObj[roomId] = { timeline: { events: events } };
+            await realClient.doProcessSync({ rooms: { leave: roomsObj } });
             expect(spy.callCount).toBe(1);
             expect(syncSpy.callCount).toBe(1);
         });
 
         it('should process room invites', async () => {
-            const {client: realClient} = createSyncTestClient();
+            const { client: realClient } = createSyncTestClient();
             const client = <ProcessSyncClient>(<any>realClient);
 
             const userId = "@syncing:example.org";
@@ -300,8 +300,8 @@ describe('SynchronousMatrixClient', () => {
                 {
                     type: "m.room.member",
                     state_key: userId,
-                    unsigned: {age: 0},
-                    content: {membership: "invite"},
+                    unsigned: { age: 0 },
+                    content: { membership: "invite" },
                 },
             ];
 
@@ -318,14 +318,14 @@ describe('SynchronousMatrixClient', () => {
             realClient.on("room.invite", spy);
 
             const roomsObj = {};
-            roomsObj[roomId] = {invite_state: {events: events}};
-            await realClient.doProcessSync({rooms: {invite: roomsObj}});
+            roomsObj[roomId] = { invite_state: { events: events } };
+            await realClient.doProcessSync({ rooms: { invite: roomsObj } });
             expect(spy.callCount).toBe(1);
             expect(syncSpy.callCount).toBe(1);
         });
 
         it('should use the most recent invite event', async () => {
-            const {client: realClient} = createSyncTestClient();
+            const { client: realClient } = createSyncTestClient();
             const client = <ProcessSyncClient>(<any>realClient);
 
             const userId = "@syncing:example.org";
@@ -335,20 +335,20 @@ describe('SynchronousMatrixClient', () => {
                 {
                     type: "m.room.member",
                     state_key: userId,
-                    unsigned: {age: 2},
-                    content: {membership: "invite"},
+                    unsigned: { age: 2 },
+                    content: { membership: "invite" },
                 },
                 {
                     type: "m.room.member",
                     state_key: userId,
-                    unsigned: {age: 1},
-                    content: {membership: "invite"},
+                    unsigned: { age: 1 },
+                    content: { membership: "invite" },
                 },
                 {
                     type: "m.room.member",
                     state_key: userId,
-                    unsigned: {age: 3},
-                    content: {membership: "invite"},
+                    unsigned: { age: 3 },
+                    content: { membership: "invite" },
                 },
             ];
 
@@ -365,14 +365,14 @@ describe('SynchronousMatrixClient', () => {
             realClient.on("room.invite", spy);
 
             const roomsObj = {};
-            roomsObj[roomId] = {invite_state: {events: events}};
-            await realClient.doProcessSync({rooms: {invite: roomsObj}});
+            roomsObj[roomId] = { invite_state: { events: events } };
+            await realClient.doProcessSync({ rooms: { invite: roomsObj } });
             expect(spy.callCount).toBe(1);
             expect(syncSpy.callCount).toBe(1);
         });
 
         it('should not be affected by irrelevant events during invites', async () => {
-            const {client: realClient} = createSyncTestClient();
+            const { client: realClient } = createSyncTestClient();
             const client = <ProcessSyncClient>(<any>realClient);
 
             const userId = "@syncing:example.org";
@@ -382,20 +382,20 @@ describe('SynchronousMatrixClient', () => {
                 {
                     type: "m.room.not_member",
                     state_key: userId,
-                    unsigned: {age: 0},
-                    content: {membership: "invite"},
+                    unsigned: { age: 0 },
+                    content: { membership: "invite" },
                 },
                 {
                     type: "m.room.member",
                     state_key: userId,
-                    unsigned: {age: 0},
-                    content: {membership: "invite"},
+                    unsigned: { age: 0 },
+                    content: { membership: "invite" },
                 },
                 {
                     type: "m.room.member",
                     state_key: userId + "_wrong_member",
-                    unsigned: {age: 0},
-                    content: {membership: "invite"},
+                    unsigned: { age: 0 },
+                    content: { membership: "invite" },
                 },
             ];
 
@@ -412,14 +412,14 @@ describe('SynchronousMatrixClient', () => {
             realClient.on("room.invite", spy);
 
             const roomsObj = {};
-            roomsObj[roomId] = {invite_state: {events: events}};
-            await realClient.doProcessSync({rooms: {invite: roomsObj}});
+            roomsObj[roomId] = { invite_state: { events: events } };
+            await realClient.doProcessSync({ rooms: { invite: roomsObj } });
             expect(spy.callCount).toBe(1);
             expect(syncSpy.callCount).toBe(1);
         });
 
         it('should not process invites detached from events', async () => {
-            const {client: realClient} = createSyncTestClient();
+            const { client: realClient } = createSyncTestClient();
             const client = <ProcessSyncClient>(<any>realClient);
 
             const userId = "@syncing:example.org";
@@ -429,8 +429,8 @@ describe('SynchronousMatrixClient', () => {
                 {
                     type: "m.room.not_member",
                     state_key: userId,
-                    unsigned: {age: 0},
-                    content: {membership: "invite"},
+                    unsigned: { age: 0 },
+                    content: { membership: "invite" },
                 },
                 // Intentionally don't send a membership event
                 // {
@@ -442,8 +442,8 @@ describe('SynchronousMatrixClient', () => {
                 {
                     type: "m.room.member",
                     state_key: userId + "_wrong_member",
-                    unsigned: {age: 0},
-                    content: {membership: "invite"},
+                    unsigned: { age: 0 },
+                    content: { membership: "invite" },
                 },
             ];
 
@@ -460,14 +460,14 @@ describe('SynchronousMatrixClient', () => {
             realClient.on("room.invite", spy);
 
             const roomsObj = {};
-            roomsObj[roomId] = {invite_state: {events: events}};
-            await realClient.doProcessSync({rooms: {invite: roomsObj}});
+            roomsObj[roomId] = { invite_state: { events: events } };
+            await realClient.doProcessSync({ rooms: { invite: roomsObj } });
             expect(spy.callCount).toBe(0);
             expect(syncSpy.callCount).toBe(0);
         });
 
         it('should not get hung up by not having an age available for invites', async () => {
-            const {client: realClient} = createSyncTestClient();
+            const { client: realClient } = createSyncTestClient();
             const client = <ProcessSyncClient>(<any>realClient);
 
             const userId = "@syncing:example.org";
@@ -477,8 +477,8 @@ describe('SynchronousMatrixClient', () => {
                 {
                     type: "m.room.member",
                     state_key: userId,
-                    unsigned: {age: 0},
-                    content: {membership: "invite"},
+                    unsigned: { age: 0 },
+                    content: { membership: "invite" },
                 },
             ];
 
@@ -495,14 +495,14 @@ describe('SynchronousMatrixClient', () => {
             realClient.on("room.invite", spy);
 
             const roomsObj = {};
-            roomsObj[roomId] = {invite_state: {events: events}};
-            await realClient.doProcessSync({rooms: {invite: roomsObj}});
+            roomsObj[roomId] = { invite_state: { events: events } };
+            await realClient.doProcessSync({ rooms: { invite: roomsObj } });
             expect(spy.callCount).toBe(1);
             expect(syncSpy.callCount).toBe(1);
         });
 
         it('should process room joins', async () => {
-            const {client: realClient} = createSyncTestClient();
+            const { client: realClient } = createSyncTestClient();
             const client = <ProcessSyncClient>(<any>realClient);
 
             const userId = "@syncing:example.org";
@@ -520,13 +520,13 @@ describe('SynchronousMatrixClient', () => {
 
             const roomsObj = {};
             roomsObj[roomId] = {};
-            await realClient.doProcessSync({rooms: {join: roomsObj}});
+            await realClient.doProcessSync({ rooms: { join: roomsObj } });
             expect(spy.callCount).toBe(1);
             expect(syncSpy.callCount).toBe(1);
         });
 
         it('should process joined room account data', async () => {
-            const {client: realClient} = createSyncTestClient();
+            const { client: realClient } = createSyncTestClient();
             const client = <ProcessSyncClient>(<any>realClient);
 
             const userId = "@syncing:example.org";
@@ -553,14 +553,14 @@ describe('SynchronousMatrixClient', () => {
             realClient.on("room.account_data", spy);
 
             const roomsObj = {};
-            roomsObj[roomId] = {account_data: {events: events}};
-            await realClient.doProcessSync({rooms: {join: roomsObj}});
+            roomsObj[roomId] = { account_data: { events: events } };
+            await realClient.doProcessSync({ rooms: { join: roomsObj } });
             expect(spy.callCount).toBe(1);
             expect(syncSpy.callCount).toBe(1);
         });
 
         it('should not duplicate room joins', async () => {
-            const {client: realClient} = createSyncTestClient();
+            const { client: realClient } = createSyncTestClient();
             const client = <ProcessSyncClient>(<any>realClient);
 
             const userId = "@syncing:example.org";
@@ -578,16 +578,16 @@ describe('SynchronousMatrixClient', () => {
 
             const roomsObj = {};
             roomsObj[roomId] = {};
-            await realClient.doProcessSync({rooms: {join: roomsObj}});
+            await realClient.doProcessSync({ rooms: { join: roomsObj } });
             expect(spy.callCount).toBe(1);
             expect(syncSpy.callCount).toBe(1);
-            await realClient.doProcessSync({rooms: {join: roomsObj}});
+            await realClient.doProcessSync({ rooms: { join: roomsObj } });
             expect(spy.callCount).toBe(1);
             expect(syncSpy.callCount).toBe(1);
         });
 
         it('should process events for joined rooms', async () => {
-            const {client: realClient} = createSyncTestClient();
+            const { client: realClient } = createSyncTestClient();
             const client = <ProcessSyncClient>(<any>realClient);
 
             const userId = "@syncing:example.org";
@@ -595,19 +595,19 @@ describe('SynchronousMatrixClient', () => {
             const events = [
                 {
                     type: "m.room.not_message",
-                    content: {body: "hello world 1"},
+                    content: { body: "hello world 1" },
                 },
                 {
                     type: "m.room.message",
-                    content: {body: "hello world 2"},
+                    content: { body: "hello world 2" },
                 },
                 {
                     type: "m.room.not_message",
-                    content: {body: "hello world 3"},
+                    content: { body: "hello world 3" },
                 },
                 {
                     type: "m.room.message",
-                    content: {body: "hello world 4"},
+                    content: { body: "hello world 4" },
                 },
             ];
 
@@ -625,9 +625,12 @@ describe('SynchronousMatrixClient', () => {
                 expect(rid).toEqual(roomId);
                 expect(events).toContain(ev);
             });
-            const syncJoinSpy = simple.mock(realClient, 'onRoomJoin').callFn(() => {});
-            const syncInviteSpy = simple.mock(realClient, 'onRoomInvite').callFn(() => {});
-            const syncLeaveSpy = simple.mock(realClient, 'onRoomLeave').callFn(() => {});
+            const syncJoinSpy = simple.mock(realClient, 'onRoomJoin').callFn(() => {
+            });
+            const syncInviteSpy = simple.mock(realClient, 'onRoomInvite').callFn(() => {
+            });
+            const syncLeaveSpy = simple.mock(realClient, 'onRoomLeave').callFn(() => {
+            });
             const syncMessageSpy = simple.mock(realClient, 'onRoomMessage').callFn((rid, ev) => {
                 expect(rid).toEqual(roomId);
                 expect(events).toContain(ev);
@@ -644,8 +647,8 @@ describe('SynchronousMatrixClient', () => {
             realClient.on("room.event", eventSpy);
 
             const roomsObj = {};
-            roomsObj[roomId] = {timeline: {events: events}, invite_state: {events: events}};
-            await realClient.doProcessSync({rooms: {join: roomsObj, leave: roomsObj, invite: roomsObj}});
+            roomsObj[roomId] = { timeline: { events: events }, invite_state: { events: events } };
+            await realClient.doProcessSync({ rooms: { join: roomsObj, leave: roomsObj, invite: roomsObj } });
             expect(joinSpy.callCount).toBe(1); // We'll technically be joining the room for the first time
             expect(syncJoinSpy.callCount).toBe(1); // We'll technically be joining the room for the first time
             expect(inviteSpy.callCount).toBe(0);
@@ -659,7 +662,7 @@ describe('SynchronousMatrixClient', () => {
         });
 
         it('should process tombstone events', async () => {
-            const {client: realClient} = createSyncTestClient();
+            const { client: realClient } = createSyncTestClient();
             const client = <ProcessSyncClient>(<any>realClient);
 
             const userId = "@syncing:example.org";
@@ -667,12 +670,12 @@ describe('SynchronousMatrixClient', () => {
             const events = [
                 {
                     type: "m.room.tombstone",
-                    content: {body: "hello world 1"},
+                    content: { body: "hello world 1" },
                     state_key: "",
                 },
                 {
                     type: "m.room.create",
-                    content: {predecessor: {room_id: "!old:example.org"}},
+                    content: { predecessor: { room_id: "!old:example.org" } },
                     state_key: "",
                 },
             ];
@@ -691,9 +694,12 @@ describe('SynchronousMatrixClient', () => {
                 expect(rid).toEqual(roomId);
                 expect(events).toContain(ev);
             });
-            const syncJoinSpy = simple.mock(realClient, 'onRoomJoin').callFn(() => {});
-            const syncInviteSpy = simple.mock(realClient, 'onRoomInvite').callFn(() => {});
-            const syncLeaveSpy = simple.mock(realClient, 'onRoomLeave').callFn(() => {});
+            const syncJoinSpy = simple.mock(realClient, 'onRoomJoin').callFn(() => {
+            });
+            const syncInviteSpy = simple.mock(realClient, 'onRoomInvite').callFn(() => {
+            });
+            const syncLeaveSpy = simple.mock(realClient, 'onRoomLeave').callFn(() => {
+            });
             const syncArchiveSpy = simple.mock(realClient, 'onRoomArchived').callFn((rid, ev) => {
                 expect(rid).toEqual(roomId);
                 expect(events).toContain(ev);
@@ -710,8 +716,8 @@ describe('SynchronousMatrixClient', () => {
             realClient.on("room.event", eventSpy);
 
             const roomsObj = {};
-            roomsObj[roomId] = {timeline: {events: events}, invite_state: {events: events}};
-            await realClient.doProcessSync({rooms: {join: roomsObj, leave: roomsObj, invite: roomsObj}});
+            roomsObj[roomId] = { timeline: { events: events }, invite_state: { events: events } };
+            await realClient.doProcessSync({ rooms: { join: roomsObj, leave: roomsObj, invite: roomsObj } });
             expect(joinSpy.callCount).toBe(1); // We'll technically be joining the room for the first time
             expect(syncJoinSpy.callCount).toBe(1); // We'll technically be joining the room for the first time
             expect(inviteSpy.callCount).toBe(0);
@@ -725,7 +731,7 @@ describe('SynchronousMatrixClient', () => {
         });
 
         it('should process create events with a predecessor', async () => {
-            const {client: realClient} = createSyncTestClient();
+            const { client: realClient } = createSyncTestClient();
             const client = <ProcessSyncClient>(<any>realClient);
 
             const userId = "@syncing:example.org";
@@ -733,12 +739,12 @@ describe('SynchronousMatrixClient', () => {
             const events = [
                 {
                     type: "m.room.tombstone",
-                    content: {body: "hello world 1"},
+                    content: { body: "hello world 1" },
                     state_key: "",
                 },
                 {
                     type: "m.room.create",
-                    content: {predecessor: {room_id: "!old:example.org"}},
+                    content: { predecessor: { room_id: "!old:example.org" } },
                     state_key: "",
                 },
             ];
@@ -757,9 +763,12 @@ describe('SynchronousMatrixClient', () => {
                 expect(rid).toEqual(roomId);
                 expect(events).toContain(ev);
             });
-            const syncJoinSpy = simple.mock(realClient, 'onRoomJoin').callFn(() => {});
-            const syncInviteSpy = simple.mock(realClient, 'onRoomInvite').callFn(() => {});
-            const syncLeaveSpy = simple.mock(realClient, 'onRoomLeave').callFn(() => {});
+            const syncJoinSpy = simple.mock(realClient, 'onRoomJoin').callFn(() => {
+            });
+            const syncInviteSpy = simple.mock(realClient, 'onRoomInvite').callFn(() => {
+            });
+            const syncLeaveSpy = simple.mock(realClient, 'onRoomLeave').callFn(() => {
+            });
             const syncUpgradedSpy = simple.mock(realClient, 'onRoomUpgraded').callFn((rid, ev) => {
                 expect(rid).toEqual(roomId);
                 expect(events).toContain(ev);
@@ -776,8 +785,8 @@ describe('SynchronousMatrixClient', () => {
             realClient.on("room.event", eventSpy);
 
             const roomsObj = {};
-            roomsObj[roomId] = {timeline: {events: events}, invite_state: {events: events}};
-            await realClient.doProcessSync({rooms: {join: roomsObj, leave: roomsObj, invite: roomsObj}});
+            roomsObj[roomId] = { timeline: { events: events }, invite_state: { events: events } };
+            await realClient.doProcessSync({ rooms: { join: roomsObj, leave: roomsObj, invite: roomsObj } });
             expect(joinSpy.callCount).toBe(1); // We'll technically be joining the room for the first time
             expect(syncJoinSpy.callCount).toBe(1); // We'll technically be joining the room for the first time
             expect(inviteSpy.callCount).toBe(0);

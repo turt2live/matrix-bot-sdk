@@ -1,7 +1,7 @@
-import * as expect from "expect";
-import { AdminApis, IStorageProvider, MatrixClient, WhoisInfo } from "../src";
 import * as MockHttpBackend from 'matrix-mock-request';
-import { createTestClient } from "./MatrixClientTest";
+
+import { AdminApis, IStorageProvider, MatrixClient, WhoisInfo } from "../src";
+import { createTestClient } from "./TestUtils";
 
 export function createTestAdminClient(storage: IStorageProvider = null): { client: AdminApis, mxClient: MatrixClient, http: MockHttpBackend, hsUrl: string, accessToken: string } {
     const result = createTestClient(storage);
@@ -10,13 +10,13 @@ export function createTestAdminClient(storage: IStorageProvider = null): { clien
 
     delete result.client;
 
-    return {...result, client, mxClient};
+    return { ...result, client, mxClient };
 }
 
 describe('AdminApis', () => {
     describe('whoisUser', () => {
         it('should call the right endpoint', async () => {
-            const {client, http, hsUrl} = createTestAdminClient();
+            const { client, http, hsUrl } = createTestAdminClient();
 
             const userId = "@someone:example.org";
             const response: WhoisInfo = {
@@ -34,14 +34,14 @@ describe('AdminApis', () => {
                 },
             };
 
-            http.when("GET", "/_matrix/client/r0/admin/whois").respond(200, (path, content) => {
-                expect(path).toEqual(`${hsUrl}/_matrix/client/r0/admin/whois/${encodeURIComponent(userId)}`);
+            http.when("GET", "/_matrix/client/v3/admin/whois").respond(200, (path, content) => {
+                expect(path).toEqual(`${hsUrl}/_matrix/client/v3/admin/whois/${encodeURIComponent(userId)}`);
                 return response;
             });
 
-            http.flushAllExpected();
-            const result = await client.whoisUser(userId);
-            expect(result).toMatchObject(<any>response);
+            const result = client.whoisUser(userId);
+            await http.flushAllExpected();
+            expect(await result).toMatchObject(<any>response);
         });
     });
 });

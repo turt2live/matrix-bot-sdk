@@ -1,4 +1,8 @@
 import * as express from "express";
+import { EventEmitter } from "events";
+import * as morgan from "morgan";
+import * as LRU from "lru-cache";
+
 import { Intent } from "./Intent";
 import {
     AppserviceJoinRoomStrategy,
@@ -14,10 +18,7 @@ import {
     Metrics,
     OTKAlgorithm,
 } from "..";
-import { EventEmitter } from "events";
-import * as morgan from "morgan";
 import { MatrixBridge } from "./MatrixBridge";
-import * as LRU from "lru-cache";
 import { IApplicationServiceProtocol } from "./http_responses";
 
 const EDU_ANNOTATION_KEY = "io.t2bot.sdk.bot.type";
@@ -217,7 +218,6 @@ export interface IAppserviceOptions {
  * @category Application services
  */
 export class Appservice extends EventEmitter {
-
     /**
      * The metrics instance for this appservice. This will raise all metrics
      * from this appservice instance as well as any intents/MatrixClients created
@@ -234,7 +234,7 @@ export class Appservice extends EventEmitter {
 
     private app = express();
     private appServer: any;
-    private intentsCache: LRU;
+    private intentsCache: LRU<string, Intent>;
     private eventProcessors: { [eventType: string]: IPreprocessor[] } = {};
     private pendingTransactions: { [txnId: string]: Promise<any> } = {};
 
@@ -253,7 +253,7 @@ export class Appservice extends EventEmitter {
 
         this.intentsCache = new LRU({
             max: options.intentOptions.maxCached,
-            maxAge: options.intentOptions.maxAgeMs,
+            ttl: options.intentOptions.maxAgeMs,
         });
 
         this.registration = options.registration;
@@ -267,8 +267,10 @@ export class Appservice extends EventEmitter {
         options.storage = this.storage;
         this.cryptoStorage = options.cryptoStorage;
 
-        this.app.use(express.json({limit: Number.MAX_SAFE_INTEGER})); // disable limits, use a reverse proxy
-        this.app.use(morgan("combined"));
+        this.app.use(express.json({ limit: Number.MAX_SAFE_INTEGER })); // disable limits, use a reverse proxy
+        this.app.use(morgan("combined", {
+            stream: { write: LogService.info.bind(LogService, 'Appservice') },
+        }));
 
         // ETag headers break the tests sometimes, and we don't actually need them anyways for
         // appservices - none of this should be cached.
@@ -295,15 +297,14 @@ export class Appservice extends EventEmitter {
             throw new Error("Too many user namespaces registered: expecting exactly one");
         }
 
-        let userPrefix = (this.registration.namespaces.users[0].regex || "").split(":")[0];
+        const userPrefix = (this.registration.namespaces.users[0].regex || "").split(":")[0];
         if (!userPrefix.endsWith(".*") && !userPrefix.endsWith(".+")) {
             this.userPrefix = null;
         } else {
             this.userPrefix = userPrefix.substring(0, userPrefix.length - 2); // trim off the .* part
         }
 
-
-        if (!this.registration.namespaces || !this.registration.namespaces.aliases || this.registration.namespaces.aliases.length === 0 || this.registration.namespaces.aliases.length !== 1) {
+        if (!this.registration.namespaces?.aliases || this.registration.namespaces.aliases.length !== 1) {
             this.aliasPrefix = null;
         } else {
             this.aliasPrefix = (this.registration.namespaces.aliases[0].regex || "").split(":")[0];
@@ -473,8 +474,8 @@ export class Appservice extends EventEmitter {
      */
     public isNamespacedUser(userId: string): boolean {
         return userId === this.botUserId ||
-            !!this.registration.namespaces?.users.find(({regex}) =>
-                new RegExp(regex).test(userId)
+            !!this.registration.namespaces?.users.find(({ regex }) =>
+                new RegExp(regex).test(userId),
             );
     }
 
@@ -577,7 +578,7 @@ export class Appservice extends EventEmitter {
     public setRoomDirectoryVisibility(networkId: string, roomId: string, visibility: "public" | "private") {
         roomId = encodeURIComponent(roomId);
         networkId = encodeURIComponent(networkId);
-        return this.botClient.doRequest("PUT", `/_matrix/client/r0/directory/list/appservice/${networkId}/${roomId}`, null, {
+        return this.botClient.doRequest("PUT", `/_matrix/client/v3/directory/list/appservice/${networkId}/${roomId}`, null, {
             visibility,
         });
     }
@@ -630,17 +631,17 @@ export class Appservice extends EventEmitter {
 
     private async onTransaction(req: express.Request, res: express.Response): Promise<any> {
         if (!this.isAuthed(req)) {
-            res.status(401).json({errcode: "AUTH_FAILED", error: "Authentication failed"});
+            res.status(401).json({ errcode: "AUTH_FAILED", error: "Authentication failed" });
             return;
         }
 
         if (typeof (req.body) !== "object") {
-            res.status(400).json({errcode: "BAD_REQUEST", error: "Expected JSON"});
+            res.status(400).json({ errcode: "BAD_REQUEST", error: "Expected JSON" });
             return;
         }
 
         if (!req.body["events"] || !Array.isArray(req.body["events"])) {
-            res.status(400).json({errcode: "BAD_REQUEST", error: "Invalid JSON: expected events"});
+            res.status(400).json({ errcode: "BAD_REQUEST", error: "Invalid JSON: expected events" });
             return;
         }
 
@@ -663,6 +664,7 @@ export class Appservice extends EventEmitter {
         }
 
         LogService.info("Appservice", "Processing transaction " + txnId);
+        // eslint-disable-next-line no-async-promise-executor
         this.pendingTransactions[txnId] = new Promise<void>(async (resolve) => {
             // Process all the crypto stuff first to ensure that future transactions (if not this one)
             // will decrypt successfully. We start with EDUs because we need structures to put counts
@@ -709,14 +711,17 @@ export class Appservice extends EventEmitter {
                     const intent = this.getIntentForUserId(toUser);
                     await intent.enableEncryption();
 
-                    if (!byUserId[toUser]) byUserId[toUser] = {counts: null, toDevice: null, unusedFallbacks: null};
+                    if (!byUserId[toUser]) byUserId[toUser] = { counts: null, toDevice: null, unusedFallbacks: null };
                     if (!byUserId[toUser].toDevice) byUserId[toUser].toDevice = [];
                     byUserId[toUser].toDevice.push(event);
                 }
             }
 
             if (this.cryptoStorage) {
-                const deviceLists: {changed: string[], removed: string[]} = req.body["org.matrix.msc3202.device_lists"] ?? { changed: [], removed: [] };
+                const deviceLists: { changed: string[], removed: string[] } = req.body["org.matrix.msc3202.device_lists"] ?? {
+                    changed: [],
+                    removed: [],
+                };
 
                 const otks = req.body["org.matrix.msc3202.device_one_time_key_counts"];
                 if (otks) {
@@ -725,7 +730,13 @@ export class Appservice extends EventEmitter {
                         await intent.enableEncryption();
                         const otksForUser = otks[userId][intent.underlyingClient.crypto.clientDeviceId];
                         if (otksForUser) {
-                            if (!byUserId[userId]) byUserId[userId] = {counts: null, toDevice: null, unusedFallbacks: null};
+                            if (!byUserId[userId]) {
+                                byUserId[userId] = {
+                                    counts: null,
+                                    toDevice: null,
+                                    unusedFallbacks: null,
+                                };
+                            }
                             byUserId[userId].counts = otksForUser;
                         }
                     }
@@ -738,7 +749,13 @@ export class Appservice extends EventEmitter {
                         await intent.enableEncryption();
                         const fallbacksForUser = fallbacks[userId][intent.underlyingClient.crypto.clientDeviceId];
                         if (Array.isArray(fallbacksForUser) && !fallbacksForUser.includes(OTKAlgorithm.Signed)) {
-                            if (!byUserId[userId]) byUserId[userId] = {counts: null, toDevice: null, unusedFallbacks: null};
+                            if (!byUserId[userId]) {
+                                byUserId[userId] = {
+                                    counts: null,
+                                    toDevice: null,
+                                    unusedFallbacks: null,
+                                };
+                            }
                             byUserId[userId].unusedFallbacks = fallbacksForUser;
                         }
                     }
@@ -835,7 +852,7 @@ export class Appservice extends EventEmitter {
 
     private async onUser(req: express.Request, res: express.Response): Promise<any> {
         if (!this.isAuthed(req)) {
-            res.status(401).json({errcode: "AUTH_FAILED", error: "Authentication failed"});
+            res.status(401).json({ errcode: "AUTH_FAILED", error: "Authentication failed" });
             return;
         }
 
@@ -843,7 +860,7 @@ export class Appservice extends EventEmitter {
         this.emit("query.user", userId, async (result) => {
             if (result.then) result = await result;
             if (result === false) {
-                res.status(404).json({errcode: "USER_DOES_NOT_EXIST", error: "User not created"});
+                res.status(404).json({ errcode: "USER_DOES_NOT_EXIST", error: "User not created" });
             } else {
                 const intent = this.getIntentForUserId(userId);
                 await intent.ensureRegistered();
@@ -856,7 +873,7 @@ export class Appservice extends EventEmitter {
 
     private async onRoomAlias(req: express.Request, res: express.Response): Promise<any> {
         if (!this.isAuthed(req)) {
-            res.status(401).json({errcode: "AUTH_FAILED", error: "Authentication failed"});
+            res.status(401).json({ errcode: "AUTH_FAILED", error: "Authentication failed" });
             return;
         }
 
@@ -864,7 +881,7 @@ export class Appservice extends EventEmitter {
         this.emit("query.room", roomAlias, async (result) => {
             if (result.then) result = await result;
             if (result === false) {
-                res.status(404).json({errcode: "ROOM_DOES_NOT_EXIST", error: "Room not created"});
+                res.status(404).json({ errcode: "ROOM_DOES_NOT_EXIST", error: "Room not created" });
             } else {
                 const intent = this.botIntent;
                 await intent.ensureRegistered();
@@ -879,7 +896,7 @@ export class Appservice extends EventEmitter {
 
     private onThirdpartyProtocol(req: express.Request, res: express.Response) {
         if (!this.isAuthed(req)) {
-            res.status(401).json({errcode: "AUTH_FAILED", error: "Authentication failed"});
+            res.status(401).json({ errcode: "AUTH_FAILED", error: "Authentication failed" });
             return;
         }
 
@@ -887,7 +904,7 @@ export class Appservice extends EventEmitter {
         if (!this.registration.protocols.includes(protocol)) {
             res.status(404).json({
                 errcode: "PROTOCOL_NOT_HANDLED",
-                error: "Protocol is not handled by this appservice"
+                error: "Protocol is not handled by this appservice",
             });
             return;
         }
@@ -898,7 +915,7 @@ export class Appservice extends EventEmitter {
 
     private handleThirdpartyObject(req: express.Request, res: express.Response, objType: string, matrixId?: string) {
         if (!this.isAuthed(req)) {
-            res.status(401).json({errcode: "AUTH_FAILED", error: "Authentication failed"});
+            res.status(401).json({ errcode: "AUTH_FAILED", error: "Authentication failed" });
             return;
         }
 
@@ -910,7 +927,7 @@ export class Appservice extends EventEmitter {
             }
             res.status(404).json({
                 errcode: "NO_MAPPING_FOUND",
-                error: "No mappings found"
+                error: "No mappings found",
             });
         };
 
@@ -919,7 +936,7 @@ export class Appservice extends EventEmitter {
             if (!this.registration.protocols.includes(protocol)) {
                 res.status(404).json({
                     errcode: "PROTOCOL_NOT_HANDLED",
-                    error: "Protocol is not handled by this appservice"
+                    error: "Protocol is not handled by this appservice",
                 });
                 return;
             }
@@ -934,7 +951,7 @@ export class Appservice extends EventEmitter {
 
         res.status(400).json({
             errcode: "INVALID_PARAMETERS",
-            error: "Invalid parameters given"
+            error: "Invalid parameters given",
         });
     }
 

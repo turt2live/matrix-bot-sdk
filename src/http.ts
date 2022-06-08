@@ -1,6 +1,7 @@
 import { LogLevel, LogService } from "./logging/LogService";
 import { getRequestFn } from "./request";
 import MatrixError from './models/MatrixError';
+
 let lastRequestId = 0;
 
 /**
@@ -8,7 +9,7 @@ let lastRequestId = 0;
  * @category Unit testing
  * @param {string} baseUrl The base URL to apply to the call.
  * @param {"GET"|"POST"|"PUT"|"DELETE"} method The HTTP method to use in the request
- * @param {string} endpoint The endpoint to call. For example: "/_matrix/client/r0/account/whoami"
+ * @param {string} endpoint The endpoint to call. For example: "/_matrix/client/v3/account/whoami"
  * @param {any} qs The query string to send. Optional.
  * @param {any} body The request body to send. Optional. Will be converted to JSON unless the type is a Buffer.
  * @param {any} headers Additional headers to send in the request.
@@ -18,7 +19,18 @@ let lastRequestId = 0;
  * @param {string} noEncoding Set to true to disable encoding, and return a Buffer. Defaults to false
  * @returns {Promise<any>} Resolves to the response (body), rejected if a non-2xx status code was returned.
  */
-export function doHttpRequest(baseUrl: string, method: "GET"|"POST"|"PUT"|"DELETE", endpoint: string, qs = null, body = null, headers = {}, timeout = 60000, raw = false, contentType = "application/json", noEncoding = false): Promise<any> {
+export async function doHttpRequest(
+    baseUrl: string,
+    method: "GET" | "POST" | "PUT" | "DELETE",
+    endpoint: string,
+    qs = null,
+    body = null,
+    headers = {},
+    timeout = 60000,
+    raw = false,
+    contentType = "application/json",
+    noEncoding = false,
+): Promise<any> {
     if (!endpoint.startsWith('/')) {
         endpoint = '/' + endpoint;
     }
@@ -44,7 +56,7 @@ export function doHttpRequest(baseUrl: string, method: "GET"|"POST"|"PUT"|"DELET
         encoding: noEncoding === false ? undefined : null,
         useQuerystring: true,
         qsStringifyOptions: {
-            options: {arrayFormat: 'repeat'},
+            options: { arrayFormat: 'repeat' },
         },
         timeout: timeout,
         headers: headers,
@@ -62,52 +74,54 @@ export function doHttpRequest(baseUrl: string, method: "GET"|"POST"|"PUT"|"DELET
         }
     }
 
-    return new Promise((resolve, reject) => {
-        getRequestFn()(params, (err, response, resBody) => {
+    const { response, resBody } = await new Promise<{ response: any, resBody: any }>((resolve, reject) => {
+        getRequestFn()(params, (err, res, rBody) => {
             if (err) {
                 LogService.error("MatrixHttpClient", "(REQ-" + requestId + ")", err);
                 reject(err);
                 return;
             }
 
-            if (typeof (resBody) === 'string') {
+            if (typeof (rBody) === 'string') {
                 try {
-                    resBody = JSON.parse(resBody);
+                    rBody = JSON.parse(rBody);
                 } catch (e) {
                 }
             }
 
-            if (typeof (response.body) === 'string') {
+            if (typeof (res.body) === 'string') {
                 try {
-                    response.body = JSON.parse(response.body);
+                    res.body = JSON.parse(res.body);
                 } catch (e) {
                 }
             }
 
-            const respIsBuffer = (response.body instanceof Buffer);
-
-            // Check for errors.
-            const errBody = response.body || resBody;
-            if (errBody && 'errcode' in errBody) {
-                const redactedBody = respIsBuffer ? '<Buffer>' : redactObjectForLogging(errBody);
-                LogService.error("MatrixHttpClient (REQ-" + requestId + ")", redactedBody);
-                reject(new MatrixError(errBody, response.statusCode));
-                return;
-            }
-
-            // Don't log the body unless we're in debug mode. They can be large.
-            if (LogService.level.includes(LogLevel.TRACE)) {
-                const redactedBody = respIsBuffer ? '<Buffer>' : redactObjectForLogging(response.body);
-                LogService.trace("MatrixHttpClient (REQ-" + requestId + " RESP-H" + response.statusCode + ")", redactedBody);
-            }
-
-            if (response.statusCode < 200 || response.statusCode >= 300) {
-                const redactedBody = respIsBuffer ? '<Buffer>' : redactObjectForLogging(response.body);
-                LogService.error("MatrixHttpClient (REQ-" + requestId + ")", redactedBody);
-                reject(response);
-            } else resolve(raw ? response : resBody);
+            resolve({ response: res, resBody: rBody });
         });
     });
+
+    const respIsBuffer = (response.body instanceof Buffer);
+
+    // Check for errors.
+    const errBody = response.body || resBody;
+    if (typeof (errBody) === "object" && 'errcode' in errBody) {
+        const redactedBody = respIsBuffer ? '<Buffer>' : redactObjectForLogging(errBody);
+        LogService.error("MatrixHttpClient (REQ-" + requestId + ")", redactedBody);
+        throw new MatrixError(errBody, response.statusCode);
+    }
+
+    // Don't log the body unless we're in debug mode. They can be large.
+    if (LogService.level.includes(LogLevel.TRACE)) {
+        const redactedBody = respIsBuffer ? '<Buffer>' : redactObjectForLogging(response.body);
+        LogService.trace("MatrixHttpClient (REQ-" + requestId + " RESP-H" + response.statusCode + ")", redactedBody);
+    }
+
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+        const redactedBody = respIsBuffer ? '<Buffer>' : redactObjectForLogging(response.body);
+        LogService.error("MatrixHttpClient (REQ-" + requestId + ")", redactedBody);
+        throw response;
+    }
+    return raw ? response : resBody;
 }
 
 export function redactObjectForLogging(input: any): any {

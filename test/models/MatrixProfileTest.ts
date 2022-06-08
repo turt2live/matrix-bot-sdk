@@ -1,6 +1,4 @@
-import { UserID } from "../../src";
-import * as expect from "expect";
-import { MatrixProfile, MatrixProfileInfo } from "../../src/models/MatrixProfile";
+import { MatrixProfile, MatrixProfileInfo, UserID } from "../../src";
 
 describe("MatrixProfile", () => {
     it("should return the right fields", () => {

@@ -1,13 +1,12 @@
-import { createTestClient, TEST_DEVICE_ID } from "./MatrixClientTest";
-import { DMs } from "../src/DMs";
-import * as expect from "expect";
 import * as simple from "simple-mock";
+
 import { EncryptionAlgorithm } from "../src";
+import { createTestClient, TEST_DEVICE_ID } from "./TestUtils";
 
 describe('DMs', () => {
     it('should update the cache when an sync requests happen', async () => {
         const selfUserId = "@self:example.org";
-        const {client, http} = createTestClient(null, selfUserId);
+        const { client, http } = createTestClient(null, selfUserId);
         const dms = client.dms;
 
         const dmRoomId1 = "!dm:example.org";
@@ -31,7 +30,7 @@ describe('DMs', () => {
             return {};
         });
 
-        http.flushAllExpected();
+        const flush = http.flushAllExpected();
 
         const accountHandleProm = new Promise<void>(resolve => {
             const orig = (<any>dms).updateFromAccountData.bind(dms);
@@ -77,11 +76,13 @@ describe('DMs', () => {
 
         expect(dms.isDm(dmRoomId1)).toBe(true);
         expect(dms.isDm(dmRoomId2)).toBe(true);
+
+        await flush;
     });
 
     it('should update from account data when requested', async () => {
         const selfUserId = "@self:example.org";
-        const {client, http} = createTestClient(null, selfUserId);
+        const { client, http } = createTestClient(null, selfUserId);
         const dms = client.dms;
 
         const dmRoomId = "!dm:example.org";
@@ -94,15 +95,14 @@ describe('DMs', () => {
         // noinspection TypeScriptValidateJSTypes
         http.when("GET", `/user/${encodeURIComponent(selfUserId)}/account_data/m.direct`).respond(200, accountDataDms);
 
-        http.flushAllExpected();
         expect(dms.isDm(dmRoomId)).toBe(false);
-        await dms.update();
+        await Promise.all([dms.update(), http.flushAllExpected()]);
         expect(dms.isDm(dmRoomId)).toBe(true);
     });
 
     it('should not fail to update when the account data is missing/fails', async () => {
         const selfUserId = "@self:example.org";
-        const {client, http} = createTestClient(null, selfUserId);
+        const { client, http } = createTestClient(null, selfUserId);
         const dms = client.dms;
 
         const dmRoomId = "!dm:example.org";
@@ -110,15 +110,14 @@ describe('DMs', () => {
         // noinspection TypeScriptValidateJSTypes
         http.when("GET", `/user/${encodeURIComponent(selfUserId)}/account_data/m.direct`).respond(404);
 
-        http.flushAllExpected();
         expect(dms.isDm(dmRoomId)).toBe(false);
-        await dms.update();
+        await Promise.all([dms.update(), http.flushAllExpected()]);
         expect(dms.isDm(dmRoomId)).toBe(false);
     });
 
     it('should create a DM if one does not exist', async () => {
         const selfUserId = "@self:example.org";
-        const {client, http} = createTestClient(null, selfUserId);
+        const { client, http } = createTestClient(null, selfUserId);
         const dms = client.dms;
 
         const dmRoomId = "!dm:example.org";
@@ -133,7 +132,7 @@ describe('DMs', () => {
                 initial_state: [],
             });
 
-            return {room_id: dmRoomId};
+            return { room_id: dmRoomId };
         });
 
         // noinspection TypeScriptValidateJSTypes
@@ -144,17 +143,19 @@ describe('DMs', () => {
             return {};
         });
 
-        http.flushAllExpected();
+        const flush = http.flushAllExpected();
 
         expect(dms.isDm(dmRoomId)).toBe(false);
         const roomId = await dms.getOrCreateDm(dmUserId);
         expect(roomId).toEqual(dmRoomId);
         expect(dms.isDm(dmRoomId)).toBe(true);
+
+        await flush;
     });
 
     it('should call the optional create room function when provided', async () => {
         const selfUserId = "@self:example.org";
-        const {client, http} = createTestClient(null, selfUserId);
+        const { client, http } = createTestClient(null, selfUserId);
         const dms = client.dms;
 
         const dmRoomId = "!dm:example.org";
@@ -173,18 +174,20 @@ describe('DMs', () => {
             return {};
         });
 
-        http.flushAllExpected();
+        const flush = http.flushAllExpected();
 
         expect(dms.isDm(dmRoomId)).toBe(false);
         const roomId = await dms.getOrCreateDm(dmUserId, fn);
         expect(roomId).toEqual(dmRoomId);
         expect(dms.isDm(dmRoomId)).toBe(true);
         expect(fn.callCount).toBe(1);
+
+        await flush;
     });
 
     it('should try to patch up DMs when a DM is potentially known', async () => {
         const selfUserId = "@self:example.org";
-        const {client, http} = createTestClient(null, selfUserId);
+        const { client, http } = createTestClient(null, selfUserId);
         const dms = client.dms;
 
         const dmRoomId = "!dm:example.org";
@@ -252,7 +255,7 @@ describe('DMs', () => {
             return {};
         });
 
-        http.flushAllExpected();
+        const flush = http.flushAllExpected();
 
         await dms.update();
         expect(dms.isDm(dmRoomId)).toBe(true);
@@ -261,11 +264,13 @@ describe('DMs', () => {
         expect(roomId).toEqual(dmRoomId);
         expect(dms.isDm(dmRoomId)).toBe(true);
         expect(dms.isDm(deadRoomId)).toBe(false);
+
+        await flush;
     });
 
     it('should use the cache if a DM already exists', async () => {
         const selfUserId = "@self:example.org";
-        const {client, http} = createTestClient(null, selfUserId);
+        const { client, http } = createTestClient(null, selfUserId);
         const dms = client.dms;
 
         // Stop calls to `/members`
@@ -281,18 +286,20 @@ describe('DMs', () => {
         // noinspection TypeScriptValidateJSTypes
         http.when("GET", `/user/${encodeURIComponent(selfUserId)}/account_data/m.direct`).respond(200, accountDataDms);
 
-        http.flushAllExpected();
+        const flush = http.flushAllExpected();
 
         await dms.update();
         expect(dms.isDm(dmRoomId)).toBe(true);
         const roomId = await dms.getOrCreateDm(dmUserId);
         expect(roomId).toEqual(dmRoomId);
         expect(dms.isDm(dmRoomId)).toBe(true);
+
+        await flush;
     });
 
     it('should create an encrypted DM if supported', async () => {
         const selfUserId = "@self:example.org";
-        const {client, http} = createTestClient(null, selfUserId, true);
+        const { client, http } = createTestClient(null, selfUserId, true);
         const dms = client.dms;
 
         const dmRoomId = "!dm:example.org";
@@ -329,11 +336,11 @@ describe('DMs', () => {
                 initial_state: [{
                     type: "m.room.encryption",
                     state_key: "",
-                    content: {algorithm: EncryptionAlgorithm.MegolmV1AesSha2},
+                    content: { algorithm: EncryptionAlgorithm.MegolmV1AesSha2 },
                 }],
             });
 
-            return {room_id: dmRoomId};
+            return { room_id: dmRoomId };
         });
 
         // noinspection TypeScriptValidateJSTypes
@@ -344,17 +351,19 @@ describe('DMs', () => {
             return {};
         });
 
-        http.flushAllExpected();
+        const flush = http.flushAllExpected();
 
         expect(dms.isDm(dmRoomId)).toBe(false);
         const roomId = await dms.getOrCreateDm(dmUserId);
         expect(roomId).toEqual(dmRoomId);
         expect(dms.isDm(dmRoomId)).toBe(true);
+
+        await flush;
     });
 
     it('should create an unencrypted DM when the target user has no devices', async () => {
         const selfUserId = "@self:example.org";
-        const {client, http} = createTestClient(null, selfUserId, true);
+        const { client, http } = createTestClient(null, selfUserId, true);
         const dms = client.dms;
 
         const dmRoomId = "!dm:example.org";
@@ -383,7 +392,7 @@ describe('DMs', () => {
                 initial_state: [],
             });
 
-            return {room_id: dmRoomId};
+            return { room_id: dmRoomId };
         });
 
         // noinspection TypeScriptValidateJSTypes
@@ -394,11 +403,13 @@ describe('DMs', () => {
             return {};
         });
 
-        http.flushAllExpected();
+        const flush = http.flushAllExpected();
 
         expect(dms.isDm(dmRoomId)).toBe(false);
         const roomId = await dms.getOrCreateDm(dmUserId);
         expect(roomId).toEqual(dmRoomId);
         expect(dms.isDm(dmRoomId)).toBe(true);
+
+        await flush;
     });
 });

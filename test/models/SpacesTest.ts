@@ -1,12 +1,12 @@
-import * as expect from "expect";
 import * as simple from "simple-mock";
-import { createTestClient } from "../MatrixClientTest";
+
 import { Space } from "../../src";
+import { createTestClient } from "../TestUtils";
 
 describe('Space', () => {
     describe('createChildSpace', () => {
         it('should call the right endpoint', async () => {
-            const {client} = createTestClient();
+            const { client } = createTestClient();
 
             const via = 'example.org';
             (<any>client).userId = `@alice:${via}`;
@@ -37,11 +37,12 @@ describe('Space', () => {
                     expect(stateKey).toBe(childRoomId);
                     expect(content).toMatchObject(childEvContent);
                     expect(roomId).toBe(parentRoomId);
+                    return "$void";
                 } else {
                     throw new Error("unexpected event");
                 }
             });
-            client.sendStateEvent = stateEventSpy;
+            client.sendStateEvent = stateEventSpy as typeof client.sendStateEvent;
 
             const parent = new Space(parentRoomId, client);
             const child = await parent.createChildSpace(createOpts);
@@ -56,7 +57,7 @@ describe('Space', () => {
 
     describe('addChildSpace', () => {
         it('should call the right endpoint', async () => {
-            const {client} = createTestClient();
+            const { client } = createTestClient();
 
             const via = 'example.org';
             (<any>client).userId = `@alice:${via}`;
@@ -87,11 +88,12 @@ describe('Space', () => {
                     expect(stateKey).toBe(childRoomId);
                     expect(content).toMatchObject(childEvContent);
                     expect(roomId).toBe(parentRoomId);
+                    return "$void";
                 } else {
                     throw new Error("unexpected event");
                 }
             });
-            client.sendStateEvent = stateEventSpy;
+            client.sendStateEvent = stateEventSpy as typeof client.sendStateEvent;
 
             const child = new Space(childRoomId, client);
             const parent = new Space(parentRoomId, client);
@@ -104,7 +106,7 @@ describe('Space', () => {
 
     describe('addChildRoom', () => {
         it('should call the right endpoint', async () => {
-            const {client} = createTestClient();
+            const { client } = createTestClient();
 
             const via = 'example.org';
             (<any>client).userId = `@alice:${via}`;
@@ -135,11 +137,12 @@ describe('Space', () => {
                     expect(stateKey).toBe(childRoomId);
                     expect(content).toMatchObject(childEvContent);
                     expect(roomId).toBe(parentRoomId);
+                    return "$void";
                 } else {
                     throw new Error("unexpected event");
                 }
             });
-            client.sendStateEvent = stateEventSpy;
+            client.sendStateEvent = stateEventSpy as typeof client.sendStateEvent;
 
             const parent = new Space(parentRoomId, client);
             await parent.addChildRoom(childRoomId);
@@ -151,22 +154,23 @@ describe('Space', () => {
 
     describe('removeChildSpace', () => {
         it('should call the right endpoint', async () => {
-            const {client} = createTestClient();
+            const { client } = createTestClient();
 
             const via = 'example.org';
             (<any>client).userId = `@alice:${via}`;
 
             const parentRoomId = "!parent:example.org";
             const childRoomId = "!child:example.org";
-            const childEvContent = { };
+            const childEvContent = {};
 
             const stateEventSpy = simple.spy(async (roomId, type, stateKey, content) => {
                 expect(type).toBe("m.space.child");
                 expect(stateKey).toBe(childRoomId);
                 expect(content).toMatchObject(childEvContent);
                 expect(roomId).toBe(parentRoomId);
+                return "$void";
             });
-            client.sendStateEvent = stateEventSpy;
+            client.sendStateEvent = stateEventSpy as typeof client.sendStateEvent;
 
             const child = new Space(childRoomId, client);
             const parent = new Space(parentRoomId, client);
@@ -177,22 +181,23 @@ describe('Space', () => {
 
     describe('removeChildRoom', () => {
         it('should call the right endpoint', async () => {
-            const {client} = createTestClient();
+            const { client } = createTestClient();
 
             const via = 'example.org';
             (<any>client).userId = `@alice:${via}`;
 
             const parentRoomId = "!parent:example.org";
             const childRoomId = "!child:example.org";
-            const childEvContent = { };
+            const childEvContent = {};
 
             const stateEventSpy = simple.spy(async (roomId, type, stateKey, content) => {
                 expect(type).toBe("m.space.child");
                 expect(stateKey).toBe(childRoomId);
                 expect(content).toMatchObject(childEvContent);
                 expect(roomId).toBe(parentRoomId);
+                return "$void";
             });
-            client.sendStateEvent = stateEventSpy;
+            client.sendStateEvent = stateEventSpy as typeof client.sendStateEvent;
 
             const parent = new Space(parentRoomId, client);
             await parent.removeChildRoom(childRoomId);
@@ -202,7 +207,7 @@ describe('Space', () => {
 
     describe('getChildEntities', () => {
         it('should return the viable child rooms', async () => {
-            const {client} = createTestClient();
+            const { client } = createTestClient();
 
             const via = 'example.org';
             const via2 = '2.example.org';
@@ -211,11 +216,11 @@ describe('Space', () => {
             const parentRoomId = "!parent:example.org";
             const expectedRoomIds = ["!room2:example.org", "!room4:example.org"];
             const stateEvents = [
-                {type: "m.room.create", content: { type: 'm.space' }, state_key: ""},
-                {type: "m.space.child", content: { suggested: true, via: [via] }, state_key: "!room1:example.org"},
-                {type: "m.space.child", content: { suggested: false, via: [via] }, state_key: expectedRoomIds[0]},
-                {type: "m.space.child", content: { suggested: true, via: [via2] }, state_key: "!room3:example.org"},
-                {type: "m.space.child", content: { suggested: false, via: [via2] }, state_key: expectedRoomIds[1]},
+                { type: "m.room.create", content: { type: 'm.space' }, state_key: "" },
+                { type: "m.space.child", content: { suggested: true, via: [via] }, state_key: "!room1:example.org" },
+                { type: "m.space.child", content: { suggested: false, via: [via] }, state_key: expectedRoomIds[0] },
+                { type: "m.space.child", content: { suggested: true, via: [via2] }, state_key: "!room3:example.org" },
+                { type: "m.space.child", content: { suggested: false, via: [via2] }, state_key: expectedRoomIds[1] },
             ];
             client.getRoomState = async (roomId) => {
                 expect(roomId).toBe(parentRoomId);
@@ -238,7 +243,7 @@ describe('Space', () => {
 
     describe('inviteUser', () => {
         it('should call the right endpoint', async () => {
-            const {client} = createTestClient();
+            const { client } = createTestClient();
 
             const parentRoomId = "!parent:example.org";
             const targetUserId = "@alice:example.org";

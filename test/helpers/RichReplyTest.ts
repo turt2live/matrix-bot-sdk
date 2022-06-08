@@ -1,5 +1,4 @@
 import { RichReply } from "../../src";
-import * as expect from "expect";
 
 describe('RichReply', () => {
     it('should return a well-formatted reply', () => {
@@ -23,10 +22,11 @@ describe('RichReply', () => {
                     "event_id": inputEvent.event_id,
                 },
             },
-            msgtype: "m.text",
-            body: `> <${inputEvent.sender}> ${inputEvent.content.body}\n\n${replyText}`,
-            format: "org.matrix.custom.html",
-            formatted_body: `<mx-reply><blockquote><a href="https://matrix.to/#/${inputRoomId}/${inputEvent.event_id}">In reply to</a> <a href="https://matrix.to/#/${inputEvent.sender}">${inputEvent.sender}</a><br />${inputEvent.content.formatted_body}</blockquote></mx-reply>${replyHtml}`,
+            "msgtype": "m.text",
+            "body": `> <${inputEvent.sender}> ${inputEvent.content.body}\n\n${replyText}`,
+            "format": "org.matrix.custom.html",
+            // eslint-disable-next-line max-len
+            "formatted_body": `<mx-reply><blockquote><a href="https://matrix.to/#/${inputRoomId}/${inputEvent.event_id}">In reply to</a> <a href="https://matrix.to/#/${inputEvent.sender}">${inputEvent.sender}</a><br />${inputEvent.content.formatted_body}</blockquote></mx-reply>${replyHtml}`,
         };
 
         expect(reply).toMatchObject(expectedReply);
@@ -53,10 +53,11 @@ describe('RichReply', () => {
                     "event_id": inputEvent.event_id,
                 },
             },
-            msgtype: "m.text",
-            body: `> <${inputEvent.sender}> ${inputEvent.content.body.split('\n').join('\n> ')}\n\n${replyText}`,
-            format: "org.matrix.custom.html",
-            formatted_body: `<mx-reply><blockquote><a href="https://matrix.to/#/${inputRoomId}/${inputEvent.event_id}">In reply to</a> <a href="https://matrix.to/#/${inputEvent.sender}">${inputEvent.sender}</a><br />${inputEvent.content.formatted_body}</blockquote></mx-reply>${replyHtml}`,
+            "msgtype": "m.text",
+            "body": `> <${inputEvent.sender}> ${inputEvent.content.body.split('\n').join('\n> ')}\n\n${replyText}`,
+            "format": "org.matrix.custom.html",
+            // eslint-disable-next-line max-len
+            "formatted_body": `<mx-reply><blockquote><a href="https://matrix.to/#/${inputRoomId}/${inputEvent.event_id}">In reply to</a> <a href="https://matrix.to/#/${inputEvent.sender}">${inputEvent.sender}</a><br />${inputEvent.content.formatted_body}</blockquote></mx-reply>${replyHtml}`,
         };
 
         expect(reply).toMatchObject(expectedReply);
@@ -82,10 +83,11 @@ describe('RichReply', () => {
                     "event_id": inputEvent.event_id,
                 },
             },
-            msgtype: "m.text",
-            body: `> <${inputEvent.sender}> ${inputEvent.content.body}\n\n${replyText}`,
-            format: "org.matrix.custom.html",
-            formatted_body: `<mx-reply><blockquote><a href="https://matrix.to/#/${inputRoomId}/${inputEvent.event_id}">In reply to</a> <a href="https://matrix.to/#/${inputEvent.sender}">${inputEvent.sender}</a><br />${inputEvent.content.body}</blockquote></mx-reply>${replyHtml}`,
+            "msgtype": "m.text",
+            "body": `> <${inputEvent.sender}> ${inputEvent.content.body}\n\n${replyText}`,
+            "format": "org.matrix.custom.html",
+            // eslint-disable-next-line max-len
+            "formatted_body": `<mx-reply><blockquote><a href="https://matrix.to/#/${inputRoomId}/${inputEvent.event_id}">In reply to</a> <a href="https://matrix.to/#/${inputEvent.sender}">${inputEvent.sender}</a><br />${inputEvent.content.body}</blockquote></mx-reply>${replyHtml}`,
         };
 
         expect(reply).toMatchObject(expectedReply);

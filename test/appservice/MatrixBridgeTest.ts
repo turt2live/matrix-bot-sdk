@@ -1,3 +1,5 @@
+import * as simple from "simple-mock";
+
 import {
     Appservice,
     IAppserviceOptions,
@@ -6,10 +8,8 @@ import {
     REMOTE_ROOM_INFO_ACCOUNT_DATA_EVENT_TYPE,
     REMOTE_ROOM_MAP_ACCOUNT_DATA_EVENT_TYPE_PREFIX,
     REMOTE_USER_INFO_ACCOUNT_DATA_EVENT_TYPE,
-    REMOTE_USER_MAP_ACCOUNT_DATA_EVENT_TYPE_PREFIX
+    REMOTE_USER_MAP_ACCOUNT_DATA_EVENT_TYPE_PREFIX,
 } from "../../src";
-import * as expect from "expect";
-import * as simple from "simple-mock";
 
 describe('MatrixBridge', () => {
     describe('getRemoteUserInfo', () => {
@@ -17,14 +17,14 @@ describe('MatrixBridge', () => {
             const userId = "@someone:example.org";
             const asToken = "s3cret";
             const hsUrl = "https://localhost";
-            const appservice = <Appservice>{botUserId: userId};
+            const appservice = <Appservice>{ botUserId: userId };
             const options = <IAppserviceOptions>{
                 homeserverUrl: hsUrl,
                 registration: {
                     as_token: asToken,
                 },
             };
-            const remoteObject = {id: "TESTING_1234", extraKey: true};
+            const remoteObject = { id: "TESTING_1234", extraKey: true };
 
             const intent = new Intent(options, userId, appservice);
             const registeredSpy = simple.mock(intent, "ensureRegistered").callFn(() => {
@@ -35,7 +35,7 @@ describe('MatrixBridge', () => {
                 expect(eventType).toEqual(REMOTE_USER_INFO_ACCOUNT_DATA_EVENT_TYPE);
                 return Promise.resolve(remoteObject);
             });
-            intent.underlyingClient.getAccountData = accountDataSpy;
+            intent.underlyingClient.getAccountData = accountDataSpy as typeof intent.underlyingClient.getAccountData;
 
             const bridge = new MatrixBridge(appservice);
 
@@ -52,14 +52,14 @@ describe('MatrixBridge', () => {
             const userId = "@someone:example.org";
             const asToken = "s3cret";
             const hsUrl = "https://localhost";
-            const appservice = <Appservice>{botUserId: userId};
+            const appservice = <Appservice>{ botUserId: userId };
             const options = <IAppserviceOptions>{
                 homeserverUrl: hsUrl,
                 registration: {
                     as_token: asToken,
                 },
             };
-            const remoteObject = {id: "TESTING_1234", extraKey: true};
+            const remoteObject = { id: "TESTING_1234", extraKey: true };
 
             const intent = new Intent(options, userId, appservice);
             const registeredSpy = simple.mock(intent, "ensureRegistered").callFn(() => {
@@ -82,7 +82,7 @@ describe('MatrixBridge', () => {
 
             const botAccountDataSpy = simple.stub().callFn((eventType, c) => {
                 expect(eventType).toEqual(REMOTE_USER_MAP_ACCOUNT_DATA_EVENT_TYPE_PREFIX + "." + remoteObject.id);
-                expect(c).toMatchObject({id: userId});
+                expect(c).toMatchObject({ id: userId });
                 return Promise.resolve();
             });
             appservice.botIntent.underlyingClient.setAccountData = botAccountDataSpy;
@@ -103,14 +103,14 @@ describe('MatrixBridge', () => {
             const roomId = "!a:example.org";
             const asToken = "s3cret";
             const hsUrl = "https://localhost";
-            const appservice = <Appservice>{botUserId: userId};
+            const appservice = <Appservice>{ botUserId: userId };
             const options = <IAppserviceOptions>{
                 homeserverUrl: hsUrl,
                 registration: {
                     as_token: asToken,
                 },
             };
-            const remoteObject = {id: "TESTING_1234", extraKey: true};
+            const remoteObject = { id: "TESTING_1234", extraKey: true };
 
             const intent = new Intent(options, userId, appservice);
             (<any>appservice).botIntent = intent; // Workaround for using a fake appservice
@@ -124,7 +124,7 @@ describe('MatrixBridge', () => {
                 expect(rid).toEqual(roomId);
                 return Promise.resolve(remoteObject);
             });
-            intent.underlyingClient.getRoomAccountData = accountDataSpy;
+            intent.underlyingClient.getRoomAccountData = accountDataSpy as typeof intent.underlyingClient.getRoomAccountData;
 
             const bridge = new MatrixBridge(appservice);
 
@@ -142,14 +142,14 @@ describe('MatrixBridge', () => {
             const roomId = "!a:example.org";
             const asToken = "s3cret";
             const hsUrl = "https://localhost";
-            const appservice = <Appservice>{botUserId: userId};
+            const appservice = <Appservice>{ botUserId: userId };
             const options = <IAppserviceOptions>{
                 homeserverUrl: hsUrl,
                 registration: {
                     as_token: asToken,
                 },
             };
-            const remoteObject = {id: "TESTING_1234", extraKey: true};
+            const remoteObject = { id: "TESTING_1234", extraKey: true };
 
             const intent = new Intent(options, userId, appservice);
             (<any>appservice).botIntent = intent; // Workaround for using a fake appservice
@@ -168,7 +168,7 @@ describe('MatrixBridge', () => {
 
             const accountDataSpy = simple.stub().callFn((eventType, c) => {
                 expect(eventType).toEqual(REMOTE_ROOM_MAP_ACCOUNT_DATA_EVENT_TYPE_PREFIX + "." + remoteObject.id);
-                expect(c).toMatchObject({id: roomId});
+                expect(c).toMatchObject({ id: roomId });
                 return Promise.resolve();
             });
             intent.underlyingClient.setAccountData = accountDataSpy;
@@ -188,7 +188,7 @@ describe('MatrixBridge', () => {
             const roomId = "!a:example.org";
             const asToken = "s3cret";
             const hsUrl = "https://localhost";
-            const appservice = <Appservice>{botUserId: userId};
+            const appservice = <Appservice>{ botUserId: userId };
             const options = <IAppserviceOptions>{
                 homeserverUrl: hsUrl,
                 registration: {
@@ -206,9 +206,9 @@ describe('MatrixBridge', () => {
 
             const accountDataSpy = simple.stub().callFn((eventType) => {
                 expect(eventType).toEqual(REMOTE_ROOM_MAP_ACCOUNT_DATA_EVENT_TYPE_PREFIX + "." + remoteId);
-                return Promise.resolve({id: roomId});
+                return Promise.resolve({ id: roomId });
             });
-            intent.underlyingClient.getAccountData = accountDataSpy;
+            intent.underlyingClient.getAccountData = accountDataSpy as typeof intent.underlyingClient.getAccountData;
 
             const bridge = new MatrixBridge(appservice);
 
@@ -224,7 +224,7 @@ describe('MatrixBridge', () => {
             const userId = "@someone:example.org";
             const asToken = "s3cret";
             const hsUrl = "https://localhost";
-            const appservice = <Appservice>{botUserId: userId};
+            const appservice = <Appservice>{ botUserId: userId };
             const options = <IAppserviceOptions>{
                 homeserverUrl: hsUrl,
                 registration: {
@@ -243,9 +243,9 @@ describe('MatrixBridge', () => {
 
             const accountDataSpy = simple.stub().callFn((eventType) => {
                 expect(eventType).toEqual(REMOTE_USER_MAP_ACCOUNT_DATA_EVENT_TYPE_PREFIX + "." + remoteId);
-                return Promise.resolve({id: userId});
+                return Promise.resolve({ id: userId });
             });
-            botIntent.underlyingClient.getAccountData = accountDataSpy;
+            botIntent.underlyingClient.getAccountData = accountDataSpy as typeof botIntent.underlyingClient.getAccountData;
 
             const getIntentSpy = simple.mock(appservice, "getIntentForUserId").callFn((uid) => {
                 expect(uid).toEqual(userId);

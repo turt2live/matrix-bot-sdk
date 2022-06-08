@@ -8,6 +8,7 @@ import {
     OTKCounts,
     ToDeviceMessages,
 } from "@turt2live/matrix-sdk-crypto-nodejs";
+
 import { MatrixClient } from "../MatrixClient";
 import { OTKAlgorithm } from "../models/Crypto";
 
@@ -36,8 +37,8 @@ export class SdkOlmEngine implements OlmEngine {
         return this.client.getUserDevices(userIds);
     }
 
-    public uploadOneTimeKeys(body: {device_keys?: DeviceKeys, one_time_keys?: GenericKeys}): Promise<OTKCounts> {
-        return this.client.doRequest("POST", "/_matrix/client/r0/keys/upload", null, body);
+    public uploadOneTimeKeys(body: { device_keys?: DeviceKeys, one_time_keys?: GenericKeys }): Promise<OTKCounts> {
+        return this.client.doRequest("POST", "/_matrix/client/v3/keys/upload", null, body);
     }
 
     public getEffectiveJoinedUsersInRoom(roomId: string): Promise<string[]> {

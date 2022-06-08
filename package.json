@@ -16,8 +16,8 @@
     "prepublishOnly": "yarn build",
     "docs": "jsdoc -c jsdoc.json -P package.json -u docs/tutorials",
     "build": "tsc --listEmittedFiles",
-    "lint": "eslint 'src/**/*.ts'",
-    "test": "ts-mocha --project ./tsconfig.json test/*Test.ts test/**/*.ts",
+    "lint": "eslint \"{src,test,examples}/**/*.ts\"",
+    "test": "jest",
     "build:examples": "tsc -p tsconfig-examples.json",
     "example:bot": "yarn build:examples && node lib/examples/bot.js",
     "example:appservice": "yarn build:examples && node lib/examples/appservice.js",
@@ -28,7 +28,7 @@
   "main": "./lib/index.js",
   "typings": "./lib/index.d.ts",
   "engines": {
-    "node": ">=14.0.0"
+    "node": ">=16.0.0"
   },
   "keywords": [
     "matrix",
@@ -55,39 +55,50 @@
     "@types/express": "^4.17.13",
     "another-json": "^0.2.0",
     "chalk": "^4",
-    "express": "^4.17.2",
+    "express": "^4.18.1",
     "glob-to-regexp": "^0.4.1",
     "hash.js": "^1.1.7",
-    "html-to-text": "^8.1.0",
+    "html-to-text": "^8.2.0",
     "htmlencode": "^0.0.4",
     "lowdb": "^1",
-    "lru-cache": "^6.0.0",
+    "lru-cache": "^7.10.1",
     "mkdirp": "^1.0.4",
     "morgan": "^1.10.0",
     "request": "^2.88.2",
     "request-promise": "^4.2.6",
-    "sanitize-html": "^2.6.1",
+    "sanitize-html": "^2.7.0",
     "wrtc": "^0.4.7"
   },
   "devDependencies": {
+    "@babel/core": "^7.18.2",
+    "@babel/eslint-parser": "^7.18.2",
+    "@babel/eslint-plugin": "^7.17.7",
     "@types/expect": "^24.3.0",
-    "@types/mocha": "^8.0.1",
-    "@types/node": "^14",
+    "@types/jest": "^27.5.1",
+    "@types/mocha": "^8",
+    "@types/node": "^16",
     "@types/simple-mock": "^0.8.2",
-    "@typescript-eslint/eslint-plugin": "^3.8.0",
-    "@typescript-eslint/eslint-plugin-tslint": "^3.8.0",
-    "@typescript-eslint/parser": "^3.8.0",
-    "better-docs": "^2.3.2",
-    "eslint": "^7.6.0",
-    "expect": "^26.2.0",
-    "get-port": "^5.1.1",
-    "jsdoc": "^3.6.7",
+    "@typescript-eslint/eslint-plugin": "^5.26.0",
+    "@typescript-eslint/parser": "^5.26.0",
+    "better-docs": "^2.7.2",
+    "eslint": "^8.16.0",
+    "eslint-config-google": "^0.14.0",
+    "eslint-plugin-import": "^2.26.0",
+    "eslint-plugin-matrix-org": "^0.5.2",
+    "get-port": "^5",
+    "jest": "^28.1.0",
+    "jsdoc": "^3.6.10",
     "matrix-mock-request": "^1.2.3",
-    "mocha": "^8.1.1",
     "simple-mock": "^0.8.0",
     "tmp": "^0.2.1",
-    "ts-mocha": "^7.0.0",
-    "tslint": "^6.1.3",
-    "typescript": "^4.5.4"
+    "ts-jest": "^28.0.3",
+    "typescript": "^4.7.2"
+  },
+  "jest": {
+    "preset": "ts-jest",
+    "testEnvironment": "node",
+    "testMatch": [
+      "<rootDir>/test/**/*Test.ts"
+    ]
   }
 }

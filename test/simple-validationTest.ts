@@ -1,4 +1,3 @@
-import * as expect from "expect";
 import { validateSpaceOrderString } from "../src";
 
 describe('validateSpaceOrderString', () => {

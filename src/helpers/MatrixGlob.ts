@@ -6,7 +6,6 @@ import * as globToRegexp from "glob-to-regexp";
  * @category Utilities
  */
 export class MatrixGlob {
-
     /**
      * The regular expression which represents this glob.
      */
@@ -36,5 +35,4 @@ export class MatrixGlob {
     public test(val: string): boolean {
         return this.regex.test(val);
     }
-
 }

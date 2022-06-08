@@ -1,3 +1,9 @@
+import {
+    decryptFile as rustDecryptFile,
+    encryptFile as rustEncryptFile,
+    OlmMachine,
+} from "@turt2live/matrix-sdk-crypto-nodejs";
+
 import { MatrixClient } from "../MatrixClient";
 import { LogService } from "../logging/LogService";
 import {
@@ -14,11 +20,6 @@ import { RoomTracker } from "./RoomTracker";
 import { EncryptedRoomEvent } from "../models/events/EncryptedRoomEvent";
 import { RoomEvent } from "../models/events/RoomEvent";
 import { EncryptedFile } from "../models/events/MessageEvent";
-import {
-    decryptFile as rustDecryptFile,
-    encryptFile as rustEncryptFile,
-    OlmMachine,
-} from "@turt2live/matrix-sdk-crypto-nodejs";
 import { RustSdkCryptoStorageProvider } from "../storage/RustSdkCryptoStorageProvider";
 import { SdkOlmEngine } from "./SdkOlmEngine";
 import { InternalOlmMachineFactory } from "./InternalOlmMachineFactory";
@@ -41,7 +42,7 @@ export class CryptoClient {
     }
 
     private get storage(): RustSdkCryptoStorageProvider {
-        return <RustSdkCryptoStorageProvider>this.client.cryptoStore;
+        return <RustSdkCryptoStorageProvider> this.client.cryptoStore;
     }
 
     /**
@@ -113,8 +114,17 @@ export class CryptoClient {
      * @returns {Promise<void>} Resolves when complete.
      */
     @requiresReady()
-    public async updateSyncData(toDeviceMessages: IToDeviceMessage<IOlmEncrypted>[], otkCounts: OTKCounts, unusedFallbackKeyAlgs: OTKAlgorithm[], changedDeviceLists: string[], leftDeviceLists: string[]): Promise<void> {
-        await this.machine.pushSync(toDeviceMessages, {changed: changedDeviceLists, left: leftDeviceLists}, otkCounts, unusedFallbackKeyAlgs);
+    public async updateSyncData(
+        toDeviceMessages: IToDeviceMessage<IOlmEncrypted>[],
+        otkCounts: OTKCounts,
+        unusedFallbackKeyAlgs: OTKAlgorithm[],
+        changedDeviceLists: string[],
+        leftDeviceLists: string[],
+    ): Promise<void> {
+        await this.machine.pushSync(toDeviceMessages, {
+            changed: changedDeviceLists,
+            left: leftDeviceLists,
+        }, otkCounts, unusedFallbackKeyAlgs);
     }
 
     /**
@@ -172,7 +182,7 @@ export class CryptoClient {
         return new RoomEvent<unknown>({
             ...event.raw,
             type: decrypted.clearEvent.type || "io.t2bot.unknown",
-            content: (typeof(decrypted.clearEvent.content) === 'object') ? decrypted.clearEvent.content : {},
+            content: (typeof (decrypted.clearEvent.content) === 'object') ? decrypted.clearEvent.content : {},
         });
     }
 
@@ -184,7 +194,7 @@ export class CryptoClient {
      * contents and file information.
      */
     @requiresReady()
-    public async encryptMedia(file: Buffer): Promise<{buffer: Buffer, file: Omit<EncryptedFile, "url">}> {
+    public async encryptMedia(file: Buffer): Promise<{ buffer: Buffer, file: Omit<EncryptedFile, "url"> }> {
         const encrypted = rustEncryptFile(file);
         return {
             buffer: encrypted.data,
@@ -192,7 +202,7 @@ export class CryptoClient {
                 iv: encrypted.file.iv,
                 key: encrypted.file.web_key,
                 v: encrypted.file.v,
-                hashes: encrypted.file.hashes as {sha256: string},
+                hashes: encrypted.file.hashes as { sha256: string },
             },
         };
     }

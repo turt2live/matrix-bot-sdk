@@ -21,7 +21,7 @@ export class UnpaddedBase64 {
      * @returns {string} The Unpadded Base64 string
      */
     public static encodeString(str: string): string {
-        return UnpaddedBase64.encodeBuffer(new Buffer(str));
+        return UnpaddedBase64.encodeBuffer(Buffer.from(str));
     }
 
     /**
@@ -39,6 +39,6 @@ export class UnpaddedBase64 {
      * @returns {string} The Unpadded Base64 string
      */
     public static encodeStringUrlSafe(str: string): string {
-        return UnpaddedBase64.encodeBufferUrlSafe(new Buffer(str));
+        return UnpaddedBase64.encodeBufferUrlSafe(Buffer.from(str));
     }
 }

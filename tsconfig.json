@@ -4,18 +4,19 @@
     "emitDecoratorMetadata": true,
     "module": "commonjs",
     "moduleResolution": "node",
-    "target": "es2015",
+    "target": "es2020",
     "noImplicitAny": false,
-    "sourceMap": false,
+    "sourceMap": true,
     "outDir": "./lib",
     "declaration": true,
     "types": [
       "node",
       "express",
-      "mocha"
+      "jest"
     ]
   },
   "include": [
-    "./src/**/*"
+    "./src/**/*",
+    "./test/**/*"
   ]
 }

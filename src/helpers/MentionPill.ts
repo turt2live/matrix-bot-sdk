@@ -7,7 +7,6 @@ import { extractRequestError, LogService } from "..";
  * @category Utilities
  */
 export class MentionPill {
-
     private constructor(private entityPermalink: string, private displayName: string) {
     }
 

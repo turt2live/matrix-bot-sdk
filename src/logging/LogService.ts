@@ -7,7 +7,6 @@ import { ILogger } from "./ILogger";
  * @category Logging
  */
 export class LogLevel {
-
     /**
      * The TRACE channel
      */
@@ -60,7 +59,6 @@ export class LogLevel {
  * @category Logging
  */
 export class LogService {
-
     private static logger: ILogger = new ConsoleLogger();
     private static logLevel: LogLevel = LogLevel.INFO;
     private static mutedModules: string[] = [];
@@ -161,7 +159,7 @@ export class LogService {
  * @returns {*} The extracted error, or the given error if unaltered.
  * @category Logging
  */
-export function extractRequestError(err: Error|MatrixError): any {
+export function extractRequestError(err: Error | MatrixError): any {
     if (err && 'body' in err) {
         return err.body;
     }

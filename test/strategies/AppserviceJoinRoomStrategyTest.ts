@@ -1,6 +1,6 @@
-import { Appservice, AppserviceJoinRoomStrategy, IJoinRoomStrategy } from "../../src";
-import * as expect from "expect";
 import * as simple from "simple-mock";
+
+import { Appservice, AppserviceJoinRoomStrategy, IJoinRoomStrategy } from "../../src";
 
 describe('AppserviceJoinRoomStrategy', () => {
     it('should be able to join the room normally', async () => {
@@ -14,7 +14,7 @@ describe('AppserviceJoinRoomStrategy', () => {
                 hs_token: "",
                 sender_localpart: "_bot_",
                 namespaces: {
-                    users: [{exclusive: true, regex: "@_prefix_.*:.+"}],
+                    users: [{ exclusive: true, regex: "@_prefix_.*:.+" }],
                     rooms: [],
                     aliases: [],
                 },
@@ -33,13 +33,13 @@ describe('AppserviceJoinRoomStrategy', () => {
             expect(apiCall).toBeDefined();
             return Promise.resolve();
         });
-        const underlyingStrategy = <IJoinRoomStrategy>{joinRoom: underlyingSpy};
+        const underlyingStrategy = { joinRoom: underlyingSpy } as unknown as IJoinRoomStrategy;
 
         const strategy = new AppserviceJoinRoomStrategy(underlyingStrategy, appservice);
 
         const apiCallSpy = simple.stub().callFn((rid) => {
             expect(rid).toEqual(roomId);
-            return Promise.resolve();
+            return Promise.resolve("!void:example.org");
         });
 
         await strategy.joinRoom(roomId, userId, apiCallSpy);
@@ -58,7 +58,7 @@ describe('AppserviceJoinRoomStrategy', () => {
                 hs_token: "",
                 sender_localpart: "_bot_",
                 namespaces: {
-                    users: [{exclusive: true, regex: "@_prefix_.*:.+"}],
+                    users: [{ exclusive: true, regex: "@_prefix_.*:.+" }],
                     rooms: [],
                     aliases: [],
                 },
@@ -87,7 +87,7 @@ describe('AppserviceJoinRoomStrategy', () => {
             expect(apiCall).toBeDefined();
             return Promise.resolve();
         });
-        const underlyingStrategy = <IJoinRoomStrategy>{joinRoom: underlyingSpy};
+        const underlyingStrategy = { joinRoom: underlyingSpy } as unknown as IJoinRoomStrategy;
 
         const strategy = new AppserviceJoinRoomStrategy(underlyingStrategy, appservice);
 
@@ -113,7 +113,7 @@ describe('AppserviceJoinRoomStrategy', () => {
                 hs_token: "",
                 sender_localpart: "_bot_",
                 namespaces: {
-                    users: [{exclusive: true, regex: "@_prefix_.*:.+"}],
+                    users: [{ exclusive: true, regex: "@_prefix_.*:.+" }],
                     rooms: [],
                     aliases: [],
                 },
@@ -142,7 +142,7 @@ describe('AppserviceJoinRoomStrategy', () => {
             expect(apiCall).toBeDefined();
             return Promise.resolve();
         });
-        const underlyingStrategy = <IJoinRoomStrategy>{joinRoom: underlyingSpy};
+        const underlyingStrategy = { joinRoom: underlyingSpy } as unknown as IJoinRoomStrategy;
 
         const strategy = new AppserviceJoinRoomStrategy(underlyingStrategy, appservice);
 
@@ -168,7 +168,7 @@ describe('AppserviceJoinRoomStrategy', () => {
                 hs_token: "",
                 sender_localpart: "_bot_",
                 namespaces: {
-                    users: [{exclusive: true, regex: "@_prefix_.*:.+"}],
+                    users: [{ exclusive: true, regex: "@_prefix_.*:.+" }],
                     rooms: [],
                     aliases: [],
                 },
@@ -198,7 +198,7 @@ describe('AppserviceJoinRoomStrategy', () => {
             expect(rid).toEqual(roomId);
             if (attempt++ === 0) {
                 throw new Error("Simulated failure");
-            } else return Promise.resolve();
+            } else return Promise.resolve("!void:example.org");
         });
 
         await strategy.joinRoom(roomId, userId, apiCallSpy);
@@ -217,7 +217,7 @@ describe('AppserviceJoinRoomStrategy', () => {
                 hs_token: "",
                 sender_localpart: "_bot_",
                 namespaces: {
-                    users: [{exclusive: true, regex: "@_prefix_.*:.+"}],
+                    users: [{ exclusive: true, regex: "@_prefix_.*:.+" }],
                     rooms: [],
                     aliases: [],
                 },
@@ -270,7 +270,7 @@ describe('AppserviceJoinRoomStrategy', () => {
                 hs_token: "",
                 sender_localpart: "_bot_",
                 namespaces: {
-                    users: [{exclusive: true, regex: "@_prefix_.*:.+"}],
+                    users: [{ exclusive: true, regex: "@_prefix_.*:.+" }],
                     rooms: [],
                     aliases: [],
                 },
@@ -299,7 +299,7 @@ describe('AppserviceJoinRoomStrategy', () => {
             expect(apiCall).toBeDefined();
             throw new Error("Simulated failure 2");
         });
-        const underlyingStrategy = <IJoinRoomStrategy>{joinRoom: underlyingSpy};
+        const underlyingStrategy = <IJoinRoomStrategy>{ joinRoom: underlyingSpy };
 
         const strategy = new AppserviceJoinRoomStrategy(underlyingStrategy, appservice);
 
@@ -332,7 +332,7 @@ describe('AppserviceJoinRoomStrategy', () => {
                 hs_token: "",
                 sender_localpart: "_bot_",
                 namespaces: {
-                    users: [{exclusive: true, regex: "@_prefix_.*:.+"}],
+                    users: [{ exclusive: true, regex: "@_prefix_.*:.+" }],
                     rooms: [],
                     aliases: [],
                 },
@@ -385,7 +385,7 @@ describe('AppserviceJoinRoomStrategy', () => {
                 hs_token: "",
                 sender_localpart: "_bot_",
                 namespaces: {
-                    users: [{exclusive: true, regex: "@_prefix_.*:.+"}],
+                    users: [{ exclusive: true, regex: "@_prefix_.*:.+" }],
                     rooms: [],
                     aliases: [],
                 },
@@ -414,7 +414,7 @@ describe('AppserviceJoinRoomStrategy', () => {
             expect(apiCall).toBeDefined();
             throw new Error("Simulated failure 2");
         });
-        const underlyingStrategy = <IJoinRoomStrategy>{joinRoom: underlyingSpy};
+        const underlyingStrategy = <IJoinRoomStrategy>{ joinRoom: underlyingSpy };
 
         const strategy = new AppserviceJoinRoomStrategy(underlyingStrategy, appservice);
 

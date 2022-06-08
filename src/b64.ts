@@ -17,6 +17,7 @@ export function encodeBase64(b: ArrayBuffer | Uint8Array): string {
 export function encodeUnpaddedBase64(b: ArrayBuffer | Uint8Array): string {
     return encodeBase64(b).replace(/=+/g, '');
 }
+
 /**
  * Encodes URL-Safe Unpadded Base64.
  * @category Utilities

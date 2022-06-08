@@ -1,5 +1,7 @@
 import { ILogger } from "./ILogger";
 
+/* eslint-disable no-console */
+
 /**
  * Logs to the console in a plain format. This is the default logger.
  * @category Logging
@@ -24,5 +26,6 @@ export class ConsoleLogger implements ILogger {
     public warn(module: string, ...messageOrObject: any[]) {
         console.warn(module, ...messageOrObject);
     }
-
 }
+
+/* eslint-enable no-console */

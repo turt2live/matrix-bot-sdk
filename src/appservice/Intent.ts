@@ -6,10 +6,9 @@ import {
     ICryptoStorageProvider,
     LogService,
     MatrixClient,
-    Metrics
+    Metrics,
 } from "..";
 import { Appservice, IAppserviceOptions } from "./Appservice";
-
 // noinspection TypeScriptPreferShortImport
 import { timedIntentFunctionCall } from "../metrics/decorators";
 import { UnstableAppserviceApis } from "./UnstableAppserviceApis";
@@ -23,7 +22,6 @@ import MatrixError from "../models/MatrixError";
  * @category Application services
  */
 export class Intent {
-
     /**
      * The metrics instance for this intent. Note that this will not raise metrics
      * for the underlying client - those will be available through this instance's
@@ -105,6 +103,7 @@ export class Intent {
     @timedIntentFunctionCall()
     public async enableEncryption(): Promise<void> {
         if (!this.cryptoSetupPromise) {
+            // eslint-disable-next-line no-async-promise-executor
             this.cryptoSetupPromise = new Promise(async (resolve, reject) => {
                 try {
                     // Prepare a client first
@@ -129,7 +128,7 @@ export class Intent {
                             // for devices without keys to impersonate, so it should be fine. In theory,
                             // those devices won't even be present but we're cautious.
                             const devicesWithKeys = Array.from(Object.entries(userDeviceKeys))
-                                .filter(d => d[0] === d[1].device_id && !!d[1].keys?.[`${DeviceKeyAlgorithm.Curve25519}:${d[1].device_id}`])
+                                .filter(d => d[0] === d[1].device_id && !!d[1].keys?.[`${DeviceKeyAlgorithm.Curve25519}:${d[1].device_id}`]);
                             deviceId = devicesWithKeys[0]?.[1]?.device_id;
                         }
                     }
@@ -148,14 +147,14 @@ export class Intent {
                         const accessToken = await Promise.resolve(storage?.readValue("accessToken"));
                         if (!accessToken) {
                             const loginBody = {
-                                type: "uk.half-shot.msc2778.login.application_service",
+                                type: "m.login.application_service",
                                 identifier: {
                                     type: "m.id.user",
                                     user: this.userId,
                                 },
                             };
                             this.client.impersonateUserId(null); // avoid confusing homeserver
-                            const res = await this.client.doRequest("POST", "/_matrix/client/r0/login", {}, loginBody);
+                            const res = await this.client.doRequest("POST", "/_matrix/client/v3/login", {}, loginBody);
                             this.makeClient(true, res['access_token']);
                             storage.storeValue("accessToken", this.client.accessToken);
                             prepared = true;
@@ -231,7 +230,7 @@ export class Intent {
      */
     @timedIntentFunctionCall()
     public async sendText(roomId: string, body: string, msgtype: "m.text" | "m.emote" | "m.notice" = "m.text"): Promise<string> {
-        return this.sendEvent(roomId, {body: body, msgtype: msgtype});
+        return this.sendEvent(roomId, { body: body, msgtype: msgtype });
     }
 
     /**
@@ -300,7 +299,7 @@ export class Intent {
     public async ensureRegistered() {
         if (!(await Promise.resolve(this.storage.isUserRegistered(this.userId)))) {
             try {
-                const result = await this.client.doRequest("POST", "/_matrix/client/r0/register", null, {
+                const result = await this.client.doRequest("POST", "/_matrix/client/v3/register", null, {
                     type: "m.login.application_service",
                     username: this.userId.substring(1).split(":")[0],
                 });
@@ -308,7 +307,7 @@ export class Intent {
                 // HACK: Workaround for unit tests
                 if (result['errcode']) {
                     // noinspection ExceptionCaughtLocallyJS
-                    throw {body: result};
+                    throw { body: result }; // eslint-disable-line no-throw-literal
                 }
             } catch (err) {
                 if (err instanceof MatrixError && err.errcode === "M_USER_IN_USE") {

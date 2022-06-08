@@ -1,7 +1,10 @@
 import * as LRU from "lru-cache";
+
 import { extractRequestError, LogService, MatrixClient, MatrixProfile } from "..";
 import { MembershipEvent } from "../models/events/MembershipEvent";
 import { Appservice } from "../appservice/Appservice";
+
+type CacheKey = `${string}@${string | '<none>'}`;
 
 /**
  * Functions for avoiding calls to profile endpoints. Useful for bots when
@@ -10,8 +13,7 @@ import { Appservice } from "../appservice/Appservice";
  * @category Utilities
  */
 export class ProfileCache {
-
-    private cache: LRU;
+    private cache: LRU<CacheKey, MatrixProfile>;
 
     /**
      * Creates a new profile cache.
@@ -22,11 +24,11 @@ export class ProfileCache {
     constructor(maxEntries: number, maxAgeMs: number, private client: MatrixClient) {
         this.cache = new LRU({
             max: maxEntries,
-            maxAge: maxAgeMs,
+            ttl: maxAgeMs,
         });
     }
 
-    private getCacheKey(userId: string, roomId: string | null): string {
+    private getCacheKey(userId: string, roomId: string | null): CacheKey {
         return `${userId}@${roomId || '<none>'}`;
     }
 

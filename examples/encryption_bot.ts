@@ -1,3 +1,5 @@
+import * as fs from "fs";
+
 import {
     EncryptionAlgorithm,
     FileMessageEventContent,
@@ -9,7 +11,6 @@ import {
     RustSdkCryptoStorageProvider,
     SimpleFsStorageProvider,
 } from "../src";
-import * as fs from "fs";
 
 LogService.setLogger(new RichConsoleLogger());
 LogService.setLevel(LogLevel.TRACE);

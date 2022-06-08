@@ -1,12 +1,12 @@
-import { EventKind, RichRepliesPreprocessor } from "../../src";
-import * as expect from "expect";
 import * as simple from "simple-mock";
-import { createTestClient } from "../MatrixClientTest";
+
+import { EventKind, RichRepliesPreprocessor } from "../../src";
+import { createTestClient } from "../TestUtils";
 
 describe('RichRepliesPreprocessor', () => {
     it('should only process room events', async () => {
         const processor = new RichRepliesPreprocessor();
-        const {client} = createTestClient();
+        const { client } = createTestClient();
         const originalEventId = "$original:example.org";
         const originalUserId = "@alice:example.org";
         const originalPlainText = "Hello world, this is text";
@@ -21,9 +21,10 @@ describe('RichRepliesPreprocessor', () => {
                         event_id: originalEventId,
                     },
                 },
-                format: "org.matrix.custom.html",
-                body: `> <${originalUserId}> ${originalPlainText}\n\n${replyPlainText}`,
-                formatted_body: `<mx-reply><blockquote><a href="https://matrix.to/#/${originalRoomId}/${originalEventId}">In reply to</a> <a href="https://matrix.to/#/${originalUserId}">${originalUserId}</a><br />${originalHtml}</blockquote></mx-reply>${replyHtml}`,
+                "format": "org.matrix.custom.html",
+                "body": `> <${originalUserId}> ${originalPlainText}\n\n${replyPlainText}`,
+                // eslint-disable-next-line max-len
+                "formatted_body": `<mx-reply><blockquote><a href="https://matrix.to/#/${originalRoomId}/${originalEventId}">In reply to</a> <a href="https://matrix.to/#/${originalUserId}">${originalUserId}</a><br />${originalHtml}</blockquote></mx-reply>${replyHtml}`,
             },
         };
         const event2 = {
@@ -33,9 +34,10 @@ describe('RichRepliesPreprocessor', () => {
                         event_id: originalEventId,
                     },
                 },
-                format: "org.matrix.custom.html",
-                body: `> <${originalUserId}> ${originalPlainText}\n\n${replyPlainText}`,
-                formatted_body: `<mx-reply><blockquote><a href="https://matrix.to/#/${originalRoomId}/${originalEventId}">In reply to</a> <a href="https://matrix.to/#/${originalUserId}">${originalUserId}</a><br />${originalHtml}</blockquote></mx-reply>${replyHtml}`,
+                "format": "org.matrix.custom.html",
+                "body": `> <${originalUserId}> ${originalPlainText}\n\n${replyPlainText}`,
+                // eslint-disable-next-line max-len
+                "formatted_body": `<mx-reply><blockquote><a href="https://matrix.to/#/${originalRoomId}/${originalEventId}">In reply to</a> <a href="https://matrix.to/#/${originalUserId}">${originalUserId}</a><br />${originalHtml}</blockquote></mx-reply>${replyHtml}`,
             },
         };
         let result = await processor.processEvent(event1, client, EventKind.EphemeralEvent);
@@ -57,9 +59,9 @@ describe('RichRepliesPreprocessor', () => {
                         event_id: originalEventId,
                     },
                 },
-                format: "org.matrix.custom.html",
-                body: replyPlainText,
-                formatted_body: replyHtml,
+                "format": "org.matrix.custom.html",
+                "body": replyPlainText,
+                "formatted_body": replyHtml,
             },
         });
 
@@ -79,15 +81,15 @@ describe('RichRepliesPreprocessor', () => {
                         event_id: originalEventId,
                     },
                 },
-                format: "org.matrix.custom.html",
-                body: replyPlainText,
-                formatted_body: replyHtml,
+                "format": "org.matrix.custom.html",
+                "body": replyPlainText,
+                "formatted_body": replyHtml,
             },
         });
     });
 
     it('should parse single-line events', async () => {
-        const {client} = createTestClient();
+        const { client } = createTestClient();
 
         const originalEventId = "$original:example.org";
         const originalUserId = "@alice:example.org";
@@ -103,9 +105,10 @@ describe('RichRepliesPreprocessor', () => {
                         event_id: originalEventId,
                     },
                 },
-                format: "org.matrix.custom.html",
-                body: `> <${originalUserId}> ${originalPlainText}\n\n${replyPlainText}`,
-                formatted_body: `<mx-reply><blockquote><a href="https://matrix.to/#/${originalRoomId}/${originalEventId}">In reply to</a> <a href="https://matrix.to/#/${originalUserId}">${originalUserId}</a><br />${originalHtml}</blockquote></mx-reply>${replyHtml}`,
+                "format": "org.matrix.custom.html",
+                "body": `> <${originalUserId}> ${originalPlainText}\n\n${replyPlainText}`,
+                // eslint-disable-next-line max-len
+                "formatted_body": `<mx-reply><blockquote><a href="https://matrix.to/#/${originalRoomId}/${originalEventId}">In reply to</a> <a href="https://matrix.to/#/${originalUserId}">${originalUserId}</a><br />${originalHtml}</blockquote></mx-reply>${replyHtml}`,
             },
         };
 
@@ -126,15 +129,15 @@ describe('RichRepliesPreprocessor', () => {
                         event_id: originalEventId,
                     },
                 },
-                format: "org.matrix.custom.html",
-                body: replyPlainText,
-                formatted_body: replyHtml,
+                "format": "org.matrix.custom.html",
+                "body": replyPlainText,
+                "formatted_body": replyHtml,
             },
         });
     });
 
     it('should parse multi-line events', async () => {
-        const {client} = createTestClient();
+        const { client } = createTestClient();
 
         const originalEventId = "$original:example.org";
         const originalUserId = "@alice:example.org";
@@ -150,9 +153,10 @@ describe('RichRepliesPreprocessor', () => {
                         event_id: originalEventId,
                     },
                 },
-                format: "org.matrix.custom.html",
-                body: `> <${originalUserId}> ${originalPlainText.split('\n').join('\n> ')}\n\n${replyPlainText}`,
-                formatted_body: `<mx-reply><blockquote><a href="https://matrix.to/#/${originalRoomId}/${originalEventId}">In reply to</a> <a href="https://matrix.to/#/${originalUserId}">${originalUserId}</a><br />${originalHtml}</blockquote></mx-reply>${replyHtml}`,
+                "format": "org.matrix.custom.html",
+                "body": `> <${originalUserId}> ${originalPlainText.split('\n').join('\n> ')}\n\n${replyPlainText}`,
+                // eslint-disable-next-line max-len
+                "formatted_body": `<mx-reply><blockquote><a href="https://matrix.to/#/${originalRoomId}/${originalEventId}">In reply to</a> <a href="https://matrix.to/#/${originalUserId}">${originalUserId}</a><br />${originalHtml}</blockquote></mx-reply>${replyHtml}`,
             },
         };
 
@@ -173,9 +177,9 @@ describe('RichRepliesPreprocessor', () => {
                         event_id: originalEventId,
                     },
                 },
-                format: "org.matrix.custom.html",
-                body: replyPlainText,
-                formatted_body: replyHtml,
+                "format": "org.matrix.custom.html",
+                "body": replyPlainText,
+                "formatted_body": replyHtml,
             },
         });
     });
@@ -188,9 +192,9 @@ describe('RichRepliesPreprocessor', () => {
     });
 
     it('should fetch the real message when instructed', async () => {
-        const {client} = createTestClient();
+        const { client } = createTestClient();
 
-        const realEvent = {hello: "world"};
+        const realEvent = { hello: "world" };
 
         const originalEventId = "$original:example.org";
         const originalUserId = "@alice:example.org";
@@ -207,9 +211,10 @@ describe('RichRepliesPreprocessor', () => {
                         event_id: originalEventId,
                     },
                 },
-                format: "org.matrix.custom.html",
-                body: `> <${originalUserId}> ${originalPlainText.split('\n').join('\n> ')}\n\n${replyPlainText}`,
-                formatted_body: `<mx-reply><blockquote><a href="https://matrix.to/#/${originalRoomId}/${originalEventId}">In reply to</a> <a href="https://matrix.to/#/${originalUserId}">${originalUserId}</a><br />${originalHtml}</blockquote></mx-reply>${replyHtml}`,
+                "format": "org.matrix.custom.html",
+                "body": `> <${originalUserId}> ${originalPlainText.split('\n').join('\n> ')}\n\n${replyPlainText}`,
+                // eslint-disable-next-line max-len
+                "formatted_body": `<mx-reply><blockquote><a href="https://matrix.to/#/${originalRoomId}/${originalEventId}">In reply to</a> <a href="https://matrix.to/#/${originalUserId}">${originalUserId}</a><br />${originalHtml}</blockquote></mx-reply>${replyHtml}`,
             },
 
             // TODO: Pre-processors need to be able to support events without room_id set
@@ -222,7 +227,7 @@ describe('RichRepliesPreprocessor', () => {
             return realEvent;
         });
 
-        let processor, result;
+        let processor; let result;
 
         processor = new RichRepliesPreprocessor();
         result = await processor.processEvent(event, client);
@@ -236,7 +241,7 @@ describe('RichRepliesPreprocessor', () => {
     });
 
     it('should parse MSC3676 replies', async () => {
-        const {client} = createTestClient();
+        const { client } = createTestClient();
 
         const event = {
             content: {
@@ -245,9 +250,9 @@ describe('RichRepliesPreprocessor', () => {
                         event_id: "$original",
                     },
                 },
-                body: "image.png",
-                msgtype: "m.image",
-                url: "mxc://example.org/irrelevant",
+                "body": "image.png",
+                "msgtype": "m.image",
+                "url": "mxc://example.org/irrelevant",
             },
         };
 

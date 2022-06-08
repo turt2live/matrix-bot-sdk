@@ -9,7 +9,7 @@ export interface PinnedEventsEventContent {
     /**
      * The event IDs that are pinned in the room.
      */
-    pinned: string[]
+    pinned: string[];
 }
 
 /**

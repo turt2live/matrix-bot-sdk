@@ -6,6 +6,7 @@ import { MSC3401CallEvent } from "./models/events/MSC3401CallEvent";
 /**
  * Represents a profile for a group
  * @category Unstable APIs
+ * @deprecated This API is no longer supported by Synapse and will be removed in a future version of the bot-sdk.
  */
 export interface GroupProfile {
     /**
@@ -53,9 +54,10 @@ export class UnstableApis {
      * Creates a group.
      * @param {string} localpart The localpart for the group
      * @return {Promise<string>} Resolves to the created group ID.
+     * @deprecated This API is no longer supported by Synapse and will be removed in a future version of the bot-sdk.
      */
     public async createGroup(localpart: string): Promise<string> {
-        const response = await this.client.doRequest("POST", "/_matrix/client/unstable/create_group", null, {"localpart": localpart});
+        const response = await this.client.doRequest("POST", "/_matrix/client/unstable/create_group", null, { "localpart": localpart });
         return response["group_id"];
     }
 
@@ -66,9 +68,11 @@ export class UnstableApis {
      * @return {Promise<"join" | "invite" | "reject">} Resolves to the invite state for
      *  the user. This is normally "invite", but may be "join" or "reject" if the user's
      *  homeserver accepted/rejected the invite right away.
+     * @deprecated This API is no longer supported by Synapse and will be removed in a future version of the bot-sdk.
      */
     public async inviteUserToGroup(groupId: string, userId: string): Promise<"join" | "invite" | "reject"> {
-        const response = await this.client.doRequest("PUT", `/_matrix/client/unstable/groups/${encodeURIComponent(groupId)}/admin/users/invite/${encodeURIComponent(userId)}`, null, {});
+        const path = `/_matrix/client/unstable/groups/${encodeURIComponent(groupId)}/admin/users/invite/${encodeURIComponent(userId)}`;
+        const response = await this.client.doRequest("PUT", path, null, {});
         return response["state"];
     }
 
@@ -77,6 +81,7 @@ export class UnstableApis {
      * @param {string} groupId The group ID to kick the user from.
      * @param {string} userId The user ID to kick from the group.
      * @return {Promise<any>} Resolves when completed.
+     * @deprecated This API is no longer supported by Synapse and will be removed in a future version of the bot-sdk.
      */
     public async kickUserFromGroup(groupId: string, userId: string): Promise<any> {
         return this.client.doRequest("PUT", `/_matrix/client/unstable/groups/${encodeURIComponent(groupId)}/admin/users/remove/${encodeURIComponent(userId)}`, null, {});
@@ -87,6 +92,7 @@ export class UnstableApis {
      * @param {string} groupId The group ID to update.
      * @param {GroupProfile} profile The profile to update the group with.
      * @return {Promise<any>} Resolves when completed.
+     * @deprecated This API is no longer supported by Synapse and will be removed in a future version of the bot-sdk.
      */
     public async setGroupProfile(groupId: string, profile: GroupProfile): Promise<any> {
         return this.client.doRequest("POST", `/_matrix/client/unstable/groups/${encodeURIComponent(groupId)}/profile`, null, profile);
@@ -98,6 +104,7 @@ export class UnstableApis {
      * @param {string} groupId The group ID to set the policy for.
      * @param {"open" | "invite"} policy The policy to set.
      * @return {Promise<any>} Resolves when completed.
+     * @deprecated This API is no longer supported by Synapse and will be removed in a future version of the bot-sdk.
      */
     public async setGroupJoinPolicy(groupId: string, policy: "open" | "invite"): Promise<any> {
         return this.client.doRequest("PUT", `/_matrix/client/unstable/groups/${encodeURIComponent(groupId)}/settings/m.join_policy`, null, {
@@ -113,10 +120,11 @@ export class UnstableApis {
      * @param {string} roomId The room ID to add to the group.
      * @param {boolean} isPublic Whether this group-room association is visible to non-members. Optional. Defaults to true.
      * @return {Promise<any>} Resolves when completed.
+     * @deprecated This API is no longer supported by Synapse and will be removed in a future version of the bot-sdk.
      */
     public async addRoomToGroup(groupId: string, roomId: string, isPublic = true): Promise<any> {
         return this.client.doRequest("PUT", `/_matrix/client/unstable/groups/${encodeURIComponent(groupId)}/admin/rooms/${encodeURIComponent(roomId)}`, null, {
-            "m.visibility": {type: isPublic ? "public" : "private"},
+            "m.visibility": { type: isPublic ? "public" : "private" },
         });
     }
 
@@ -126,6 +134,7 @@ export class UnstableApis {
      * @param {string} roomId The room ID of the room to update.
      * @param {boolean} isPublic Whether this group-room association is visible to non-members.
      * @return {Promise<any>} Resolves when completed.
+     * @deprecated This API is no longer supported by Synapse and will be removed in a future version of the bot-sdk.
      */
     public async updateGroupRoomVisibility(groupId: string, roomId: string, isPublic: boolean): Promise<any> {
         return this.client.doRequest("PUT", `/_matrix/client/unstable/groups/${encodeURIComponent(groupId)}/admin/rooms/${encodeURIComponent(roomId)}/config/m.visibility`, null, {
@@ -138,6 +147,7 @@ export class UnstableApis {
      * @param {string} groupId The group ID to remove the room from.
      * @param {string} roomId The room ID to remove from the group.
      * @return {Promise<any>} Resolves when completed.
+     * @deprecated This API is no longer supported by Synapse and will be removed in a future version of the bot-sdk.
      */
     public async removeRoomFromGroup(groupId: string, roomId: string): Promise<any> {
         return this.client.doRequest("DELETE", `/_matrix/client/unstable/groups/${encodeURIComponent(groupId)}/admin/rooms/${encodeURIComponent(roomId)}`);
@@ -147,6 +157,7 @@ export class UnstableApis {
      * Gets a group's profile.
      * @param {string} groupId The group ID to fetch the profile of.
      * @return {Promise<GroupProfile>} Resolves to the profile of the group.
+     * @deprecated This API is no longer supported by Synapse and will be removed in a future version of the bot-sdk.
      */
     public async getGroupProfile(groupId: string): Promise<GroupProfile> {
         return this.client.doRequest("GET", `/_matrix/client/unstable/groups/${encodeURIComponent(groupId)}/profile`);
@@ -156,6 +167,7 @@ export class UnstableApis {
      * Gets the users in a group.
      * @param {string} groupId The group ID of which to get the users.
      * @return {Promise<any[]>} Resolves to an array of all the users in the group.
+     * @deprecated This API is no longer supported by Synapse and will be removed in a future version of the bot-sdk.
      */
     public async getGroupUsers(groupId: string): Promise<any[]> {
         const response = await this.client.doRequest("GET", `/_matrix/client/unstable/groups/${encodeURIComponent(groupId)}/users`);
@@ -166,6 +178,7 @@ export class UnstableApis {
      * Gets the invited users of a group.
      * @param {string} groupId The group ID of which to get the invited users.
      * @return {Promise<any[]>} Resolves to an array of all the users invited to the group.
+     * @deprecated This API is no longer supported by Synapse and will be removed in a future version of the bot-sdk.
      */
     public async getGroupInvitedUsers(groupId: string): Promise<any[]> {
         const response = await this.client.doRequest("GET", `/_matrix/client/unstable/groups/${encodeURIComponent(groupId)}/invited_users`);
@@ -176,6 +189,7 @@ export class UnstableApis {
      * Gets the rooms of a group.
      * @param {string} groupId The group ID of which to get all the rooms.
      * @return {Promise<any[]>} Resolves to an array of all the rooms of the group.
+     * @deprecated This API is no longer supported by Synapse and will be removed in a future version of the bot-sdk.
      */
     public async getGroupRooms(groupId: string): Promise<any[]> {
         const response = await this.client.doRequest("GET", `/_matrix/client/unstable/groups/${encodeURIComponent(groupId)}/rooms`);
@@ -186,6 +200,7 @@ export class UnstableApis {
      * Accepts an invite to a group.
      * @param {string} groupId The group ID of which to accept the invite of.
      * @return {Promise<any>} Resolves when completed.
+     * @deprecated This API is no longer supported by Synapse and will be removed in a future version of the bot-sdk.
      */
     public async acceptGroupInvite(groupId: string): Promise<any> {
         return this.client.doRequest("PUT", `/_matrix/client/unstable/groups/${encodeURIComponent(groupId)}/self/accept_invite`, null, {});
@@ -195,6 +210,7 @@ export class UnstableApis {
      * Joins a group.
      * @param {string} groupId The group ID to join.
      * @return {Promise<any>} Resolves when completed.
+     * @deprecated This API is no longer supported by Synapse and will be removed in a future version of the bot-sdk.
      */
     public async joinGroup(groupId: string): Promise<any> {
         return this.client.doRequest("PUT", `/_matrix/client/unstable/groups/${encodeURIComponent(groupId)}/self/join`, null, {});
@@ -204,6 +220,7 @@ export class UnstableApis {
      * Leaves a group.
      * @param {string} groupId The group ID of the group to leave.
      * @return {Promise<any>} Resolves when completed.
+     * @deprecated This API is no longer supported by Synapse and will be removed in a future version of the bot-sdk.
      */
     public async leaveGroup(groupId: string): Promise<any> {
         return this.client.doRequest("PUT", `/_matrix/client/unstable/groups/${encodeURIComponent(groupId)}/self/leave`, null, {});
@@ -214,6 +231,7 @@ export class UnstableApis {
      * @param {string} groupId The group ID to set the publicity of.
      * @param {boolean} publicise If the group should be publicised.
      * @return {Promise<any>} Resolves when completed.
+     * @deprecated This API is no longer supported by Synapse and will be removed in a future version of the bot-sdk.
      */
     public async setGroupPublicity(groupId: string, publicise: boolean): Promise<any> {
         return this.client.doRequest("PUT", `/_matrix/client/unstable/groups/${encodeURIComponent(groupId)}/self/update_publicity`, null, {
@@ -224,6 +242,7 @@ export class UnstableApis {
     /**
      * Gets all group IDs joined.
      * @return {Promise<string[]>} Resolves to the group IDs of the joined groups.
+     * @deprecated This API is no longer supported by Synapse and will be removed in a future version of the bot-sdk.
      */
     public async getJoinedGroups(): Promise<string[]> {
         const response = await this.client.doRequest("GET", "/_matrix/client/unstable/joined_groups");
@@ -234,6 +253,7 @@ export class UnstableApis {
      * Gets the group IDs that the specified user has publicised.
      * @param {string} userId The user ID to fetch the publicised groups of.
      * @return {Promise<string[]>} Resolves to the publicised group IDs of that user.
+     * @deprecated This API is no longer supported by Synapse and will be removed in a future version of the bot-sdk.
      */
     public async getPublicisedGroups(userId: string): Promise<string[]> {
         const response = await this.client.doRequest("GET", `/_matrix/client/unstable/publicised_groups/${encodeURIComponent(userId)}`);
@@ -263,10 +283,10 @@ export class UnstableApis {
      * @param {string} eventId The event ID to list reacations for.
      * @param {string?} relationType The type of reaction (e.g. `m.room.member`) to filter for. Optional.
      * @param {string?} eventType The type of event to look for (e.g. `m.room.member`). Optional.
-     * @returns {Promise<{original_event: any, chunk: any[]}>} Resolves a object containing the original event, and a chunk of relations
+     * @returns {Promise<{original_event: any, chunk: any[]}>} Resolves to an object containing the original event, and a chunk of relations
      */
-    public async getRelationsForEvent(roomId: string, eventId: string, relationType?: string, eventType?: string): Promise<{original_event: any, chunk: any[]}> {
-        let url = `/_matrix/client/unstable/rooms/${roomId}/relations/${eventId}`;
+    public async getRelationsForEvent(roomId: string, eventId: string, relationType?: string, eventType?: string): Promise<{ original_event: any, chunk: any[] }> {
+        let url = `/_matrix/client/unstable/rooms/${encodeURIComponent(roomId)}/relations/${encodeURIComponent(eventId)}`;
         if (relationType) {
             url += `/${relationType}`;
         }
@@ -278,19 +298,16 @@ export class UnstableApis {
 
     /**
      * Get information about a media item. Implements MSC2380
-     * @param {string} mxc The MXC to get information about.
-     * @returns {Promise<MSC2380MediaInfo>} Resolves a object containing the media information.
+     * @param {string} mxcUrl The MXC to get information about.
+     * @returns {Promise<MSC2380MediaInfo>} Resolves to an object containing the media information.
      */
     public async getMediaInfo(mxcUrl: string): Promise<MSC2380MediaInfo> {
         if (!mxcUrl.toLowerCase().startsWith("mxc://")) {
             throw Error("'mxcUrl' does not begin with mxc://");
         }
-        const [domain, mediaId] = mxcUrl.substr("mxc://".length).split("/");
+        const [domain, mediaId] = mxcUrl.substring("mxc://".length).split("/");
         if (!domain || !mediaId) {
-            throw Error('Missing domain');
-        }
-        if (!mediaId) {
-            throw Error('Missing mediaId');
+            throw Error('Missing domain or media ID');
         }
         return this.client.doRequest("GET", `/_matrix/media/unstable/info/${encodeURIComponent(domain)}/${encodeURIComponent(mediaId)}`);
     }
