@@ -106,19 +106,19 @@ export async function doHttpRequest(
     const errBody = response.body || resBody;
     if (typeof (errBody) === "object" && 'errcode' in errBody) {
         const redactedBody = respIsBuffer ? '<Buffer>' : redactObjectForLogging(errBody);
-        LogService.error("MatrixHttpClient (REQ-" + requestId + ")", redactedBody);
+        LogService.error("MatrixHttpClient", "(REQ-" + requestId + ")", redactedBody);
         throw new MatrixError(errBody, response.statusCode);
     }
 
     // Don't log the body unless we're in debug mode. They can be large.
     if (LogService.level.includes(LogLevel.TRACE)) {
         const redactedBody = respIsBuffer ? '<Buffer>' : redactObjectForLogging(response.body);
-        LogService.trace("MatrixHttpClient (REQ-" + requestId + " RESP-H" + response.statusCode + ")", redactedBody);
+        LogService.trace("MatrixHttpClient", "(REQ-" + requestId + " RESP-H" + response.statusCode + ")", redactedBody);
     }
 
     if (response.statusCode < 200 || response.statusCode >= 300) {
         const redactedBody = respIsBuffer ? '<Buffer>' : redactObjectForLogging(response.body);
-        LogService.error("MatrixHttpClient (REQ-" + requestId + ")", redactedBody);
+        LogService.error("MatrixHttpClient", "(REQ-" + requestId + ")", redactedBody);
         throw response;
     }
     return raw ? response : resBody;
