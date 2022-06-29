@@ -1,4 +1,4 @@
-import { EncryptionEventContent } from "../models/events/EncryptionEvent";
+import { ICryptoRoomInformation } from "../e2ee/ICryptoRoomInformation";
 
 /**
  * A storage provider capable of only providing crypto-related storage.
@@ -21,16 +21,16 @@ export interface ICryptoStorageProvider {
     /**
      * Stores a room's configuration.
      * @param {string} roomId The room ID to store the configuration for.
-     * @param {Partial<EncryptionEventContent>} config The room's encryption config. May be empty.
+     * @param {ICryptoRoomInformation} config The room's encryption config. May be empty.
      * @returns {Promise<void>} Resolves when complete.
      */
-    storeRoom(roomId: string, config: Partial<EncryptionEventContent>): Promise<void>;
+    storeRoom(roomId: string, config: ICryptoRoomInformation): Promise<void>;
 
     /**
      * Gets a room's configuration. If the room is unknown, a falsy value is returned.
      * @param {string} roomId The room ID to get the configuration for.
-     * @returns {Promise<Partial<EncryptionEventContent>>} Resolves to the room's configuration, or
+     * @returns {Promise<ICryptoRoomInformation>} Resolves to the room's configuration, or
      * to falsy if the room is unknown.
      */
-    getRoom(roomId: string): Promise<Partial<EncryptionEventContent>>;
+    getRoom(roomId: string): Promise<ICryptoRoomInformation>;
 }

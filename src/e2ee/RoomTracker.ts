@@ -1,5 +1,6 @@
 import { MatrixClient } from "../MatrixClient";
 import { EncryptionEventContent } from "../models/events/EncryptionEvent";
+import { ICryptoRoomInformation } from "./ICryptoRoomInformation";
 
 // noinspection ES6RedundantAwait
 /**
@@ -14,7 +15,8 @@ export class RoomTracker {
         });
 
         this.client.on("room.event", (roomId: string, event: any) => {
-            if (event['type'] === 'm.room.encryption' && event['state_key'] === '') {
+            if (event['state_key'] !== '') return; // we don't care about anything else
+            if (event['type'] === 'm.room.encryption' || event['type'] === 'm.room.history_visibility') {
                 // noinspection JSIgnoredPromiseFromCall
                 this.queueRoomCheck(roomId);
             }
@@ -51,16 +53,29 @@ export class RoomTracker {
         } catch (e) {
             return; // failure == no encryption
         }
-        await this.client.cryptoStore.storeRoom(roomId, encEvent);
+
+        // Pick out the history visibility setting too
+        let historyVisibility: string;
+        try {
+            const ev = await this.client.getRoomStateEvent(roomId, "m.room.history_visibility", "");
+            historyVisibility = ev.history_visibility;
+        } catch (e) {
+            // ignore - we'll just treat history visibility as normal
+        }
+
+        await this.client.cryptoStore.storeRoom(roomId, {
+            ...encEvent,
+            historyVisibility,
+        });
     }
 
     /**
      * Gets the room's crypto configuration, as known by the underlying store. If the room is
      * not encrypted then this will return an empty object.
      * @param {string} roomId The room ID to get the config for.
-     * @returns {Promise<Partial<EncryptionEventContent>>} Resolves to the encryption config.
+     * @returns {Promise<ICryptoRoomInformation>} Resolves to the encryption config.
      */
-    public async getRoomCryptoConfig(roomId: string): Promise<Partial<EncryptionEventContent>> {
+    public async getRoomCryptoConfig(roomId: string): Promise<ICryptoRoomInformation> {
         let config = await this.client.cryptoStore.getRoom(roomId);
         if (!config) {
             await this.queueRoomCheck(roomId);
