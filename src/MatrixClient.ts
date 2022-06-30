@@ -1778,27 +1778,6 @@ export class MatrixClient extends EventEmitter {
     }
 
     /**
-     * Uploads new identity keys for the current device.
-     * @param {EncryptionAlgorithm[]} algorithms The supported algorithms.
-     * @param {Record<DeviceKeyLabel<DeviceKeyAlgorithm, string>, string>} keys The keys for the device.
-     * @returns {Promise<OTKCounts>} Resolves to the current One Time Key counts when complete.
-     */
-    @timedMatrixClientFunctionCall()
-    @requiresCrypto()
-    public async uploadDeviceKeys(algorithms: EncryptionAlgorithm[], keys: Record<DeviceKeyLabel<DeviceKeyAlgorithm, string>, string>): Promise<OTKCounts> {
-        const obj = {
-            user_id: await this.getUserId(),
-            device_id: this.crypto.clientDeviceId,
-            algorithms: algorithms,
-            keys: keys,
-        };
-        obj['signatures'] = await this.crypto.sign(obj);
-        return this.doRequest("POST", "/_matrix/client/v3/keys/upload", null, {
-            device_keys: obj,
-        }).then(r => r['one_time_key_counts']);
-    }
-
-    /**
      * Uploads One Time Keys for the current device.
      * @param {OTKs} keys The keys to upload.
      * @returns {Promise<OTKCounts>} Resolves to the current One Time Key counts when complete.
