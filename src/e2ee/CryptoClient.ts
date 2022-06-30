@@ -146,14 +146,20 @@ export class CryptoClient {
         delete obj['signatures'];
         delete obj['unsigned'];
 
-        // TODO: @@ Fix - https://github.com/matrix-org/matrix-rust-sdk/issues/797
-        throw new Error("Not currently implemented");
-
-        // const sig = await this.engine.machine.sign(obj);
-        // return {
-        //     ...sig,
-        //     ...existingSignatures,
-        // };
+        const container = await this.engine.machine.sign(JSON.stringify(obj));
+        const userSignature = container.get(new UserId(await this.client.getUserId()));
+        const sig: Signatures = {
+            [await this.client.getUserId()]: {},
+        };
+        for (const [key, maybeSignature] of Object.entries(userSignature)) {
+            if (maybeSignature.isValid) {
+                sig[await this.client.getUserId()][key] = maybeSignature.signature.toBase64();
+            }
+        }
+        return {
+            ...sig,
+            ...existingSignatures,
+        };
     }
 
     /**
