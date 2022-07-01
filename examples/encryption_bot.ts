@@ -8,6 +8,8 @@ import {
     MatrixClient,
     MessageEvent,
     RichConsoleLogger,
+    RoomPreset,
+    RoomVisibility,
     RustSdkCryptoStorageProvider,
     SimpleFsStorageProvider,
 } from "../src";
@@ -34,7 +36,7 @@ const worksImage = fs.readFileSync("./examples/static/it-works.png");
 const client = new MatrixClient(homeserverUrl, accessToken, storage, crypto);
 
 (async function() {
-    let encryptedRoomId: string;
+    let encryptedRoomId: string|undefined = undefined;
     const joinedRooms = await client.getJoinedRooms();
     await client.crypto.prepare(joinedRooms); // init crypto because we're doing things before the client is started
     for (const roomId of joinedRooms) {
@@ -47,8 +49,8 @@ const client = new MatrixClient(homeserverUrl, accessToken, storage, crypto);
         encryptedRoomId = await client.createRoom({
             invite: [dmTarget],
             is_direct: true,
-            visibility: "private",
-            preset: "trusted_private_chat",
+            visibility: RoomVisibility.Private,
+            preset: RoomPreset.TrustedPrivateChat,
             initial_state: [
                 { type: "m.room.encryption", state_key: "", content: { algorithm: EncryptionAlgorithm.MegolmV1AesSha2 } },
                 { type: "m.room.guest_access", state_key: "", content: { guest_access: "can_join" } },

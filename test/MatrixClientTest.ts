@@ -18,6 +18,7 @@ import {
     OTKs,
     PowerLevelAction,
     redactObjectForLogging,
+    RoomCreateOptions,
     RoomDirectoryLookupResponse,
     RoomEvent,
     RustSdkCryptoStorageProvider,
@@ -2808,8 +2809,8 @@ describe('MatrixClient', () => {
             const { client, http } = createTestClient();
 
             const roomId = "!something:example.org";
-            const properties = {
-                hello: "world",
+            const properties: RoomCreateOptions = {
+                name: "hello world",
                 preset: "public_chat",
             };
 
