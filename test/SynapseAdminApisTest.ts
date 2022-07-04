@@ -1,4 +1,4 @@
-import * as MockHttpBackend from 'matrix-mock-request';
+import HttpBackend from 'matrix-mock-request';
 
 import {
     IStorageProvider,
@@ -20,7 +20,7 @@ export function createTestSynapseAdminClient(
 ): {
     client: SynapseAdminApis;
     mxClient: MatrixClient;
-    http: MockHttpBackend;
+    http: HttpBackend;
     hsUrl: string;
     accessToken: string;
 } {
@@ -208,7 +208,7 @@ describe('SynapseAdminApis', () => {
             };
 
             http.when("GET", "/_synapse/admin/v2/users").respond(200, (path, _content, req) => {
-                expect(req.opts.qs).toEqual(request);
+                expect(req.queryParams).toEqual(request);
                 expect(path).toEqual(`${hsUrl}/_synapse/admin/v2/users`);
                 return response;
             });
@@ -255,7 +255,7 @@ describe('SynapseAdminApis', () => {
 
             http.when("GET", "/_synapse/admin/v2/users").respond(200, (path, _content, req) => {
                 expect(path).toEqual(`${hsUrl}/_synapse/admin/v2/users`);
-                expect(req.opts.qs).toEqual(request);
+                expect(req.queryParams).toEqual(request);
                 return {
                     next_token: 'from-token',
                     total: 2,
@@ -269,7 +269,7 @@ describe('SynapseAdminApis', () => {
 
             http.when("GET", "/_synapse/admin/v2/users").respond(200, (path, _content, req) => {
                 expect(path).toEqual(`${hsUrl}/_synapse/admin/v2/users`);
-                expect(req.opts.qs).toEqual({ ...request, from: 'from-token' });
+                expect(req.queryParams).toEqual({ ...request, from: 'from-token' });
                 return {
                     total: 2,
                     users: [user2],
@@ -319,7 +319,7 @@ describe('SynapseAdminApis', () => {
             };
 
             http.when("GET", "/_synapse/admin/v1/rooms").respond(200, (path, _content, req) => {
-                expect(req.opts.qs).toEqual(request);
+                expect(req.queryParams).toEqual(request);
                 expect(path).toEqual(`${hsUrl}/_synapse/admin/v1/rooms`);
                 return response;
             });
@@ -358,7 +358,7 @@ describe('SynapseAdminApis', () => {
                 const roomId = "!room:example.org";
 
                 http.when("DELETE", "/_synapse/admin/v2/rooms").respond(200, (path, _content, req) => {
-                    expect(JSON.parse(req.opts.body)).toMatchObject({ purge: true });
+                    expect(JSON.parse(req.rawData)).toMatchObject({ purge: true });
                     expect(path).toEqual(`${hsUrl}/_synapse/admin/v2/rooms/${encodeURIComponent(roomId)}`);
                     return {};
                 });

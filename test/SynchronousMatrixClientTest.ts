@@ -1,5 +1,5 @@
 import * as simple from "simple-mock";
-import * as MockHttpBackend from 'matrix-mock-request';
+import HttpBackend from 'matrix-mock-request';
 
 import { IStorageProvider, MatrixClient, setRequestFn, SynchronousMatrixClient } from "../src";
 
@@ -15,8 +15,8 @@ class TestSyncMatrixClient extends SynchronousMatrixClient {
     }
 }
 
-export function createSyncTestClient(storage: IStorageProvider = null): { client: TestSyncMatrixClient, http: MockHttpBackend, hsUrl: string, accessToken: string } {
-    const http = new MockHttpBackend();
+export function createSyncTestClient(storage: IStorageProvider = null): { client: TestSyncMatrixClient, http: HttpBackend, hsUrl: string, accessToken: string } {
+    const http = new HttpBackend();
     const hsUrl = "https://localhost";
     const accessToken = "s3cret";
     const client = new MatrixClient(hsUrl, accessToken, storage);
