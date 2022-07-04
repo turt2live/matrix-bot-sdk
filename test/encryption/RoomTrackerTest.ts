@@ -119,7 +119,7 @@ describe('RoomTracker', () => {
             const tracker = new RoomTracker(client);
             await tracker.queueRoomCheck(roomId);
             expect(readSpy.callCount).toEqual(1);
-            expect(stateSpy.callCount).toEqual(1);
+            expect(stateSpy.callCount).toEqual(2); // m.room.encryption and m.room.history_visibility
             expect(storeSpy.callCount).toEqual(1);
         });
 
