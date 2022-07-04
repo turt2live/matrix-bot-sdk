@@ -87,7 +87,7 @@
     "get-port": "^5",
     "jest": "^28.1.0",
     "jsdoc": "^3.6.10",
-    "matrix-mock-request": "^1.2.3",
+    "matrix-mock-request": "^2.1.0",
     "simple-mock": "^0.8.0",
     "tmp": "^0.2.1",
     "ts-jest": "^28.0.3",
