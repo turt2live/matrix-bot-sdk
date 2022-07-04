@@ -1,5 +1,5 @@
 import * as simple from "simple-mock";
-import * as MockHttpBackend from 'matrix-mock-request';
+import HttpBackend from 'matrix-mock-request';
 import * as tmp from "tmp";
 
 import { expectArrayEquals } from "../TestUtils";
@@ -139,7 +139,7 @@ describe('Intent', () => {
         });
 
         it('should try to register the user when not flagged as such', async () => {
-            const http = new MockHttpBackend();
+            const http = new HttpBackend();
             setRequestFn(http.requestFn);
 
             const userId = "@someone:example.org";
@@ -178,7 +178,7 @@ describe('Intent', () => {
         });
 
         it('should gracefully handle M_USER_IN_USE', async () => {
-            const http = new MockHttpBackend();
+            const http = new HttpBackend();
             setRequestFn(http.requestFn);
 
             const userId = "@someone:example.org";
@@ -218,7 +218,7 @@ describe('Intent', () => {
         });
 
         it('should handle unexpected errors', async () => {
-            const http = new MockHttpBackend();
+            const http = new HttpBackend();
             setRequestFn(http.requestFn);
 
             const userId = "@someone:example.org";
