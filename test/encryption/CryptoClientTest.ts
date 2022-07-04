@@ -1,5 +1,5 @@
 import * as simple from "simple-mock";
-import * as MockHttpBackend from 'matrix-mock-request';
+import HttpBackend from 'matrix-mock-request';
 
 import {
     ConsoleLogger,
@@ -11,7 +11,7 @@ import {
 } from "../../src";
 import { createTestClient, TEST_DEVICE_ID } from "../TestUtils";
 
-function bindNullEngine(http: MockHttpBackend) {
+function bindNullEngine(http: HttpBackend) {
     http.when("POST", "/keys/upload").respond(200, (path, obj) => {
         expect(obj).toMatchObject({
 
@@ -182,7 +182,7 @@ describe('CryptoClient', () => {
     describe('sign', () => {
         const userId = "@alice:example.org";
         let client: MatrixClient;
-        let http: MockHttpBackend;
+        let http: HttpBackend;
 
         beforeEach(async () => {
             const { client: mclient, http: mhttp } = createTestClient(null, userId, true);
@@ -239,7 +239,7 @@ describe('CryptoClient', () => {
     describe('encryptRoomEvent', () => {
         const userId = "@alice:example.org";
         let client: MatrixClient;
-        let http: MockHttpBackend;
+        let http: HttpBackend;
 
         beforeEach(async () => {
             const { client: mclient, http: mhttp } = createTestClient(null, userId, true);
@@ -319,7 +319,7 @@ describe('CryptoClient', () => {
     describe('encryptMedia', () => {
         const userId = "@alice:example.org";
         let client: MatrixClient;
-        let http: MockHttpBackend;
+        let http: HttpBackend;
 
         beforeEach(async () => {
             const { client: mclient, http: mhttp } = createTestClient(null, userId, true);
@@ -383,7 +383,7 @@ describe('CryptoClient', () => {
     describe('decryptMedia', () => {
         const userId = "@alice:example.org";
         let client: MatrixClient;
-        let http: MockHttpBackend;
+        let http: HttpBackend;
 
         // Created from Element Web
         const testFileContents = "THIS IS A TEST FILE.";
