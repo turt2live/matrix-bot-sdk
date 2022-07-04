@@ -127,8 +127,11 @@ export class CryptoClient {
 
         const syncResp = await this.engine.machine.receiveSyncChanges(deviceMessages, deviceLists, otkCounts, unusedFallbackKeyAlgs);
         const decryptedToDeviceMessages = JSON.parse(syncResp);
-        // TODO: @@ Handle to-device messages
-        console.log(decryptedToDeviceMessages);
+        if (Array.isArray(decryptedToDeviceMessages?.events)) {
+            for (const msg of decryptedToDeviceMessages?.events) {
+                this.client.emit("to_device.decrypted", msg);
+            }
+        }
 
         await this.engine.run();
     }
