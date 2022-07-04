@@ -1,11 +1,7 @@
 import * as tmp from "tmp";
 import * as simple from "simple-mock";
-import { OlmMachine, Signatures } from "@turt2live/matrix-sdk-crypto-nodejs";
 
 import {
-    DeviceKeyAlgorithm,
-    DeviceKeyLabel,
-    EncryptionAlgorithm,
     EventKind,
     IJoinRoomStrategy,
     IPreprocessor,
@@ -25,15 +21,10 @@ import {
     setRequestFn,
 } from "../src";
 import { createTestClient, expectArrayEquals, TEST_DEVICE_ID } from "./TestUtils";
-import { InternalOlmMachineFactory } from "../src/e2ee/InternalOlmMachineFactory";
 
 tmp.setGracefulCleanup();
 
 describe('MatrixClient', () => {
-    afterEach(() => {
-        InternalOlmMachineFactory.FACTORY_OVERRIDE = null;
-    });
-
     describe("constructor", () => {
         it('should pass through the homeserver URL and access token', () => {
             const homeserverUrl = "https://example.org";

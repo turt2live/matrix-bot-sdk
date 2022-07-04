@@ -26,9 +26,6 @@ import { Space, SpaceCreateOptions } from "./models/Spaces";
 import { PowerLevelAction } from "./models/PowerLevelAction";
 import { CryptoClient } from "./e2ee/CryptoClient";
 import {
-    DeviceKeyAlgorithm,
-    DeviceKeyLabel,
-    EncryptionAlgorithm,
     FallbackKey,
     IToDeviceMessage,
     MultiUserDeviceListResponse,
