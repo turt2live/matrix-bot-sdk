@@ -772,21 +772,6 @@ export class MatrixClient extends EventEmitter {
 
         // Always process device messages first to ensure there are decryption keys
 
-        if (raw['groups']) {
-            const leave = raw['groups']['leave'] || {};
-            for (const groupId of Object.keys(leave)) {
-                await emitFn("unstable.group.leave", groupId, leave[groupId]);
-            }
-            const join = raw['groups']['join'] || {};
-            for (const groupId of Object.keys(join)) {
-                await emitFn("unstable.group.join", groupId, join[groupId]);
-            }
-            const invite = raw['groups']['invite'] || {};
-            for (const groupId of Object.keys(invite)) {
-                await emitFn("unstable.group.invite", groupId, invite[groupId]);
-            }
-        }
-
         if (raw['account_data'] && raw['account_data']['events']) {
             for (const event of raw['account_data']['events']) {
                 await emitFn("account_data", event);

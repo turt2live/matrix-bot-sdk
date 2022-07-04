@@ -15,7 +15,6 @@ const registration: IAppserviceRegistration = {
         users: [{
             regex: "@_example_.*:localhost",
             exclusive: true,
-            groupId: null,
         }],
         rooms: [],
         aliases: [],

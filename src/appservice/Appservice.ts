@@ -78,11 +78,6 @@ export interface IAppserviceRegistration {
              * The regular expression that the homeserver uses to determine if a user is in this namespace.
              */
             regex: string;
-
-            /**
-             * An optional group ID to enable flair for users in this namespace.
-             */
-            groupId?: string;
         }[];
 
         /**
