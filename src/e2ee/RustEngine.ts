@@ -11,6 +11,7 @@ import {
     KeysQueryRequest,
     ToDeviceRequest,
 } from "@matrix-org/matrix-sdk-crypto";
+
 import { MatrixClient } from "../MatrixClient";
 import { ICryptoRoomInformation } from "./ICryptoRoomInformation";
 import { EncryptionAlgorithm } from "../models/Crypto";
@@ -26,7 +27,7 @@ export class RustEngine {
     public async run() {
         const requests = await this.machine.outgoingRequests();
         for (const request of requests) {
-            switch(request.type) {
+            switch (request.type) {
                 case RequestType.KeysUpload:
                     await this.processKeysUploadRequest(request);
                     break;
@@ -93,10 +94,7 @@ export class RustEngine {
         // Note: we don't use the toDevice message requests returned by shareRoomKey() because they show up
         // in the pending requests for the machine, which means we can mark them as "sent" properly. This
         // way we avoid sending room keys twice.
-        const messages = JSON.parse(await this.machine.shareRoomKey(new RoomId(roomId), members, settings));
-        for (const msg of messages) {
-            const resp = await this.client.sendToDevices(msg.event_type, msg.messages);
-        }
+        await this.machine.shareRoomKey(new RoomId(roomId), members, settings);
         await this.run();
     }
 
