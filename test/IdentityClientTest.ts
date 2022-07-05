@@ -1,10 +1,10 @@
-import * as MockHttpBackend from 'matrix-mock-request';
+import HttpBackend from 'matrix-mock-request';
 import * as simple from "simple-mock";
 
 import { IdentityClient, MatrixClient, setRequestFn, Threepid } from "../src";
 import { createTestClient } from "./TestUtils";
 
-export async function createTestIdentityClient(): Promise<{ client: IdentityClient, mxClient: MatrixClient, http: MockHttpBackend, identityUrl: string, accessToken: string }> {
+export async function createTestIdentityClient(): Promise<{ client: IdentityClient, mxClient: MatrixClient, http: HttpBackend, identityUrl: string, accessToken: string }> {
     const result = createTestClient();
     const mxClient = result.client;
 
@@ -517,7 +517,7 @@ describe('IdentityClient', () => {
 
             const expectedInput = { test: 1234 };
             http.when("GET", "/test").respond(200, (path, content, req) => {
-                expect(req.opts.qs).toMatchObject(expectedInput);
+                expect(req.queryParams).toMatchObject(expectedInput);
                 return {};
             });
 
@@ -528,7 +528,7 @@ describe('IdentityClient', () => {
             const { client, http, accessToken } = await createTestIdentityClient();
 
             http.when("GET", "/test").respond(200, (path, content, req) => {
-                expect(req.opts.headers["Authorization"]).toEqual(`Bearer ${accessToken}`);
+                expect(req.headers["Authorization"]).toEqual(`Bearer ${accessToken}`);
                 return {};
             });
 
@@ -539,7 +539,7 @@ describe('IdentityClient', () => {
             const { client, http } = await createTestIdentityClient();
 
             http.when("PUT", "/test").respond(200, (path, content, req) => {
-                expect(req.opts.headers["Content-Type"]).toEqual("application/json");
+                expect(req.headers["Content-Type"]).toEqual("application/json");
                 return {};
             });
 
@@ -554,7 +554,7 @@ describe('IdentityClient', () => {
             Buffer.isBuffer = <any>(i => i === fakeJson);
 
             http.when("PUT", "/test").respond(200, (path, content, req) => {
-                expect(req.opts.headers["Content-Type"]).toEqual(contentType);
+                expect(req.headers["Content-Type"]).toEqual(contentType);
                 return {};
             });
 
@@ -585,7 +585,7 @@ describe('IdentityClient', () => {
             const timeout = 10;
 
             http.when("GET", "/test").respond(200, (path, content, req) => {
-                expect(req.opts.timeout).toBe(timeout);
+                expect((req as any).opts.timeout).toBe(timeout);
             });
 
             await Promise.all([client.doRequest("GET", "/test", null, null, timeout), http.flushAllExpected()]);

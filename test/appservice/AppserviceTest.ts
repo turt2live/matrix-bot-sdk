@@ -1,7 +1,7 @@
 import * as getPort from "get-port";
 import * as requestPromise from "request-promise";
 import * as simple from "simple-mock";
-import * as MockHttpBackend from 'matrix-mock-request';
+import HttpBackend from 'matrix-mock-request';
 
 import { Appservice, EventKind, Intent, IPreprocessor, setRequestFn } from "../../src";
 
@@ -1745,7 +1745,7 @@ describe('Appservice', () => {
             return null;
         };
 
-        const http = new MockHttpBackend();
+        const http = new HttpBackend();
         setRequestFn(http.requestFn);
 
         await appservice.begin();
@@ -1829,7 +1829,7 @@ describe('Appservice', () => {
             return null;
         };
 
-        const http = new MockHttpBackend();
+        const http = new HttpBackend();
         setRequestFn(http.requestFn);
 
         await appservice.begin();
@@ -2724,7 +2724,7 @@ describe('Appservice', () => {
             return null;
         };
 
-        const http = new MockHttpBackend();
+        const http = new HttpBackend();
         setRequestFn(http.requestFn);
 
         http.when("PUT", "/_matrix/client/v3/directory/list/appservice").respond(200, (path, content) => {

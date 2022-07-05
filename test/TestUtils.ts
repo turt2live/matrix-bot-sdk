@@ -1,5 +1,5 @@
-import * as MockHttpBackend from 'matrix-mock-request';
 import * as tmp from "tmp";
+import HttpBackend from "matrix-mock-request";
 
 import { IStorageProvider, MatrixClient, RustSdkCryptoStorageProvider, setRequestFn } from "../src";
 
@@ -32,11 +32,11 @@ export function createTestClient(
     crypto = false,
 ): {
     client: MatrixClient;
-    http: MockHttpBackend;
+    http: HttpBackend;
     hsUrl: string;
     accessToken: string;
 } {
-    const http = new MockHttpBackend();
+    const http = new HttpBackend();
     const hsUrl = "https://localhost";
     const accessToken = "s3cret";
     const client = new MatrixClient(hsUrl, accessToken, storage, crypto ? new RustSdkCryptoStorageProvider(tmp.dirSync().name) : null);

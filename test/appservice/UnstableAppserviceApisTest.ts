@@ -1,4 +1,4 @@
-import * as MockHttpBackend from 'matrix-mock-request';
+import HttpBackend from 'matrix-mock-request';
 
 import { IStorageProvider, MatrixClient, MSC2716BatchSendResponse, UnstableAppserviceApis } from "../../src";
 import { createTestClient } from "../TestUtils";
@@ -8,7 +8,7 @@ export function createTestUnstableClient(
 ): {
     client: UnstableAppserviceApis;
     mxClient: MatrixClient;
-    http: MockHttpBackend;
+    http: HttpBackend;
     hsUrl: string;
     accessToken: string;
 } {
@@ -37,9 +37,9 @@ describe('UnstableAppserviceApis', () => {
                 next_chunk_id: "evenchunkierid",
             } as MSC2716BatchSendResponse;
 
-            http.when("POST", `/_matrix/client/unstable/org.matrix.msc2716/rooms/`).respond(200, (path, content, { opts }) => {
+            http.when("POST", `/_matrix/client/unstable/org.matrix.msc2716/rooms/`).respond(200, (path, content, req) => {
                 expect(path).toEqual(`${hsUrl}/_matrix/client/unstable/org.matrix.msc2716/rooms/${encodeURIComponent(roomId)}/batch_send`);
-                expect(opts.qs).toMatchObject({
+                expect(req.queryParams).toMatchObject({
                     prev_event: prevEventId,
                     chunk_id: prevChunkId,
                 });
@@ -72,11 +72,11 @@ describe('UnstableAppserviceApis', () => {
             };
             const ts = 5000;
 
-            http.when("PUT", "/_matrix/client/v3/rooms").respond(200, (path, content, { opts }) => {
+            http.when("PUT", "/_matrix/client/v3/rooms").respond(200, (path, content, req) => {
                 const idx = path.indexOf(`${hsUrl}/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/send/${encodeURIComponent(eventType)}/`);
                 expect(idx).toBe(0);
                 expect(content).toMatchObject(eventContent);
-                expect(opts.qs).toMatchObject({ ts });
+                expect(req.queryParams).toMatchObject({ ts });
                 return { event_id: eventId };
             });
 
@@ -100,11 +100,11 @@ describe('UnstableAppserviceApis', () => {
             };
             const ts = 5000;
 
-            http.when("PUT", "/_matrix/client/v3/rooms").respond(200, (path, content, { opts }) => {
+            http.when("PUT", "/_matrix/client/v3/rooms").respond(200, (path, content, req) => {
                 const idx = path.indexOf(`${hsUrl}/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/state/${encodeURIComponent(eventType)}/`);
                 expect(idx).toBe(0);
                 expect(content).toMatchObject(eventContent);
-                expect(opts.qs).toMatchObject({ ts });
+                expect(req.queryParams).toMatchObject({ ts });
                 return { event_id: eventId };
             });
 

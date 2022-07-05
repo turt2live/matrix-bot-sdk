@@ -146,7 +146,7 @@ describe('MatrixClient', () => {
 
             // noinspection TypeScriptValidateJSTypes
             http.when("GET", "/test").respond(200, (path, content, req) => {
-                expect(req.opts.qs).toMatchObject(expectedInput);
+                expect(req.queryParams).toMatchObject(expectedInput);
                 return {};
             });
 
@@ -158,7 +158,7 @@ describe('MatrixClient', () => {
 
             // noinspection TypeScriptValidateJSTypes
             http.when("GET", "/test").respond(200, (path, content, req) => {
-                expect(req.opts.headers["Authorization"]).toEqual(`Bearer ${accessToken}`);
+                expect(req.headers["Authorization"]).toEqual(`Bearer ${accessToken}`);
                 return {};
             });
 
@@ -170,7 +170,7 @@ describe('MatrixClient', () => {
 
             // noinspection TypeScriptValidateJSTypes
             http.when("PUT", "/test").respond(200, (path, content, req) => {
-                expect(req.opts.headers["Content-Type"]).toEqual("application/json");
+                expect(req.headers["Content-Type"]).toEqual("application/json");
                 return {};
             });
 
@@ -186,7 +186,7 @@ describe('MatrixClient', () => {
 
             // noinspection TypeScriptValidateJSTypes
             http.when("PUT", "/test").respond(200, (path, content, req) => {
-                expect(req.opts.headers["Content-Type"]).toEqual(contentType);
+                expect(req.headers["Content-Type"]).toEqual(contentType);
                 return {};
             });
 
@@ -219,7 +219,7 @@ describe('MatrixClient', () => {
 
             // noinspection TypeScriptValidateJSTypes
             http.when("GET", "/test").respond(200, (path, content, req) => {
-                expect(req.opts.timeout).toBe(timeout);
+                expect((req as any).opts.timeout).toBe(timeout);
             });
 
             await Promise.all([client.doRequest("GET", "/test", null, null, timeout), http.flushAllExpected()]);
@@ -235,8 +235,8 @@ describe('MatrixClient', () => {
 
             // noinspection TypeScriptValidateJSTypes
             http.when("GET", "/test").respond(200, (path, content, req) => {
-                expect(req.opts.qs["user_id"]).toBe(userId);
-                expect(req.opts.qs["org.matrix.msc3202.device_id"]).toBe(undefined);
+                expect(req.queryParams["user_id"]).toBe(userId);
+                expect(req.queryParams["org.matrix.msc3202.device_id"]).toBe(undefined);
             });
 
             await Promise.all([client.doRequest("GET", "/test"), http.flushAllExpected()]);
@@ -251,8 +251,8 @@ describe('MatrixClient', () => {
 
             // noinspection TypeScriptValidateJSTypes
             http.when("GET", "/test").respond(200, (path, content, req) => {
-                expect(req.opts.qs["user_id"]).toBe(userId);
-                expect(req.opts.qs["org.matrix.msc3202.device_id"]).toBe(deviceId);
+                expect(req.queryParams["user_id"]).toBe(userId);
+                expect(req.queryParams["org.matrix.msc3202.device_id"]).toBe(deviceId);
             });
 
             await Promise.all([client.doRequest("GET", "/test"), http.flushAllExpected()]);
@@ -267,8 +267,8 @@ describe('MatrixClient', () => {
 
             // noinspection TypeScriptValidateJSTypes
             http.when("GET", "/test").respond(200, (path, content, req) => {
-                expect(req.opts.qs?.["user_id"]).toBe(undefined);
-                expect(req.opts.qs?.["org.matrix.msc3202.device_id"]).toBe(undefined);
+                expect(req.queryParams?.["user_id"]).toBe(undefined);
+                expect(req.queryParams?.["org.matrix.msc3202.device_id"]).toBe(undefined);
             });
 
             await Promise.all([client.doRequest("GET", "/test"), http.flushAllExpected()]);
@@ -1256,7 +1256,7 @@ describe('MatrixClient', () => {
             // noinspection TypeScriptValidateJSTypes
             http.when("GET", "/_matrix/client/v3/sync").respond(200, (path, content, req) => {
                 expect(req).toBeDefined();
-                expect(req.opts.qs.filter).toEqual(filterId);
+                expect(req.queryParams.filter).toEqual(filterId);
                 client.stop();
                 return { next_batch: "1234" };
             });
@@ -1294,13 +1294,13 @@ describe('MatrixClient', () => {
             // noinspection TypeScriptValidateJSTypes
             http.when("GET", "/_matrix/client/v3/sync").respond(200, (path, content, req) => {
                 expect(req).toBeDefined();
-                expect(req.opts.qs.since).toBeUndefined();
+                expect(req.queryParams.since).toBeUndefined();
                 return { next_batch: secondToken };
             });
             // noinspection TypeScriptValidateJSTypes
             http.when("GET", "/_matrix/client/v3/sync").respond(200, (path, content, req) => {
                 expect(req).toBeDefined();
-                expect(req.opts.qs.since).toEqual(secondToken);
+                expect(req.queryParams.since).toEqual(secondToken);
                 client.stop();
                 return { next_batch: secondToken };
             });
@@ -1341,7 +1341,7 @@ describe('MatrixClient', () => {
             http.when("GET", "/_matrix/client/v3/sync").respond(200, (path, content, req) => {
                 expect(req).toBeDefined();
 
-                expect(req.opts.qs.since).toEqual(syncToken);
+                expect(req.queryParams.since).toEqual(syncToken);
                 client.stop();
 
                 return { next_batch: syncToken };
@@ -1376,14 +1376,14 @@ describe('MatrixClient', () => {
             // noinspection TypeScriptValidateJSTypes
             http.when("GET", "/_matrix/client/v3/sync").respond(200, (path, content, req) => {
                 expect(req).toBeDefined();
-                expect(req.opts.qs.presence).toBeUndefined();
+                expect(req.queryParams.presence).toBeUndefined();
                 client.syncingPresence = presence;
                 return { next_batch: "testing" };
             });
             // noinspection TypeScriptValidateJSTypes
             http.when("GET", "/_matrix/client/v3/sync").respond(200, (path, content, req) => {
                 expect(req).toBeDefined();
-                expect(req.opts.qs.presence).toEqual(presence);
+                expect(req.queryParams.presence).toEqual(presence);
                 client.stop();
                 return { next_batch: "testing" };
             });
@@ -1423,66 +1423,6 @@ describe('MatrixClient', () => {
             realClient.on("account_data", spy);
 
             await client.processSync({ account_data: { events: events } });
-            expect(spy.callCount).toBe(1);
-        });
-
-        it('should process left groups', async () => {
-            const { client: realClient } = createTestClient();
-            const client = <ProcessSyncClient>(<any>realClient);
-
-            const userId = "@syncing:example.org";
-            const testGroup = { profile: { name: "Test Group" } };
-            const testGroupId = "+test:example.org";
-
-            client.userId = userId;
-
-            const spy = simple.stub().callFn((gid, info) => {
-                expect(info).toMatchObject(testGroup);
-                expect(gid).toEqual(testGroupId);
-            });
-            realClient.on("unstable.group.leave", spy);
-
-            await client.processSync({ groups: { leave: { [testGroupId]: testGroup } } });
-            expect(spy.callCount).toBe(1);
-        });
-
-        it('should process joined groups', async () => {
-            const { client: realClient } = createTestClient();
-            const client = <ProcessSyncClient>(<any>realClient);
-
-            const userId = "@syncing:example.org";
-            const testGroup = { profile: { name: "Test Group" } };
-            const testGroupId = "+test:example.org";
-
-            client.userId = userId;
-
-            const spy = simple.stub().callFn((gid, info) => {
-                expect(info).toMatchObject(testGroup);
-                expect(gid).toEqual(testGroupId);
-            });
-            realClient.on("unstable.group.join", spy);
-
-            await client.processSync({ groups: { join: { [testGroupId]: testGroup } } });
-            expect(spy.callCount).toBe(1);
-        });
-
-        it('should process group invites', async () => {
-            const { client: realClient } = createTestClient();
-            const client = <ProcessSyncClient>(<any>realClient);
-
-            const userId = "@syncing:example.org";
-            const testGroup = { profile: { name: "Test Group" } };
-            const testGroupId = "+test:example.org";
-
-            client.userId = userId;
-
-            const spy = simple.stub().callFn((gid, info) => {
-                expect(info).toMatchObject(testGroup);
-                expect(gid).toEqual(testGroupId);
-            });
-            realClient.on("unstable.group.invite", spy);
-
-            await client.processSync({ groups: { invite: { [testGroupId]: testGroup } } });
             expect(spy.callCount).toBe(1);
         });
 
@@ -2737,7 +2677,7 @@ describe('MatrixClient', () => {
             // noinspection TypeScriptValidateJSTypes
             http.when("GET", "/_matrix/client/v3/rooms").respond(200, (path, content, req) => {
                 expect(path).toEqual(`${hsUrl}/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/context/${encodeURIComponent(targetEvent.eventId)}`);
-                expect(req.opts.qs['limit']).toEqual(limit);
+                expect(req.queryParams['limit']).toEqual(limit);
                 return {
                     event: targetEvent,
                     events_before: before,
@@ -2894,9 +2834,9 @@ describe('MatrixClient', () => {
             // noinspection TypeScriptValidateJSTypes
             http.when("POST", "/_matrix/client/v3/join").respond(200, (path, content, req) => {
                 expect(path).toEqual(`${hsUrl}/_matrix/client/v3/join/${encodeURIComponent(roomId)}`);
-                expect(req.opts.qs['server_name'].length).toEqual(serverNames.length);
+                expect(req.queryParams['server_name'].length).toEqual(serverNames.length);
                 for (let i = 0; i < serverNames.length; i++) {
-                    expect(req.opts.qs['server_name'][i]).toEqual(serverNames[i]);
+                    expect(req.queryParams['server_name'][i]).toEqual(serverNames[i]);
                 }
                 return { room_id: roomId };
             });
@@ -3110,7 +3050,7 @@ describe('MatrixClient', () => {
             // noinspection TypeScriptValidateJSTypes
             http.when("GET", "/_matrix/client/v3/rooms").respond(200, (path, content, req) => {
                 expect(path).toEqual(`${hsUrl}/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/members`);
-                expect(req.opts.qs.at).toEqual(atToken);
+                expect(req.queryParams.at).toEqual(atToken);
                 return { chunk: memberEvents };
             });
 
@@ -3150,8 +3090,8 @@ describe('MatrixClient', () => {
             // noinspection TypeScriptValidateJSTypes
             http.when("GET", "/_matrix/client/v3/rooms").respond(200, (path, content, req) => {
                 expect(path).toEqual(`${hsUrl}/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/members`);
-                expectArrayEquals(forMemberships, req.opts.qs.membership);
-                expectArrayEquals(forNotMemberships, req.opts.qs.not_membership);
+                expectArrayEquals(forMemberships, (req.queryParams as any).membership);
+                expectArrayEquals(forNotMemberships, (req.queryParams as any).not_membership);
                 return { chunk: memberEvents };
             });
 
@@ -5444,9 +5384,9 @@ describe('MatrixClient', () => {
             // noinspection TypeScriptValidateJSTypes
             http.when("POST", "/_matrix/media/v3/upload").respond(200, (path, content, req) => {
                 expect(content).toBeDefined();
-                expect(req.opts.qs.filename).toEqual(filename);
-                expect(req.opts.headers["Content-Type"]).toEqual(contentType);
-                expect(req.opts.body).toEqual(data);
+                expect(req.queryParams.filename).toEqual(filename);
+                expect(req.headers["Content-Type"]).toEqual(contentType);
+                expect(req.rawData).toEqual(data);
                 return { content_uri: uri };
             });
 
@@ -5467,9 +5407,9 @@ describe('MatrixClient', () => {
             // noinspection TypeScriptValidateJSTypes
             http.when("POST", "/_matrix/media/v3/upload").respond(200, (path, content, req) => {
                 expect(content).toBeDefined();
-                expect(req.opts.qs.filename).toEqual(filename);
-                expect(req.opts.headers["Content-Type"]).toEqual(contentType);
-                expect(req.opts.body).toEqual(data);
+                expect(req.queryParams.filename).toEqual(filename);
+                expect(req.headers["Content-Type"]).toEqual(contentType);
+                expect(req.rawData).toEqual(data);
                 return { content_uri: uri };
             });
 
@@ -5488,7 +5428,7 @@ describe('MatrixClient', () => {
             // noinspection TypeScriptValidateJSTypes
             http.when("GET", "/_matrix/media/v3/download/").respond(200, (path, _, req) => {
                 expect(path).toContain("/_matrix/media/v3/download/" + urlPart);
-                expect(req.opts.encoding).toEqual(null);
+                expect((req as any).opts.encoding).toEqual(null);
                 // TODO: Honestly, I have no idea how to coerce the mock library to return headers or buffers,
                 // so this is left as a fun activity.
                 // return {
@@ -5526,7 +5466,7 @@ describe('MatrixClient', () => {
             http.when("POST", "/_matrix/media/v3/upload").respond(200, (path, content, req) => {
                 expect(content).toBeDefined();
                 // HACK: We know the mock library will return JSON
-                expect(req.opts.headers["Content-Type"]).toEqual("application/json");
+                expect(req.headers["Content-Type"]).toEqual("application/json");
                 //expect(req.opts.body).toEqual(data); // XXX: We can't verify that the content was uploaded correctly
                 return { content_uri: uri };
             });
