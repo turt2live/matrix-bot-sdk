@@ -1,8 +1,12 @@
 import {
-    decryptFile as rustDecryptFile,
-    encryptFile as rustEncryptFile,
-} from "@turt2live/matrix-sdk-crypto-nodejs";
-import { DeviceId, OlmMachine, UserId, DeviceLists, RoomId } from "@matrix-org/matrix-sdk-crypto";
+    DeviceId,
+    OlmMachine,
+    UserId,
+    DeviceLists,
+    RoomId,
+    Attachment,
+    EncryptedAttachment,
+} from "@matrix-org/matrix-sdk-crypto";
 
 import { MatrixClient } from "../MatrixClient";
 import { LogService } from "../logging/LogService";
@@ -217,16 +221,11 @@ export class CryptoClient {
      */
     @requiresReady()
     public async encryptMedia(file: Buffer): Promise<{ buffer: Buffer, file: Omit<EncryptedFile, "url"> }> {
-        // TODO: @@ Use rust-sdk instead - https://github.com/matrix-org/matrix-rust-sdk/issues/796
-        const encrypted = rustEncryptFile(file);
+        const encrypted = Attachment.encrypt(file);
+        const info = JSON.parse(encrypted.mediaEncryptionInfo);
         return {
-            buffer: encrypted.data,
-            file: {
-                iv: encrypted.file.iv,
-                key: encrypted.file.web_key,
-                v: encrypted.file.v,
-                hashes: encrypted.file.hashes as { sha256: string },
-            },
+            buffer: Buffer.from(encrypted.encryptedData),
+            file: info,
         };
     }
 
@@ -237,10 +236,12 @@ export class CryptoClient {
      */
     @requiresReady()
     public async decryptMedia(file: EncryptedFile): Promise<Buffer> {
-        // TODO: @@ Use rust-sdk instead - https://github.com/matrix-org/matrix-rust-sdk/issues/796
-        return rustDecryptFile((await this.client.downloadContent(file.url)).data, {
-            ...file,
-            web_key: file.key as any, // we know it is compatible
-        });
+        const contents = (await this.client.downloadContent(file.url)).data;
+        const encrypted = new EncryptedAttachment(
+            contents,
+            JSON.stringify(file),
+        );
+        const decrypted = Attachment.decrypt(encrypted);
+        return Buffer.from(decrypted);
     }
 }
