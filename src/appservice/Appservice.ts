@@ -2,6 +2,7 @@ import * as express from "express";
 import { EventEmitter } from "events";
 import * as morgan from "morgan";
 import * as LRU from "lru-cache";
+import { stringify } from "querystring";
 
 import { Intent } from "./Intent";
 import {
@@ -17,6 +18,7 @@ import {
     MemoryStorageProvider,
     Metrics,
     OTKAlgorithm,
+    redactObjectForLogging,
 } from "..";
 import { MatrixBridge } from "./MatrixBridge";
 import { IApplicationServiceProtocol } from "./http_responses";
@@ -263,7 +265,14 @@ export class Appservice extends EventEmitter {
         this.cryptoStorage = options.cryptoStorage;
 
         this.app.use(express.json({ limit: Number.MAX_SAFE_INTEGER })); // disable limits, use a reverse proxy
-        this.app.use(morgan("combined", {
+        morgan.token('url-safe', (req: express.Request) =>
+            `${req.path}?${stringify(redactObjectForLogging(req.query))}`,
+        );
+
+        this.app.use(morgan({
+            // Same as "combined", but with sensitive values removed from requests.
+            format: ':remote-addr - :remote-user [:date[clf]] ":method :url-safe HTTP/:http-version" :status :res[content-length] ":referrer" ":user-agent"',
+        }, {
             stream: { write: LogService.info.bind(LogService, 'Appservice') },
         }));
 
