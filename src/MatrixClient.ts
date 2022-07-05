@@ -45,7 +45,7 @@ import { IWhoAmI } from "./models/Account";
 import { RustSdkCryptoStorageProvider } from "./storage/RustSdkCryptoStorageProvider";
 import { DMs } from "./DMs";
 import { ServerVersions } from "./models/ServerVersions";
-import { RoomCreateOptions, RoomPreset } from "./models/Room";
+import { RoomCreateOptions } from "./models/CreateRoom";
 
 const SYNC_BACKOFF_MIN_MS = 5000;
 const SYNC_BACKOFF_MAX_MS = 15000;
@@ -1716,7 +1716,7 @@ export class MatrixClient extends EventEmitter {
         const roomCreateOpts: RoomCreateOptions = {
             name: opts.name,
             topic: opts.topic || "",
-            preset: opts.isPublic ? RoomPreset.PublicChat : RoomPreset.PrivateChat,
+            preset: opts.isPublic ? "public_chat" : "private_chat",
             room_alias_name: opts.localpart,
             initial_state: [
                 {

@@ -1,7 +1,6 @@
 import { MatrixClient } from "./MatrixClient";
 import { EncryptionAlgorithm } from "./models/Crypto";
 import { LogService } from "./logging/LogService";
-import { RoomPreset } from "./models/Room";
 
 /**
  * Handles DM (direct messages) matching between users. Note that bots which
@@ -133,7 +132,7 @@ export class DMs {
             roomId = await this.client.createRoom({
                 invite: [userId],
                 is_direct: true,
-                preset: RoomPreset.TrustedPrivateChat,
+                preset: "trusted_private_chat",
                 initial_state: hasKeys ? [{
                     type: "m.room.encryption",
                     state_key: "",

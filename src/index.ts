@@ -54,7 +54,7 @@ export * from "./models/Account";
 export * from "./models/PowerLevelAction";
 export * from "./models/ServerVersions";
 export * from "./models/MatrixError";
-export * from "./models/Room";
+export * from "./models/CreateRoom";
 
 // Unstable models
 export * from "./models/unstable/MediaInfo";
