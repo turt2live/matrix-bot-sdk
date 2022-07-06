@@ -269,12 +269,11 @@ export class Appservice extends EventEmitter {
             `${req.path}?${stringify(redactObjectForLogging(req.query ?? {}))}`,
         );
 
-        this.app.use(morgan({
+        this.app.use(morgan(
             // Same as "combined", but with sensitive values removed from requests.
-            format: ':remote-addr - :remote-user [:date[clf]] ":method :url-safe HTTP/:http-version" :status :res[content-length] ":referrer" ":user-agent"',
-        }, {
-            stream: { write: LogService.info.bind(LogService, 'Appservice') },
-        }));
+            ':remote-addr - :remote-user [:date[clf]] ":method :url-safe HTTP/:http-version" :status :res[content-length] ":referrer" ":user-agent"',
+            { stream: { write: LogService.info.bind(LogService, 'Appservice') } },
+        ));
 
         // ETag headers break the tests sometimes, and we don't actually need them anyways for
         // appservices - none of this should be cached.
@@ -609,8 +608,11 @@ export class Appservice extends EventEmitter {
         return event;
     }
 
-    private processMembershipEvent(event: any): void {
+    private async processMembershipEvent(event: any): Promise<void> {
         if (!event["content"]) return;
+
+        // Update the target intent's joined rooms (fixes transition errors with the cache, like join->kick->join)
+        await this.getIntentForUserId(event['state_key']).refreshJoinedRooms();
 
         const targetMembership = event["content"]["membership"];
         if (targetMembership === "join") {
@@ -831,7 +833,7 @@ export class Appservice extends EventEmitter {
                     this.emit("room.message", event["room_id"], event);
                 }
                 if (event['type'] === 'm.room.member' && this.isNamespacedUser(event['state_key'])) {
-                    this.processMembershipEvent(event);
+                    await this.processMembershipEvent(event);
                 }
                 if (event['type'] === 'm.room.tombstone' && event['state_key'] === '') {
                     this.emit("room.archived", event['room_id'], event);
