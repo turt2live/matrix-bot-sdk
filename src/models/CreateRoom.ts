@@ -16,6 +16,7 @@ import { PowerLevelsEventContent } from "./events/PowerLevelsEvent";
  * - join_rules to `public`
  * - history_visibility to `shared`
  * - guest_access to `forbidden`
+ * @category Models
  */
 export type RoomPreset = "private_chat"|"trusted_private_chat"|"public_chat";
 
@@ -23,11 +24,16 @@ export type RoomPreset = "private_chat"|"trusted_private_chat"|"public_chat";
  * "public" visibility indicates that the room will be shown in the published room list.
  *
  * "private" visibility indicates that the room will not be included in published room list.
+ * @category Models
  */
 export type RoomVisibility = "public"|"private";
 
 export type RoomCreationContent = Record<string, unknown> & { "m.federate"?: boolean };
 
+/**
+ * The options available when creating a room.
+ * @category Models
+ */
 export interface RoomCreateOptions {
     /**
      * Extra keys, such as m.federate, to be added to the content of the m.room.create event.

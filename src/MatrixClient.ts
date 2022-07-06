@@ -1343,7 +1343,7 @@ export class MatrixClient extends EventEmitter {
      * Creates a room. See the RoomCreateOptions interface
      * for more information on what to provide for `properties`. Note that creating
      * a room may cause the bot/appservice to raise a join event.
-     * @param {any} properties the properties of the room.
+     * @param {RoomCreateOptions} properties the properties of the room.
      * @returns {Promise<string>} resolves to the room ID that represents the room
      */
     @timedMatrixClientFunctionCall()
