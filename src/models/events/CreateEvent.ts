@@ -22,7 +22,7 @@ export interface PreviousRoomInfo {
  * @category Matrix event contents
  * @see CreateEvent
  */
-export interface CreateEventContent {
+export interface CreateEventContent extends Record<string, unknown> {
     /**
      * The user ID who created the room.
      */
@@ -42,6 +42,11 @@ export interface CreateEventContent {
      * Information about the old room.
      */
     predecessor?: PreviousRoomInfo;
+
+    /**
+     * The type of the room, if applicable. For example, `m.space`.
+     */
+    type?: string;
 }
 
 /**

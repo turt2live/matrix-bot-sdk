@@ -42,6 +42,7 @@ import { IWhoAmI } from "./models/Account";
 import { RustSdkCryptoStorageProvider } from "./storage/RustSdkCryptoStorageProvider";
 import { DMs } from "./DMs";
 import { ServerVersions } from "./models/ServerVersions";
+import { RoomCreateOptions } from "./models/CreateRoom";
 
 const SYNC_BACKOFF_MIN_MS = 5000;
 const SYNC_BACKOFF_MAX_MS = 15000;
@@ -1336,15 +1337,14 @@ export class MatrixClient extends EventEmitter {
     }
 
     /**
-     * Creates a room. This does not break out the various options for creating a room
-     * due to the large number of possibilities. See the /createRoom endpoint in the
-     * spec for more information on what to provide for `properties`. Note that creating
+     * Creates a room. See the RoomCreateOptions interface
+     * for more information on what to provide for `properties`. Note that creating
      * a room may cause the bot/appservice to raise a join event.
-     * @param {any} properties the properties of the room. See the spec for more information
+     * @param {RoomCreateOptions} properties the properties of the room.
      * @returns {Promise<string>} resolves to the room ID that represents the room
      */
     @timedMatrixClientFunctionCall()
-    public createRoom(properties: any = {}): Promise<string> {
+    public createRoom(properties: RoomCreateOptions = {}): Promise<string> {
         return this.doRequest("POST", "/_matrix/client/v3/createRoom", null, properties).then(response => {
             return response['room_id'];
         });
@@ -1695,10 +1695,10 @@ export class MatrixClient extends EventEmitter {
      */
     @timedMatrixClientFunctionCall()
     public async createSpace(opts: SpaceCreateOptions): Promise<Space> {
-        const roomCreateOpts = {
+        const roomCreateOpts: RoomCreateOptions = {
             name: opts.name,
             topic: opts.topic || "",
-            preset: opts.isPublic ? 'public_chat' : 'private_chat',
+            preset: opts.isPublic ? "public_chat" : "private_chat",
             room_alias_name: opts.localpart,
             initial_state: [
                 {
@@ -1708,7 +1708,7 @@ export class MatrixClient extends EventEmitter {
                         history_visibility: opts.isPublic ? 'world_readable' : 'shared',
                     },
                 },
-            ] as unknown[],
+            ],
             creation_content: {
                 type: "m.space",
             },
