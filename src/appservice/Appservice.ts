@@ -609,8 +609,11 @@ export class Appservice extends EventEmitter {
         return event;
     }
 
-    private processMembershipEvent(event: any): void {
+    private async processMembershipEvent(event: any): Promise<void> {
         if (!event["content"]) return;
+
+        // Update the target intent's joined rooms (fixes transition errors with the cache, like join->kick->join)
+        await this.getIntentForUserId(event['state_key']).refreshJoinedRooms();
 
         const targetMembership = event["content"]["membership"];
         if (targetMembership === "join") {
@@ -831,7 +834,7 @@ export class Appservice extends EventEmitter {
                     this.emit("room.message", event["room_id"], event);
                 }
                 if (event['type'] === 'm.room.member' && this.isNamespacedUser(event['state_key'])) {
-                    this.processMembershipEvent(event);
+                    await this.processMembershipEvent(event);
                 }
                 if (event['type'] === 'm.room.tombstone' && event['state_key'] === '') {
                     this.emit("room.archived", event['room_id'], event);
