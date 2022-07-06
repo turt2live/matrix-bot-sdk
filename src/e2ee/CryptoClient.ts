@@ -24,7 +24,7 @@ import { EncryptedRoomEvent } from "../models/events/EncryptedRoomEvent";
 import { RoomEvent } from "../models/events/RoomEvent";
 import { EncryptedFile } from "../models/events/MessageEvent";
 import { RustSdkCryptoStorageProvider } from "../storage/RustSdkCryptoStorageProvider";
-import { RustEngine } from "./RustEngine";
+import { RustEngine, SYNC_LOCK_NAME } from "./RustEngine";
 import { MembershipEvent } from "../models/events/MembershipEvent";
 
 /**
@@ -94,7 +94,6 @@ export class CryptoClient {
         this.deviceCurve25519 = identity.curve25519.toBase64();
         this.deviceEd25519 = identity.ed25519.toBase64();
 
-
         this.client.on("room.event", async (roomId: string, event: any) => {
             if (typeof event['state_key'] !== 'string') return;
             if (event['type'] === 'm.room.member') {
@@ -143,15 +142,17 @@ export class CryptoClient {
             changedDeviceLists.map(u => new UserId(u)),
             leftDeviceLists.map(u => new UserId(u)));
 
-        const syncResp = await this.engine.machine.receiveSyncChanges(deviceMessages, deviceLists, otkCounts, unusedFallbackKeyAlgs);
-        const decryptedToDeviceMessages = JSON.parse(syncResp);
-        if (Array.isArray(decryptedToDeviceMessages?.events)) {
-            for (const msg of decryptedToDeviceMessages.events) {
-                this.client.emit("to_device.decrypted", msg);
+        await this.engine.lock.acquire(SYNC_LOCK_NAME, async () => {
+            const syncResp = await this.engine.machine.receiveSyncChanges(deviceMessages, deviceLists, otkCounts, unusedFallbackKeyAlgs);
+            const decryptedToDeviceMessages = JSON.parse(syncResp);
+            if (Array.isArray(decryptedToDeviceMessages?.events)) {
+                for (const msg of decryptedToDeviceMessages.events) {
+                    this.client.emit("to_device.decrypted", msg);
+                }
             }
-        }
 
-        await this.engine.run();
+            await this.engine.run();
+        });
     }
 
     /**

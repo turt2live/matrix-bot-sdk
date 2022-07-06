@@ -11,6 +11,7 @@ import {
     KeysQueryRequest,
     ToDeviceRequest,
 } from "@matrix-org/matrix-sdk-crypto";
+import * as AsyncLock from "async-lock";
 
 import { MatrixClient } from "../MatrixClient";
 import { ICryptoRoomInformation } from "./ICryptoRoomInformation";
@@ -20,7 +21,14 @@ import { EncryptionEvent } from "../models/events/EncryptionEvent";
 /**
  * @internal
  */
+export const SYNC_LOCK_NAME = "sync";
+
+/**
+ * @internal
+ */
 export class RustEngine {
+    public readonly lock = new AsyncLock();
+
     public constructor(public readonly machine: OlmMachine, private client: MatrixClient) {
     }
 
@@ -54,12 +62,14 @@ export class RustEngine {
     }
 
     public async addTrackedUsers(userIds: string[]) {
-        await this.machine.updateTrackedUsers(userIds.map(u => new UserId(u)));
+        await this.lock.acquire(SYNC_LOCK_NAME, async () => {
+            await this.machine.updateTrackedUsers(userIds.map(u => new UserId(u)));
 
-        const keysClaim = await this.machine.getMissingSessions([]);
-        if (keysClaim) {
-            await this.processKeysClaimRequest(keysClaim);
-        }
+            const keysClaim = await this.machine.getMissingSessions([]);
+            if (keysClaim) {
+                await this.processKeysClaimRequest(keysClaim);
+            }
+        });
     }
 
     public async prepareEncrypt(roomId: string, roomInfo: ICryptoRoomInformation) {
@@ -95,10 +105,12 @@ export class RustEngine {
         settings.rotationPeriod = BigInt(encEv.rotationPeriodMs);
         settings.rotationPeriodMessages = BigInt(encEv.rotationPeriodMessages);
 
-        const requests = JSON.parse(await this.machine.shareRoomKey(new RoomId(roomId), members, settings));
-        for (const req of requests) {
-            await this.actuallyProcessToDeviceRequest(req.txn_id, req.event_type, req.messages);
-        }
+        await this.lock.acquire(roomId, async () => {
+            const requests = JSON.parse(await this.machine.shareRoomKey(new RoomId(roomId), members, settings));
+            for (const req of requests) {
+                await this.actuallyProcessToDeviceRequest(req.txn_id, req.event_type, req.messages);
+            }
+        });
     }
 
     private async processKeysClaimRequest(request: KeysClaimRequest) {
