@@ -266,7 +266,7 @@ export class Appservice extends EventEmitter {
 
         this.app.use(express.json({ limit: Number.MAX_SAFE_INTEGER })); // disable limits, use a reverse proxy
         morgan.token('url-safe', (req: express.Request) =>
-            `${req.path}?${stringify(redactObjectForLogging(req.query))}`,
+            `${req.path}?${stringify(redactObjectForLogging(req.query ?? {}))}`,
         );
 
         this.app.use(morgan({
