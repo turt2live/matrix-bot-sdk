@@ -1,4 +1,5 @@
 import { PowerLevelsEventContent } from "./events/PowerLevelsEvent";
+import { CreateEventContent } from "./events/CreateEvent";
 
 /**
  * "private_chat" sets:
@@ -18,7 +19,7 @@ import { PowerLevelsEventContent } from "./events/PowerLevelsEvent";
  * - guest_access to `forbidden`
  * @category Models
  */
-export type RoomPreset = "private_chat"|"trusted_private_chat"|"public_chat";
+export type RoomPreset = "private_chat" | "trusted_private_chat" | "public_chat";
 
 /**
  * "public" visibility indicates that the room will be shown in the published room list.
@@ -26,9 +27,7 @@ export type RoomPreset = "private_chat"|"trusted_private_chat"|"public_chat";
  * "private" visibility indicates that the room will not be included in published room list.
  * @category Models
  */
-export type RoomVisibility = "public"|"private";
-
-export type RoomCreationContent = Record<string, unknown> & { "m.federate"?: boolean };
+export type RoomVisibility = "public" | "private";
 
 /**
  * The options available when creating a room.
@@ -40,7 +39,7 @@ export interface RoomCreateOptions {
      * The server will overwrite the following keys: `creator`, `room_version`.
      * Future versions of the specification may allow the server to overwrite other keys.
      */
-    creation_content?: RoomCreationContent;
+    creation_content?: CreateEventContent;
 
     /**
      * A list of state events to set in the new room.
@@ -141,5 +140,5 @@ export interface RoomCreateOptions {
      * Sets the visibility of the room
      * Rooms default to private visibility if this key is not included.
      */
-    visibility?: "public"|"private";
+    visibility?: RoomVisibility;
 }
