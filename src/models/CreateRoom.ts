@@ -39,7 +39,7 @@ export interface RoomCreateOptions {
      * The server will overwrite the following keys: `creator`, `room_version`.
      * Future versions of the specification may allow the server to overwrite other keys.
      */
-    creation_content?: CreateEventContent;
+    creation_content?: Omit<CreateEventContent, "creator">;
 
     /**
      * A list of state events to set in the new room.
