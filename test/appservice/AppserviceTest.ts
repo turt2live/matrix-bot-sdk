@@ -1429,6 +1429,9 @@ describe('Appservice', () => {
             return null;
         };
 
+        const intent = appservice.getIntentForSuffix("test");
+        intent.refreshJoinedRooms = () => Promise.resolve([]);
+
         await appservice.begin();
 
         try {
