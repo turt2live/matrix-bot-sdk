@@ -269,12 +269,11 @@ export class Appservice extends EventEmitter {
             `${req.path}?${stringify(redactObjectForLogging(req.query ?? {}))}`,
         );
 
-        this.app.use(morgan({
+        this.app.use(morgan(
             // Same as "combined", but with sensitive values removed from requests.
-            format: ':remote-addr - :remote-user [:date[clf]] ":method :url-safe HTTP/:http-version" :status :res[content-length] ":referrer" ":user-agent"',
-        }, {
-            stream: { write: LogService.info.bind(LogService, 'Appservice') },
-        }));
+            ':remote-addr - :remote-user [:date[clf]] ":method :url-safe HTTP/:http-version" :status :res[content-length] ":referrer" ":user-agent"',
+            { stream: { write: LogService.info.bind(LogService, 'Appservice') } },
+        ));
 
         // ETag headers break the tests sometimes, and we don't actually need them anyways for
         // appservices - none of this should be cached.
