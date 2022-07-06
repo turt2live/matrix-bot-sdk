@@ -1,14 +1,7 @@
 import * as simple from "simple-mock";
 import HttpBackend from 'matrix-mock-request';
 
-import {
-    ConsoleLogger,
-    EncryptedFile,
-    LogService,
-    MatrixClient,
-    OTKAlgorithm,
-    RoomEncryptionAlgorithm,
-} from "../../src";
+import { EncryptedFile, MatrixClient, MembershipEvent, OTKAlgorithm, RoomEncryptionAlgorithm } from "../../src";
 import { createTestClient, TEST_DEVICE_ID } from "../TestUtils";
 
 function bindNullEngine(http: HttpBackend) {
@@ -300,10 +293,6 @@ describe('CryptoClient', () => {
             // client crypto not prepared for the one test which wants that state
         });
 
-        afterEach(async () => {
-            LogService.setLogger(new ConsoleLogger());
-        });
-
         it('should fail when the crypto has not been prepared', async () => {
             try {
                 await client.crypto.decryptRoomEvent(null, null);
@@ -329,10 +318,6 @@ describe('CryptoClient', () => {
             await client.cryptoStore.setDeviceId(TEST_DEVICE_ID);
 
             // client crypto not prepared for the one test which wants that state
-        });
-
-        afterEach(async () => {
-            LogService.setLogger(new ConsoleLogger());
         });
 
         it('should fail when the crypto has not been prepared', async () => {
@@ -421,10 +406,6 @@ describe('CryptoClient', () => {
             // client crypto not prepared for the one test which wants that state
         });
 
-        afterEach(async () => {
-            LogService.setLogger(new ConsoleLogger());
-        });
-
         it('should fail when the crypto has not been prepared', async () => {
             try {
                 await client.crypto.encryptMedia(null);
@@ -478,6 +459,93 @@ describe('CryptoClient', () => {
             const result = await client.crypto.decryptMedia(f);
             expect(result.toString()).toEqual(testFileContents);
             expect(downloadSpy.callCount).toBe(1);
+        });
+    });
+
+    describe('User Tracking', () => {
+        const userId = "@alice:example.org";
+        let client: MatrixClient;
+        let http: HttpBackend;
+
+        beforeEach(async () => {
+            const { client: mclient, http: mhttp } = createTestClient(null, userId, true);
+            client = mclient;
+            http = mhttp;
+
+            await client.cryptoStore.setDeviceId(TEST_DEVICE_ID);
+            bindNullEngine(http);
+            await Promise.all([
+                client.crypto.prepare([]),
+                http.flushAllExpected(),
+            ]);
+        });
+
+        it('should update tracked users on membership changes', async () => {
+            const targetUserIds = ["@bob:example.org", "@charlie:example.org"];
+            const trackSpy = simple.mock().callFn((uids) => {
+                expect(uids.length).toBe(1);
+                expect(uids[0]).toEqual(targetUserIds[trackSpy.callCount - 1]);
+                return Promise.resolve();
+            });
+            (client.crypto as any).engine.addTrackedUsers = trackSpy;
+
+            for (const targetUserId of targetUserIds) {
+                client.emit("room.event", "!unused:example.org", {
+                    type: "m.room.member",
+                    state_key: targetUserId,
+                    content: {membership: "join"},
+                    sender: targetUserId + ".notthisuser",
+                });
+            }
+
+            // Emit a fake update too, to try and trip up the processing
+            client.emit("room.event", "!unused:example.org", {
+                type: "m.room.member",
+                state_key: "@notjoined:example.org",
+                content: {membership: "ban"},
+                sender: "@notme:example.org",
+            });
+
+            expect(trackSpy.callCount).toBe(2);
+        });
+
+        it('should add all tracked users when the encryption config changes', async () => {
+            const targetUserIds = ["@bob:example.org", "@charlie:example.org"];
+            const prom1 = new Promise<void>(extResolve => {
+                (client.crypto as any).engine.addTrackedUsers = simple.mock().callFn((uids) => {
+                    expect(uids).toEqual(targetUserIds);
+                    extResolve();
+                    return Promise.resolve();
+                });
+            });
+
+            const roomId = "!room:example.org";
+            const prom2 = new Promise<void>(extResolve => {
+                client.getRoomMembers = simple.mock().callFn((rid, token, memberships) => {
+                    expect(rid).toEqual(roomId);
+                    expect(token).toBeFalsy();
+                    expect(memberships).toEqual(["join", "invite"]);
+                    extResolve();
+                    return Promise.resolve(targetUserIds.map(u => new MembershipEvent({
+                        type: "m.room.member",
+                        state_key: u,
+                        content: { membership: "join" },
+                        sender: u,
+                    })));
+                });
+            });
+
+            client.emit("room.event", roomId, {
+                type: "m.room.encryption",
+                state_key: "",
+                content: {
+                    algorithm: RoomEncryptionAlgorithm.MegolmV1AesSha2,
+                },
+            });
+
+            // We do weird promise things because `emit()` is sync and we're using async code, so it can
+            // end up not running fast enough for our callCount checks.
+            await Promise.all([prom1, prom2]);
         });
     });
 });

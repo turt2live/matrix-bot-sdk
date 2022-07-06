@@ -25,6 +25,7 @@ export class RustEngine {
     }
 
     public async run() {
+        // Note: we should not be running this until it runs out, so cache the value into a variable
         const requests = await this.machine.outgoingRequests();
         for (const request of requests) {
             switch (request.type) {
@@ -52,15 +53,18 @@ export class RustEngine {
         }
     }
 
-    public async prepareEncrypt(roomId: string, roomInfo: ICryptoRoomInformation) {
-        // TODO: Handle pre-shared invite keys too
-        const members = (await this.client.getJoinedRoomMembers(roomId)).map(u => new UserId(u));
-        await this.machine.updateTrackedUsers(members);
+    public async addTrackedUsers(userIds: string[]) {
+        await this.machine.updateTrackedUsers(userIds.map(u => new UserId(u)));
 
-        const keysClaim = await this.machine.getMissingSessions(members);
+        const keysClaim = await this.machine.getMissingSessions([]);
         if (keysClaim) {
             await this.processKeysClaimRequest(keysClaim);
         }
+    }
+
+    public async prepareEncrypt(roomId: string, roomInfo: ICryptoRoomInformation) {
+        // TODO: Handle pre-shared invite keys too
+        const members = (await this.client.getJoinedRoomMembers(roomId)).map(u => new UserId(u));
 
         let historyVis = HistoryVisibility.Joined;
         switch (roomInfo.historyVisibility) {
@@ -91,11 +95,10 @@ export class RustEngine {
         settings.rotationPeriod = BigInt(encEv.rotationPeriodMs);
         settings.rotationPeriodMessages = BigInt(encEv.rotationPeriodMessages);
 
-        // Note: we don't use the toDevice message requests returned by shareRoomKey() because they show up
-        // in the pending requests for the machine, which means we can mark them as "sent" properly. This
-        // way we avoid sending room keys twice.
-        await this.machine.shareRoomKey(new RoomId(roomId), members, settings);
-        await this.run();
+        const requests = JSON.parse(await this.machine.shareRoomKey(new RoomId(roomId), members, settings));
+        for (const req of requests) {
+            await this.actuallyProcessToDeviceRequest(req.txn_id, req.event_type, req.messages);
+        }
     }
 
     private async processKeysClaimRequest(request: KeysClaimRequest) {
@@ -115,7 +118,11 @@ export class RustEngine {
 
     private async processToDeviceRequest(request: ToDeviceRequest) {
         const req = JSON.parse(request.body);
-        const resp = await this.client.sendToDevices(req.event_type, req.messages);
-        await this.machine.markRequestAsSent(request.id, request.type, JSON.stringify(resp));
+        await this.actuallyProcessToDeviceRequest(req.id, req.event_type, req.messages);
+    }
+
+    private async actuallyProcessToDeviceRequest(id: string, type: string, messages: Record<string, Record<string, unknown>>) {
+        const resp = await this.client.sendToDevices(type, messages);
+        await this.machine.markRequestAsSent(id, RequestType.ToDevice, JSON.stringify(resp));
     }
 }

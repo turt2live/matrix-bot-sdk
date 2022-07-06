@@ -25,6 +25,7 @@ import { RoomEvent } from "../models/events/RoomEvent";
 import { EncryptedFile } from "../models/events/MessageEvent";
 import { RustSdkCryptoStorageProvider } from "../storage/RustSdkCryptoStorageProvider";
 import { RustEngine } from "./RustEngine";
+import { MembershipEvent } from "../models/events/MembershipEvent";
 
 /**
  * Manages encryption for a MatrixClient. Get an instance from a MatrixClient directly
@@ -92,6 +93,19 @@ export class CryptoClient {
         const identity = this.engine.machine.identityKeys;
         this.deviceCurve25519 = identity.curve25519.toBase64();
         this.deviceEd25519 = identity.ed25519.toBase64();
+
+
+        this.client.on("room.event", async (roomId: string, event: any) => {
+            if (typeof event['state_key'] !== 'string') return;
+            if (event['type'] === 'm.room.member') {
+                const membership = new MembershipEvent(event);
+                if (membership.effectiveMembership !== 'join' && membership.effectiveMembership !== 'invite') return;
+                await this.engine.addTrackedUsers([membership.membershipFor]);
+            } else if (event['type'] === 'm.room.encryption') {
+                const members = await this.client.getRoomMembers(roomId, null, ['join', 'invite']);
+                await this.engine.addTrackedUsers(members.map(e => e.membershipFor));
+            }
+        });
 
         this.ready = true;
     }
