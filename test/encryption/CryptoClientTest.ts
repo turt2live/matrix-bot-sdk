@@ -4,7 +4,7 @@ import HttpBackend from 'matrix-mock-request';
 import { EncryptedFile, MatrixClient, MembershipEvent, OTKAlgorithm, RoomEncryptionAlgorithm } from "../../src";
 import { createTestClient, TEST_DEVICE_ID } from "../TestUtils";
 
-function bindNullEngine(http: HttpBackend) {
+export function bindNullEngine(http: HttpBackend) {
     http.when("POST", "/keys/upload").respond(200, (path, obj) => {
         expect(obj).toMatchObject({
 
@@ -482,12 +482,15 @@ describe('CryptoClient', () => {
 
         it('should update tracked users on membership changes', async () => {
             const targetUserIds = ["@bob:example.org", "@charlie:example.org"];
-            const trackSpy = simple.mock().callFn((uids) => {
-                expect(uids.length).toBe(1);
-                expect(uids[0]).toEqual(targetUserIds[trackSpy.callCount - 1]);
-                return Promise.resolve();
+            const prom = new Promise<void>(extResolve => {
+                const trackSpy = simple.mock().callFn((uids) => {
+                    expect(uids.length).toBe(1);
+                    expect(uids[0]).toEqual(targetUserIds[trackSpy.callCount - 1]);
+                    if (trackSpy.callCount === 2) extResolve();
+                    return Promise.resolve();
+                });
+                (client.crypto as any).engine.addTrackedUsers = trackSpy;
             });
-            (client.crypto as any).engine.addTrackedUsers = trackSpy;
 
             for (const targetUserId of targetUserIds) {
                 client.emit("room.event", "!unused:example.org", {
@@ -506,10 +509,15 @@ describe('CryptoClient', () => {
                 sender: "@notme:example.org",
             });
 
-            expect(trackSpy.callCount).toBe(2);
+            // We do weird promise things because `emit()` is sync and we're using async code, so it can
+            // end up not running fast enough for our callCount checks.
+            await prom;
         });
 
         it('should add all tracked users when the encryption config changes', async () => {
+            // Stub the room tracker
+            (client.crypto as any).roomTracker.onRoomEvent = () => {};
+
             const targetUserIds = ["@bob:example.org", "@charlie:example.org"];
             const prom1 = new Promise<void>(extResolve => {
                 (client.crypto as any).engine.addTrackedUsers = simple.mock().callFn((uids) => {

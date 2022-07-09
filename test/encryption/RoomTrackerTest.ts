@@ -1,7 +1,8 @@
 import * as simple from "simple-mock";
 
 import { EncryptionEventContent, MatrixClient, RoomEncryptionAlgorithm, RoomTracker } from "../../src";
-import { createTestClient } from "../TestUtils";
+import { createTestClient, TEST_DEVICE_ID } from "../TestUtils";
+import { bindNullEngine } from "./CryptoClientTest";
 
 function prepareQueueSpies(
     client: MatrixClient,
@@ -40,9 +41,17 @@ describe('RoomTracker', () => {
     it('should queue room updates when rooms are joined', async () => {
         const roomId = "!a:example.org";
 
-        const { client } = createTestClient();
+        const { client, http } = createTestClient(null, "@user:example.org", true);
+        await client.cryptoStore.setDeviceId(TEST_DEVICE_ID);
+        bindNullEngine(http);
+        await Promise.all([
+            client.crypto.prepare([]),
+            http.flushAllExpected(),
+        ]);
+        (client.crypto as any).engine.addTrackedUsers = () => Promise.resolve();
+        client.getRoomMembers = () => Promise.resolve([]);
 
-        const tracker = new RoomTracker(client);
+        const tracker = (client.crypto as any).roomTracker;
 
         let queueSpy: simple.Stub<any>;
         await new Promise<void>(resolve => {
@@ -60,9 +69,15 @@ describe('RoomTracker', () => {
     it('should queue room updates when encryption events are received', async () => {
         const roomId = "!a:example.org";
 
-        const { client } = createTestClient();
+        const { client, http } = createTestClient(null, "@user:example.org", true);
+        await client.cryptoStore.setDeviceId(TEST_DEVICE_ID);
+        bindNullEngine(http);
+        await Promise.all([
+            client.crypto.prepare([]),
+            http.flushAllExpected(),
+        ]);
 
-        const tracker = new RoomTracker(client);
+        const tracker = (client.crypto as any).roomTracker;
 
         let queueSpy: simple.Stub<any>;
         await new Promise<void>(resolve => {
