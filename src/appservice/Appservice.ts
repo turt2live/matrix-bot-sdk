@@ -612,11 +612,13 @@ export class Appservice extends EventEmitter {
         if (!event["content"]) return;
 
         // Update the target intent's joined rooms (fixes transition errors with the cache, like join->kick->join)
-        await this.getIntentForUserId(event['state_key']).refreshJoinedRooms();
+        const intent = this.getIntentForUserId(event['state_key']);
+        await intent.refreshJoinedRooms();
 
         const targetMembership = event["content"]["membership"];
         if (targetMembership === "join") {
             this.emit("room.join", event["room_id"], event);
+            await intent.underlyingClient.crypto?.onRoomJoin(event["room_id"]);
         } else if (targetMembership === "ban" || targetMembership === "leave") {
             this.emit("room.leave", event["room_id"], event);
         } else if (targetMembership === "invite") {
@@ -728,6 +730,9 @@ export class Appservice extends EventEmitter {
                     changed: [],
                     removed: [],
                 };
+
+                if (!deviceLists.changed) deviceLists.changed = [];
+                if (!deviceLists.removed) deviceLists.removed = [];
 
                 const otks = req.body["org.matrix.msc3202.device_one_time_key_counts"];
                 if (otks) {

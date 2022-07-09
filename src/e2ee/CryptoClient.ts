@@ -94,19 +94,35 @@ export class CryptoClient {
         this.deviceCurve25519 = identity.curve25519.toBase64();
         this.deviceEd25519 = identity.ed25519.toBase64();
 
-        this.client.on("room.event", async (roomId: string, event: any) => {
-            if (typeof event['state_key'] !== 'string') return;
-            if (event['type'] === 'm.room.member') {
-                const membership = new MembershipEvent(event);
-                if (membership.effectiveMembership !== 'join' && membership.effectiveMembership !== 'invite') return;
-                await this.engine.addTrackedUsers([membership.membershipFor]);
-            } else if (event['type'] === 'm.room.encryption') {
-                const members = await this.client.getRoomMembers(roomId, null, ['join', 'invite']);
-                await this.engine.addTrackedUsers(members.map(e => e.membershipFor));
-            }
-        });
-
         this.ready = true;
+    }
+
+    /**
+     * Handles a room event.
+     * @internal
+     * @param roomId The room ID.
+     * @param event The event.
+     */
+    public async onRoomEvent(roomId: string, event: any) {
+        await this.roomTracker.onRoomEvent(roomId, event);
+        if (typeof event['state_key'] !== 'string') return;
+        if (event['type'] === 'm.room.member') {
+            const membership = new MembershipEvent(event);
+            if (membership.effectiveMembership !== 'join' && membership.effectiveMembership !== 'invite') return;
+            await this.engine.addTrackedUsers([membership.membershipFor]);
+        } else if (event['type'] === 'm.room.encryption') {
+            const members = await this.client.getRoomMembers(roomId, null, ['join', 'invite']);
+            await this.engine.addTrackedUsers(members.map(e => e.membershipFor));
+        }
+    }
+
+    /**
+     * Handles a room join.
+     * @internal
+     * @param roomId The room ID.
+     */
+    public async onRoomJoin(roomId: string) {
+        await this.roomTracker.onRoomJoin(roomId);
     }
 
     /**

@@ -130,6 +130,14 @@ export class MatrixClient extends EventEmitter {
                 throw new Error("Cannot support custom encryption stores: Use a RustSdkCryptoStorageProvider");
             }
             this.crypto = new CryptoClient(this);
+            this.on("room.event", (roomId, event) => {
+                // noinspection JSIgnoredPromiseFromCall
+                this.crypto.onRoomEvent(roomId, event);
+            });
+            this.on("room.join", (roomId) => {
+                // noinspection JSIgnoredPromiseFromCall
+                this.crypto.onRoomJoin(roomId);
+            })
             LogService.debug("MatrixClientLite", "End-to-end encryption client created");
         } else {
             // LogService.trace("MatrixClientLite", "Not setting up encryption");

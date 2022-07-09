@@ -9,18 +9,28 @@ import { ICryptoRoomInformation } from "./ICryptoRoomInformation";
  */
 export class RoomTracker {
     public constructor(private client: MatrixClient) {
-        this.client.on("room.join", (roomId: string) => {
-            // noinspection JSIgnoredPromiseFromCall
-            this.queueRoomCheck(roomId);
-        });
+    }
 
-        this.client.on("room.event", (roomId: string, event: any) => {
-            if (event['state_key'] !== '') return; // we don't care about anything else
-            if (event['type'] === 'm.room.encryption' || event['type'] === 'm.room.history_visibility') {
-                // noinspection JSIgnoredPromiseFromCall
-                this.queueRoomCheck(roomId);
-            }
-        });
+    /**
+     * Handles a room join
+     * @internal
+     * @param roomId The room ID.
+     */
+    public async onRoomJoin(roomId: string) {
+        await this.queueRoomCheck(roomId);
+    }
+
+    /**
+     * Handles a room event.
+     * @internal
+     * @param roomId The room ID.
+     * @param event The event.
+     */
+    public async onRoomEvent(roomId: string, event: any) {
+        if (event['state_key'] !== '') return; // we don't care about anything else
+        if (event['type'] === 'm.room.encryption' || event['type'] === 'm.room.history_visibility') {
+            await this.queueRoomCheck(roomId);
+        }
     }
 
     /**
