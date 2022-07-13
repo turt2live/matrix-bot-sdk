@@ -6,7 +6,7 @@ import {
     RoomId,
     Attachment,
     EncryptedAttachment,
-} from "@matrix-org/matrix-sdk-crypto";
+} from "@matrix-org/matrix-sdk-crypto-nodejs";
 
 import { MatrixClient } from "../MatrixClient";
 import { LogService } from "../logging/LogService";

@@ -584,6 +584,13 @@
     "@jridgewell/resolve-uri" "^3.0.3"
     "@jridgewell/sourcemap-codec" "^1.4.10"
 
+"@matrix-org/matrix-sdk-crypto-nodejs@^0.1.0-beta.0":
+  version "0.1.0-beta.0"
+  resolved "https://registry.yarnpkg.com/@matrix-org/matrix-sdk-crypto-nodejs/-/matrix-sdk-crypto-nodejs-0.1.0-beta.0.tgz#6b9c7243d2c47e9f8f774d8db7531ff3d786bbd3"
+  integrity sha512-Y/k8vvGnbT0k65VVmij96h3CU+c3uczUoKTCe0CQqguQeiZQ24Dv0FjRIs38m/+S2OMb5Es4mp6ILQM+4ccY5A==
+  dependencies:
+    node-downloader-helper "^2.1.1"
+
 "@nodelib/fs.scandir@2.1.5":
   version "2.1.5"
   resolved "https://registry.yarnpkg.com/@nodelib/fs.scandir/-/fs.scandir-2.1.5.tgz#7619c2eb21b25483f6d167548b4cfd5a7488c3d5"
@@ -3604,6 +3611,11 @@ node-dir@^0.1.10:
   integrity sha1-X1Zl2TNRM1yqvvjxxVRRbPXx5OU=
   dependencies:
     minimatch "^3.0.2"
+
+node-downloader-helper@^2.1.1:
+  version "2.1.1"
+  resolved "https://registry.yarnpkg.com/node-downloader-helper/-/node-downloader-helper-2.1.1.tgz#533427a3cdc163931b106d0fe6d522f83deac7ab"
+  integrity sha512-ouk8MGmJj1gYymbJwi1L8Mr6PdyheJLwfsmyx0KtsvyJ+7Fpf0kBBzM8Gmx8Mt/JBfRWP1PQm6dAGV6x7eNedw==
 
 node-int64@^0.4.0:
   version "0.4.0"

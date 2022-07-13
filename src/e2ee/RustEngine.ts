@@ -10,7 +10,7 @@ import {
     KeysUploadRequest,
     KeysQueryRequest,
     ToDeviceRequest,
-} from "@matrix-org/matrix-sdk-crypto";
+} from "@matrix-org/matrix-sdk-crypto-nodejs";
 import * as AsyncLock from "async-lock";
 
 import { MatrixClient } from "../MatrixClient";
