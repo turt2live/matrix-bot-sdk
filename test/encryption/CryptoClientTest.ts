@@ -496,7 +496,7 @@ describe('CryptoClient', () => {
                 client.emit("room.event", "!unused:example.org", {
                     type: "m.room.member",
                     state_key: targetUserId,
-                    content: {membership: "join"},
+                    content: { membership: "join" },
                     sender: targetUserId + ".notthisuser",
                 });
             }
@@ -505,7 +505,7 @@ describe('CryptoClient', () => {
             client.emit("room.event", "!unused:example.org", {
                 type: "m.room.member",
                 state_key: "@notjoined:example.org",
-                content: {membership: "ban"},
+                content: { membership: "ban" },
                 sender: "@notme:example.org",
             });
 

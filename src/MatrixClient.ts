@@ -137,7 +137,7 @@ export class MatrixClient extends EventEmitter {
             this.on("room.join", (roomId) => {
                 // noinspection JSIgnoredPromiseFromCall
                 this.crypto.onRoomJoin(roomId);
-            })
+            });
             LogService.debug("MatrixClientLite", "End-to-end encryption client created");
         } else {
             // LogService.trace("MatrixClientLite", "Not setting up encryption");
