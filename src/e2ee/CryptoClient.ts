@@ -1,13 +1,16 @@
 import {
-    decryptFile as rustDecryptFile,
-    encryptFile as rustEncryptFile,
+    DeviceId,
     OlmMachine,
-} from "@turt2live/matrix-sdk-crypto-nodejs";
+    UserId,
+    DeviceLists,
+    RoomId,
+    Attachment,
+    EncryptedAttachment,
+} from "@matrix-org/matrix-sdk-crypto-nodejs";
 
 import { MatrixClient } from "../MatrixClient";
 import { LogService } from "../logging/LogService";
 import {
-    DeviceKeyAlgorithm,
     IMegolmEncrypted,
     IOlmEncrypted,
     IToDeviceMessage,
@@ -21,8 +24,8 @@ import { EncryptedRoomEvent } from "../models/events/EncryptedRoomEvent";
 import { RoomEvent } from "../models/events/RoomEvent";
 import { EncryptedFile } from "../models/events/MessageEvent";
 import { RustSdkCryptoStorageProvider } from "../storage/RustSdkCryptoStorageProvider";
-import { SdkOlmEngine } from "./SdkOlmEngine";
-import { InternalOlmMachineFactory } from "./InternalOlmMachineFactory";
+import { RustEngine, SYNC_LOCK_NAME } from "./RustEngine";
+import { MembershipEvent } from "../models/events/MembershipEvent";
 
 /**
  * Manages encryption for a MatrixClient. Get an instance from a MatrixClient directly
@@ -35,7 +38,7 @@ export class CryptoClient {
     private deviceEd25519: string;
     private deviceCurve25519: string;
     private roomTracker: RoomTracker;
-    private machine: OlmMachine;
+    private engine: RustEngine;
 
     public constructor(private client: MatrixClient) {
         this.roomTracker = new RoomTracker(this.client);
@@ -83,14 +86,43 @@ export class CryptoClient {
 
         LogService.debug("CryptoClient", "Starting with device ID:", this.deviceId);
 
-        this.machine = new InternalOlmMachineFactory(await this.client.getUserId(), this.deviceId, new SdkOlmEngine(this.client), this.storage.storagePath).build();
-        await this.machine.runEngine();
+        const machine = await OlmMachine.initialize(new UserId(await this.client.getUserId()), new DeviceId(this.deviceId), this.storage.storagePath);
+        this.engine = new RustEngine(machine, this.client);
+        await this.engine.run();
 
-        const identity = this.machine.identityKeys;
-        this.deviceCurve25519 = identity[DeviceKeyAlgorithm.Curve25519];
-        this.deviceEd25519 = identity[DeviceKeyAlgorithm.Ed25519];
+        const identity = this.engine.machine.identityKeys;
+        this.deviceCurve25519 = identity.curve25519.toBase64();
+        this.deviceEd25519 = identity.ed25519.toBase64();
 
         this.ready = true;
+    }
+
+    /**
+     * Handles a room event.
+     * @internal
+     * @param roomId The room ID.
+     * @param event The event.
+     */
+    public async onRoomEvent(roomId: string, event: any) {
+        await this.roomTracker.onRoomEvent(roomId, event);
+        if (typeof event['state_key'] !== 'string') return;
+        if (event['type'] === 'm.room.member') {
+            const membership = new MembershipEvent(event);
+            if (membership.effectiveMembership !== 'join' && membership.effectiveMembership !== 'invite') return;
+            await this.engine.addTrackedUsers([membership.membershipFor]);
+        } else if (event['type'] === 'm.room.encryption') {
+            const members = await this.client.getRoomMembers(roomId, null, ['join', 'invite']);
+            await this.engine.addTrackedUsers(members.map(e => e.membershipFor));
+        }
+    }
+
+    /**
+     * Handles a room join.
+     * @internal
+     * @param roomId The room ID.
+     */
+    public async onRoomJoin(roomId: string) {
+        await this.roomTracker.onRoomJoin(roomId);
     }
 
     /**
@@ -121,10 +153,22 @@ export class CryptoClient {
         changedDeviceLists: string[],
         leftDeviceLists: string[],
     ): Promise<void> {
-        await this.machine.pushSync(toDeviceMessages, {
-            changed: changedDeviceLists,
-            left: leftDeviceLists,
-        }, otkCounts, unusedFallbackKeyAlgs);
+        const deviceMessages = JSON.stringify({ events: toDeviceMessages });
+        const deviceLists = new DeviceLists(
+            changedDeviceLists.map(u => new UserId(u)),
+            leftDeviceLists.map(u => new UserId(u)));
+
+        await this.engine.lock.acquire(SYNC_LOCK_NAME, async () => {
+            const syncResp = await this.engine.machine.receiveSyncChanges(deviceMessages, deviceLists, otkCounts, unusedFallbackKeyAlgs);
+            const decryptedToDeviceMessages = JSON.parse(syncResp);
+            if (Array.isArray(decryptedToDeviceMessages?.events)) {
+                for (const msg of decryptedToDeviceMessages.events) {
+                    this.client.emit("to_device.decrypted", msg);
+                }
+            }
+
+            await this.engine.run();
+        });
     }
 
     /**
@@ -140,7 +184,16 @@ export class CryptoClient {
         delete obj['signatures'];
         delete obj['unsigned'];
 
-        const sig = await this.machine.sign(obj);
+        const container = await this.engine.machine.sign(JSON.stringify(obj));
+        const userSignature = container.get(new UserId(await this.client.getUserId()));
+        const sig: Signatures = {
+            [await this.client.getUserId()]: {},
+        };
+        for (const [key, maybeSignature] of Object.entries(userSignature)) {
+            if (maybeSignature.isValid) {
+                sig[await this.client.getUserId()][key] = maybeSignature.signature.toBase64();
+            }
+        }
         return {
             ...sig,
             ...existingSignatures,
@@ -164,7 +217,10 @@ export class CryptoClient {
             throw new Error("Room is not encrypted");
         }
 
-        const encrypted = await this.machine.encryptRoomEvent(roomId, eventType, content);
+        await this.engine.prepareEncrypt(roomId, await this.roomTracker.getRoomCryptoConfig(roomId));
+
+        const encrypted = JSON.parse(await this.engine.machine.encryptRoomEvent(new RoomId(roomId), eventType, JSON.stringify(content)));
+        await this.engine.run();
         return encrypted as IMegolmEncrypted;
     }
 
@@ -177,12 +233,13 @@ export class CryptoClient {
      */
     @requiresReady()
     public async decryptRoomEvent(event: EncryptedRoomEvent, roomId: string): Promise<RoomEvent<unknown>> {
-        const decrypted = await this.machine.decryptRoomEvent(roomId, event.raw);
+        const decrypted = await this.engine.machine.decryptRoomEvent(JSON.stringify(event.raw), new RoomId(roomId));
+        const clearEvent = JSON.parse(decrypted.event);
 
         return new RoomEvent<unknown>({
             ...event.raw,
-            type: decrypted.clearEvent.type || "io.t2bot.unknown",
-            content: (typeof (decrypted.clearEvent.content) === 'object') ? decrypted.clearEvent.content : {},
+            type: clearEvent.type || "io.t2bot.unknown",
+            content: (typeof (clearEvent.content) === 'object') ? clearEvent.content : {},
         });
     }
 
@@ -195,15 +252,11 @@ export class CryptoClient {
      */
     @requiresReady()
     public async encryptMedia(file: Buffer): Promise<{ buffer: Buffer, file: Omit<EncryptedFile, "url"> }> {
-        const encrypted = rustEncryptFile(file);
+        const encrypted = Attachment.encrypt(file);
+        const info = JSON.parse(encrypted.mediaEncryptionInfo);
         return {
-            buffer: encrypted.data,
-            file: {
-                iv: encrypted.file.iv,
-                key: encrypted.file.web_key,
-                v: encrypted.file.v,
-                hashes: encrypted.file.hashes as { sha256: string },
-            },
+            buffer: Buffer.from(encrypted.encryptedData),
+            file: info,
         };
     }
 
@@ -214,9 +267,12 @@ export class CryptoClient {
      */
     @requiresReady()
     public async decryptMedia(file: EncryptedFile): Promise<Buffer> {
-        return rustDecryptFile((await this.client.downloadContent(file.url)).data, {
-            ...file,
-            web_key: file.key as any, // we know it is compatible
-        });
+        const contents = (await this.client.downloadContent(file.url)).data;
+        const encrypted = new EncryptedAttachment(
+            contents,
+            JSON.stringify(file),
+        );
+        const decrypted = Attachment.decrypt(encrypted);
+        return Buffer.from(decrypted);
     }
 }

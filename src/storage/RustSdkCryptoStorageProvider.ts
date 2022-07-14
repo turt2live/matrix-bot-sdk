@@ -5,9 +5,9 @@ import * as path from "path";
 import * as sha512 from "hash.js/lib/hash/sha/512";
 import * as sha256 from "hash.js/lib/hash/sha/256";
 
-import { EncryptionEventContent } from "../models/events/EncryptionEvent";
 import { ICryptoStorageProvider } from "./ICryptoStorageProvider";
 import { IAppserviceCryptoStorageProvider } from "./IAppserviceStorageProvider";
+import { ICryptoRoomInformation } from "../e2ee/ICryptoRoomInformation";
 
 /**
  * A crypto storage provider for the default rust-sdk store (sled, file-based).
@@ -41,12 +41,12 @@ export class RustSdkCryptoStorageProvider implements ICryptoStorageProvider {
         this.db.set('deviceId', deviceId).write();
     }
 
-    public async getRoom(roomId: string): Promise<Partial<EncryptionEventContent>> {
+    public async getRoom(roomId: string): Promise<ICryptoRoomInformation> {
         const key = sha512().update(roomId).digest('hex');
         return this.db.get(`rooms.${key}`).value();
     }
 
-    public async storeRoom(roomId: string, config: Partial<EncryptionEventContent>): Promise<void> {
+    public async storeRoom(roomId: string, config: ICryptoRoomInformation): Promise<void> {
         const key = sha512().update(roomId).digest('hex');
         this.db.set(`rooms.${key}`, config).write();
     }

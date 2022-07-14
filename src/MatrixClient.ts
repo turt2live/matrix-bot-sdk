@@ -26,9 +26,6 @@ import { Space, SpaceCreateOptions } from "./models/Spaces";
 import { PowerLevelAction } from "./models/PowerLevelAction";
 import { CryptoClient } from "./e2ee/CryptoClient";
 import {
-    DeviceKeyAlgorithm,
-    DeviceKeyLabel,
-    EncryptionAlgorithm,
     FallbackKey,
     IToDeviceMessage,
     MultiUserDeviceListResponse,
@@ -133,6 +130,14 @@ export class MatrixClient extends EventEmitter {
                 throw new Error("Cannot support custom encryption stores: Use a RustSdkCryptoStorageProvider");
             }
             this.crypto = new CryptoClient(this);
+            this.on("room.event", (roomId, event) => {
+                // noinspection JSIgnoredPromiseFromCall
+                this.crypto.onRoomEvent(roomId, event);
+            });
+            this.on("room.join", (roomId) => {
+                // noinspection JSIgnoredPromiseFromCall
+                this.crypto.onRoomJoin(roomId);
+            });
             LogService.debug("MatrixClientLite", "End-to-end encryption client created");
         } else {
             // LogService.trace("MatrixClientLite", "Not setting up encryption");
@@ -1760,27 +1765,6 @@ export class MatrixClient extends EventEmitter {
             throw new Error("Room is not a space");
         }
         return new Space(roomId, this);
-    }
-
-    /**
-     * Uploads new identity keys for the current device.
-     * @param {EncryptionAlgorithm[]} algorithms The supported algorithms.
-     * @param {Record<DeviceKeyLabel<DeviceKeyAlgorithm, string>, string>} keys The keys for the device.
-     * @returns {Promise<OTKCounts>} Resolves to the current One Time Key counts when complete.
-     */
-    @timedMatrixClientFunctionCall()
-    @requiresCrypto()
-    public async uploadDeviceKeys(algorithms: EncryptionAlgorithm[], keys: Record<DeviceKeyLabel<DeviceKeyAlgorithm, string>, string>): Promise<OTKCounts> {
-        const obj = {
-            user_id: await this.getUserId(),
-            device_id: this.crypto.clientDeviceId,
-            algorithms: algorithms,
-            keys: keys,
-        };
-        obj['signatures'] = await this.crypto.sign(obj);
-        return this.doRequest("POST", "/_matrix/client/v3/keys/upload", null, {
-            device_keys: obj,
-        }).then(r => r['one_time_key_counts']);
     }
 
     /**

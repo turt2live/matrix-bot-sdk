@@ -1,11 +1,7 @@
 import * as tmp from "tmp";
 import * as simple from "simple-mock";
-import { OlmMachine, Signatures } from "@turt2live/matrix-sdk-crypto-nodejs";
 
 import {
-    DeviceKeyAlgorithm,
-    DeviceKeyLabel,
-    EncryptionAlgorithm,
     EventKind,
     IJoinRoomStrategy,
     IPreprocessor,
@@ -26,15 +22,10 @@ import {
     setRequestFn,
 } from "../src";
 import { createTestClient, expectArrayEquals, TEST_DEVICE_ID } from "./TestUtils";
-import { InternalOlmMachineFactory } from "../src/e2ee/InternalOlmMachineFactory";
 
 tmp.setGracefulCleanup();
 
 describe('MatrixClient', () => {
-    afterEach(() => {
-        InternalOlmMachineFactory.FACTORY_OVERRIDE = null;
-    });
-
     describe("constructor", () => {
         it('should pass through the homeserver URL and access token', () => {
             const homeserverUrl = "https://example.org";
@@ -6407,70 +6398,6 @@ describe('MatrixClient', () => {
                 expect(stateSpy.callCount).toBe(1);
                 expect(e.message).toEqual("Room is not a space");
             }
-        });
-    });
-
-    describe('uploadDeviceKeys', () => {
-        it('should fail when no encryption', async () => {
-            try {
-                const { client } = createTestClient();
-                await client.uploadDeviceKeys([], {});
-
-                // noinspection ExceptionCaughtLocallyJS
-                throw new Error("Failed to fail");
-            } catch (e) {
-                expect(e.message).toEqual("End-to-end encryption is not enabled");
-            }
-        });
-
-        it('should call the right endpoint', async () => {
-            const userId = "@test:example.org";
-
-            InternalOlmMachineFactory.FACTORY_OVERRIDE = () => ({
-                identityKeys: {},
-                runEngine: () => Promise.resolve(),
-                sign: async (_) => ({
-                    [userId]: {
-                        [DeviceKeyAlgorithm.Ed25519 + ":" + TEST_DEVICE_ID]: "SIGNATURE_GOES_HERE",
-                    },
-                } as Signatures),
-            } as OlmMachine);
-
-            const { client, http } = createTestClient(null, userId, true);
-
-            client.getWhoAmI = () => Promise.resolve({ user_id: userId, device_id: TEST_DEVICE_ID });
-            await client.crypto.prepare([]);
-
-            const algorithms = [EncryptionAlgorithm.MegolmV1AesSha2, EncryptionAlgorithm.OlmV1Curve25519AesSha2];
-            const keys: Record<DeviceKeyLabel<DeviceKeyAlgorithm, string>, string> = {
-                [DeviceKeyAlgorithm.Curve25519 + ":" + TEST_DEVICE_ID]: "key1",
-                [DeviceKeyAlgorithm.Ed25519 + ":" + TEST_DEVICE_ID]: "key2",
-            };
-            const counts: OTKCounts = {
-                [OTKAlgorithm.Signed]: 12,
-                [OTKAlgorithm.Unsigned]: 14,
-            };
-
-            // noinspection TypeScriptValidateJSTypes
-            http.when("POST", "/_matrix/client/v3/keys/upload").respond(200, (path, content) => {
-                expect(content).toMatchObject({
-                    device_keys: {
-                        user_id: userId,
-                        device_id: TEST_DEVICE_ID,
-                        algorithms: algorithms,
-                        keys: keys,
-                        signatures: {
-                            [userId]: {
-                                [DeviceKeyAlgorithm.Ed25519 + ":" + TEST_DEVICE_ID]: expect.any(String),
-                            },
-                        },
-                    },
-                });
-                return { one_time_key_counts: counts };
-            });
-
-            const [result] = await Promise.all([client.uploadDeviceKeys(algorithms, keys), http.flushAllExpected()]);
-            expect(result).toMatchObject(counts);
         });
     });
 

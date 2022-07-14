@@ -36,7 +36,7 @@ const worksImage = fs.readFileSync("./examples/static/it-works.png");
 const registration: IAppserviceRegistration = {
     "as_token": creds?.['asToken'] ?? "change_me",
     "hs_token": creds?.['hsToken'] ?? "change_me",
-    "sender_localpart": "crypto_test_appservice_rust3",
+    "sender_localpart": "crypto_main_bot_user",
     "namespaces": {
         users: [{
             regex: "@crypto.*:localhost",
@@ -65,8 +65,8 @@ const options: IAppserviceOptions = {
 };
 
 const appservice = new Appservice(options);
-// const bot = appservice.botIntent;
-const bot = appservice.getIntentForUserId("@crypto_nondefault_test3:localhost");
+const bot = appservice.botIntent;
+// const bot = appservice.getIntentForUserId("@crypto_bot1:localhost");
 
 (async function() {
     await bot.enableEncryption();
