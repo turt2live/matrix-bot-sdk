@@ -2805,7 +2805,8 @@ describe('MatrixClient', () => {
             (<any>client).userId = "@joins:example.org"; // avoid /whoami lookup
 
             // noinspection TypeScriptValidateJSTypes
-            http.when("POST", "/_matrix/client/v3/join").respond(200, (path) => {
+            http.when("POST", "/_matrix/client/v3/join").respond(200, (path, content) => {
+                expect(content).toEqual({});
                 expect(path).toEqual(`${hsUrl}/_matrix/client/v3/join/${encodeURIComponent(roomId)}`);
                 return { room_id: roomId };
             });
@@ -2824,6 +2825,7 @@ describe('MatrixClient', () => {
 
             // noinspection TypeScriptValidateJSTypes
             http.when("POST", "/_matrix/client/v3/join").respond(200, (path, content, req) => {
+                expect(content).toEqual({});
                 expect(path).toEqual(`${hsUrl}/_matrix/client/v3/join/${encodeURIComponent(roomId)}`);
                 expect(req.queryParams['server_name'].length).toEqual(serverNames.length);
                 for (let i = 0; i < serverNames.length; i++) {
@@ -2845,7 +2847,8 @@ describe('MatrixClient', () => {
             (<any>client).userId = "@joins:example.org"; // avoid /whoami lookup
 
             // noinspection TypeScriptValidateJSTypes
-            http.when("POST", "/_matrix/client/v3/join").respond(200, (path) => {
+            http.when("POST", "/_matrix/client/v3/join").respond(200, (path, content) => {
+                expect(content).toEqual({});
                 expect(path).toEqual(`${hsUrl}/_matrix/client/v3/join/${encodeURIComponent(roomAlias)}`);
                 return { room_id: roomId };
             });
@@ -2873,7 +2876,8 @@ describe('MatrixClient', () => {
             const strategySpy = simple.mock(strategy, "joinRoom").callOriginal();
 
             // noinspection TypeScriptValidateJSTypes
-            http.when("POST", "/_matrix/client/v3/join").respond(200, (path) => {
+            http.when("POST", "/_matrix/client/v3/join").respond(200, (path, content) => {
+                expect(content).toEqual({});
                 expect(path).toEqual(`${hsUrl}/_matrix/client/v3/join/${encodeURIComponent(roomId)}`);
                 return { room_id: roomId };
             });
@@ -2903,7 +2907,8 @@ describe('MatrixClient', () => {
             const strategySpy = simple.mock(strategy, "joinRoom").callOriginal();
 
             // noinspection TypeScriptValidateJSTypes
-            http.when("POST", "/_matrix/client/v3/join").respond(200, (path) => {
+            http.when("POST", "/_matrix/client/v3/join").respond(200, (path, content) => {
+                expect(content).toEqual({});
                 expect(path).toEqual(`${hsUrl}/_matrix/client/v3/join/${encodeURIComponent(roomId)}`);
                 return { room_id: roomId };
             });
@@ -3103,7 +3108,8 @@ describe('MatrixClient', () => {
             const roomId = "!testing:example.org";
 
             // noinspection TypeScriptValidateJSTypes
-            http.when("POST", "/_matrix/client/v3/rooms").respond(200, (path) => {
+            http.when("POST", "/_matrix/client/v3/rooms").respond(200, (path, content) => {
+                expect(content).toEqual({});
                 expect(path).toEqual(`${hsUrl}/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/leave`);
                 return {};
             });
