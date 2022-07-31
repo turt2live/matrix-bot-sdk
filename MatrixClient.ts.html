@@ -1147,7 +1147,7 @@ export class MatrixClient extends EventEmitter {
             targetIdOrAlias = encodeURIComponent(targetIdOrAlias);
             const qs = {};
             if (viaServers.length > 0) qs['server_name'] = viaServers;
-            return this.doRequest("POST", "/_matrix/client/v3/join/" + targetIdOrAlias, qs).then(response => {
+            return this.doRequest("POST", "/_matrix/client/v3/join/" + targetIdOrAlias, qs, {}).then(response => {
                 return response['room_id'];
             });
         };
@@ -1216,7 +1216,7 @@ export class MatrixClient extends EventEmitter {
      */
     @timedMatrixClientFunctionCall()
     public leaveRoom(roomId: string): Promise&lt;any> {
-        return this.doRequest("POST", "/_matrix/client/v3/rooms/" + encodeURIComponent(roomId) + "/leave");
+        return this.doRequest("POST", "/_matrix/client/v3/rooms/" + encodeURIComponent(roomId) + "/leave", null, {});
     }
 
     /**
