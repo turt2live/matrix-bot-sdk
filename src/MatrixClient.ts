@@ -26,9 +26,6 @@ import { Space, SpaceCreateOptions } from "./models/Spaces";
 import { PowerLevelAction } from "./models/PowerLevelAction";
 import { CryptoClient } from "./e2ee/CryptoClient";
 import {
-    DeviceKeyAlgorithm,
-    DeviceKeyLabel,
-    EncryptionAlgorithm,
     FallbackKey,
     IToDeviceMessage,
     MultiUserDeviceListResponse,
@@ -45,6 +42,7 @@ import { IWhoAmI } from "./models/Account";
 import { RustSdkCryptoStorageProvider } from "./storage/RustSdkCryptoStorageProvider";
 import { DMs } from "./DMs";
 import { ServerVersions } from "./models/ServerVersions";
+import { RoomCreateOptions } from "./models/CreateRoom";
 
 const SYNC_BACKOFF_MIN_MS = 5000;
 const SYNC_BACKOFF_MAX_MS = 15000;
@@ -132,6 +130,14 @@ export class MatrixClient extends EventEmitter {
                 throw new Error("Cannot support custom encryption stores: Use a RustSdkCryptoStorageProvider");
             }
             this.crypto = new CryptoClient(this);
+            this.on("room.event", (roomId, event) => {
+                // noinspection JSIgnoredPromiseFromCall
+                this.crypto.onRoomEvent(roomId, event);
+            });
+            this.on("room.join", (roomId) => {
+                // noinspection JSIgnoredPromiseFromCall
+                this.crypto.onRoomJoin(roomId);
+            });
             LogService.debug("MatrixClientLite", "End-to-end encryption client created");
         } else {
             // LogService.trace("MatrixClientLite", "Not setting up encryption");
@@ -777,21 +783,6 @@ export class MatrixClient extends EventEmitter {
 
         // Always process device messages first to ensure there are decryption keys
 
-        if (raw['groups']) {
-            const leave = raw['groups']['leave'] || {};
-            for (const groupId of Object.keys(leave)) {
-                await emitFn("unstable.group.leave", groupId, leave[groupId]);
-            }
-            const join = raw['groups']['join'] || {};
-            for (const groupId of Object.keys(join)) {
-                await emitFn("unstable.group.join", groupId, join[groupId]);
-            }
-            const invite = raw['groups']['invite'] || {};
-            for (const groupId of Object.keys(invite)) {
-                await emitFn("unstable.group.invite", groupId, invite[groupId]);
-            }
-        }
-
         if (raw['account_data'] && raw['account_data']['events']) {
             for (const event of raw['account_data']['events']) {
                 await emitFn("account_data", event);
@@ -1046,7 +1037,7 @@ export class MatrixClient extends EventEmitter {
             targetIdOrAlias = encodeURIComponent(targetIdOrAlias);
             const qs = {};
             if (viaServers.length > 0) qs['server_name'] = viaServers;
-            return this.doRequest("POST", "/_matrix/client/v3/join/" + targetIdOrAlias, qs).then(response => {
+            return this.doRequest("POST", "/_matrix/client/v3/join/" + targetIdOrAlias, qs, {}).then(response => {
                 return response['room_id'];
             });
         };
@@ -1115,7 +1106,7 @@ export class MatrixClient extends EventEmitter {
      */
     @timedMatrixClientFunctionCall()
     public leaveRoom(roomId: string): Promise<any> {
-        return this.doRequest("POST", "/_matrix/client/v3/rooms/" + encodeURIComponent(roomId) + "/leave");
+        return this.doRequest("POST", "/_matrix/client/v3/rooms/" + encodeURIComponent(roomId) + "/leave", null, {});
     }
 
     /**
@@ -1359,15 +1350,14 @@ export class MatrixClient extends EventEmitter {
     }
 
     /**
-     * Creates a room. This does not break out the various options for creating a room
-     * due to the large number of possibilities. See the /createRoom endpoint in the
-     * spec for more information on what to provide for `properties`. Note that creating
+     * Creates a room. See the RoomCreateOptions interface
+     * for more information on what to provide for `properties`. Note that creating
      * a room may cause the bot/appservice to raise a join event.
-     * @param {any} properties the properties of the room. See the spec for more information
+     * @param {RoomCreateOptions} properties the properties of the room.
      * @returns {Promise<string>} resolves to the room ID that represents the room
      */
     @timedMatrixClientFunctionCall()
-    public createRoom(properties: any = {}): Promise<string> {
+    public createRoom(properties: RoomCreateOptions = {}): Promise<string> {
         return this.doRequest("POST", "/_matrix/client/v3/createRoom", null, properties).then(response => {
             return response['room_id'];
         });
@@ -1718,10 +1708,10 @@ export class MatrixClient extends EventEmitter {
      */
     @timedMatrixClientFunctionCall()
     public async createSpace(opts: SpaceCreateOptions): Promise<Space> {
-        const roomCreateOpts = {
+        const roomCreateOpts: RoomCreateOptions = {
             name: opts.name,
             topic: opts.topic || "",
-            preset: opts.isPublic ? 'public_chat' : 'private_chat',
+            preset: opts.isPublic ? "public_chat" : "private_chat",
             room_alias_name: opts.localpart,
             initial_state: [
                 {
@@ -1731,7 +1721,7 @@ export class MatrixClient extends EventEmitter {
                         history_visibility: opts.isPublic ? 'world_readable' : 'shared',
                     },
                 },
-            ] as unknown[],
+            ],
             creation_content: {
                 type: "m.space",
             },
@@ -1780,27 +1770,6 @@ export class MatrixClient extends EventEmitter {
             throw new Error("Room is not a space");
         }
         return new Space(roomId, this);
-    }
-
-    /**
-     * Uploads new identity keys for the current device.
-     * @param {EncryptionAlgorithm[]} algorithms The supported algorithms.
-     * @param {Record<DeviceKeyLabel<DeviceKeyAlgorithm, string>, string>} keys The keys for the device.
-     * @returns {Promise<OTKCounts>} Resolves to the current One Time Key counts when complete.
-     */
-    @timedMatrixClientFunctionCall()
-    @requiresCrypto()
-    public async uploadDeviceKeys(algorithms: EncryptionAlgorithm[], keys: Record<DeviceKeyLabel<DeviceKeyAlgorithm, string>, string>): Promise<OTKCounts> {
-        const obj = {
-            user_id: await this.getUserId(),
-            device_id: this.crypto.clientDeviceId,
-            algorithms: algorithms,
-            keys: keys,
-        };
-        obj['signatures'] = await this.crypto.sign(obj);
-        return this.doRequest("POST", "/_matrix/client/v3/keys/upload", null, {
-            device_keys: obj,
-        }).then(r => r['one_time_key_counts']);
     }
 
     /**

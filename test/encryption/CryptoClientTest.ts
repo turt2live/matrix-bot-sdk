@@ -1,30 +1,31 @@
 import * as simple from "simple-mock";
-import { OlmMachine, Signatures } from "@turt2live/matrix-sdk-crypto-nodejs";
+import HttpBackend from 'matrix-mock-request';
 
-import {
-    ConsoleLogger,
-    DeviceKeyAlgorithm,
-    EncryptedFile,
-    LogService,
-    MatrixClient,
-    RoomEncryptionAlgorithm,
-} from "../../src";
-import { InternalOlmMachineFactory } from "../../src/e2ee/InternalOlmMachineFactory";
+import { EncryptedFile, MatrixClient, MembershipEvent, OTKAlgorithm, RoomEncryptionAlgorithm } from "../../src";
 import { createTestClient, TEST_DEVICE_ID } from "../TestUtils";
 
-describe('CryptoClient', () => {
-    afterEach(() => {
-        InternalOlmMachineFactory.FACTORY_OVERRIDE = null;
+export function bindNullEngine(http: HttpBackend) {
+    http.when("POST", "/keys/upload").respond(200, (path, obj) => {
+        expect(obj).toMatchObject({
+
+        });
+        return {
+            one_time_key_counts: {
+                // Enough to trick the OlmMachine into thinking it has enough keys
+                [OTKAlgorithm.Signed]: 1000,
+            },
+        };
     });
+    // Some oddity with the rust-sdk bindings during setup
+    http.when("POST", "/keys/query").respond(200, (path, obj) => {
+        return {};
+    });
+}
 
+describe('CryptoClient', () => {
     it('should not have a device ID or be ready until prepared', async () => {
-        InternalOlmMachineFactory.FACTORY_OVERRIDE = () => ({
-            identityKeys: {},
-            runEngine: () => Promise.resolve(),
-        } as OlmMachine);
-
         const userId = "@alice:example.org";
-        const { client } = createTestClient(null, userId, true);
+        const { client, http } = createTestClient(null, userId, true);
 
         client.getWhoAmI = () => Promise.resolve({ user_id: userId, device_id: TEST_DEVICE_ID });
 
@@ -32,7 +33,11 @@ describe('CryptoClient', () => {
         expect(client.crypto.clientDeviceId).toBeFalsy();
         expect(client.crypto.isReady).toEqual(false);
 
-        await client.crypto.prepare([]);
+        bindNullEngine(http);
+        await Promise.all([
+            client.crypto.prepare([]),
+            http.flushAllExpected(),
+        ]);
 
         expect(client.crypto.clientDeviceId).toEqual(TEST_DEVICE_ID);
         expect(client.crypto.isReady).toEqual(true);
@@ -40,14 +45,9 @@ describe('CryptoClient', () => {
 
     describe('prepare', () => {
         it('should prepare the room tracker', async () => {
-            InternalOlmMachineFactory.FACTORY_OVERRIDE = () => ({
-                identityKeys: {},
-                runEngine: () => Promise.resolve(),
-            } as OlmMachine);
-
             const userId = "@alice:example.org";
             const roomIds = ["!a:example.org", "!b:example.org"];
-            const { client } = createTestClient(null, userId, true);
+            const { client, http } = createTestClient(null, userId, true);
 
             client.getWhoAmI = () => Promise.resolve({ user_id: userId, device_id: TEST_DEVICE_ID });
 
@@ -58,25 +58,28 @@ describe('CryptoClient', () => {
 
             (<any>client.crypto).roomTracker.prepare = prepareSpy; // private member access
 
-            await client.crypto.prepare(roomIds);
+            bindNullEngine(http);
+            await Promise.all([
+                client.crypto.prepare(roomIds),
+                http.flushAllExpected(),
+            ]);
             expect(prepareSpy.callCount).toEqual(1);
         });
 
         it('should use a stored device ID', async () => {
-            InternalOlmMachineFactory.FACTORY_OVERRIDE = () => ({
-                identityKeys: {},
-                runEngine: () => Promise.resolve(),
-            } as OlmMachine);
-
             const userId = "@alice:example.org";
-            const { client } = createTestClient(null, userId, true);
+            const { client, http } = createTestClient(null, userId, true);
 
             await client.cryptoStore.setDeviceId(TEST_DEVICE_ID);
 
             const whoamiSpy = simple.stub().callFn(() => Promise.resolve({ user_id: userId, device_id: "wrong" }));
             client.getWhoAmI = whoamiSpy;
 
-            await client.crypto.prepare([]);
+            bindNullEngine(http);
+            await Promise.all([
+                client.crypto.prepare([]),
+                http.flushAllExpected(),
+            ]);
             expect(whoamiSpy.callCount).toEqual(0);
             expect(client.crypto.clientDeviceId).toEqual(TEST_DEVICE_ID);
         });
@@ -84,11 +87,6 @@ describe('CryptoClient', () => {
 
     describe('isRoomEncrypted', () => {
         it('should fail when the crypto has not been prepared', async () => {
-            InternalOlmMachineFactory.FACTORY_OVERRIDE = () => ({
-                identityKeys: {},
-                runEngine: () => Promise.resolve(),
-            } as OlmMachine);
-
             const userId = "@alice:example.org";
             const { client } = createTestClient(null, userId, true);
 
@@ -106,68 +104,68 @@ describe('CryptoClient', () => {
         });
 
         it('should return false for unknown rooms', async () => {
-            InternalOlmMachineFactory.FACTORY_OVERRIDE = () => ({
-                identityKeys: {},
-                runEngine: () => Promise.resolve(),
-            } as OlmMachine);
-
             const userId = "@alice:example.org";
-            const { client } = createTestClient(null, userId, true);
+            const { client, http } = createTestClient(null, userId, true);
 
             await client.cryptoStore.setDeviceId(TEST_DEVICE_ID);
             client.getRoomStateEvent = () => Promise.reject(new Error("not used"));
-            await client.crypto.prepare([]);
+
+            bindNullEngine(http);
+            await Promise.all([
+                client.crypto.prepare([]),
+                http.flushAllExpected(),
+            ]);
 
             const result = await client.crypto.isRoomEncrypted("!new:example.org");
             expect(result).toEqual(false);
         });
 
         it('should return false for unencrypted rooms', async () => {
-            InternalOlmMachineFactory.FACTORY_OVERRIDE = () => ({
-                identityKeys: {},
-                runEngine: () => Promise.resolve(),
-            } as OlmMachine);
-
             const userId = "@alice:example.org";
-            const { client } = createTestClient(null, userId, true);
+            const { client, http } = createTestClient(null, userId, true);
 
             await client.cryptoStore.setDeviceId(TEST_DEVICE_ID);
             client.getRoomStateEvent = () => Promise.reject(new Error("implied 404"));
-            await client.crypto.prepare([]);
+
+            bindNullEngine(http);
+            await Promise.all([
+                client.crypto.prepare([]),
+                http.flushAllExpected(),
+            ]);
 
             const result = await client.crypto.isRoomEncrypted("!new:example.org");
             expect(result).toEqual(false);
         });
 
         it('should return true for encrypted rooms (redacted state)', async () => {
-            InternalOlmMachineFactory.FACTORY_OVERRIDE = () => ({
-                identityKeys: {},
-                runEngine: () => Promise.resolve(),
-            } as OlmMachine);
-
             const userId = "@alice:example.org";
-            const { client } = createTestClient(null, userId, true);
+            const { client, http } = createTestClient(null, userId, true);
 
             await client.cryptoStore.setDeviceId(TEST_DEVICE_ID);
             client.getRoomStateEvent = () => Promise.resolve({});
-            await client.crypto.prepare([]);
+
+            bindNullEngine(http);
+            await Promise.all([
+                client.crypto.prepare([]),
+                http.flushAllExpected(),
+            ]);
 
             const result = await client.crypto.isRoomEncrypted("!new:example.org");
             expect(result).toEqual(true);
         });
 
         it('should return true for encrypted rooms', async () => {
-            InternalOlmMachineFactory.FACTORY_OVERRIDE = () => ({
-                identityKeys: {},
-                runEngine: () => Promise.resolve(),
-            } as OlmMachine);
-
             const userId = "@alice:example.org";
-            const { client } = createTestClient(null, userId, true);
+            const { client, http } = createTestClient(null, userId, true);
 
             await client.cryptoStore.setDeviceId(TEST_DEVICE_ID);
             client.getRoomStateEvent = () => Promise.resolve({ algorithm: RoomEncryptionAlgorithm.MegolmV1AesSha2 });
-            await client.crypto.prepare([]);
+
+            bindNullEngine(http);
+            await Promise.all([
+                client.crypto.prepare([]),
+                http.flushAllExpected(),
+            ]);
 
             const result = await client.crypto.isRoomEncrypted("!new:example.org");
             expect(result).toEqual(true);
@@ -177,20 +175,12 @@ describe('CryptoClient', () => {
     describe('sign', () => {
         const userId = "@alice:example.org";
         let client: MatrixClient;
+        let http: HttpBackend;
 
         beforeEach(async () => {
-            InternalOlmMachineFactory.FACTORY_OVERRIDE = () => ({
-                identityKeys: {},
-                runEngine: () => Promise.resolve(),
-                sign: async (_) => ({
-                    [userId]: {
-                        [DeviceKeyAlgorithm.Ed25519 + ":" + TEST_DEVICE_ID]: "SIGNATURE_GOES_HERE",
-                    },
-                } as Signatures),
-            } as OlmMachine);
-
-            const { client: mclient } = createTestClient(null, userId, true);
+            const { client: mclient, http: mhttp } = createTestClient(null, userId, true);
             client = mclient;
+            http = mhttp;
 
             await client.cryptoStore.setDeviceId(TEST_DEVICE_ID);
 
@@ -209,7 +199,11 @@ describe('CryptoClient', () => {
         });
 
         it('should sign the object while retaining signatures without mutation', async () => {
-            await client.crypto.prepare([]);
+            bindNullEngine(http);
+            await Promise.all([
+                client.crypto.prepare([]),
+                http.flushAllExpected(),
+            ]);
 
             const obj = {
                 sign: "me",
@@ -238,15 +232,12 @@ describe('CryptoClient', () => {
     describe('encryptRoomEvent', () => {
         const userId = "@alice:example.org";
         let client: MatrixClient;
+        let http: HttpBackend;
 
         beforeEach(async () => {
-            InternalOlmMachineFactory.FACTORY_OVERRIDE = () => ({
-                identityKeys: {},
-                runEngine: () => Promise.resolve(),
-            } as OlmMachine);
-
-            const { client: mclient } = createTestClient(null, userId, true);
+            const { client: mclient, http: mhttp } = createTestClient(null, userId, true);
             client = mclient;
+            http = mhttp;
 
             await client.cryptoStore.setDeviceId(TEST_DEVICE_ID);
 
@@ -265,7 +256,11 @@ describe('CryptoClient', () => {
         });
 
         it('should fail in unencrypted rooms', async () => {
-            await client.crypto.prepare([]);
+            bindNullEngine(http);
+            await Promise.all([
+                client.crypto.prepare([]),
+                http.flushAllExpected(),
+            ]);
 
             // Force unencrypted rooms
             client.crypto.isRoomEncrypted = async () => false;
@@ -290,21 +285,12 @@ describe('CryptoClient', () => {
         let client: MatrixClient;
 
         beforeEach(async () => {
-            InternalOlmMachineFactory.FACTORY_OVERRIDE = () => ({
-                identityKeys: {},
-                runEngine: () => Promise.resolve(),
-            } as OlmMachine);
-
             const { client: mclient } = createTestClient(null, userId, true);
             client = mclient;
 
             await client.cryptoStore.setDeviceId(TEST_DEVICE_ID);
 
             // client crypto not prepared for the one test which wants that state
-        });
-
-        afterEach(async () => {
-            LogService.setLogger(new ConsoleLogger());
         });
 
         it('should fail when the crypto has not been prepared', async () => {
@@ -322,23 +308,16 @@ describe('CryptoClient', () => {
     describe('encryptMedia', () => {
         const userId = "@alice:example.org";
         let client: MatrixClient;
+        let http: HttpBackend;
 
         beforeEach(async () => {
-            InternalOlmMachineFactory.FACTORY_OVERRIDE = () => ({
-                identityKeys: {},
-                runEngine: () => Promise.resolve(),
-            } as OlmMachine);
-
-            const { client: mclient } = createTestClient(null, userId, true);
+            const { client: mclient, http: mhttp } = createTestClient(null, userId, true);
             client = mclient;
+            http = mhttp;
 
             await client.cryptoStore.setDeviceId(TEST_DEVICE_ID);
 
             // client crypto not prepared for the one test which wants that state
-        });
-
-        afterEach(async () => {
-            LogService.setLogger(new ConsoleLogger());
         });
 
         it('should fail when the crypto has not been prepared', async () => {
@@ -353,7 +332,11 @@ describe('CryptoClient', () => {
         });
 
         it('should encrypt media', async () => {
-            await client.crypto.prepare([]);
+            bindNullEngine(http);
+            await Promise.all([
+                client.crypto.prepare([]),
+                http.flushAllExpected(),
+            ]);
 
             const inputBuffer = Buffer.from("test");
             const inputStr = inputBuffer.join('');
@@ -385,6 +368,7 @@ describe('CryptoClient', () => {
     describe('decryptMedia', () => {
         const userId = "@alice:example.org";
         let client: MatrixClient;
+        let http: HttpBackend;
 
         // Created from Element Web
         const testFileContents = "THIS IS A TEST FILE.";
@@ -413,21 +397,13 @@ describe('CryptoClient', () => {
         }
 
         beforeEach(async () => {
-            InternalOlmMachineFactory.FACTORY_OVERRIDE = () => ({
-                identityKeys: {},
-                runEngine: () => Promise.resolve(),
-            } as OlmMachine);
-
-            const { client: mclient } = createTestClient(null, userId, true);
+            const { client: mclient, http: mhttp } = createTestClient(null, userId, true);
             client = mclient;
+            http = mhttp;
 
             await client.cryptoStore.setDeviceId(TEST_DEVICE_ID);
 
             // client crypto not prepared for the one test which wants that state
-        });
-
-        afterEach(async () => {
-            LogService.setLogger(new ConsoleLogger());
         });
 
         it('should fail when the crypto has not been prepared', async () => {
@@ -442,7 +418,11 @@ describe('CryptoClient', () => {
         });
 
         it('should be symmetrical', async () => {
-            await client.crypto.prepare([]);
+            bindNullEngine(http);
+            await Promise.all([
+                client.crypto.prepare([]),
+                http.flushAllExpected(),
+            ]);
 
             const mxc = "mxc://example.org/test";
             const inputBuffer = Buffer.from("test");
@@ -463,7 +443,11 @@ describe('CryptoClient', () => {
         });
 
         it('should decrypt', async () => {
-            await client.crypto.prepare([]);
+            bindNullEngine(http);
+            await Promise.all([
+                client.crypto.prepare([]),
+                http.flushAllExpected(),
+            ]);
 
             const downloadSpy = simple.stub().callFn(async (u) => {
                 expect(u).toEqual(testFile.url);
@@ -475,6 +459,101 @@ describe('CryptoClient', () => {
             const result = await client.crypto.decryptMedia(f);
             expect(result.toString()).toEqual(testFileContents);
             expect(downloadSpy.callCount).toBe(1);
+        });
+    });
+
+    describe('User Tracking', () => {
+        const userId = "@alice:example.org";
+        let client: MatrixClient;
+        let http: HttpBackend;
+
+        beforeEach(async () => {
+            const { client: mclient, http: mhttp } = createTestClient(null, userId, true);
+            client = mclient;
+            http = mhttp;
+
+            await client.cryptoStore.setDeviceId(TEST_DEVICE_ID);
+            bindNullEngine(http);
+            await Promise.all([
+                client.crypto.prepare([]),
+                http.flushAllExpected(),
+            ]);
+        });
+
+        it('should update tracked users on membership changes', async () => {
+            const targetUserIds = ["@bob:example.org", "@charlie:example.org"];
+            const prom = new Promise<void>(extResolve => {
+                const trackSpy = simple.mock().callFn((uids) => {
+                    expect(uids.length).toBe(1);
+                    expect(uids[0]).toEqual(targetUserIds[trackSpy.callCount - 1]);
+                    if (trackSpy.callCount === 2) extResolve();
+                    return Promise.resolve();
+                });
+                (client.crypto as any).engine.addTrackedUsers = trackSpy;
+            });
+
+            for (const targetUserId of targetUserIds) {
+                client.emit("room.event", "!unused:example.org", {
+                    type: "m.room.member",
+                    state_key: targetUserId,
+                    content: { membership: "join" },
+                    sender: targetUserId + ".notthisuser",
+                });
+            }
+
+            // Emit a fake update too, to try and trip up the processing
+            client.emit("room.event", "!unused:example.org", {
+                type: "m.room.member",
+                state_key: "@notjoined:example.org",
+                content: { membership: "ban" },
+                sender: "@notme:example.org",
+            });
+
+            // We do weird promise things because `emit()` is sync and we're using async code, so it can
+            // end up not running fast enough for our callCount checks.
+            await prom;
+        });
+
+        it('should add all tracked users when the encryption config changes', async () => {
+            // Stub the room tracker
+            (client.crypto as any).roomTracker.onRoomEvent = () => {};
+
+            const targetUserIds = ["@bob:example.org", "@charlie:example.org"];
+            const prom1 = new Promise<void>(extResolve => {
+                (client.crypto as any).engine.addTrackedUsers = simple.mock().callFn((uids) => {
+                    expect(uids).toEqual(targetUserIds);
+                    extResolve();
+                    return Promise.resolve();
+                });
+            });
+
+            const roomId = "!room:example.org";
+            const prom2 = new Promise<void>(extResolve => {
+                client.getRoomMembers = simple.mock().callFn((rid, token, memberships) => {
+                    expect(rid).toEqual(roomId);
+                    expect(token).toBeFalsy();
+                    expect(memberships).toEqual(["join", "invite"]);
+                    extResolve();
+                    return Promise.resolve(targetUserIds.map(u => new MembershipEvent({
+                        type: "m.room.member",
+                        state_key: u,
+                        content: { membership: "join" },
+                        sender: u,
+                    })));
+                });
+            });
+
+            client.emit("room.event", roomId, {
+                type: "m.room.encryption",
+                state_key: "",
+                content: {
+                    algorithm: RoomEncryptionAlgorithm.MegolmV1AesSha2,
+                },
+            });
+
+            // We do weird promise things because `emit()` is sync and we're using async code, so it can
+            // end up not running fast enough for our callCount checks.
+            await Promise.all([prom1, prom2]);
         });
     });
 });

@@ -113,18 +113,6 @@ export interface OwnUserDevice {
 }
 
 /**
- * Represents a user's stored device.
- * @category Models
- */
-export interface StoredUserDevice extends UserDevice {
-    unsigned: {
-        [k: string]: any;
-        device_display_name?: string;
-        bsdkIsActive: boolean;
-    };
-}
-
-/**
  * Device list response for a multi-user query.
  * @category Models
  */
@@ -163,60 +151,6 @@ export interface OTKClaimResponse {
 }
 
 /**
- * An outbound group session.
- * @category Models
- */
-export interface IOutboundGroupSession {
-    sessionId: string;
-    roomId: string;
-    pickled: string;
-    isCurrent: boolean;
-    usesLeft: number;
-    expiresTs: number;
-}
-
-/**
- * An inbound group session.
- * @category Models
- */
-export interface IInboundGroupSession {
-    sessionId: string;
-    roomId: string;
-    senderUserId: string;
-    senderDeviceId: string;
-    pickled: string;
-
-    // TODO: Store `keys` from the m.room_key alongside the session for "verified sender" support.
-}
-
-/**
- * An Olm session.
- * @category Models
- */
-export interface IOlmSession {
-    sessionId: string;
-    pickled: string;
-    lastDecryptionTs: number;
-}
-
-/**
- * An Olm payload (plaintext).
- * @category Models
- */
-export interface IOlmPayload {
-    type: string;
-    content: any;
-    sender: string;
-    recipient: string; // user ID
-    recipient_keys: {
-        ed25519: string;
-    };
-    keys: {
-        ed25519: string; // sender's key
-    };
-}
-
-/**
  * An encrypted Olm payload.
  * @category Models
  */
@@ -239,17 +173,6 @@ export interface IToDeviceMessage<T = any> {
     type: string;
     sender: string;
     content: T;
-}
-
-/**
- * An m.room_key to-device message's content.
- * @category Models
- */
-export interface IMRoomKey {
-    algorithm: EncryptionAlgorithm.MegolmV1AesSha2;
-    room_id: string;
-    session_id: string;
-    session_key: string;
 }
 
 /**

@@ -9,8 +9,8 @@ export * from "./appservice/UnstableAppserviceApis";
 export * from "./e2ee/RoomTracker";
 export * from "./e2ee/CryptoClient";
 export * from "./e2ee/decorators";
-export * from "./e2ee/SdkOlmEngine";
-// export * from "./e2ee/InternalOlmMachineFactory";
+// export * from "./e2ee/RustEngine";
+export * from "./e2ee/ICryptoRoomInformation";
 
 // Helpers
 export * from "./helpers/RichReply";
@@ -53,6 +53,8 @@ export * from "./models/MSC2176";
 export * from "./models/Account";
 export * from "./models/PowerLevelAction";
 export * from "./models/ServerVersions";
+export * from "./models/MatrixError";
+export * from "./models/CreateRoom";
 
 // Unstable models
 export * from "./models/unstable/MediaInfo";

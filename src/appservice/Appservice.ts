@@ -2,6 +2,7 @@ import * as express from "express";
 import { EventEmitter } from "events";
 import * as morgan from "morgan";
 import * as LRU from "lru-cache";
+import { stringify } from "querystring";
 
 import { Intent } from "./Intent";
 import {
@@ -17,6 +18,7 @@ import {
     MemoryStorageProvider,
     Metrics,
     OTKAlgorithm,
+    redactObjectForLogging,
 } from "..";
 import { MatrixBridge } from "./MatrixBridge";
 import { IApplicationServiceProtocol } from "./http_responses";
@@ -78,11 +80,6 @@ export interface IAppserviceRegistration {
              * The regular expression that the homeserver uses to determine if a user is in this namespace.
              */
             regex: string;
-
-            /**
-             * An optional group ID to enable flair for users in this namespace.
-             */
-            groupId?: string;
         }[];
 
         /**
@@ -268,9 +265,15 @@ export class Appservice extends EventEmitter {
         this.cryptoStorage = options.cryptoStorage;
 
         this.app.use(express.json({ limit: Number.MAX_SAFE_INTEGER })); // disable limits, use a reverse proxy
-        this.app.use(morgan("combined", {
-            stream: { write: LogService.info.bind(LogService, 'Appservice') },
-        }));
+        morgan.token('url-safe', (req: express.Request) =>
+            `${req.path}?${stringify(redactObjectForLogging(req.query ?? {}))}`,
+        );
+
+        this.app.use(morgan(
+            // Same as "combined", but with sensitive values removed from requests.
+            ':remote-addr - :remote-user [:date[clf]] ":method :url-safe HTTP/:http-version" :status :res[content-length] ":referrer" ":user-agent"',
+            { stream: { write: LogService.info.bind(LogService, 'Appservice') } },
+        ));
 
         // ETag headers break the tests sometimes, and we don't actually need them anyways for
         // appservices - none of this should be cached.
@@ -605,12 +608,17 @@ export class Appservice extends EventEmitter {
         return event;
     }
 
-    private processMembershipEvent(event: any): void {
+    private async processMembershipEvent(event: any): Promise<void> {
         if (!event["content"]) return;
+
+        // Update the target intent's joined rooms (fixes transition errors with the cache, like join->kick->join)
+        const intent = this.getIntentForUserId(event['state_key']);
+        await intent.refreshJoinedRooms();
 
         const targetMembership = event["content"]["membership"];
         if (targetMembership === "join") {
             this.emit("room.join", event["room_id"], event);
+            await intent.underlyingClient.crypto?.onRoomJoin(event["room_id"]);
         } else if (targetMembership === "ban" || targetMembership === "leave") {
             this.emit("room.leave", event["room_id"], event);
         } else if (targetMembership === "invite") {
@@ -723,6 +731,9 @@ export class Appservice extends EventEmitter {
                     removed: [],
                 };
 
+                if (!deviceLists.changed) deviceLists.changed = [];
+                if (!deviceLists.removed) deviceLists.removed = [];
+
                 const otks = req.body["org.matrix.msc3202.device_one_time_key_counts"];
                 if (otks) {
                     for (const userId of Object.keys(otks)) {
@@ -827,7 +838,7 @@ export class Appservice extends EventEmitter {
                     this.emit("room.message", event["room_id"], event);
                 }
                 if (event['type'] === 'm.room.member' && this.isNamespacedUser(event['state_key'])) {
-                    this.processMembershipEvent(event);
+                    await this.processMembershipEvent(event);
                 }
                 if (event['type'] === 'm.room.tombstone' && event['state_key'] === '') {
                     this.emit("room.archived", event['room_id'], event);
