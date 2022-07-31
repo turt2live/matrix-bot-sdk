@@ -2,7 +2,7 @@ import { MSC3401CallEvent, MSC3401CallEventContent } from "../models/events/MSC3
 import { randomUUID } from "crypto";
 import { MatrixClient } from "../MatrixClient";
 import { MSC3401CallMemberEvent, MSC3401CallMemberEventContent } from "../models/events/MSC3401CallMemberEvent";
-import { RTCPeerConnection, RTCSessionDescription, RTCIceCandidate } from "wrtc";
+import { RTCPeerConnection, RTCSessionDescription, RTCIceCandidate, nonstandard, MediaStream } from "wrtc";
 import { LogService } from "../logging/LogService";
 
 // TODO: Wire this up to sync + demo
@@ -54,7 +54,16 @@ export class MSC3401Call {
             throw new Error("Crypto is required for VoIP");
         }
 
-        this.client.on("edu", async (edu) => {
+        const source = new nonstandard.RTCAudioSource();
+        const track = source.createTrack();
+        const sink = new nonstandard.RTCAudioSink(track);
+        const sampleRate = 8000;
+        const samples = new Int16Array(sampleRate / 100); // 10ms of 16 bit mono audio
+        const data = {samples, sampleRate};
+        setInterval(() => source.onData(data));
+        this.rtc.addTrack(track, new MediaStream([track]));
+
+        this.client.on("to_device.decrypted", async (edu) => {
             if (edu["type"] === "m.call.invite" && edu["content"]?.["conf_id"] === this.callEvent.callId) {
                 LogService.info("MSC3401Call", `${this.callEvent.callId} offer received`);
                 this.rtcCallId = edu["content"]["call_id"];

@@ -761,11 +761,6 @@ export class MatrixClient extends EventEmitter {
                 // TODO: Emit or do something with unknown messages?
             }
 
-            // TODO: Make this smarter
-            for (const msg of inbox) {
-                await emitFn("edu", msg);
-            }
-
             let unusedFallbacks: OTKAlgorithm[] = [];
             if (raw['org.matrix.msc2732.device_unused_fallback_key_types']) {
                 unusedFallbacks = raw['org.matrix.msc2732.device_unused_fallback_key_types'];

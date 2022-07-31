@@ -9,7 +9,7 @@ export interface MSC3401CallEventContent {
     "m.intent": "m.room" | "m.ring" | "m.prompt" | string;
     "m.type": "m.voice" | "m.video" | string;
     "m.terminated": boolean; // TODO: Check type
-    "m.name": string;
+    "m.name": string; // TODO: Check if used
     "m.foci"?: string[]; // Not currently supported
 }
 
