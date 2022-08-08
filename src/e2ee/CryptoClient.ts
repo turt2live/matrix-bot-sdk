@@ -111,7 +111,7 @@ export class CryptoClient {
             if (membership.effectiveMembership !== 'join' && membership.effectiveMembership !== 'invite') return;
             await this.engine.addTrackedUsers([membership.membershipFor]);
         } else if (event['type'] === 'm.room.encryption') {
-            const members = await this.client.getRoomMembers(roomId, null, ['join', 'invite']);
+            const members = await this.client.getRoomMembers(roomId, null, null, 'leave');
             await this.engine.addTrackedUsers(members.map(e => e.membershipFor));
         }
     }

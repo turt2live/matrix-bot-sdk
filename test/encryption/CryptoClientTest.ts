@@ -529,10 +529,10 @@ describe('CryptoClient', () => {
 
             const roomId = "!room:example.org";
             const prom2 = new Promise<void>(extResolve => {
-                client.getRoomMembers = simple.mock().callFn((rid, token, memberships) => {
+                client.getRoomMembers = simple.mock().callFn((rid, token, _membership, notMembership) => {
                     expect(rid).toEqual(roomId);
                     expect(token).toBeFalsy();
-                    expect(memberships).toEqual(["join", "invite"]);
+                    expect(notMembership).toEqual("leave");
                     extResolve();
                     return Promise.resolve(targetUserIds.map(u => new MembershipEvent({
                         type: "m.room.member",

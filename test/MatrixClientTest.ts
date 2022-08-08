@@ -3080,18 +3080,18 @@ describe('MatrixClient', () => {
                     },
                 },
             ];
-            const forMemberships: Membership[] = ['join', 'leave'];
-            const forNotMemberships: Membership[] = ['ban'];
+            const forMembership: Membership = 'join';
+            const forNotMembership: Membership = 'ban';
 
             // noinspection TypeScriptValidateJSTypes
             http.when("GET", "/_matrix/client/v3/rooms").respond(200, (path, content, req) => {
                 expect(path).toEqual(`${hsUrl}/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/members`);
-                expectArrayEquals(forMemberships, (req.queryParams as any).membership);
-                expectArrayEquals(forNotMemberships, (req.queryParams as any).not_membership);
+                expect(forMembership).toEqual((req.queryParams as any).membership);
+                expect(forNotMembership).toEqual((req.queryParams as any).not_membership);
                 return { chunk: memberEvents };
             });
 
-            const [result] = await Promise.all([client.getRoomMembers(roomId, null, forMemberships, forNotMemberships), http.flushAllExpected()]);
+            const [result] = await Promise.all([client.getRoomMembers(roomId, null, forMembership, forNotMembership), http.flushAllExpected()]);
             expect(result).toBeDefined();
             expect(result.length).toBe(2);
             expect(result[0].membership).toBe(memberEvents[0]['content']['membership']);

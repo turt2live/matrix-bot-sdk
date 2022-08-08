@@ -1079,11 +1079,47 @@ export class MatrixClient extends EventEmitter {
      * arguments. To change the point in time, use the batchToken.
      * @param {string} roomId The room ID to get members in.
      * @param {string} batchToken The point in time to get members at (or null for 'now')
+     * @param {Membership} membership The membership kind to search for.
+     * @param {Membership} notMembership The membership kind to not search for.
+     * @returns {Promise<MembershipEvent[]>} Resolves to the membership events of the users in the room.
+     */
+    public getRoomMembers(
+        roomId: string,
+        batchToken?: string,
+        membership?: Membership,
+        notMembership?: Membership,
+    ): Promise<MembershipEvent[]>;
+
+    /**
+     * Gets the membership events of users in the room. Defaults to all membership
+     * types, though this can be controlled with the membership and notMembership
+     * arguments. To change the point in time, use the batchToken.
+     * @param {string} roomId The room ID to get members in.
+     * @param {string} batchToken The point in time to get members at (or null for 'now')
      * @param {string[]} membership The membership kinds to search for.
      * @param {string[]} notMembership The membership kinds to not search for.
-     * @returns {Promise<any[]>} Resolves to the membership events of the users in the room.
+     * @returns {Promise<MembershipEvent[]>} Resolves to the membership events of the users in the room.
+     * @deprecated The method should not be used, because the Matrix API doesn't allow to filter for multiple membership kinds.
      */
-    public getRoomMembers(roomId: string, batchToken: string = null, membership: Membership[] = null, notMembership: Membership[] = null): Promise<MembershipEvent[]> {
+    public getRoomMembers(
+        roomId: string,
+        batchToken?: string,
+        membership?: Membership[],
+        notMembership?: Membership[],
+    ): Promise<MembershipEvent[]>;
+
+    public getRoomMembers(
+        roomId: string,
+        batchToken?: string,
+        membership?: Membership | Membership[],
+        notMembership?: Membership | Membership[],
+    ): Promise<MembershipEvent[]> {
+        if (membership?.length > 1) {
+            LogService.warn("MatrixClientLite", "getRoomMembers called with multiple membership kinds.");
+        }
+        if (notMembership?.length > 1) {
+            LogService.warn("MatrixClientLite", "getRoomMembers called with multiple notMembership kinds.");
+        }
         const qs = {};
         if (batchToken) qs["at"] = batchToken;
         if (membership) qs["membership"] = membership;
