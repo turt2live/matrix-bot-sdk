@@ -1,5 +1,5 @@
 import { MatrixClient } from "./MatrixClient";
-import MatrixError from "./models/MatrixError";
+import { MatrixError } from "./models/MatrixError";
 
 /**
  * Information about a user on Synapse.
