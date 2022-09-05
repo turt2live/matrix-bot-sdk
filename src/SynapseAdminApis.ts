@@ -460,4 +460,15 @@ export class SynapseAdminApis {
     public async deleteRegistrationToken(token: string): Promise<void> {
         return this.client.doRequest("DELETE", `/_synapse/admin/v1/registration_tokens/${encodeURIComponent(token)}`, undefined, {});
     }
+
+    /**
+     * Grants another user the highest power available to a local user who is in the room.
+     * If the user is not in the room, and it is not publicly joinable, then invite the user.
+     * @param roomId The room to invite the user to.
+     * @param userId The user to invite to the room. If undefined, it invites the authenticated user.
+     * @returns Resolves when complete.
+     */
+    public async makeRoomAdmin(roomId: string, userId?: string): Promise<void> {
+        return this.client.doRequest("POST", `/_synapse/admin/v1/rooms/${encodeURIComponent(roomId)}/make_room_admin`, {}, { user_id: userId } );
+    }
 }

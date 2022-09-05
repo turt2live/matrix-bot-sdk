@@ -514,5 +514,23 @@ describe('SynapseAdminApis', () => {
                 await Promise.all([client.deleteRegistrationToken("foo"), http.flushAllExpected()]);
             });
         });
+
+        describe('makeRoomAdmin', () => {
+            it('should call the right endpoint', async () => {
+                const {client, http, hsUrl} = createTestSynapseAdminClient();
+
+                const roomId = "!room:example.org";
+                const userId = "@alice:example.org";
+
+                http.when("POST", "/_synapse/admin/v1/rooms").respond(200, (path, _content, req) => {
+                    expect(JSON.parse(req.opts.body)).toMatchObject({user_id: userId});
+                    expect(path).toEqual(`${hsUrl}/_synapse/admin/v1/rooms/${encodeURIComponent(roomId)}/make_room_admin`);
+                    return {};
+                });
+
+                http.flushAllExpected();
+                await client.makeRoomAdmin(roomId, userId);
+            });
+        });
     });
 });
