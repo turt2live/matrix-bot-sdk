@@ -469,6 +469,6 @@ export class SynapseAdminApis {
      * @returns Resolves when complete.
      */
     public async makeRoomAdmin(roomId: string, userId?: string): Promise<void> {
-        return this.client.doRequest("POST", `/_synapse/admin/v1/rooms/${encodeURIComponent(roomId)}/make_room_admin`, {}, { user_id: userId } );
+        return this.client.doRequest("POST", `/_synapse/admin/v1/rooms/${encodeURIComponent(roomId)}/make_room_admin`, {}, { user_id: userId });
     }
 }
