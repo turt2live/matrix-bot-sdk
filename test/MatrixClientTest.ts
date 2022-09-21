@@ -3083,15 +3083,239 @@ describe('MatrixClient', () => {
             const forMemberships: Membership[] = ['join', 'leave'];
             const forNotMemberships: Membership[] = ['ban'];
 
-            // noinspection TypeScriptValidateJSTypes
             http.when("GET", "/_matrix/client/v3/rooms").respond(200, (path, content, req) => {
                 expect(path).toEqual(`${hsUrl}/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/members`);
-                expectArrayEquals(forMemberships, (req.queryParams as any).membership);
-                expectArrayEquals(forNotMemberships, (req.queryParams as any).not_membership);
-                return { chunk: memberEvents };
+                expect((req.queryParams as any).membership).toEqual("join");
+                expect((req.queryParams as any).not_membership).toBeFalsy();
+                return { chunk: [memberEvents[0]] };
+            });
+            http.when("GET", "/_matrix/client/v3/rooms").respond(200, (path, content, req) => {
+                expect(path).toEqual(`${hsUrl}/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/members`);
+                expect((req.queryParams as any).membership).toEqual("leave");
+                expect((req.queryParams as any).not_membership).toBeFalsy();
+                return { chunk: [memberEvents[1]] };
+            });
+            http.when("GET", "/_matrix/client/v3/rooms").respond(200, (path, content, req) => {
+                expect(path).toEqual(`${hsUrl}/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/members`);
+                expect((req.queryParams as any).membership).toBeFalsy();
+                expect((req.queryParams as any).not_membership).toEqual("ban");
+                return { chunk: [] };
             });
 
             const [result] = await Promise.all([client.getRoomMembers(roomId, null, forMemberships, forNotMemberships), http.flushAllExpected()]);
+            expect(result).toBeDefined();
+            expect(result.length).toBe(2);
+            expect(result[0].membership).toBe(memberEvents[0]['content']['membership']);
+            expect(result[0].membershipFor).toBe(memberEvents[0]['state_key']);
+            expect(result[1].membership).toBe(memberEvents[1]['content']['membership']);
+            expect(result[1].membershipFor).toBe(memberEvents[1]['state_key']);
+        });
+    });
+
+    describe('getRoomMembersByMembership', () => {
+        it('should call the right endpoint', async () => {
+            const { client, http, hsUrl } = createTestClient();
+
+            const roomId = "!testing:example.org";
+            const memberEvents = [
+                // HACK: These are minimal events for testing purposes only.
+                {
+                    type: "m.room.member",
+                    state_key: "@alice:example.org",
+                    content: {
+                        membership: "join",
+                    },
+                }
+            ];
+
+            // noinspection TypeScriptValidateJSTypes
+            http.when("GET", "/_matrix/client/v3/rooms").respond(200, (path, content, req) => {
+                expect(path).toEqual(`${hsUrl}/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/members`);
+                expect((req.queryParams as any).membership).toEqual("join");
+                expect((req.queryParams as any).not_membership).toBeFalsy();
+                expect((req.queryParams as any).at).toBeFalsy();
+                return { chunk: memberEvents };
+            });
+
+            const [result] = await Promise.all([client.getRoomMembersByMembership(roomId, "join"), http.flushAllExpected()]);
+            expect(result).toBeDefined();
+            expect(result.length).toBe(1);
+            expect(result[0].membership).toBe(memberEvents[0]['content']['membership']);
+            expect(result[0].membershipFor).toBe(memberEvents[0]['state_key']);
+        });
+
+        it('should call the right endpoint with a batch token', async () => {
+            const { client, http, hsUrl } = createTestClient();
+
+            const batchToken = "tokenhere";
+            const roomId = "!testing:example.org";
+            const memberEvents = [
+                // HACK: These are minimal events for testing purposes only.
+                {
+                    type: "m.room.member",
+                    state_key: "@alice:example.org",
+                    content: {
+                        membership: "join",
+                    },
+                }
+            ];
+
+            // noinspection TypeScriptValidateJSTypes
+            http.when("GET", "/_matrix/client/v3/rooms").respond(200, (path, content, req) => {
+                expect(path).toEqual(`${hsUrl}/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/members`);
+                expect((req.queryParams as any).membership).toEqual("join");
+                expect((req.queryParams as any).not_membership).toBeFalsy();
+                expect((req.queryParams as any).at).toEqual(batchToken);
+                return { chunk: memberEvents };
+            });
+
+            const [result] = await Promise.all([client.getRoomMembersByMembership(roomId, "join", batchToken), http.flushAllExpected()]);
+            expect(result).toBeDefined();
+            expect(result.length).toBe(1);
+            expect(result[0].membership).toBe(memberEvents[0]['content']['membership']);
+            expect(result[0].membershipFor).toBe(memberEvents[0]['state_key']);
+        });
+    });
+
+    describe('getRoomMembersWithoutMembership', () => {
+        it('should call the right endpoint', async () => {
+            const { client, http, hsUrl } = createTestClient();
+
+            const roomId = "!testing:example.org";
+            const memberEvents = [
+                // HACK: These are minimal events for testing purposes only.
+                {
+                    type: "m.room.member",
+                    state_key: "@alice:example.org",
+                    content: {
+                        membership: "leave",
+                    },
+                }
+            ];
+
+            // noinspection TypeScriptValidateJSTypes
+            http.when("GET", "/_matrix/client/v3/rooms").respond(200, (path, content, req) => {
+                expect(path).toEqual(`${hsUrl}/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/members`);
+                expect((req.queryParams as any).membership).toBeFalsy();
+                expect((req.queryParams as any).not_membership).toEqual("join");
+                expect((req.queryParams as any).at).toBeFalsy();
+                return { chunk: memberEvents };
+            });
+
+            const [result] = await Promise.all([client.getRoomMembersWithoutMembership(roomId, "join"), http.flushAllExpected()]);
+            expect(result).toBeDefined();
+            expect(result.length).toBe(1);
+            expect(result[0].membership).toBe(memberEvents[0]['content']['membership']);
+            expect(result[0].membershipFor).toBe(memberEvents[0]['state_key']);
+        });
+
+        it('should call the right endpoint with a batch token', async () => {
+            const { client, http, hsUrl } = createTestClient();
+
+            const batchToken = "tokenhere";
+            const roomId = "!testing:example.org";
+            const memberEvents = [
+                // HACK: These are minimal events for testing purposes only.
+                {
+                    type: "m.room.member",
+                    state_key: "@alice:example.org",
+                    content: {
+                        membership: "leave",
+                    },
+                }
+            ];
+
+            // noinspection TypeScriptValidateJSTypes
+            http.when("GET", "/_matrix/client/v3/rooms").respond(200, (path, content, req) => {
+                expect(path).toEqual(`${hsUrl}/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/members`);
+                expect((req.queryParams as any).membership).toBeFalsy();
+                expect((req.queryParams as any).not_membership).toEqual("join");
+                expect((req.queryParams as any).at).toEqual(batchToken);
+                return { chunk: memberEvents };
+            });
+
+            const [result] = await Promise.all([client.getRoomMembersWithoutMembership(roomId, "join", batchToken), http.flushAllExpected()]);
+            expect(result).toBeDefined();
+            expect(result.length).toBe(1);
+            expect(result[0].membership).toBe(memberEvents[0]['content']['membership']);
+            expect(result[0].membershipFor).toBe(memberEvents[0]['state_key']);
+        });
+    });
+
+    describe('getAllRoomMembers', () => {
+        it('should call the right endpoint', async () => {
+            const { client, http, hsUrl } = createTestClient();
+
+            const roomId = "!testing:example.org";
+            const memberEvents = [
+                // HACK: These are minimal events for testing purposes only.
+                {
+                    type: "m.room.member",
+                    state_key: "@alice:example.org",
+                    content: {
+                        membership: "leave",
+                    },
+                },
+                {
+                    type: "m.room.member",
+                    state_key: "@bob:example.org",
+                    content: {
+                        membership: "join",
+                    },
+                }
+            ];
+
+            // noinspection TypeScriptValidateJSTypes
+            http.when("GET", "/_matrix/client/v3/rooms").respond(200, (path, content, req) => {
+                expect(path).toEqual(`${hsUrl}/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/members`);
+                expect((req.queryParams as any).membership).toBeFalsy();
+                expect((req.queryParams as any).not_membership).toBeFalsy();
+                expect((req.queryParams as any).at).toBeFalsy();
+                return { chunk: memberEvents };
+            });
+
+            const [result] = await Promise.all([client.getAllRoomMembers(roomId), http.flushAllExpected()]);
+            expect(result).toBeDefined();
+            expect(result.length).toBe(2);
+            expect(result[0].membership).toBe(memberEvents[0]['content']['membership']);
+            expect(result[0].membershipFor).toBe(memberEvents[0]['state_key']);
+            expect(result[1].membership).toBe(memberEvents[1]['content']['membership']);
+            expect(result[1].membershipFor).toBe(memberEvents[1]['state_key']);
+        });
+
+        it('should call the right endpoint with a batch token', async () => {
+            const { client, http, hsUrl } = createTestClient();
+
+            const batchToken = "tokenhere";
+            const roomId = "!testing:example.org";
+            const memberEvents = [
+                // HACK: These are minimal events for testing purposes only.
+                {
+                    type: "m.room.member",
+                    state_key: "@alice:example.org",
+                    content: {
+                        membership: "leave",
+                    },
+                },
+                {
+                    type: "m.room.member",
+                    state_key: "@bob:example.org",
+                    content: {
+                        membership: "join",
+                    },
+                }
+            ];
+
+            // noinspection TypeScriptValidateJSTypes
+            http.when("GET", "/_matrix/client/v3/rooms").respond(200, (path, content, req) => {
+                expect(path).toEqual(`${hsUrl}/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/members`);
+                expect((req.queryParams as any).membership).toBeFalsy();
+                expect((req.queryParams as any).not_membership).toBeFalsy();
+                expect((req.queryParams as any).at).toEqual(batchToken);
+                return { chunk: memberEvents };
+            });
+
+            const [result] = await Promise.all([client.getAllRoomMembers(roomId, batchToken), http.flushAllExpected()]);
             expect(result).toBeDefined();
             expect(result.length).toBe(2);
             expect(result[0].membership).toBe(memberEvents[0]['content']['membership']);
