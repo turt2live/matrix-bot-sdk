@@ -3125,7 +3125,7 @@ describe('MatrixClient', () => {
                     content: {
                         membership: "join",
                     },
-                }
+                },
             ];
 
             // noinspection TypeScriptValidateJSTypes
@@ -3157,7 +3157,7 @@ describe('MatrixClient', () => {
                     content: {
                         membership: "join",
                     },
-                }
+                },
             ];
 
             // noinspection TypeScriptValidateJSTypes
@@ -3190,7 +3190,7 @@ describe('MatrixClient', () => {
                     content: {
                         membership: "leave",
                     },
-                }
+                },
             ];
 
             // noinspection TypeScriptValidateJSTypes
@@ -3222,7 +3222,7 @@ describe('MatrixClient', () => {
                     content: {
                         membership: "leave",
                     },
-                }
+                },
             ];
 
             // noinspection TypeScriptValidateJSTypes
@@ -3262,7 +3262,7 @@ describe('MatrixClient', () => {
                     content: {
                         membership: "join",
                     },
-                }
+                },
             ];
 
             // noinspection TypeScriptValidateJSTypes
@@ -3303,7 +3303,7 @@ describe('MatrixClient', () => {
                     content: {
                         membership: "join",
                     },
-                }
+                },
             ];
 
             // noinspection TypeScriptValidateJSTypes
