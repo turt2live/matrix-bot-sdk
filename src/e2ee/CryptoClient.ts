@@ -122,9 +122,11 @@ export class CryptoClient {
      * @param roomId The room ID.
      */
     public async onRoomJoin(roomId: string) {
-        const members = await this.client.getRoomMembers(roomId, null, ['join', 'invite']);
-        await this.engine.addTrackedUsers(members.map(e => e.membershipFor));
         await this.roomTracker.onRoomJoin(roomId);
+        if (await this.isRoomEncrypted(roomId)) {
+            const members = await this.client.getRoomMembers(roomId, null, ['join', 'invite']);
+            await this.engine.addTrackedUsers(members.map(e => e.membershipFor));
+        }
     }
 
     /**
