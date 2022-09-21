@@ -555,5 +555,45 @@ describe('CryptoClient', () => {
             // end up not running fast enough for our callCount checks.
             await Promise.all([prom1, prom2]);
         });
+
+        it('should update the tracked users when joining a new room', async () => {
+            // Stub the room tracker
+            (client.crypto as any).roomTracker.onRoomJoin = () => {};
+
+            const targetUserIds = ["@bob:example.org", "@charlie:example.org"];
+            const prom1 = new Promise<void>(extResolve => {
+                (client.crypto as any).engine.addTrackedUsers = simple.mock().callFn((uids) => {
+                    expect(uids).toEqual(targetUserIds);
+                    extResolve();
+                    return Promise.resolve();
+                });
+            });
+
+            const roomId = "!room:example.org";
+            const prom2 = new Promise<void>(extResolve => {
+                client.getRoomMembers = simple.mock().callFn((rid, token, memberships) => {
+                    expect(rid).toEqual(roomId);
+                    expect(token).toBeFalsy();
+                    expect(memberships).toEqual(["join", "invite"]);
+                    extResolve();
+                    return Promise.resolve(targetUserIds.map(u => new MembershipEvent({
+                        type: "m.room.member",
+                        state_key: u,
+                        content: { membership: "join" },
+                        sender: u,
+                    })));
+                });
+            });
+
+            client.crypto.isRoomEncrypted = async (rid) => {
+                expect(rid).toEqual(roomId);
+                return true;
+            };
+            client.emit("room.join", roomId);
+
+            // We do weird promise things because `emit()` is sync and we're using async code, so it can
+            // end up not running fast enough for our callCount checks.
+            await Promise.all([prom1, prom2]);
+        });
     });
 });
