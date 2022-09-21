@@ -188,7 +188,7 @@ export class DMs {
         const toKeep: string[] = [];
         for (const roomId of currentRooms) {
             try {
-                const members = await this.client.getRoomMembers(roomId);
+                const members = await this.client.getAllRoomMembers(roomId);
                 const joined = members.filter(m => m.effectiveMembership === "join" || m.effectiveMembership === "invite");
                 if (joined.some(m => m.membershipFor === userId)) {
                     toKeep.push(roomId);
