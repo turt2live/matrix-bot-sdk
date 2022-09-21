@@ -12,7 +12,7 @@ import { Appservice, IAppserviceOptions } from "./Appservice";
 // noinspection TypeScriptPreferShortImport
 import { timedIntentFunctionCall } from "../metrics/decorators";
 import { UnstableAppserviceApis } from "./UnstableAppserviceApis";
-import MatrixError from "../models/MatrixError";
+import { MatrixError } from "../models/MatrixError";
 
 /**
  * An Intent is an intelligent client that tracks things like the user's membership

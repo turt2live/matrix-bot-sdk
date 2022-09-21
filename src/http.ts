@@ -1,6 +1,6 @@
 import { LogLevel, LogService } from "./logging/LogService";
 import { getRequestFn } from "./request";
-import MatrixError from './models/MatrixError';
+import { MatrixError } from "./models/MatrixError";
 
 let lastRequestId = 0;
 
