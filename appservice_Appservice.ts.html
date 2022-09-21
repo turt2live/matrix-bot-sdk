@@ -134,6 +134,7 @@ import {
     Metrics,
     OTKAlgorithm,
     redactObjectForLogging,
+    UserID,
 } from "..";
 import { MatrixBridge } from "./MatrixBridge";
 import { IApplicationServiceProtocol } from "./http_responses";
@@ -725,6 +726,10 @@ export class Appservice extends EventEmitter {
 
     private async processMembershipEvent(event: any): Promise&lt;void> {
         if (!event["content"]) return;
+
+        const domain = new UserID(event['state_key']).domain;
+        const botDomain = new UserID(this.botUserId).domain;
+        if (domain !== botDomain) return; // can't be impersonated, so don't try
 
         // Update the target intent's joined rooms (fixes transition errors with the cache, like join->kick->join)
         const intent = this.getIntentForUserId(event['state_key']);
