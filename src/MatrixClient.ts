@@ -1032,7 +1032,7 @@ export class MatrixClient extends EventEmitter {
             targetIdOrAlias = encodeURIComponent(targetIdOrAlias);
             const qs = {};
             if (viaServers.length > 0) qs['server_name'] = viaServers;
-            return this.doRequest("POST", "/_matrix/client/v3/join/" + targetIdOrAlias, qs).then(response => {
+            return this.doRequest("POST", "/_matrix/client/v3/join/" + targetIdOrAlias, qs, {}).then(response => {
                 return response['room_id'];
             });
         };
@@ -1081,11 +1081,75 @@ export class MatrixClient extends EventEmitter {
      * @param {string} batchToken The point in time to get members at (or null for 'now')
      * @param {string[]} membership The membership kinds to search for.
      * @param {string[]} notMembership The membership kinds to not search for.
-     * @returns {Promise<any[]>} Resolves to the membership events of the users in the room.
+     * @returns {Promise<MembershipEvent[]>} Resolves to the membership events of the users in the room.
+     * @see getRoomMembersByMembership
+     * @see getRoomMembersWithoutMembership
+     * @see getAllRoomMembers
      */
+    @timedMatrixClientFunctionCall()
     public getRoomMembers(roomId: string, batchToken: string = null, membership: Membership[] = null, notMembership: Membership[] = null): Promise<MembershipEvent[]> {
+        if (!membership && !notMembership) {
+            return this.getAllRoomMembers(roomId, batchToken);
+        }
+
+        return Promise.all([
+            ...(membership ?? []).map(m => this.getRoomMembersAt(roomId, m, null, batchToken)),
+            ...(notMembership ?? []).map(m => this.getRoomMembersAt(roomId, null, m, batchToken)),
+        ]).then(r => r.reduce((p, c) => {
+            p.push(...c);
+            return p;
+        }, [])).then(r => {
+            // Shouldn't ever happen, but dedupe just in case.
+            const vals = new Map<string, MembershipEvent>();
+            for (const ev of r) {
+                if (!vals.has(ev.membershipFor)) {
+                    vals.set(ev.membershipFor, ev);
+                }
+            }
+            return Array.from(vals.values());
+        });
+    }
+
+    /**
+     * Gets all room members in the room, optionally at a given point in time.
+     * @param {string} roomId The room ID to get members of.
+     * @param {string} atToken Optional batch token to get members at. Leave falsy for "now".
+     * @returns {Promise<MembershipEvent[]>} Resolves to the member events in the room.
+     */
+    @timedMatrixClientFunctionCall()
+    public getAllRoomMembers(roomId: string, atToken?: string): Promise<MembershipEvent[]> {
+        return this.getRoomMembersAt(roomId, null, null, atToken);
+    }
+
+    /**
+     * Gets the membership events of users in the room which have a particular membership type. To change
+     * the point in time the server should return membership events at, use `atToken`.
+     * @param {string} roomId The room ID to get members in.
+     * @param {Membership} membership The membership to search for.
+     * @param {string?} atToken Optional batch token to use, or null for "now".
+     * @returns {Promise<MembershipEvent[]>} Resolves to the membership events of the users in the room.
+     */
+    @timedMatrixClientFunctionCall()
+    public getRoomMembersByMembership(roomId: string, membership: Membership, atToken?: string): Promise<MembershipEvent[]> {
+        return this.getRoomMembersAt(roomId, membership, null, atToken);
+    }
+
+    /**
+     * Gets the membership events of users in the room which lack a particular membership type. To change
+     * the point in time the server should return membership events at, use `atToken`.
+     * @param {string} roomId The room ID to get members in.
+     * @param {Membership} notMembership The membership to NOT search for.
+     * @param {string?} atToken Optional batch token to use, or null for "now".
+     * @returns {Promise<MembershipEvent[]>} Resolves to the membership events of the users in the room.
+     */
+    @timedMatrixClientFunctionCall()
+    public async getRoomMembersWithoutMembership(roomId: string, notMembership: Membership, atToken?: string): Promise<MembershipEvent[]> {
+        return this.getRoomMembersAt(roomId, null, notMembership, atToken);
+    }
+
+    private getRoomMembersAt(roomId: string, membership: Membership | null, notMembership: Membership | null, atToken: string | null): Promise<MembershipEvent[]> {
         const qs = {};
-        if (batchToken) qs["at"] = batchToken;
+        if (atToken) qs["at"] = atToken;
         if (membership) qs["membership"] = membership;
         if (notMembership) qs["not_membership"] = notMembership;
 
@@ -1101,7 +1165,7 @@ export class MatrixClient extends EventEmitter {
      */
     @timedMatrixClientFunctionCall()
     public leaveRoom(roomId: string): Promise<any> {
-        return this.doRequest("POST", "/_matrix/client/v3/rooms/" + encodeURIComponent(roomId) + "/leave");
+        return this.doRequest("POST", "/_matrix/client/v3/rooms/" + encodeURIComponent(roomId) + "/leave", null, {});
     }
 
     /**

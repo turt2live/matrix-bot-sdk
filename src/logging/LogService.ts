@@ -1,4 +1,4 @@
-import MatrixError from "../models/MatrixError";
+import { MatrixError } from "../models/MatrixError";
 import { ConsoleLogger } from "./ConsoleLogger";
 import { ILogger } from "./ILogger";
 

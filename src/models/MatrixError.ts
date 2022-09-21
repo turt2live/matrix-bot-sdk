@@ -2,7 +2,7 @@
  * Represents an HTTP error from the Matrix server.
  * @category Error handling
  */
-export default class MatrixError extends Error {
+export class MatrixError extends Error {
     /**
      * The Matrix error code
      */
