@@ -3342,6 +3342,22 @@ describe('MatrixClient', () => {
         });
     });
 
+    describe('forgetRoom', () => {
+        it('should call the right endpoint', async () => {
+            const { client, http, hsUrl } = createTestClient();
+
+            const roomId = "!testing:example.org";
+
+            // noinspection TypeScriptValidateJSTypes
+            http.when("POST", "/_matrix/client/v3/rooms").respond(200, (path) => {
+                expect(path).toEqual(`${hsUrl}/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/forget`);
+                return {};
+            });
+
+            await Promise.all([client.forgetRoom(roomId), http.flushAllExpected()]);
+        });
+    });
+
     describe('sendReadReceipt', () => {
         it('should call the right endpoint', async () => {
             const { client, http, hsUrl } = createTestClient();
