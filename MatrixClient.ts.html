@@ -2071,6 +2071,26 @@ export class MatrixClient extends EventEmitter {
     }
 
     /**
+     * Get relations for a given event.
+     * @param {string} roomId The room ID to for the given event.
+     * @param {string} eventId The event ID to list reacations for.
+     * @param {string?} relationType The type of reaction (e.g. `m.room.member`) to filter for. Optional.
+     * @param {string?} eventType The type of event to look for (e.g. `m.room.member`). Optional.
+     * @returns {Promise&lt;{chunk: any[]}>} Resolves to an object containing the original event, and a chunk of relations
+     */
+    @timedMatrixClientFunctionCall()
+    public async getRelationsForEvent(roomId: string, eventId: string, relationType?: string, eventType?: string): Promise&lt;{ chunk: any[] }> {
+        let url = `/_matrix/client/v1/rooms/${encodeURIComponent(roomId)}/relations/${encodeURIComponent(eventId)}`;
+        if (relationType) {
+            url += `/${relationType}`;
+        }
+        if (eventType) {
+            url += `/${eventType}`;
+        }
+        return this.doRequest("GET", url);
+    }
+
+    /**
      * Performs a web request to the homeserver, applying appropriate authorization headers for
      * this client.
      * @param {"GET"|"POST"|"PUT"|"DELETE"} method The HTTP method to use in the request
