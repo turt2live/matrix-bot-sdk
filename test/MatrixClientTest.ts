@@ -6939,6 +6939,38 @@ describe('MatrixClient', () => {
         });
     });
 
+    describe('getRelationsForEvent', () => {
+        test.each([
+            [null, null],
+            ['org.example.relation', null],
+            ['org.example.relation', 'org.example.event_type'],
+        ])("should call the right endpoint for rel=%p and type=%p", async (relType, eventType) => {
+            const { client, http, hsUrl } = createTestClient();
+
+            const roomId = "!room:example.org";
+            const eventId = "$event";
+            const response = {
+                chunk: [
+                    { eventContents: true },
+                    { eventContents: true },
+                    { eventContents: true },
+                ],
+            };
+
+            http.when("GET", "/_matrix/client/v1/rooms").respond(200, (path, content) => {
+                const relTypeComponent = relType ? `/${encodeURIComponent(relType)}` : '';
+                const eventTypeComponent = eventType ? `/${encodeURIComponent(eventType)}` : '';
+                // eslint-disable-next-line max-len
+                const idx = path.indexOf(`${hsUrl}/_matrix/client/v1/rooms/${encodeURIComponent(roomId)}/relations/${encodeURIComponent(eventId)}${relTypeComponent}${eventTypeComponent}`);
+                expect(idx).toBe(0);
+                return response;
+            });
+
+            const [result] = await Promise.all([client.getRelationsForEvent(roomId, eventId, relType, eventType), http.flushAllExpected()]);
+            expect(result).toEqual(response);
+        });
+    });
+
     describe('redactObjectForLogging', () => {
         it('should redact multilevel objects', () => {
             const input = {

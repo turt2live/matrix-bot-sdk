@@ -78,7 +78,6 @@ describe('UnstableApis', () => {
             const roomId = "!room:example.org";
             const eventId = "$event";
             const response = {
-                original_event: { eventContents: true },
                 chunk: [
                     { eventContents: true },
                     { eventContents: true },
