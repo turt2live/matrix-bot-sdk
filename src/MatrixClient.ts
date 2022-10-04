@@ -1169,6 +1169,16 @@ export class MatrixClient extends EventEmitter {
     }
 
     /**
+     * Forgets the given room
+     * @param {string} roomId the room ID to forget
+     * @returns {Promise<{}>} Resolves when forgotten
+     */
+    @timedMatrixClientFunctionCall()
+    public forgetRoom(roomId: string): Promise<{}> {
+        return this.doRequest("POST", "/_matrix/client/v3/rooms/" + encodeURIComponent(roomId) + "/forget");
+    }
+
+    /**
      * Sends a read receipt for an event in a room
      * @param {string} roomId the room ID to send the receipt to
      * @param {string} eventId the event ID to set the receipt at
