@@ -2076,7 +2076,7 @@ export class MatrixClient extends EventEmitter {
      * @param {string} eventId The event ID to list reacations for.
      * @param {string?} relationType The type of reaction (e.g. `m.room.member`) to filter for. Optional.
      * @param {string?} eventType The type of event to look for (e.g. `m.room.member`). Optional.
-     * @returns {Promise&lt;{chunk: any[]}>} Resolves to an object containing the original event, and a chunk of relations
+     * @returns {Promise&lt;{chunk: any[]}>} Resolves to an object containing the chunk of relations
      */
     @timedMatrixClientFunctionCall()
     public async getRelationsForEvent(roomId: string, eventId: string, relationType?: string, eventType?: string): Promise&lt;{ chunk: any[] }> {
