@@ -17,6 +17,48 @@ export interface TypicalUnsigned {
     [prop: string]: any;
 }
 
+export interface RoomEventData<T extends (Object | unknown) = unknown> {
+    /**
+     * The fields in this object will vary depending on the type of event.
+     */
+    content: T;
+    /**
+     * The globally unique event identifier.
+     */
+    event_id: string;
+    /**
+     * Timestamp in milliseconds on originating homeserver when this event was sent.
+     */
+    origin_server_ts: number;
+    /**
+     * The ID of the room associated with this event. Will not be present on events that arrive through /sync, despite being required everywhere else.
+     */
+    room_id: string;
+    /**
+     * Contains the fully-qualified ID of the user who sent this event.
+     */
+    sender: string;
+    /**
+     * The type of event. This SHOULD be namespaced similar to Java package naming conventions e.g. `com.example.subdomain.event.type`
+     */
+    type: string;
+    /**
+     * Contains optional extra information about the event.
+     */
+    unsinged: TypicalUnsigned;
+}
+
+export interface RoomStateEventData<T extends (Object | unknown) = unknown, P = T> extends RoomEventData<T> {
+    /**
+     * A unique key which defines the overwriting semantics for this piece of room state.
+     */
+    state_key: string;
+    /**
+     * The previous content for this event. If there is no previous content, this key will be missing.
+     */
+    prev_content?: P;
+}
+
 /**
  * Empty room event content.
  * @category Matrix event contents
