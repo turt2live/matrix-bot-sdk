@@ -2268,6 +2268,48 @@ describe('MatrixClient', () => {
         });
     });
 
+    describe('getRoomMessages', () => {
+        it('should call the right endpoint', async () => {
+            const { client, http, hsUrl } = createTestClient();
+
+            const roomId = "!abc123:example.org";
+
+            const opts = {
+                filter: 'foo-bar',
+                limit: 5,
+                to: 'my-to-token',
+            };
+
+            const from = 'my-from-token';
+            const dir = 'f';
+
+            const response = {
+                chunk: [
+                    { a_chunk: "foo" },
+                ],
+                start: 'new-from',
+                end: 'new-to',
+                state: [
+                    { state_chunk: 'bar', state_key: ''}
+                ],
+            };
+
+            // noinspection TypeScriptValidateJSTypes
+            http.when("GET", `/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/messages`).respond(200, (path, _data, req) => {
+                expect(path).toEqual(`${hsUrl}/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/messages`);
+                expect(req.queryParams['dir']).toEqual(dir);
+                expect(req.queryParams['from']).toEqual(from);
+                expect(req.queryParams['filter']).toEqual(opts.filter);
+                expect(req.queryParams['limit']).toEqual(opts.limit);
+                expect(req.queryParams['to']).toEqual(opts.to);
+                return response;
+            });
+
+            const [result] = await Promise.all([client.getRoomMessages(roomId, dir, from, opts), http.flushAllExpected()]);
+            expect(result).toMatchObject(response);
+        });
+    });
+
     describe('getEvent', () => {
         it('should call the right endpoint', async () => {
             const { client, http, hsUrl } = createTestClient();
