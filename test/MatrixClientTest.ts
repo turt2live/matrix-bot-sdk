@@ -2290,7 +2290,7 @@ describe('MatrixClient', () => {
                 start: 'new-from',
                 end: 'new-to',
                 state: [
-                    { state_chunk: 'bar', state_key: ''}
+                    { state_chunk: 'bar', state_key: '' },
                 ],
             };
 
