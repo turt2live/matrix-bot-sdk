@@ -43,6 +43,7 @@ import { RustSdkCryptoStorageProvider } from "./storage/RustSdkCryptoStorageProv
 import { DMs } from "./DMs";
 import { ServerVersions } from "./models/ServerVersions";
 import { RoomCreateOptions } from "./models/CreateRoom";
+import { RoomMessagesResponse } from "./models/RoomMessagesResponse";
 
 const SYNC_BACKOFF_MIN_MS = 5000;
 const SYNC_BACKOFF_MAX_MS = 15000;
@@ -895,6 +896,34 @@ export class MatrixClient extends EventEmitter {
                 await emitFn("room.event", roomId, event);
             }
         }
+    }
+
+    /**
+     * This returns a list of message and state events for a room.
+     *
+     * It uses pagination query parameters to paginate history in the room.
+     *
+     * @param roomId the room ID to get the event in
+     * @param dir The direction to return events from.
+     *            If this is set to `f`, events will be returned in chronological order starting at `from`.
+     *            If it is set to `b`, events will be returned in reverse chronolgical order, again starting at `from`.
+     * @param from The token to start returning events from.
+     *             This token can be obtained from a prev_batch or next_batch token returned by the /sync endpoint,
+     *             or from an end token returned by a previous call to this function.
+     * @param filter A JSON RoomEventFilter to filter returned events with.
+     * @param limit The maximum number of events to return. Default: 10.
+     * @param to The token to stop returning events at.
+     *           This token can be obtained from a `prev_batch` or `next_batch` token returned by the /sync endpoint,
+     *           or from an end token returned by a previous call to this function.
+     */
+    public async getRoomMessages(roomId: string, dir: 'f'|'b', from: string, opts: {
+        filter?: string;
+        limit?: number;
+        to?: string;
+    }): Promise<RoomMessagesResponse> {
+        return this.doRequest("GET", `/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/messages`, {
+            dir, from, ...opts,
+        });
     }
 
     /**
