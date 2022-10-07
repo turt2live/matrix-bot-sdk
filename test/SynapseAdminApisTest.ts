@@ -528,8 +528,7 @@ describe('SynapseAdminApis', () => {
                     return {};
                 });
 
-                http.flushAllExpected();
-                await client.makeRoomAdmin(roomId, userId);
+                await Promise.all([client.deleteRegistrationToken("foo"), http.flushAllExpected()]);
             });
         });
     });
