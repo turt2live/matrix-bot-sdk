@@ -464,8 +464,8 @@ export class SynapseAdminApis {
     /**
      * Grants another user the highest power available to a local user who is in the room.
      * If the user is not in the room, and it is not publicly joinable, then invite the user.
-     * @param roomId The room to invite the user to.
-     * @param userId The user to invite to the room. If undefined, it invites the authenticated user.
+     * @param roomId The room to make the user admin in.
+     * @param userId The user to make admin in the room. If undefined, it uses the authenticated user.
      * @returns Resolves when complete.
      */
     public async makeRoomAdmin(roomId: string, userId?: string): Promise<void> {
