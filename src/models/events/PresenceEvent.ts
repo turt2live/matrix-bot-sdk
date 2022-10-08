@@ -1,7 +1,12 @@
 import { MatrixEvent } from "./Event";
 
 /**
- * The allowed states of presence in Matrix
+ * The allowed states of presence in Matrix.
+ *
+ * * `online`: The default state when the user is connected to an event stream.
+ * * `unavailable`: The user is not reachable at this time e.g. they are idle.
+ * * `offline`: The user is not connected to an event stream or is explicitly suppressing their profile information from being sent.
+ *
  * @category Matrix event info
  * @see PresenceEventContent
  */
@@ -30,6 +35,8 @@ export interface PresenceEventContent {
 
     /**
      * The user's presence state.
+     *
+     * @see {@link PresenceState} for a description of each presence key.
      */
     presence: PresenceState;
 

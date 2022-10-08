@@ -43,6 +43,7 @@ import { RustSdkCryptoStorageProvider } from "./storage/RustSdkCryptoStorageProv
 import { DMs } from "./DMs";
 import { ServerVersions } from "./models/ServerVersions";
 import { RoomCreateOptions } from "./models/CreateRoom";
+import { PresenceState } from './models/events/PresenceEvent';
 
 const SYNC_BACKOFF_MIN_MS = 5000;
 const SYNC_BACKOFF_MAX_MS = 15000;
@@ -59,7 +60,7 @@ export class MatrixClient extends EventEmitter {
      *
      * Has no effect if the client is not syncing. Does not apply until the next sync request.
      */
-    public syncingPresence: "online" | "offline" | "unavailable" | null = null;
+    public syncingPresence: PresenceState | null = null;
 
     /**
      * The number of milliseconds to wait for new events for on the next sync.
@@ -427,12 +428,12 @@ export class MatrixClient extends EventEmitter {
 
     /**
      * Sets the presence status for the current user.
-     * @param {"online"|"offline"|"unavailable"} presence The new presence state for the user.
+     * @param {PresenceState} presence The new presence state for the user.
      * @param {string?} statusMessage Optional status message to include with the presence.
      * @returns {Promise<any>} Resolves when complete.
      */
     @timedMatrixClientFunctionCall()
-    public async setPresenceStatus(presence: "online" | "offline" | "unavailable", statusMessage: string | undefined = undefined): Promise<any> {
+    public async setPresenceStatus(presence: PresenceState, statusMessage: string | undefined = undefined): Promise<any> {
         return this.doRequest("PUT", "/_matrix/client/v3/presence/" + encodeURIComponent(await this.getUserId()) + "/status", null, {
             presence: presence,
             status_msg: statusMessage,
