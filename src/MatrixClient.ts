@@ -1959,8 +1959,8 @@ export class MatrixClient extends EventEmitter {
     /**
      * Get relations for a given event.
      * @param {string} roomId The room ID to for the given event.
-     * @param {string} eventId The event ID to list reacations for.
-     * @param {string?} relationType The type of reaction (e.g. `m.room.member`) to filter for. Optional.
+     * @param {string} eventId The event ID to list relations for.
+     * @param {string?} relationType The type of relations (e.g. `m.room.member`) to filter for. Optional.
      * @param {string?} eventType The type of event to look for (e.g. `m.room.member`). Optional.
      * @returns {Promise<{chunk: any[]}>} Resolves to an object containing the chunk of relations
      */
