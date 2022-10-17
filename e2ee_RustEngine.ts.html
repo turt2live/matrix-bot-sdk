@@ -178,9 +178,10 @@ export class RustEngine {
 
     public async addTrackedUsers(userIds: string[]) {
         await this.lock.acquire(SYNC_LOCK_NAME, async () => {
-            await this.machine.updateTrackedUsers(userIds.map(u => new UserId(u)));
+            const uids = userIds.map(u => new UserId(u));
+            await this.machine.updateTrackedUsers(uids);
 
-            const keysClaim = await this.machine.getMissingSessions([]);
+            const keysClaim = await this.machine.getMissingSessions(uids);
             if (keysClaim) {
                 await this.processKeysClaimRequest(keysClaim);
             }
