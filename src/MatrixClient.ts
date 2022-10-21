@@ -958,12 +958,12 @@ export class MatrixClient extends EventEmitter {
      * @returns {Promise<any>} resolves to the state event
      */
     @timedMatrixClientFunctionCall()
-    public getRoomStateEvent(roomId, type, stateKey): Promise<any> {
+    public getRoomStateEvent(roomId, type, stateKey, format = "content"): Promise<any> {
         const path = "/_matrix/client/v3/rooms/"
             + encodeURIComponent(roomId) + "/state/"
             + encodeURIComponent(type) + "/"
             + encodeURIComponent(stateKey ? stateKey : '');
-        return this.doRequest("GET", path)
+        return this.doRequest("GET", path, { format })
             .then(ev => this.processEvent(ev));
     }
 
