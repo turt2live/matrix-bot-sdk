@@ -639,6 +639,11 @@
   dependencies:
     "@sinonjs/commons" "^1.7.0"
 
+"@types/async-lock@^1.3.0":
+  version "1.3.0"
+  resolved "https://registry.yarnpkg.com/@types/async-lock/-/async-lock-1.3.0.tgz#12d165b890935afbc553eb9db467c0b540658b8e"
+  integrity sha512-Z93wDSYW9aMgPR5t+7ouwTvy91Vp3M0Snh4Pd3tf+caSAq5bXZaGnnH9CDbjrwgmfDkRIX0Dx8GvSDgwuoaxoA==
+
 "@types/babel-types@*", "@types/babel-types@^7.0.0":
   version "7.0.11"
   resolved "https://registry.yarnpkg.com/@types/babel-types/-/babel-types-7.0.11.tgz#263b113fa396fac4373188d73225297fb86f19a9"
