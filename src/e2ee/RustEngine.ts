@@ -17,6 +17,7 @@ import { MatrixClient } from "../MatrixClient";
 import { ICryptoRoomInformation } from "./ICryptoRoomInformation";
 import { EncryptionAlgorithm } from "../models/Crypto";
 import { EncryptionEvent } from "../models/events/EncryptionEvent";
+import { Membership } from "../models/events/MembershipEvent";
 
 /**
  * @internal
@@ -74,9 +75,7 @@ export class RustEngine {
     }
 
     public async prepareEncrypt(roomId: string, roomInfo: ICryptoRoomInformation) {
-        // TODO: Handle pre-shared invite keys too
-        const members = (await this.client.getJoinedRoomMembers(roomId)).map(u => new UserId(u));
-
+        const memberships: Membership[] = ["join", "invite"];
         let historyVis = HistoryVisibility.Joined;
         switch (roomInfo.historyVisibility) {
             case "world_readable":
@@ -90,8 +89,10 @@ export class RustEngine {
                 break;
             case "joined":
             default:
-            // Default and other cases handled by assignment before switch
+                memberships.splice(-1);
         }
+
+        const members = (await this.client.getRoomMembers(roomId, null, memberships)).map(u => new UserId(u.membershipFor));
 
         const encEv = new EncryptionEvent({
             type: "m.room.encryption",
