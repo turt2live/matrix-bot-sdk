@@ -18,6 +18,12 @@ import { ICryptoRoomInformation } from "./ICryptoRoomInformation";
 import { EncryptionAlgorithm } from "../models/Crypto";
 import { EncryptionEvent } from "../models/events/EncryptionEvent";
 
+interface RequestBody {
+    event_type: string;
+    txn_id: string;
+    messages: Record<string, Record<string, unknown>>;
+}
+
 /**
  * @internal
  */
@@ -107,7 +113,7 @@ export class RustEngine {
         settings.rotationPeriodMessages = BigInt(encEv.rotationPeriodMessages);
 
         await this.lock.acquire(roomId, async () => {
-            const requests = JSON.parse(await this.machine.shareRoomKey(new RoomId(roomId), members, settings));
+            const requests = JSON.parse(await this.machine.shareRoomKey(new RoomId(roomId), members, settings)) as RequestBody[];
             for (const req of requests) {
                 await this.actuallyProcessToDeviceRequest(req.txn_id, req.event_type, req.messages);
             }
@@ -130,8 +136,8 @@ export class RustEngine {
     }
 
     private async processToDeviceRequest(request: ToDeviceRequest) {
-        const req = JSON.parse(request.body);
-        await this.actuallyProcessToDeviceRequest(req.id, req.event_type, req.messages);
+        const req = JSON.parse(request.body) as RequestBody;
+        await this.actuallyProcessToDeviceRequest(req.txn_id, req.event_type, req.messages);
     }
 
     private async actuallyProcessToDeviceRequest(id: string, type: string, messages: Record<string, Record<string, unknown>>) {
