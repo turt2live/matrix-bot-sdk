@@ -153,8 +153,7 @@ export class Intent {
                                     user: this.userId,
                                 },
                             };
-                            this.client.impersonateUserId(null); // avoid confusing homeserver
-                            const res = await this.client.doRequest("POST", "/_matrix/client/v3/login", {}, loginBody);
+                            const res = await this.appservice.botClient.doRequest("POST", "/_matrix/client/v3/login", {}, loginBody);
                             this.makeClient(true, res['access_token']);
                             storage.storeValue("accessToken", this.client.accessToken);
                             prepared = true;
