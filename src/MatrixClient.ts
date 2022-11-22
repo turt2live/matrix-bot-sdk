@@ -70,19 +70,14 @@ export class MatrixClient extends EventEmitter {
     public syncingTimeout = 30000;
 
     /**
-     * The crypto manager instance for this client. Generally speaking, this shouldn't
-     * need to be accessed but is made available.
-     *
-     * Will be null/undefined if crypto is not possible.
-     */
-    public readonly crypto: CryptoClient;
-
-    /**
      * The DM manager instance for this client.
      */
     public readonly dms: DMs;
 
     private userId: string;
+    private homeserverAccessToken: string;
+    private cryptoClient: CryptoClient;
+    private cryptoStorage: ICryptoStorageProvider;
     private requestId = 0;
     private lastJoinedRoomIds: string[] = [];
     private impersonatedUserId: string;
@@ -113,9 +108,9 @@ export class MatrixClient extends EventEmitter {
      */
     constructor(
         public readonly homeserverUrl: string,
-        public readonly accessToken: string,
+        accessToken: string,
         private storage: IStorageProvider = null,
-        public readonly cryptoStore: ICryptoStorageProvider = null,
+        cryptoStore: ICryptoStorageProvider = null,
     ) {
         super();
 
@@ -123,25 +118,11 @@ export class MatrixClient extends EventEmitter {
             this.homeserverUrl = this.homeserverUrl.substring(0, this.homeserverUrl.length - 1);
         }
 
-        if (this.cryptoStore) {
-            if (!this.storage || this.storage instanceof MemoryStorageProvider) {
-                LogService.warn("MatrixClientLite", "Starting an encryption-capable client with a memory store is not considered a good idea.");
-            }
-            if (!(this.cryptoStore instanceof RustSdkCryptoStorageProvider)) {
-                throw new Error("Cannot support custom encryption stores: Use a RustSdkCryptoStorageProvider");
-            }
-            this.crypto = new CryptoClient(this);
-            this.on("room.event", (roomId, event) => {
-                // noinspection JSIgnoredPromiseFromCall
-                this.crypto.onRoomEvent(roomId, event);
-            });
-            this.on("room.join", (roomId) => {
-                // noinspection JSIgnoredPromiseFromCall
-                this.crypto.onRoomJoin(roomId);
-            });
-            LogService.debug("MatrixClientLite", "End-to-end encryption client created");
+        if (cryptoStore) {
+            this.enableCrypto(accessToken, cryptoStore);
         } else {
             // LogService.trace("MatrixClientLite", "Not setting up encryption");
+            this.homeserverAccessToken = accessToken;
         }
 
         if (!this.storage) this.storage = new MemoryStorageProvider();
@@ -150,10 +131,35 @@ export class MatrixClient extends EventEmitter {
     }
 
     /**
+     * The access token for the homeserver
+     */
+    public get accessToken(): string {
+        return this.homeserverAccessToken;
+    }
+
+    /**
      * The storage provider for this client. Direct access is usually not required.
      */
     public get storageProvider(): IStorageProvider {
         return this.storage;
+    }
+
+    /**
+     * The crypto manager instance for this client. Generally speaking, this shouldn't
+     * need to be accessed but is made available.
+     *
+     * Will be null/undefined if crypto is not possible.
+     */
+    public get crypto(): CryptoClient {
+        return this.cryptoClient;
+    }
+
+    /**
+     * Optional crypto storage provider to use. If not supplied,
+     * end-to-end encryption will not be functional in this client.
+     */
+    public get cryptoStore(): ICryptoStorageProvider {
+        return this.cryptoStorage;
     }
 
     /**
@@ -187,6 +193,38 @@ export class MatrixClient extends EventEmitter {
      */
     public get adminApis(): AdminApis {
         return new AdminApis(this);
+    }
+
+    public enableCrypto(accessToken: string, cryptoStore: ICryptoStorageProvider): void {
+        if (this.cryptoStorage === cryptoStore) {
+            if (this.homeserverAccessToken === accessToken) {
+                LogService.info("MatrixClientLite", "Encryption has already been enabled for this client.");
+                return;
+            } else {
+                throw new Error("Cannot change the access token for this encryption-enabled client.");
+            }
+        }
+        if (this.cryptoStorage) {
+            throw new Error("Cannot change the crypto store for this encryption-enabled client.");
+        }
+        if (!this.storage || this.storage instanceof MemoryStorageProvider) {
+            LogService.warn("MatrixClientLite", "Starting an encryption-capable client with a memory store is not considered a good idea.");
+        }
+        if (!(cryptoStore instanceof RustSdkCryptoStorageProvider)) {
+            throw new Error("Cannot support custom encryption stores: Use a RustSdkCryptoStorageProvider");
+        }
+        this.homeserverAccessToken = accessToken;
+        this.cryptoStorage = cryptoStore;
+        this.cryptoClient = new CryptoClient(this);
+        this.on("room.event", (roomId, event) => {
+            // noinspection JSIgnoredPromiseFromCall
+            this.cryptoClient.onRoomEvent(roomId, event);
+        });
+        this.on("room.join", (roomId) => {
+            // noinspection JSIgnoredPromiseFromCall
+            this.cryptoClient.onRoomJoin(roomId);
+        });
+        LogService.debug("MatrixClientLite", "End-to-end encryption client created");
     }
 
     /**
@@ -652,9 +690,9 @@ export class MatrixClient extends EventEmitter {
 
         const userId = await this.getUserId();
 
-        if (this.crypto) {
+        if (this.cryptoClient) {
             LogService.debug("MatrixClientLite", "Preparing end-to-end encryption");
-            await this.crypto.prepare(this.lastJoinedRoomIds);
+            await this.cryptoClient.prepare(this.lastJoinedRoomIds);
             LogService.info("MatrixClientLite", "End-to-end encryption enabled");
         }
 
@@ -755,7 +793,7 @@ export class MatrixClient extends EventEmitter {
 
         if (!raw) return; // nothing to process
 
-        if (this.crypto) {
+        if (this.cryptoClient) {
             const inbox: IToDeviceMessage[] = [];
             if (raw['to_device']?.['events']) {
                 inbox.push(...raw['to_device']['events']);
@@ -774,7 +812,7 @@ export class MatrixClient extends EventEmitter {
             const changed = raw['device_lists']?.['changed'] ?? [];
             const left = raw['device_lists']?.['left'] ?? [];
 
-            await this.crypto.updateSyncData(inbox, counts, unusedFallbacks, changed, left);
+            await this.cryptoClient.updateSyncData(inbox, counts, unusedFallbacks, changed, left);
         }
 
         // Always process device messages first to ensure there are decryption keys
@@ -872,10 +910,10 @@ export class MatrixClient extends EventEmitter {
 
             for (let event of room['timeline']['events']) {
                 event = await this.processEvent(event);
-                if (event['type'] === 'm.room.encrypted' && await this.crypto?.isRoomEncrypted(roomId)) {
+                if (event['type'] === 'm.room.encrypted' && await this.cryptoClient?.isRoomEncrypted(roomId)) {
                     await emitFn("room.encrypted_event", roomId, event);
                     try {
-                        event = (await this.crypto.decryptRoomEvent(new EncryptedRoomEvent(event), roomId)).raw;
+                        event = (await this.cryptoClient.decryptRoomEvent(new EncryptedRoomEvent(event), roomId)).raw;
                         event = await this.processEvent(event);
                         await emitFn("room.decrypted_event", roomId, event);
                     } catch (e) {
@@ -908,8 +946,8 @@ export class MatrixClient extends EventEmitter {
     @timedMatrixClientFunctionCall()
     public async getEvent(roomId: string, eventId: string): Promise<any> {
         const event = await this.getRawEvent(roomId, eventId);
-        if (event['type'] === 'm.room.encrypted' && await this.crypto?.isRoomEncrypted(roomId)) {
-            return this.processEvent((await this.crypto.decryptRoomEvent(new EncryptedRoomEvent(event), roomId)).raw);
+        if (event['type'] === 'm.room.encrypted' && await this.cryptoClient?.isRoomEncrypted(roomId)) {
+            return this.processEvent((await this.cryptoClient.decryptRoomEvent(new EncryptedRoomEvent(event), roomId)).raw);
         }
         return event;
     }
@@ -1358,8 +1396,8 @@ export class MatrixClient extends EventEmitter {
      */
     @timedMatrixClientFunctionCall()
     public async sendEvent(roomId: string, eventType: string, content: any): Promise<string> {
-        if (await this.crypto?.isRoomEncrypted(roomId)) {
-            content = await this.crypto.encryptRoomEvent(roomId, eventType, content);
+        if (await this.cryptoClient?.isRoomEncrypted(roomId)) {
+            content = await this.cryptoClient.encryptRoomEvent(roomId, eventType, content);
             eventType = "m.room.encrypted";
         }
         return this.sendRawEvent(roomId, eventType, content);
