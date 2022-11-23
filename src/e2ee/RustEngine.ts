@@ -14,6 +14,7 @@ import {
 import * as AsyncLock from "async-lock";
 
 import { MatrixClient } from "../MatrixClient";
+import { extractRequestError, LogService } from "../logging/LogService";
 import { ICryptoRoomInformation } from "./ICryptoRoomInformation";
 import { EncryptionAlgorithm } from "../models/Crypto";
 import { EncryptionEvent } from "../models/events/EncryptionEvent";
@@ -92,7 +93,19 @@ export class RustEngine {
                 memberships = ["join"];
         }
 
-        const members = (await this.client.getRoomMembers(roomId, null, memberships)).map(u => new UserId(u.membershipFor));
+        const members = new Set<UserId>();
+        for (const membership of memberships) {
+            try {
+                (await this.client.getRoomMembersByMembership(roomId, membership))
+                    .map(u => new UserId(u.membershipFor))
+                    .forEach(u => void members.add(u));
+            } catch (err) {
+                LogService.warn("RustEngine", `Failed to get room members for membership type "${membership}" in ${roomId}`, extractRequestError(err));
+            }
+        }
+        if (members.size === 0) {
+            return;
+        }
 
         const encEv = new EncryptionEvent({
             type: "m.room.encryption",
@@ -108,7 +121,7 @@ export class RustEngine {
         settings.rotationPeriodMessages = BigInt(encEv.rotationPeriodMessages);
 
         await this.lock.acquire(roomId, async () => {
-            const requests = JSON.parse(await this.machine.shareRoomKey(new RoomId(roomId), members, settings));
+            const requests = JSON.parse(await this.machine.shareRoomKey(new RoomId(roomId), Array.from(members), settings));
             for (const req of requests) {
                 await this.actuallyProcessToDeviceRequest(req.txn_id, req.event_type, req.messages);
             }
