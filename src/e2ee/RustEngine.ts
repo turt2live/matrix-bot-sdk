@@ -75,7 +75,7 @@ export class RustEngine {
     }
 
     public async prepareEncrypt(roomId: string, roomInfo: ICryptoRoomInformation) {
-        const memberships: Membership[] = ["join", "invite"];
+        let memberships: Membership[] = ["join", "invite"];
         let historyVis = HistoryVisibility.Joined;
         switch (roomInfo.historyVisibility) {
             case "world_readable":
@@ -89,7 +89,7 @@ export class RustEngine {
                 break;
             case "joined":
             default:
-                memberships.splice(-1);
+                memberships = ["join"];
         }
 
         const members = (await this.client.getRoomMembers(roomId, null, memberships)).map(u => new UserId(u.membershipFor));
