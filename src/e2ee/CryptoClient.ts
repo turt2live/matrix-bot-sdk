@@ -142,7 +142,7 @@ export class CryptoClient {
 
     /**
      * Updates the client's sync-related data.
-     * @param {IToDeviceMessage<IOlmEncrypted>[]} toDeviceMessages The to-device messages received.
+     * @param {Array.<IToDeviceMessage<IOlmEncrypted>>} toDeviceMessages The to-device messages received.
      * @param {OTKCounts} otkCounts The current OTK counts.
      * @param {OTKAlgorithm[]} unusedFallbackKeyAlgs The unused fallback key algorithms.
      * @param {string[]} changedDeviceLists The user IDs which had device list changes.
