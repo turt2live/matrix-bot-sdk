@@ -243,8 +243,9 @@ export class Intent {
                             // for devices without keys to impersonate, so it should be fine. In theory,
                             // those devices won't even be present but we're cautious.
                             const devicesWithKeys = Array.from(Object.entries(userDeviceKeys))
-                                .filter(d => d[0] === d[1].device_id &amp;&amp; !!d[1].keys?.[`${DeviceKeyAlgorithm.Curve25519}:${d[1].device_id}`]);
-                            deviceId = devicesWithKeys[0]?.[1]?.device_id;
+                                .filter(d => d[0] === d[1].device_id &amp;&amp; !!d[1].keys?.[`${DeviceKeyAlgorithm.Curve25519}:${d[1].device_id}`])
+                                .map(t => t[0]); // grab device ID from tuple
+                            deviceId = ownDevices.find(d => !devicesWithKeys.includes(d.device_id))?.device_id;
                         }
                     }
                     let prepared = false;
