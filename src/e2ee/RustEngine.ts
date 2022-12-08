@@ -14,9 +14,11 @@ import {
 import * as AsyncLock from "async-lock";
 
 import { MatrixClient } from "../MatrixClient";
+import { extractRequestError, LogService } from "../logging/LogService";
 import { ICryptoRoomInformation } from "./ICryptoRoomInformation";
 import { EncryptionAlgorithm } from "../models/Crypto";
 import { EncryptionEvent } from "../models/events/EncryptionEvent";
+import { Membership } from "../models/events/MembershipEvent";
 
 /**
  * @internal
@@ -75,9 +77,7 @@ export class RustEngine {
     }
 
     public async prepareEncrypt(roomId: string, roomInfo: ICryptoRoomInformation) {
-        // TODO: Handle pre-shared invite keys too
-        const members = (await this.client.getJoinedRoomMembers(roomId)).map(u => new UserId(u));
-
+        let memberships: Membership[] = ["join", "invite"];
         let historyVis = HistoryVisibility.Joined;
         switch (roomInfo.historyVisibility) {
             case "world_readable":
@@ -91,8 +91,23 @@ export class RustEngine {
                 break;
             case "joined":
             default:
-            // Default and other cases handled by assignment before switch
+                memberships = ["join"];
         }
+
+        const members = new Set<UserId>();
+        for (const membership of memberships) {
+            try {
+                (await this.client.getRoomMembersByMembership(roomId, membership))
+                    .map(u => new UserId(u.membershipFor))
+                    .forEach(u => void members.add(u));
+            } catch (err) {
+                LogService.warn("RustEngine", `Failed to get room members for membership type "${membership}" in ${roomId}`, extractRequestError(err));
+            }
+        }
+        if (members.size === 0) {
+            return;
+        }
+        const membersArray = Array.from(members);
 
         const encEv = new EncryptionEvent({
             type: "m.room.encryption",
@@ -109,14 +124,14 @@ export class RustEngine {
 
         await this.run(RequestType.KeysQuery);
         await this.lock.acquire(SYNC_LOCK_NAME, async () => {
-            const keysClaim = await this.machine.getMissingSessions(members);
+            const keysClaim = await this.machine.getMissingSessions(membersArray);
             if (keysClaim) {
                 await this.processKeysClaimRequest(keysClaim);
             }
         });
 
         await this.lock.acquire(roomId, async () => {
-            const requests = JSON.parse(await this.machine.shareRoomKey(new RoomId(roomId), members, settings));
+            const requests = JSON.parse(await this.machine.shareRoomKey(new RoomId(roomId), membersArray, settings));
             for (const req of requests) {
                 await this.actuallyProcessToDeviceRequest(req.txn_id, req.event_type, req.messages);
             }
