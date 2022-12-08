@@ -1,17 +1,17 @@
 {
-  "name": "matrix-bot-sdk",
+  "name": "@vector-im/matrix-bot-sdk",
   "version": "develop",
   "description": "TypeScript/JavaScript SDK for Matrix bots and appservices",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/turt2live/matrix-bot-sdk.git"
+    "url": "git+https://github.com/vector-im/matrix-bot-sdk.git"
   },
-  "author": "turt2live",
+  "author": "Element",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/turt2live/matrix-bot-sdk/issues"
+    "url": "https://github.com/vector-im/matrix-bot-sdk/issues"
   },
-  "homepage": "https://github.com/turt2live/matrix-bot-sdk#readme",
+  "homepage": "https://github.com/vector-im/matrix-bot-sdk#readme",
   "scripts": {
     "prepublishOnly": "yarn build",
     "docs": "jsdoc -c jsdoc.json -P package.json -u docs/tutorials",
