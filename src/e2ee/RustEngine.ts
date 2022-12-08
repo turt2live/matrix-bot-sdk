@@ -32,10 +32,11 @@ export class RustEngine {
     public constructor(public readonly machine: OlmMachine, private client: MatrixClient) {
     }
 
-    public async run() {
+    public async run(...types: RequestType[]) {
         // Note: we should not be running this until it runs out, so cache the value into a variable
         const requests = await this.machine.outgoingRequests();
         for (const request of requests) {
+            if (types.length && !types.includes(request.type)) continue;
             switch (request.type) {
                 case RequestType.KeysUpload:
                     await this.processKeysUploadRequest(request);
@@ -105,6 +106,14 @@ export class RustEngine {
         settings.historyVisibility = historyVis;
         settings.rotationPeriod = BigInt(encEv.rotationPeriodMs);
         settings.rotationPeriodMessages = BigInt(encEv.rotationPeriodMessages);
+
+        await this.run(RequestType.KeysQuery);
+        await this.lock.acquire(SYNC_LOCK_NAME, async () => {
+            const keysClaim = await this.machine.getMissingSessions(members);
+            if (keysClaim) {
+                await this.processKeysClaimRequest(keysClaim);
+            }
+        });
 
         await this.lock.acquire(roomId, async () => {
             const requests = JSON.parse(await this.machine.shareRoomKey(new RoomId(roomId), members, settings));
