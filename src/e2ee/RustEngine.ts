@@ -33,9 +33,14 @@ export class RustEngine {
     }
 
     public async run() {
+        await this.runOnly(); // run everything, but with syntactic sugar
+    }
+
+    private async runOnly(...types: RequestType[]) {
         // Note: we should not be running this until it runs out, so cache the value into a variable
         const requests = await this.machine.outgoingRequests();
         for (const request of requests) {
+            if (types.length && !types.includes(request.type)) continue;
             switch (request.type) {
                 case RequestType.KeysUpload:
                     await this.processKeysUploadRequest(request);
@@ -105,6 +110,14 @@ export class RustEngine {
         settings.historyVisibility = historyVis;
         settings.rotationPeriod = BigInt(encEv.rotationPeriodMs);
         settings.rotationPeriodMessages = BigInt(encEv.rotationPeriodMessages);
+
+        await this.lock.acquire(SYNC_LOCK_NAME, async () => {
+            await this.runOnly(RequestType.KeysQuery);
+            const keysClaim = await this.machine.getMissingSessions(members);
+            if (keysClaim) {
+                await this.processKeysClaimRequest(keysClaim);
+            }
+        });
 
         await this.lock.acquire(roomId, async () => {
             const requests = JSON.parse(await this.machine.shareRoomKey(new RoomId(roomId), members, settings));
