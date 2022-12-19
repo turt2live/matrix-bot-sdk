@@ -32,7 +32,11 @@ export class RustEngine {
     public constructor(public readonly machine: OlmMachine, private client: MatrixClient) {
     }
 
-    public async run(...types: RequestType[]) {
+    public async run() {
+        await this.runOnly(); // run everything, but with syntactic sugar
+    }
+
+    private async runOnly(...types: RequestType[]) {
         // Note: we should not be running this until it runs out, so cache the value into a variable
         const requests = await this.machine.outgoingRequests();
         for (const request of requests) {
