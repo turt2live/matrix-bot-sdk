@@ -131,7 +131,7 @@ export class RustEngine {
 
     private async processToDeviceRequest(request: ToDeviceRequest) {
         const req = JSON.parse(request.body);
-        await this.actuallyProcessToDeviceRequest(req.id, req.event_type, req.messages);
+        await this.actuallyProcessToDeviceRequest(req.txn_id, req.event_type, req.messages);
     }
 
     private async actuallyProcessToDeviceRequest(id: string, type: string, messages: Record<string, Record<string, unknown>>) {
