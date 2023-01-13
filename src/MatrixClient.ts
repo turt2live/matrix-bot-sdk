@@ -1288,6 +1288,21 @@ export class MatrixClient extends EventEmitter {
     }
 
     /**
+     * A function that replicates @see sendNotice, but edits the passed message instead.
+     * @param {string} roomId the room ID to send the notice to
+     * @param {string} eventId the event ID to edit
+     * @param {string} text the text to send
+     * @returns {Promise<string>} resolves to the event ID that represents the edit
+     */
+    @timedMatrixClientFunctionCall()
+    public editNotice(roomId: string, eventId: string, text: string): Promise<string> {
+        return this.editMessage(roomId, eventId, {
+            body: text,
+            msgtype: "m.notice",
+        });
+    }
+
+    /**
      * Sends a notice to the given room with HTML content. The message will be encrypted if the client supports
      * encryption and the room is encrypted.
      * @param {string} roomId the room ID to send the notice to
@@ -1297,6 +1312,23 @@ export class MatrixClient extends EventEmitter {
     @timedMatrixClientFunctionCall()
     public sendHtmlNotice(roomId: string, html: string): Promise<string> {
         return this.sendMessage(roomId, {
+            body: htmlToText(html, { wordwrap: false }),
+            msgtype: "m.notice",
+            format: "org.matrix.custom.html",
+            formatted_body: html,
+        });
+    }
+
+    /**
+     * A function that replicates @see sendHtmlNotice, but edits the passed message instead.
+     * @param {string} roomId the room ID to send the notice to
+     * @param {string} eventId the event ID to edit
+     * @param {string} html the HTML to send
+     * @returns {Promise<string>} resolves to the event ID that represents the edit
+     */
+    @timedMatrixClientFunctionCall()
+    public editHtmlNotice(roomId: string, eventId: string, html: string): Promise<string> {
+        return this.editMessage(roomId, eventId, {
             body: htmlToText(html, { wordwrap: false }),
             msgtype: "m.notice",
             format: "org.matrix.custom.html",
@@ -1320,6 +1352,21 @@ export class MatrixClient extends EventEmitter {
     }
 
     /**
+     * A function that replicates @see sendText, but edits the passed message instead.
+     * @param {string} roomId the room ID to send the notice to
+     * @param {string} eventId the event ID to edit
+     * @param {string} text the text to send
+     * @returns {Promise<string>} resolves to the event ID that represents the edit
+     */
+    @timedMatrixClientFunctionCall()
+    public editText(roomId: string, eventId: string, text: string): Promise<string> {
+        return this.editMessage(roomId, eventId, {
+            body: text,
+            msgtype: "m.text",
+        });
+    }
+
+    /**
      * Sends a text message to the given room with HTML content. The message will be encrypted if the client supports
      * encryption and the room is encrypted.
      * @param {string} roomId the room ID to send the text to
@@ -1337,6 +1384,23 @@ export class MatrixClient extends EventEmitter {
     }
 
     /**
+     * A function that replicates @see sendHtmlText, but edits the passed message instead.
+     * @param {string} roomId the room ID to send the notice to
+     * @param {string} eventId the event ID to edit
+     * @param {string} html the HTML to send
+     * @returns {Promise<string>} resolves to the event ID that represents the edit
+     */
+    @timedMatrixClientFunctionCall()
+    public editHtmlText(roomId: string, eventId: string, html: string): Promise<string> {
+        return this.editMessage(roomId, eventId, {
+            body: htmlToText(html, { wordwrap: false }),
+            msgtype: "m.text",
+            format: "org.matrix.custom.html",
+            formatted_body: html,
+        });
+    }
+
+    /**
      * Sends a message to the given room. The message will be encrypted if the client supports
      * encryption and the room is encrypted.
      * @param {string} roomId the room ID to send the message to
@@ -1345,6 +1409,25 @@ export class MatrixClient extends EventEmitter {
      */
     @timedMatrixClientFunctionCall()
     public sendMessage(roomId: string, content: any): Promise<string> {
+        return this.sendEvent(roomId, "m.room.message", content);
+    }
+
+    /**
+     * A function that replicates @see sendMessage, but modifies the passed content so that an edit
+     * is made instead of a new message.
+     * @param {string} roomId the room ID to send the notice to
+     * @param {string} eventId the event ID to edit
+     * @param {object} content the event content to send
+     * @returns {Promise<string>} resolves to the event ID that represents the edit
+     */
+    @timedMatrixClientFunctionCall()
+    public editMessage(roomId: string, eventId: string, content: any): Promise<string> {
+        content["m.new_content"] = { ...content };
+        content.body = "* " + content.body;
+        content["m.relates_to"] = {
+            rel_type: "m.replace",
+            event_id: eventId,
+        };
         return this.sendEvent(roomId, "m.room.message", content);
     }
 
