@@ -1212,14 +1212,21 @@ export class MatrixClient extends EventEmitter {
      * @param {string} roomId the room ID to reply in
      * @param {any} event the event to reply to
      * @param {string} text the text to reply with
+     * @param {boolean} thread whether to reply into a thread
      * @param {string} html the HTML to reply with, or falsey to use the `text`
      * @returns {Promise<string>} resolves to the event ID which was sent
      */
     @timedMatrixClientFunctionCall()
-    public replyText(roomId: string, event: any, text: string, html: string = null): Promise<string> {
+    public replyText(roomId: string, event: any, text: string, thread = false, html: string = null): Promise<string> {
         if (!html) html = htmlEncode(text);
 
         const reply = RichReply.createFor(roomId, event, text, html);
+        if (thread) {
+            reply['m.relates_to'] = {
+                'rel_type': 'm.thread',
+                'event_id': event['event_id'],
+            };
+        }
         return this.sendMessage(roomId, reply);
     }
 
@@ -1229,12 +1236,19 @@ export class MatrixClient extends EventEmitter {
      * @param {string} roomId the room ID to reply in
      * @param {any} event the event to reply to
      * @param {string} html the HTML to reply with.
+     * @param {boolean} thread whether to reply into a thread
      * @returns {Promise<string>} resolves to the event ID which was sent
      */
     @timedMatrixClientFunctionCall()
-    public replyHtmlText(roomId: string, event: any, html: string): Promise<string> {
+    public replyHtmlText(roomId: string, event: any, html: string, thread = false): Promise<string> {
         const text = htmlToText(html, { wordwrap: false });
         const reply = RichReply.createFor(roomId, event, text, html);
+        if (thread) {
+            reply['m.relates_to'] = {
+                'rel_type': 'm.thread',
+                'event_id': event['event_id'],
+            };
+        }
         return this.sendMessage(roomId, reply);
     }
 
@@ -1244,15 +1258,22 @@ export class MatrixClient extends EventEmitter {
      * @param {string} roomId the room ID to reply in
      * @param {any} event the event to reply to
      * @param {string} text the text to reply with
+     * @param {boolean} thread whether to reply into a thread
      * @param {string} html the HTML to reply with, or falsey to use the `text`
      * @returns {Promise<string>} resolves to the event ID which was sent
      */
     @timedMatrixClientFunctionCall()
-    public replyNotice(roomId: string, event: any, text: string, html: string = null): Promise<string> {
+    public replyNotice(roomId: string, event: any, text: string, thread = false, html: string = null): Promise<string> {
         if (!html) html = htmlEncode(text);
 
         const reply = RichReply.createFor(roomId, event, text, html);
         reply['msgtype'] = 'm.notice';
+        if (thread) {
+            reply['m.relates_to'] = {
+                'rel_type': 'm.thread',
+                'event_id': event['event_id'],
+            };
+        }
         return this.sendMessage(roomId, reply);
     }
 
@@ -1262,13 +1283,20 @@ export class MatrixClient extends EventEmitter {
      * @param {string} roomId the room ID to reply in
      * @param {any} event the event to reply to
      * @param {string} html the HTML to reply with.
+     * @param {boolean} thread whether to reply into a thread
      * @returns {Promise<string>} resolves to the event ID which was sent
      */
     @timedMatrixClientFunctionCall()
-    public replyHtmlNotice(roomId: string, event: any, html: string): Promise<string> {
+    public replyHtmlNotice(roomId: string, event: any, html: string, thread = false): Promise<string> {
         const text = htmlToText(html, { wordwrap: false });
         const reply = RichReply.createFor(roomId, event, text, html);
         reply['msgtype'] = 'm.notice';
+        if (thread) {
+            reply['m.relates_to'] = {
+                'rel_type': 'm.thread',
+                'event_id': event['event_id'],
+            };
+        }
         return this.sendMessage(roomId, reply);
     }
 
