@@ -1222,9 +1222,10 @@ export class MatrixClient extends EventEmitter {
 
         const reply = RichReply.createFor(roomId, event, text, html);
         if (thread) {
+            const threadStartEventId = event['content']['m.relates_to'] ? event['content']['m.relates_to']['event_id'] : event['event_id'];
             reply['m.relates_to'] = {
                 'rel_type': 'm.thread',
-                'event_id': event['event_id'],
+                'event_id': threadStartEventId,
             };
         }
         return this.sendMessage(roomId, reply);
@@ -1244,9 +1245,10 @@ export class MatrixClient extends EventEmitter {
         const text = htmlToText(html, { wordwrap: false });
         const reply = RichReply.createFor(roomId, event, text, html);
         if (thread) {
+            const threadStartEventId = event['content']['m.relates_to'] ? event['content']['m.relates_to']['event_id'] : event['event_id'];
             reply['m.relates_to'] = {
                 'rel_type': 'm.thread',
-                'event_id': event['event_id'],
+                'event_id': threadStartEventId,
             };
         }
         return this.sendMessage(roomId, reply);
@@ -1269,9 +1271,10 @@ export class MatrixClient extends EventEmitter {
         const reply = RichReply.createFor(roomId, event, text, html);
         reply['msgtype'] = 'm.notice';
         if (thread) {
+            const threadStartEventId = event['content']['m.relates_to'] ? event['content']['m.relates_to']['event_id'] : event['event_id'];
             reply['m.relates_to'] = {
                 'rel_type': 'm.thread',
-                'event_id': event['event_id'],
+                'event_id': threadStartEventId,
             };
         }
         return this.sendMessage(roomId, reply);
@@ -1292,9 +1295,10 @@ export class MatrixClient extends EventEmitter {
         const reply = RichReply.createFor(roomId, event, text, html);
         reply['msgtype'] = 'm.notice';
         if (thread) {
+            const threadStartEventId = event['content']['m.relates_to'] ? event['content']['m.relates_to']['event_id'] : event['event_id'];
             reply['m.relates_to'] = {
                 'rel_type': 'm.thread',
-                'event_id': event['event_id'],
+                'event_id': threadStartEventId,
             };
         }
         return this.sendMessage(roomId, reply);
