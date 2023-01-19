@@ -246,8 +246,8 @@ export class Appservice extends EventEmitter {
         options.joinStrategy = new AppserviceJoinRoomStrategy(options.joinStrategy, this);
 
         if (!options.intentOptions) options.intentOptions = {};
-        if (!options.intentOptions.maxAgeMs) options.intentOptions.maxAgeMs = 60 * 60 * 1000;
-        if (!options.intentOptions.maxCached) options.intentOptions.maxCached = 10000;
+        if (options.intentOptions.maxAgeMs === undefined) options.intentOptions.maxAgeMs = 60 * 60 * 1000;
+        if (options.intentOptions.maxCached === undefined) options.intentOptions.maxCached = 10000;
 
         this.intentsCache = new LRU({
             max: options.intentOptions.maxCached,
