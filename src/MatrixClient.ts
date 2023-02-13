@@ -676,7 +676,7 @@ export class MatrixClient extends EventEmitter {
 
         if (createFilter && filter) {
             LogService.trace("MatrixClientLite", "Creating new filter");
-            return this.doRequest("POST", "/_matrix/client/v3/user/" + encodeURIComponent(userId) + "/filter", null, filter).then(async response => {
+            await this.doRequest("POST", "/_matrix/client/v3/user/" + encodeURIComponent(userId) + "/filter", null, filter).then(async response => {
                 this.filterId = response["filter_id"];
                 // noinspection ES6RedundantAwait
                 await Promise.resolve(this.storage.setSyncToken(null));
