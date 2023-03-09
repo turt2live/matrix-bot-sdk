@@ -48,7 +48,7 @@ export class Permalinks {
      * @returns {string} A room permalink.
      */
     public static forRoom(roomIdOrAlias: string, viaServers: string[] = []): string {
-        return `https://matrix.to/#/${roomIdOrAlias}${Permalinks.encodeViaArgs(viaServers)}`;
+        return `https://matrix.to/#/${encodeURIComponent(roomIdOrAlias)}${Permalinks.encodeViaArgs(viaServers)}`;
     }
 
     /**
@@ -57,7 +57,7 @@ export class Permalinks {
      * @returns {string} A user permalink.
      */
     public static forUser(userId: string): string {
-        return `https://matrix.to/#/${userId}`;
+        return `https://matrix.to/#/${encodeURIComponent(userId)}`;
     }
 
     /**
@@ -68,7 +68,7 @@ export class Permalinks {
      * @returns {string} An event permalink.
      */
     public static forEvent(roomIdOrAlias: string, eventId: string, viaServers: string[] = []): string {
-        return `https://matrix.to/#/${roomIdOrAlias}/${eventId}${Permalinks.encodeViaArgs(viaServers)}`;
+        return `https://matrix.to/#/${encodeURIComponent(roomIdOrAlias)}/${encodeURIComponent(eventId)}${Permalinks.encodeViaArgs(viaServers)}`;
     }
 
     /**
