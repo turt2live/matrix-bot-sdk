@@ -4,27 +4,27 @@ describe('Permalinks', () => {
     describe('forRoom', () => {
         it('should generate a URL for a room ID', () => {
             const roomId = "!test:example.org";
-            const expected = `https://matrix.to/#/${roomId}`;
+            const expected = `https://matrix.to/#/${encodeURIComponent(roomId)}`;
             expect(Permalinks.forRoom(roomId)).toBe(expected);
         });
 
         it('should generate a URL for a room alias', () => {
             const roomAlias = "#test:example.org";
-            const expected = `https://matrix.to/#/${roomAlias}`;
+            const expected = `https://matrix.to/#/${encodeURIComponent(roomAlias)}`;
             expect(Permalinks.forRoom(roomAlias)).toBe(expected);
         });
 
         it('should generate a URL for a room ID with via', () => {
             const roomId = "!test:example.org";
             const via = ['one.example.org', 'two.example.org'];
-            const expected = `https://matrix.to/#/${roomId}?via=${via.join("&via=")}`;
+            const expected = `https://matrix.to/#/${encodeURIComponent(roomId)}?via=${via.map(encodeURIComponent).join("&via=")}`;
             expect(Permalinks.forRoom(roomId, via)).toBe(expected);
         });
 
         it('should generate a URL for a room alias with via', () => {
             const roomAlias = "#test:example.org";
             const via = ['one.example.org', 'two.example.org'];
-            const expected = `https://matrix.to/#/${roomAlias}?via=${via.join("&via=")}`;
+            const expected = `https://matrix.to/#/${encodeURIComponent(roomAlias)}?via=${via.map(encodeURIComponent).join("&via=")}`;
             expect(Permalinks.forRoom(roomAlias, via)).toBe(expected);
         });
     });
@@ -33,14 +33,14 @@ describe('Permalinks', () => {
         it('should generate a URL for an event ID with room ID', () => {
             const roomId = "!test:example.org";
             const eventId = "$test:example.org";
-            const expected = `https://matrix.to/#/${roomId}/${eventId}`;
+            const expected = `https://matrix.to/#/${encodeURIComponent(roomId)}/${encodeURIComponent(eventId)}`;
             expect(Permalinks.forEvent(roomId, eventId)).toBe(expected);
         });
 
         it('should generate a URL for an event ID with room alias', () => {
             const roomAlias = "#test:example.org";
             const eventId = "$test:example.org";
-            const expected = `https://matrix.to/#/${roomAlias}/${eventId}`;
+            const expected = `https://matrix.to/#/${encodeURIComponent(roomAlias)}/${encodeURIComponent(eventId)}`;
             expect(Permalinks.forEvent(roomAlias, eventId)).toBe(expected);
         });
 
@@ -48,7 +48,7 @@ describe('Permalinks', () => {
             const roomId = "!test:example.org";
             const eventId = "$test:example.org";
             const via = ['one.example.org', 'two.example.org'];
-            const expected = `https://matrix.to/#/${roomId}/${eventId}?via=${via.join("&via=")}`;
+            const expected = `https://matrix.to/#/${encodeURIComponent(roomId)}/${encodeURIComponent(eventId)}?via=${via.map(encodeURIComponent).join("&via=")}`;
             expect(Permalinks.forEvent(roomId, eventId, via)).toBe(expected);
         });
 
@@ -56,7 +56,7 @@ describe('Permalinks', () => {
             const roomAlias = "#test:example.org";
             const eventId = "$test:example.org";
             const via = ['one.example.org', 'two.example.org'];
-            const expected = `https://matrix.to/#/${roomAlias}/${eventId}?via=${via.join("&via=")}`;
+            const expected = `https://matrix.to/#/${encodeURIComponent(roomAlias)}/${encodeURIComponent(eventId)}?via=${via.map(encodeURIComponent).join("&via=")}`;
             expect(Permalinks.forEvent(roomAlias, eventId, via)).toBe(expected);
         });
     });
@@ -64,7 +64,7 @@ describe('Permalinks', () => {
     describe('forUser', () => {
         it('should generate a URL for a user ID', () => {
             const userId = "@test:example.org";
-            const expected = `https://matrix.to/#/${userId}`;
+            const expected = `https://matrix.to/#/${encodeURIComponent(userId)}`;
             expect(Permalinks.forUser(userId)).toBe(expected);
         });
     });
@@ -81,6 +81,7 @@ describe('Permalinks', () => {
             const parsed = Permalinks.parseUrl(`https://matrix.to/#/${userId}`);
 
             expect(parsed).toMatchObject(<any>expected);
+            expect(Permalinks.parseUrl(Permalinks.forUser(userId))).toMatchObject(expected);
         });
 
         it('should parse room alias URLs', () => {
@@ -94,6 +95,7 @@ describe('Permalinks', () => {
             const parsed = Permalinks.parseUrl(`https://matrix.to/#/${roomId}`);
 
             expect(parsed).toMatchObject(<any>expected);
+            expect(Permalinks.parseUrl(Permalinks.forRoom(roomId))).toMatchObject(expected);
         });
 
         it('should parse room ID URLs', () => {
@@ -107,6 +109,7 @@ describe('Permalinks', () => {
             const parsed = Permalinks.parseUrl(`https://matrix.to/#/${roomId}`);
 
             expect(parsed).toMatchObject(<any>expected);
+            expect(Permalinks.parseUrl(Permalinks.forRoom(roomId))).toMatchObject(expected);
         });
 
         it('should parse room alias permalink URLs', () => {
@@ -116,6 +119,7 @@ describe('Permalinks', () => {
             const parsed = Permalinks.parseUrl(`https://matrix.to/#/${roomId}/${eventId}`);
 
             expect(parsed).toMatchObject(<any>expected);
+            expect(Permalinks.parseUrl(Permalinks.forEvent(roomId, eventId))).toMatchObject(expected);
         });
 
         it('should parse room ID permalink URLs', () => {
@@ -125,6 +129,7 @@ describe('Permalinks', () => {
             const parsed = Permalinks.parseUrl(`https://matrix.to/#/${roomId}/${eventId}`);
 
             expect(parsed).toMatchObject(<any>expected);
+            expect(Permalinks.parseUrl(Permalinks.forEvent(roomId, eventId))).toMatchObject(expected);
         });
 
         it('should parse room alias permalink URLs with via servers', () => {
@@ -134,6 +139,7 @@ describe('Permalinks', () => {
             const expected: PermalinkParts = { userId: undefined, roomIdOrAlias: roomId, viaServers: via, eventId };
             const parsed = Permalinks.parseUrl(`https://matrix.to/#/${roomId}/${eventId}?via=${via.join("&via=")}`);
             expect(parsed).toMatchObject(<any>expected);
+            expect(Permalinks.parseUrl(Permalinks.forEvent(roomId, eventId, via))).toMatchObject(expected);
         });
 
         it('should parse room ID permalink URLs with via servers', () => {
@@ -144,6 +150,7 @@ describe('Permalinks', () => {
             const parsed = Permalinks.parseUrl(`https://matrix.to/#/${roomId}/${eventId}?via=${via.join("&via=")}`);
 
             expect(parsed).toMatchObject(<any>expected);
+            expect(Permalinks.parseUrl(Permalinks.forEvent(roomId, eventId, via))).toMatchObject(expected);
         });
 
         it('should parse room ID permalink URLs with via servers', () => {
@@ -152,6 +159,7 @@ describe('Permalinks', () => {
             const expected: PermalinkParts = { userId: undefined, roomIdOrAlias: roomId, viaServers: via, eventId: undefined };
             const parsed = Permalinks.parseUrl(`https://matrix.to/#/${roomId}/?via=${via.join("&via=")}`);
             expect(parsed).toMatchObject(<any>expected);
+            expect(Permalinks.parseUrl(Permalinks.forRoom(roomId, via))).toMatchObject(expected);
         });
     });
 });
