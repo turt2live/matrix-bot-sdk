@@ -77,19 +77,22 @@ export class Permalinks {
      * @returns {PermalinkParts} The parts of the permalink.
      */
     public static parseUrl(matrixTo: string): PermalinkParts {
-        const matrixToRegexp = /https:\/\/matrix.to\/#\/(?<entity>[!#@][^/?]+)\/?(?<eventId>\$[^/?]+)?\/?(?<query>\?.+)?$/;
-        const [match, entity, eventId, queryParameters] = matrixToRegexp.exec(matrixTo) ?? Array(4);
-        if (match === undefined || entity === undefined) {
-            throw new Error("Unexpected entity");
-        } else if (entity[0] === '@') {
+        const matrixToRegexp = /^https:\/\/matrix\.to\/#\/(?<entity>[^/?]+)\/?(?<eventId>[^?]+)?(?<query>\?[^]*)?$/;
+
+        const url = matrixToRegexp.exec(matrixTo)?.groups;
+        if (!url) {
+            throw new Error("Not a valid matrix.to URL");
+        }
+
+        const entity = decodeURIComponent(url.entity);
+        if (entity[0] === '@') {
             return { userId: entity, roomIdOrAlias: undefined, eventId: undefined, viaServers: undefined };
         } else if (entity[0] === '#' || entity[0] === '!') {
-            const viaServers = new URLSearchParams(queryParameters).getAll('via');
             return {
-                roomIdOrAlias: decodeURIComponent(entity),
-                eventId: eventId ? decodeURIComponent(eventId) : undefined,
-                viaServers,
                 userId: undefined,
+                roomIdOrAlias: entity,
+                eventId: url.eventId && decodeURIComponent(url.eventId),
+                viaServers: new URLSearchParams(url.query).getAll('via'),
             };
         } else {
             throw new Error("Unexpected entity");
