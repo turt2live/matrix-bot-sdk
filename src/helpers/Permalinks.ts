@@ -5,22 +5,22 @@
  */
 export interface PermalinkParts {
     /**
-     * The room ID or alias the permalink references. May be null.
+     * The room ID or alias the permalink references. May be undefined.
      */
     roomIdOrAlias: string;
 
     /**
-     * The user ID the permalink references. May be null.
+     * The user ID the permalink references. May be undefined.
      */
     userId: string;
 
     /**
-     * The event ID the permalink references. May be null.
+     * The event ID the permalink references. May be undefined.
      */
     eventId: string;
 
     /**
-     * The servers the permalink is routed through. May be null or empty.
+     * The servers the permalink is routed through. May be undefined or empty.
      */
     viaServers: string[];
 }
