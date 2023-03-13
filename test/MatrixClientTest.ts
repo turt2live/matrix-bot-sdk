@@ -156,6 +156,21 @@ describe('MatrixClient', () => {
             await Promise.all([client.doRequest("GET", "/test"), http.flushAllExpected()]);
         });
 
+        it('should send the custom User-Agent header', async () => {
+            const { client, http } = createTestClient();
+
+            const userAgent = "example/0.0.0 (example)";
+            client.userAgent = userAgent;
+
+            // noinspection TypeScriptValidateJSTypes
+            http.when("GET", "/test").respond(200, (path, content, req) => {
+                expect(req.headers["User-Agent"]).toEqual(userAgent);
+                return {};
+            });
+
+            await Promise.all([client.doRequest("GET", "/test"), http.flushAllExpected()]);
+        });
+
         it('should send application/json by default', async () => {
             const { client, http } = createTestClient();
 

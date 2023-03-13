@@ -70,6 +70,11 @@ export class MatrixClient extends EventEmitter {
     public syncingTimeout = 30000;
 
     /**
+     * A custom User-Agent string applied to HTTP requests.
+     */
+    public userAgent?: string;
+
+    /**
      * The crypto manager instance for this client. Generally speaking, this shouldn't
      * need to be accessed but is made available.
      *
@@ -2002,6 +2007,9 @@ export class MatrixClient extends EventEmitter {
         const headers = {};
         if (this.accessToken) {
             headers["Authorization"] = `Bearer ${this.accessToken}`;
+        }
+        if (this.userAgent) {
+            headers["User-Agent"] = this.userAgent;
         }
         return doHttpRequest(this.homeserverUrl, method, endpoint, qs, body, headers, timeout, raw, contentType, noEncoding);
     }
