@@ -3340,6 +3340,21 @@ describe('MatrixClient', () => {
 
             await Promise.all([client.leaveRoom(roomId), http.flushAllExpected()]);
         });
+        it('should include a reason if provided', async () => {
+            const { client, http, hsUrl } = createTestClient();
+
+            const roomId = "!testing:example.org";
+            const reason = "I am done testing here";
+
+            // noinspection TypeScriptValidateJSTypes
+            http.when("POST", "/_matrix/client/v3/rooms").respond(200, (path, content) => {
+                expect(content).toEqual({ reason });
+                expect(path).toEqual(`${hsUrl}/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/leave`);
+                return {};
+            });
+
+            await Promise.all([client.leaveRoom(roomId, reason), http.flushAllExpected()]);
+        });
     });
 
     describe('forgetRoom', () => {
