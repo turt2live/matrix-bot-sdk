@@ -153,7 +153,7 @@ describe('Permalinks', () => {
             expect(Permalinks.parseUrl(Permalinks.forEvent(roomId, eventId, via))).toMatchObject(expected);
         });
 
-        it('should parse room ID permalink URLs with via servers', () => {
+        it('should parse room ID URLs with via servers', () => {
             const roomId = "!example:example.org";
             const via = ["example.org"];
             const expected: PermalinkParts = { userId: undefined, roomIdOrAlias: roomId, viaServers: via, eventId: undefined };
