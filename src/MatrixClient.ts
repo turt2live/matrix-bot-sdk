@@ -1162,11 +1162,12 @@ export class MatrixClient extends EventEmitter {
     /**
      * Leaves the given room
      * @param {string} roomId the room ID to leave
+     * @param {string=} reason Optional reason to be included as the reason for leaving the room.
      * @returns {Promise<any>} resolves when left
      */
     @timedMatrixClientFunctionCall()
-    public leaveRoom(roomId: string): Promise<any> {
-        return this.doRequest("POST", "/_matrix/client/v3/rooms/" + encodeURIComponent(roomId) + "/leave", null, {});
+    public leaveRoom(roomId: string, reason?: string): Promise<any> {
+        return this.doRequest("POST", "/_matrix/client/v3/rooms/" + encodeURIComponent(roomId) + "/leave", null, { reason });
     }
 
     /**
