@@ -201,12 +201,13 @@ export class Intent {
     /**
      * Leaves the given room.
      * @param {string} roomId The room ID to leave
+     * @param {string=} reason Optional reason to be included as the reason for leaving the room.
      * @returns {Promise<any>} Resolves when the room has been left.
      */
     @timedIntentFunctionCall()
-    public async leaveRoom(roomId: string): Promise<any> {
+    public async leaveRoom(roomId: string, reason?: string): Promise<any> {
         await this.ensureRegistered();
-        return this.client.leaveRoom(roomId).then(async () => {
+        return this.client.leaveRoom(roomId, reason).then(async () => {
             // Recalculate joined rooms now that we've left a room
             await this.refreshJoinedRooms();
         });
