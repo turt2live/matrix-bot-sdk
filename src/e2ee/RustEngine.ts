@@ -112,6 +112,7 @@ export class RustEngine {
         settings.rotationPeriodMessages = BigInt(encEv.rotationPeriodMessages);
 
         await this.lock.acquire(SYNC_LOCK_NAME, async () => {
+            await this.machine.updateTrackedUsers(members); // just in case we missed some
             await this.runOnly(RequestType.KeysQuery);
             const keysClaim = await this.machine.getMissingSessions(members);
             if (keysClaim) {
