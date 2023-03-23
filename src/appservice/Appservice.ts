@@ -742,7 +742,12 @@ export class Appservice extends EventEmitter {
                 this.emit("device_lists", deviceLists);
             }
 
-            const otks = req.body["org.matrix.msc3202.device_one_time_keys_count"];
+            let otks = req.body["org.matrix.msc3202.device_one_time_keys_count"];
+            const otks2 = req.body["org.matrix.msc3202.device_one_time_key_counts"];
+            if (otks2 && !otks) {
+                LogService.warn("Appservice", "Your homeserver is using an outdated field (device_one_time_key_counts) to talk to this appservice. If you're using Synapse, please upgrade to 1.73.0 or higher.");
+                otks = otks2;
+            }
             if (otks) {
                 this.emit("otk.counts", otks);
             }
