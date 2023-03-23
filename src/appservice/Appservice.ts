@@ -294,7 +294,7 @@ export class Appservice extends EventEmitter {
         this.app.get("/_matrix/app/v1/thirdparty/location", this.onThirdpartyLocation.bind(this));
         this.app.post("/_matrix/app/unstable/org.matrix.msc3983/keys/claim", this.onKeysClaim.bind(this));
 
-        // Work around for https://github.com/matrix-org/synapse/issues/3780
+        // Workaround for https://github.com/matrix-org/synapse/issues/3780
         this.app.post("/_matrix/app/v1/unstable/org.matrix.msc3983/keys/claim", this.onKeysClaim.bind(this));
         this.app.post("/unstable/org.matrix.msc3983/keys/claim", this.onKeysClaim.bind(this));
 
@@ -952,7 +952,7 @@ export class Appservice extends EventEmitter {
         this.emit("query.key_claim", req.body, async (result: MSC3983KeyClaimResponse | undefined | null) => {
             if (result?.then) result = await result;
             if (!result) {
-                res.status(405).json({ errcode: "M_UNRECOGNIZED", error: "Endpoint not implemented"});
+                res.status(405).json({ errcode: "M_UNRECOGNIZED", error: "Endpoint not implemented" });
                 responded = true;
                 return;
             }
@@ -961,7 +961,7 @@ export class Appservice extends EventEmitter {
             responded = true;
         });
         if (!responded) {
-            res.status(405).json({ errcode: "M_UNRECOGNIZED", error: "Endpoint not implemented"});
+            res.status(405).json({ errcode: "M_UNRECOGNIZED", error: "Endpoint not implemented" });
         }
     }
 

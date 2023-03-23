@@ -1992,11 +1992,11 @@ describe('Appservice', () => {
                             "key": "...",
                             "signatures": {
                                 "@alice:example.org": {
-                                    "ed25519:DEVICEID": "..."
-                                }
-                            }
+                                    "ed25519:DEVICEID": "...",
+                                },
+                            },
                         },
-                    }
+                    },
                 },
             };
 
@@ -2058,8 +2058,8 @@ describe('Appservice', () => {
                 method: "POST",
                 qs: { access_token: hsToken },
                 json: query,
-            }).catch(e => ({body: e.response.body, statusCode: e.statusCode}));
-            expect(res).toStrictEqual({statusCode: 405, body: {errcode: "M_UNRECOGNIZED", error: "Endpoint not implemented"}});
+            }).catch(e => ({ body: e.response.body, statusCode: e.statusCode }));
+            expect(res).toStrictEqual({ statusCode: 405, body: { errcode: "M_UNRECOGNIZED", error: "Endpoint not implemented" } });
         } finally {
             appservice.stop();
         }

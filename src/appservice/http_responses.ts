@@ -34,7 +34,7 @@ export interface MSC3983KeyClaimResponse {
         [deviceId: string]: {
             [keyId: string]: {
                 // for signed_curve25519 keys
-                key: string,
+                key: string;
                 signatures: {
                     [userId: string]: {
                         [keyId: string]: string;
