@@ -639,8 +639,8 @@ export class Appservice extends EventEmitter {
 
     private isAuthed(req: any): boolean {
         let providedToken = req.query ? req.query["access_token"] : null;
-        if (req.headers && req.headers["Authorization"]) {
-            const authHeader = req.headers["Authorization"];
+        if (req.headers && req.headers["authorization"]) {
+            const authHeader = req.headers["authorization"];
             if (!authHeader.startsWith("Bearer ")) providedToken = null;
             else providedToken = authHeader.substring("Bearer ".length);
         }

@@ -809,6 +809,63 @@ describe('Appservice', () => {
         }
     });
 
+    it('should support using the Authorization header for auth', async () => {
+        const port = await getPort();
+        const hsToken = "s3cret_token";
+        const appservice = new Appservice({
+            port: port,
+            bindAddress: '',
+            homeserverName: 'example.org',
+            homeserverUrl: 'https://localhost',
+            registration: {
+                as_token: "",
+                hs_token: hsToken,
+                sender_localpart: "_bot_",
+                namespaces: {
+                    users: [{ exclusive: true, regex: "@_prefix_.*:.+" }],
+                    rooms: [],
+                    aliases: [],
+                },
+            },
+        });
+        appservice.botIntent.ensureRegistered = () => {
+            return null;
+        };
+
+        await appservice.begin();
+
+        // Should return 200 OK
+        await requestPromise({
+            uri: `http://localhost:${port}/_matrix/app/v1/transactions/1`,
+            method: "PUT",
+            json: { events: [] },
+            headers: {
+                Authorization: `Bearer ${hsToken}`,
+            },
+        });
+        
+        try {
+            // Should not be 200 OK
+            await requestPromise({
+                uri: `http://localhost:${port}/_matrix/app/v1/transactions/1`,
+                method: "PUT",
+                json: { events: [] },
+                headers: {
+                    Authorization: `IMPROPER_AUTH ${hsToken}`,
+                },
+            });
+            
+            // noinspection ExceptionCaughtLocallyJS
+            throw new Error("Authentication passed when it shouldn't have");
+        } catch (e) {
+            expect(e.error).toMatchObject({
+                errcode: "AUTH_FAILED",
+                error: "Authentication failed",
+            });
+            expect(e.statusCode).toBe(401);
+        }
+    });
+
     it('should validate inputs for transactions', async () => {
         const port = await getPort();
         const hsToken = "s3cret_token";
