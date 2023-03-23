@@ -298,7 +298,10 @@ export class Appservice extends EventEmitter {
         this.app.post("/_matrix/app/v1/unstable/org.matrix.msc3983/keys/claim", this.onKeysClaim.bind(this));
         this.app.post("/unstable/org.matrix.msc3983/keys/claim", this.onKeysClaim.bind(this));
 
-        // Everything else can 404
+        // Everything else should 405
+        this.app.all("*", (req: express.Request, res: express.Response) => {
+            res.status(405).json({ errcode: "M_UNRECOGNIZED", error: "Endpoint not implemented"});
+        });
 
         if (!this.registration.namespaces || !this.registration.namespaces.users || this.registration.namespaces.users.length === 0) {
             throw new Error("No user namespaces in registration");
