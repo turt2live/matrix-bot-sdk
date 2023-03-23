@@ -843,7 +843,7 @@ describe('Appservice', () => {
                 Authorization: `Bearer ${hsToken}`,
             },
         });
-        
+
         try {
             // Should not be 200 OK
             await requestPromise({
@@ -854,7 +854,7 @@ describe('Appservice', () => {
                     Authorization: `IMPROPER_AUTH ${hsToken}`,
                 },
             });
-            
+
             // noinspection ExceptionCaughtLocallyJS
             throw new Error("Authentication passed when it shouldn't have");
         } catch (e) {
