@@ -134,7 +134,9 @@ export class RustEngine {
     }
 
     private async processKeysUploadRequest(request: KeysUploadRequest) {
-        const resp = await this.client.doRequest("POST", "/_matrix/client/v3/keys/upload", null, JSON.parse(request.body));
+        const body = JSON.parse(request.body);
+        // delete body["one_time_keys"]; // use this to test MSC3983
+        const resp = await this.client.doRequest("POST", "/_matrix/client/v3/keys/upload", null, body);
         await this.machine.markRequestAsSent(request.id, request.type, JSON.stringify(resp));
     }
 
