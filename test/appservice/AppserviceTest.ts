@@ -866,7 +866,7 @@ describe('Appservice', () => {
         }
     });
 
-    it('should return 405 error codes for unknown endpoints', async () => {
+    it('should return 404 error codes for unknown endpoints', async () => {
         const port = await getPort();
         const hsToken = "s3cret_token";
         const appservice = new Appservice({
@@ -909,7 +909,7 @@ describe('Appservice', () => {
                 errcode: "M_UNRECOGNIZED",
                 error: "Endpoint not implemented",
             });
-            expect(e.statusCode).toBe(405);
+            expect(e.statusCode).toBe(404);
         }
     });
 
@@ -2066,7 +2066,7 @@ describe('Appservice', () => {
         }
     });
 
-    it('should return a 405 for MSC3983 if not used by consumer', async () => {
+    it('should return a 404 for MSC3983 if not used by consumer', async () => {
         const port = await getPort();
         const hsToken = "s3cret_token";
         const appservice = new Appservice({
@@ -2106,7 +2106,7 @@ describe('Appservice', () => {
                 qs: { access_token: hsToken },
                 json: query,
             }).catch(e => ({ body: e.response.body, statusCode: e.statusCode }));
-            expect(res).toStrictEqual({ statusCode: 405, body: { errcode: "M_UNRECOGNIZED", error: "Endpoint not implemented" } });
+            expect(res).toStrictEqual({ statusCode: 404, body: { errcode: "M_UNRECOGNIZED", error: "Endpoint not implemented" } });
         } finally {
             appservice.stop();
         }
