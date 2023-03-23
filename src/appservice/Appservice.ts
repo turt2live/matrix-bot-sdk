@@ -17,6 +17,7 @@ import {
     MatrixClient,
     MemoryStorageProvider,
     Metrics,
+    MSC3983KeyClaimResponse,
     OTKAlgorithm,
     redactObjectForLogging,
     UserID,
@@ -291,6 +292,11 @@ export class Appservice extends EventEmitter {
         this.app.get("/_matrix/app/v1/thirdparty/user", this.onThirdpartyUser.bind(this));
         this.app.get("/_matrix/app/v1/thirdparty/location/:protocol", this.onThirdpartyLocation.bind(this));
         this.app.get("/_matrix/app/v1/thirdparty/location", this.onThirdpartyLocation.bind(this));
+        this.app.post("/_matrix/app/unstable/org.matrix.msc3983/keys/claim", this.onKeysClaim.bind(this));
+
+        // Work around for https://github.com/matrix-org/synapse/issues/3780
+        this.app.post("/_matrix/app/v1/unstable/org.matrix.msc3983/keys/claim", this.onKeysClaim.bind(this));
+        this.app.post("/unstable/org.matrix.msc3983/keys/claim", this.onKeysClaim.bind(this));
 
         // Everything else can 404
 
@@ -929,6 +935,34 @@ export class Appservice extends EventEmitter {
                 res.status(200).json(result); // return result for debugging + testing
             }
         });
+    }
+
+    private async onKeysClaim(req: express.Request, res: express.Response): Promise<any> {
+        if (!this.isAuthed(req)) {
+            res.status(401).json({ errcode: "AUTH_FAILED", error: "Authentication failed" });
+            return;
+        }
+
+        if (typeof (req.body) !== "object") {
+            res.status(400).json({ errcode: "BAD_REQUEST", error: "Expected JSON" });
+            return;
+        }
+
+        let responded = false;
+        this.emit("query.key_claim", req.body, async (result: MSC3983KeyClaimResponse | undefined | null) => {
+            if (result?.then) result = await result;
+            if (!result) {
+                res.status(405).json({ errcode: "M_UNRECOGNIZED", error: "Endpoint not implemented"});
+                responded = true;
+                return;
+            }
+
+            res.status(200).json(result);
+            responded = true;
+        });
+        if (!responded) {
+            res.status(405).json({ errcode: "M_UNRECOGNIZED", error: "Endpoint not implemented"});
+        }
     }
 
     private onThirdpartyProtocol(req: express.Request, res: express.Response) {

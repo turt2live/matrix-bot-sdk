@@ -803,6 +803,7 @@ describe('Appservice', () => {
             await verifyAuth("GET", "/_matrix/app/v1/thirdparty/user");
             await verifyAuth("GET", "/_matrix/app/v1/thirdparty/location/protocolId");
             await verifyAuth("GET", "/_matrix/app/v1/thirdparty/location");
+            await verifyAuth("POST", "/_matrix/app/unstable/org.matrix.msc3983/keys/claim");
         } finally {
             appservice.stop();
         }
@@ -1951,6 +1952,117 @@ describe('Appservice', () => {
 
     it.skip('should prepare the bot intent with encryption at startup if enabled', async () => {
 
+    });
+
+    it('should emit during MSC3983 key claim requests', async () => {
+        const port = await getPort();
+        const hsToken = "s3cret_token";
+        const appservice = new Appservice({
+            port: port,
+            bindAddress: '',
+            homeserverName: 'example.org',
+            homeserverUrl: 'https://localhost',
+            registration: {
+                as_token: "",
+                hs_token: hsToken,
+                sender_localpart: "_bot_",
+                namespaces: {
+                    users: [{ exclusive: true, regex: "@_prefix_.*:.+" }],
+                    rooms: [],
+                    aliases: [],
+                },
+            },
+        });
+        appservice.botIntent.ensureRegistered = () => {
+            return null;
+        };
+
+        await appservice.begin();
+
+        try {
+            const query = {
+                "@alice:example.org": {
+                    "DEVICEID": ["signed_curve25519"],
+                },
+            };
+            const response = {
+                "@alice:example.org": {
+                    "DEVICEID": {
+                        "signed_curve25519:AAAAHg": {
+                            "key": "...",
+                            "signatures": {
+                                "@alice:example.org": {
+                                    "ed25519:DEVICEID": "..."
+                                }
+                            }
+                        },
+                    }
+                },
+            };
+
+            const claimSpy = simple.stub().callFn((q, fn) => {
+                expect(q).toStrictEqual(query);
+                fn(response);
+            });
+            appservice.on("query.key_claim", claimSpy);
+
+            const res = await requestPromise({
+                uri: `http://localhost:${port}/_matrix/app/unstable/org.matrix.msc3983/keys/claim`,
+                method: "POST",
+                qs: { access_token: hsToken },
+                json: query,
+            });
+            expect(res).toStrictEqual(response);
+            expect(claimSpy.callCount).toBe(1);
+        } finally {
+            appservice.stop();
+        }
+    });
+
+    it('should return a 405 for MSC3983 if not used by consumer', async () => {
+        const port = await getPort();
+        const hsToken = "s3cret_token";
+        const appservice = new Appservice({
+            port: port,
+            bindAddress: '',
+            homeserverName: 'example.org',
+            homeserverUrl: 'https://localhost',
+            registration: {
+                as_token: "",
+                hs_token: hsToken,
+                sender_localpart: "_bot_",
+                namespaces: {
+                    users: [{ exclusive: true, regex: "@_prefix_.*:.+" }],
+                    rooms: [],
+                    aliases: [],
+                },
+            },
+        });
+        appservice.botIntent.ensureRegistered = () => {
+            return null;
+        };
+
+        await appservice.begin();
+
+        try {
+            const query = {
+                "@alice:example.org": {
+                    "DEVICEID": ["signed_curve25519"],
+                },
+            };
+
+            // Note how we're not registering anything with the EventEmitter
+
+            const res = await requestPromise({
+                uri: `http://localhost:${port}/_matrix/app/unstable/org.matrix.msc3983/keys/claim`,
+                method: "POST",
+                qs: { access_token: hsToken },
+                json: query,
+            }).catch(e => ({body: e.response.body, statusCode: e.statusCode}));
+            expect(res).toStrictEqual({statusCode: 405, body: {errcode: "M_UNRECOGNIZED", error: "Endpoint not implemented"}});
+        } finally {
+            appservice.stop();
+        }
     });
 
     it('should emit while querying users', async () => {
