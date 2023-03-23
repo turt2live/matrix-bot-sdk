@@ -302,7 +302,7 @@ export class Appservice extends EventEmitter {
         // Technically, according to https://spec.matrix.org/v1.6/application-service-api/#unknown-routes we should
         // be returning 405 for *known* endpoints with the wrong method.
         this.app.all("*", (req: express.Request, res: express.Response) => {
-            res.status(404).json({ errcode: "M_UNRECOGNIZED", error: "Endpoint not implemented"});
+            res.status(404).json({ errcode: "M_UNRECOGNIZED", error: "Endpoint not implemented" });
         });
 
         if (!this.registration.namespaces || !this.registration.namespaces.users || this.registration.namespaces.users.length === 0) {
