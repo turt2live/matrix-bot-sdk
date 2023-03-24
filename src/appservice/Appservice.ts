@@ -730,7 +730,7 @@ export class Appservice extends EventEmitter {
                 // These events aren't tied to rooms, so just emit them generically
                 this.emit("ephemeral.event", event);
 
-                if (event["type"] === "m.room.encrypted" || event[EDU_ANNOTATION_KEY] === EduAnnotation.ToDevice) {
+                if (this.cryptoStorage && (event["type"] === "m.room.encrypted" || event.unsigned?.[EDU_ANNOTATION_KEY] === EduAnnotation.ToDevice)) {
                     const toUser = event["to_user_id"];
                     const intent = this.getIntentForUserId(toUser);
                     await intent.enableEncryption();
