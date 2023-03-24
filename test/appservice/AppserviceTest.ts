@@ -910,6 +910,8 @@ describe('Appservice', () => {
                 error: "Endpoint not implemented",
             });
             expect(e.statusCode).toBe(404);
+        } finally {
+            appservice.stop();
         }
     });
 
