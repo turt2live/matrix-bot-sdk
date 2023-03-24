@@ -28,7 +28,7 @@ export class UnstableApis {
      * @returns {Promise<string>} Resolves to the event ID of the reaction
      */
     public async addReactionToEvent(roomId: string, eventId: string, emoji: string): Promise<string> {
-        return this.client.sendEvent(roomId, "m.reaction", {
+        return this.client.sendRawEvent(roomId, "m.reaction", {
             "m.relates_to": {
                 event_id: eventId,
                 key: emoji,

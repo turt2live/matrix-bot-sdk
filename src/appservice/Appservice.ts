@@ -17,6 +17,8 @@ import {
     MatrixClient,
     MemoryStorageProvider,
     Metrics,
+    MSC3983KeyClaimResponse,
+    MSC3984KeyQueryResponse,
     OTKAlgorithm,
     redactObjectForLogging,
     UserID,
@@ -291,8 +293,21 @@ export class Appservice extends EventEmitter {
         this.app.get("/_matrix/app/v1/thirdparty/user", this.onThirdpartyUser.bind(this));
         this.app.get("/_matrix/app/v1/thirdparty/location/:protocol", this.onThirdpartyLocation.bind(this));
         this.app.get("/_matrix/app/v1/thirdparty/location", this.onThirdpartyLocation.bind(this));
+        this.app.post("/_matrix/app/unstable/org.matrix.msc3983/keys/claim", this.onKeysClaim.bind(this));
+        this.app.post("/_matrix/app/unstable/org.matrix.msc3984/keys/query", this.onKeysQuery.bind(this));
 
-        // Everything else can 404
+        // Workaround for https://github.com/matrix-org/synapse/issues/3780
+        this.app.post("/_matrix/app/v1/unstable/org.matrix.msc3983/keys/claim", this.onKeysClaim.bind(this));
+        this.app.post("/unstable/org.matrix.msc3983/keys/claim", this.onKeysClaim.bind(this));
+        this.app.post("/_matrix/app/v1/unstable/org.matrix.msc3984/keys/query", this.onKeysQuery.bind(this));
+        this.app.post("/unstable/org.matrix.msc3984/keys/query", this.onKeysQuery.bind(this));
+
+        // Everything else should 404
+        // Technically, according to https://spec.matrix.org/v1.6/application-service-api/#unknown-routes we should
+        // be returning 405 for *known* endpoints with the wrong method.
+        this.app.all("*", (req: express.Request, res: express.Response) => {
+            res.status(404).json({ errcode: "M_UNRECOGNIZED", error: "Endpoint not implemented" });
+        });
 
         if (!this.registration.namespaces || !this.registration.namespaces.users || this.registration.namespaces.users.length === 0) {
             throw new Error("No user namespaces in registration");
@@ -633,8 +648,8 @@ export class Appservice extends EventEmitter {
 
     private isAuthed(req: any): boolean {
         let providedToken = req.query ? req.query["access_token"] : null;
-        if (req.headers && req.headers["Authorization"]) {
-            const authHeader = req.headers["Authorization"];
+        if (req.headers && req.headers["authorization"]) {
+            const authHeader = req.headers["authorization"];
             if (!authHeader.startsWith("Bearer ")) providedToken = null;
             else providedToken = authHeader.substring("Bearer ".length);
         }
@@ -719,7 +734,7 @@ export class Appservice extends EventEmitter {
                 // These events aren't tied to rooms, so just emit them generically
                 this.emit("ephemeral.event", event);
 
-                if (event["type"] === "m.room.encrypted" || event[EDU_ANNOTATION_KEY] === EduAnnotation.ToDevice) {
+                if (this.cryptoStorage && (event["type"] === "m.room.encrypted" || event.unsigned?.[EDU_ANNOTATION_KEY] === EduAnnotation.ToDevice)) {
                     const toUser = event["to_user_id"];
                     const intent = this.getIntentForUserId(toUser);
                     await intent.enableEncryption();
@@ -730,53 +745,72 @@ export class Appservice extends EventEmitter {
                 }
             }
 
+            const deviceLists: { changed: string[], removed: string[] } = req.body["org.matrix.msc3202.device_lists"] ?? {
+                changed: [],
+                removed: [],
+            };
+
+            if (!deviceLists.changed) deviceLists.changed = [];
+            if (!deviceLists.removed) deviceLists.removed = [];
+
+            if (deviceLists.changed.length || deviceLists.removed.length) {
+                this.emit("device_lists", deviceLists);
+            }
+
+            let otks = req.body["org.matrix.msc3202.device_one_time_keys_count"];
+            const otks2 = req.body["org.matrix.msc3202.device_one_time_key_counts"];
+            if (otks2 && !otks) {
+                LogService.warn(
+                    "Appservice",
+                    "Your homeserver is using an outdated field (device_one_time_key_counts) to talk to this appservice. " +
+                    "If you're using Synapse, please upgrade to 1.73.0 or higher.",
+                );
+                otks = otks2;
+            }
+            if (otks) {
+                this.emit("otk.counts", otks);
+            }
+            if (otks && this.cryptoStorage) {
+                for (const userId of Object.keys(otks)) {
+                    const intent = this.getIntentForUserId(userId);
+                    await intent.enableEncryption();
+                    const otksForUser = otks[userId][intent.underlyingClient.crypto.clientDeviceId];
+                    if (otksForUser) {
+                        if (!byUserId[userId]) {
+                            byUserId[userId] = {
+                                counts: null,
+                                toDevice: null,
+                                unusedFallbacks: null,
+                            };
+                        }
+                        byUserId[userId].counts = otksForUser;
+                    }
+                }
+            }
+
+            const fallbacks = req.body["org.matrix.msc3202.device_unused_fallback_key_types"];
+            if (fallbacks) {
+                this.emit("otk.unused_fallback_keys", fallbacks);
+            }
+            if (fallbacks && this.cryptoStorage) {
+                for (const userId of Object.keys(fallbacks)) {
+                    const intent = this.getIntentForUserId(userId);
+                    await intent.enableEncryption();
+                    const fallbacksForUser = fallbacks[userId][intent.underlyingClient.crypto.clientDeviceId];
+                    if (Array.isArray(fallbacksForUser) && !fallbacksForUser.includes(OTKAlgorithm.Signed)) {
+                        if (!byUserId[userId]) {
+                            byUserId[userId] = {
+                                counts: null,
+                                toDevice: null,
+                                unusedFallbacks: null,
+                            };
+                        }
+                        byUserId[userId].unusedFallbacks = fallbacksForUser;
+                    }
+                }
+            }
+
             if (this.cryptoStorage) {
-                const deviceLists: { changed: string[], removed: string[] } = req.body["org.matrix.msc3202.device_lists"] ?? {
-                    changed: [],
-                    removed: [],
-                };
-
-                if (!deviceLists.changed) deviceLists.changed = [];
-                if (!deviceLists.removed) deviceLists.removed = [];
-
-                const otks = req.body["org.matrix.msc3202.device_one_time_key_counts"];
-                if (otks) {
-                    for (const userId of Object.keys(otks)) {
-                        const intent = this.getIntentForUserId(userId);
-                        await intent.enableEncryption();
-                        const otksForUser = otks[userId][intent.underlyingClient.crypto.clientDeviceId];
-                        if (otksForUser) {
-                            if (!byUserId[userId]) {
-                                byUserId[userId] = {
-                                    counts: null,
-                                    toDevice: null,
-                                    unusedFallbacks: null,
-                                };
-                            }
-                            byUserId[userId].counts = otksForUser;
-                        }
-                    }
-                }
-
-                const fallbacks = req.body["org.matrix.msc3202.device_unused_fallback_key_types"];
-                if (fallbacks) {
-                    for (const userId of Object.keys(fallbacks)) {
-                        const intent = this.getIntentForUserId(userId);
-                        await intent.enableEncryption();
-                        const fallbacksForUser = fallbacks[userId][intent.underlyingClient.crypto.clientDeviceId];
-                        if (Array.isArray(fallbacksForUser) && !fallbacksForUser.includes(OTKAlgorithm.Signed)) {
-                            if (!byUserId[userId]) {
-                                byUserId[userId] = {
-                                    counts: null,
-                                    toDevice: null,
-                                    unusedFallbacks: null,
-                                };
-                            }
-                            byUserId[userId].unusedFallbacks = fallbacksForUser;
-                        }
-                    }
-                }
-
                 for (const userId of Object.keys(byUserId)) {
                     const intent = this.getIntentForUserId(userId);
                     await intent.enableEncryption();
@@ -795,47 +829,49 @@ export class Appservice extends EventEmitter {
             for (let event of req.body["events"]) {
                 LogService.info("Appservice", `Processing event of type ${event["type"]}`);
                 event = await this.processEvent(event);
-                if (event['type'] === 'm.room.encrypted' && this.cryptoStorage) {
+                if (event['type'] === 'm.room.encrypted') {
                     this.emit("room.encrypted_event", event["room_id"], event);
-                    try {
-                        const encrypted = new EncryptedRoomEvent(event);
-                        const roomId = event['room_id'];
+                    if (this.cryptoStorage) {
                         try {
-                            event = (await this.botClient.crypto.decryptRoomEvent(encrypted, roomId)).raw;
-                            event = await this.processEvent(event);
-                            this.emit("room.decrypted_event", roomId, event);
-
-                            // For logging purposes: show that the event was decrypted
-                            LogService.info("Appservice", `Processing decrypted event of type ${event["type"]}`);
-                        } catch (e1) {
-                            LogService.warn("Appservice", `Bot client was not able to decrypt ${roomId} ${event['event_id']} - trying other intents`);
-
-                            let tryUserId: string;
+                            const encrypted = new EncryptedRoomEvent(event);
+                            const roomId = event['room_id'];
                             try {
-                                // TODO: This could be more efficient
-                                const userIdsInRoom = await this.botClient.getJoinedRoomMembers(roomId);
-                                tryUserId = userIdsInRoom.find(u => this.isNamespacedUser(u));
-                            } catch (e) {
-                                LogService.error("Appservice", "Failed to get members of room - cannot decrypt message");
-                            }
-
-                            if (tryUserId) {
-                                const intent = this.getIntentForUserId(tryUserId);
-
-                                event = (await intent.underlyingClient.crypto.decryptRoomEvent(encrypted, roomId)).raw;
+                                event = (await this.botClient.crypto.decryptRoomEvent(encrypted, roomId)).raw;
                                 event = await this.processEvent(event);
                                 this.emit("room.decrypted_event", roomId, event);
 
                                 // For logging purposes: show that the event was decrypted
                                 LogService.info("Appservice", `Processing decrypted event of type ${event["type"]}`);
-                            } else {
-                                // noinspection ExceptionCaughtLocallyJS
-                                throw e1;
+                            } catch (e1) {
+                                LogService.warn("Appservice", `Bot client was not able to decrypt ${roomId} ${event['event_id']} - trying other intents`);
+
+                                let tryUserId: string;
+                                try {
+                                    // TODO: This could be more efficient
+                                    const userIdsInRoom = await this.botClient.getJoinedRoomMembers(roomId);
+                                    tryUserId = userIdsInRoom.find(u => this.isNamespacedUser(u));
+                                } catch (e) {
+                                    LogService.error("Appservice", "Failed to get members of room - cannot decrypt message");
+                                }
+
+                                if (tryUserId) {
+                                    const intent = this.getIntentForUserId(tryUserId);
+
+                                    event = (await intent.underlyingClient.crypto.decryptRoomEvent(encrypted, roomId)).raw;
+                                    event = await this.processEvent(event);
+                                    this.emit("room.decrypted_event", roomId, event);
+
+                                    // For logging purposes: show that the event was decrypted
+                                    LogService.info("Appservice", `Processing decrypted event of type ${event["type"]}`);
+                                } else {
+                                    // noinspection ExceptionCaughtLocallyJS
+                                    throw e1;
+                                }
                             }
+                        } catch (e) {
+                            LogService.error("Appservice", `Decryption error on ${event['room_id']} ${event['event_id']}`, e);
+                            this.emit("room.failed_decryption", event['room_id'], event, e);
                         }
-                    } catch (e) {
-                        LogService.error("Appservice", `Decryption error on ${event['room_id']} ${event['event_id']}`, e);
-                        this.emit("room.failed_decryption", event['room_id'], event, e);
                     }
                 }
                 this.emit("room.event", event["room_id"], event);
@@ -908,6 +944,64 @@ export class Appservice extends EventEmitter {
                 res.status(200).json(result); // return result for debugging + testing
             }
         });
+    }
+
+    private async onKeysClaim(req: express.Request, res: express.Response): Promise<any> {
+        if (!this.isAuthed(req)) {
+            res.status(401).json({ errcode: "AUTH_FAILED", error: "Authentication failed" });
+            return;
+        }
+
+        if (typeof (req.body) !== "object") {
+            res.status(400).json({ errcode: "BAD_REQUEST", error: "Expected JSON" });
+            return;
+        }
+
+        let responded = false;
+        this.emit("query.key_claim", req.body, async (result: MSC3983KeyClaimResponse | Promise<MSC3983KeyClaimResponse> | undefined | null) => {
+            if (result?.then) result = await result;
+            if (!result) {
+                res.status(404).json({ errcode: "M_UNRECOGNIZED", error: "Endpoint not implemented" });
+                responded = true;
+                return;
+            }
+
+            res.status(200).json(result);
+            responded = true;
+        });
+        if (!responded) {
+            res.status(404).json({ errcode: "M_UNRECOGNIZED", error: "Endpoint not implemented" });
+        }
+    }
+
+    private async onKeysQuery(req: express.Request, res: express.Response): Promise<any> {
+        if (!this.isAuthed(req)) {
+            res.status(401).json({ errcode: "AUTH_FAILED", error: "Authentication failed" });
+            return;
+        }
+
+        if (typeof (req.body) !== "object") {
+            res.status(400).json({ errcode: "BAD_REQUEST", error: "Expected JSON" });
+            return;
+        }
+
+        let responded = false;
+        this.emit("query.key", req.body, async (result: MSC3984KeyQueryResponse | Promise<MSC3984KeyQueryResponse> | undefined | null) => {
+            if ((result as any)?.then) result = await result;
+            if (!result) {
+                res.status(404).json({ errcode: "M_UNRECOGNIZED", error: "Endpoint not implemented" });
+                responded = true;
+                return;
+            }
+
+            // Implementation note: we could probably query the device keys from our storage if we wanted to.
+
+            res.status(200).json(result);
+            responded = true;
+        });
+        if (!responded) {
+            res.status(404).json({ errcode: "M_UNRECOGNIZED", error: "Endpoint not implemented" });
+        }
     }
 
     private onThirdpartyProtocol(req: express.Request, res: express.Response) {

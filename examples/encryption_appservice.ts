@@ -36,7 +36,7 @@ const worksImage = fs.readFileSync("./examples/static/it-works.png");
 const registration: IAppserviceRegistration = {
     "as_token": creds?.['asToken'] ?? "change_me",
     "hs_token": creds?.['hsToken'] ?? "change_me",
-    "sender_localpart": "crypto_main_bot_user",
+    "sender_localpart": "crypto_main_bot_user2",
     "namespaces": {
         users: [{
             regex: "@crypto.*:localhost",
@@ -94,6 +94,16 @@ const bot = appservice.botIntent;
             ],
         });
     }
+
+    appservice.on("query.key_claim", (req, done) => {
+        LogService.info("index", "Key claim request:", req);
+        done({});
+    });
+
+    appservice.on("query.key", (req, done) => {
+        LogService.info("index", "Key query request:", req);
+        done({});
+    });
 
     appservice.on("room.failed_decryption", async (roomId: string, event: any, e: Error) => {
         LogService.error("index", `Failed to decrypt ${roomId} ${event['event_id']} because `, e);

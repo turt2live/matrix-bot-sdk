@@ -676,7 +676,7 @@ export class MatrixClient extends EventEmitter {
 
         if (createFilter && filter) {
             LogService.trace("MatrixClientLite", "Creating new filter");
-            return this.doRequest("POST", "/_matrix/client/v3/user/" + encodeURIComponent(userId) + "/filter", null, filter).then(async response => {
+            await this.doRequest("POST", "/_matrix/client/v3/user/" + encodeURIComponent(userId) + "/filter", null, filter).then(async response => {
                 this.filterId = response["filter_id"];
                 // noinspection ES6RedundantAwait
                 await Promise.resolve(this.storage.setSyncToken(null));
@@ -1162,11 +1162,12 @@ export class MatrixClient extends EventEmitter {
     /**
      * Leaves the given room
      * @param {string} roomId the room ID to leave
+     * @param {string=} reason Optional reason to be included as the reason for leaving the room.
      * @returns {Promise<any>} resolves when left
      */
     @timedMatrixClientFunctionCall()
-    public leaveRoom(roomId: string): Promise<any> {
-        return this.doRequest("POST", "/_matrix/client/v3/rooms/" + encodeURIComponent(roomId) + "/leave", null, {});
+    public leaveRoom(roomId: string, reason?: string): Promise<any> {
+        return this.doRequest("POST", "/_matrix/client/v3/rooms/" + encodeURIComponent(roomId) + "/leave", null, { reason });
     }
 
     /**
