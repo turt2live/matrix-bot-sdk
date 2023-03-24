@@ -1177,8 +1177,14 @@ describe('MatrixClient', () => {
             http.when("POST", "/_matrix/client/v3/user").respond(200, (path, content) => {
                 expect(path).toEqual(`${hsUrl}/_matrix/client/v3/user/${encodeURIComponent(userId)}/filter`);
                 expect(content).toMatchObject(filter);
-                client.stop(); // avoid a sync early
                 return { filter_id: filterId };
+            });
+
+            // noinspection TypeScriptValidateJSTypes
+            http.when("GET", "/_matrix/client/v3/sync").respond(200, (path, content, req) => {
+                expect(req.queryParams.filter).toBe(filterId);
+                client.stop();
+                return { next_batch: "123" };
             });
 
             await Promise.all([client.start(filter), http.flushAllExpected()]);
@@ -1215,8 +1221,14 @@ describe('MatrixClient', () => {
             http.when("POST", "/_matrix/client/v3/user").respond(200, (path, content) => {
                 expect(path).toEqual(`${hsUrl}/_matrix/client/v3/user/${encodeURIComponent(userId)}/filter`);
                 expect(content).toMatchObject(filter);
-                client.stop(); // avoid a sync early
                 return { filter_id: filterId };
+            });
+
+            // noinspection TypeScriptValidateJSTypes
+            http.when("GET", "/_matrix/client/v3/sync").respond(200, (path, content, req) => {
+                expect(req.queryParams.filter).toBe(filterId);
+                client.stop();
+                return { next_batch: "123" };
             });
 
             await Promise.all([client.start(filter), http.flushAllExpected()]);
