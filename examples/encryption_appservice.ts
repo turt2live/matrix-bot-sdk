@@ -100,6 +100,11 @@ const bot = appservice.botIntent;
         done({});
     });
 
+    appservice.on("query.key", (req, done) => {
+        LogService.info("index", "Key query request:", req);
+        done({});
+    });
+
     appservice.on("room.failed_decryption", async (roomId: string, event: any, e: Error) => {
         LogService.error("index", `Failed to decrypt ${roomId} ${event['event_id']} because `, e);
     });
