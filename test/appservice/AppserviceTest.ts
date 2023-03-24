@@ -834,35 +834,39 @@ describe('Appservice', () => {
 
         await appservice.begin();
 
-        // Should return 200 OK
-        await requestPromise({
-            uri: `http://localhost:${port}/_matrix/app/v1/transactions/1`,
-            method: "PUT",
-            json: { events: [] },
-            headers: {
-                Authorization: `Bearer ${hsToken}`,
-            },
-        });
-
         try {
-            // Should not be 200 OK
+            // Should return 200 OK
             await requestPromise({
                 uri: `http://localhost:${port}/_matrix/app/v1/transactions/1`,
                 method: "PUT",
                 json: { events: [] },
                 headers: {
-                    Authorization: `IMPROPER_AUTH ${hsToken}`,
+                    Authorization: `Bearer ${hsToken}`,
                 },
             });
 
-            // noinspection ExceptionCaughtLocallyJS
-            throw new Error("Authentication passed when it shouldn't have");
-        } catch (e) {
-            expect(e.error).toMatchObject({
-                errcode: "AUTH_FAILED",
-                error: "Authentication failed",
-            });
-            expect(e.statusCode).toBe(401);
+            try {
+                // Should not be 200 OK
+                await requestPromise({
+                    uri: `http://localhost:${port}/_matrix/app/v1/transactions/1`,
+                    method: "PUT",
+                    json: { events: [] },
+                    headers: {
+                        Authorization: `IMPROPER_AUTH ${hsToken}`,
+                    },
+                });
+
+                // noinspection ExceptionCaughtLocallyJS
+                throw new Error("Authentication passed when it shouldn't have");
+            } catch (e) {
+                expect(e.error).toMatchObject({
+                    errcode: "AUTH_FAILED",
+                    error: "Authentication failed",
+                });
+                expect(e.statusCode).toBe(401);
+            }
+        } finally {
+            appservice.stop();
         }
     });
 
