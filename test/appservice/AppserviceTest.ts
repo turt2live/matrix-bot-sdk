@@ -738,6 +738,55 @@ describe('Appservice', () => {
         });
     });
 
+    it('should return 404 error codes for unknown endpoints', async () => {
+        const port = await getPort();
+        const hsToken = "s3cret_token";
+        const appservice = new Appservice({
+            port: port,
+            bindAddress: '',
+            homeserverName: 'example.org',
+            homeserverUrl: 'https://localhost',
+            registration: {
+                as_token: "",
+                hs_token: hsToken,
+                sender_localpart: "_bot_",
+                namespaces: {
+                    users: [{ exclusive: true, regex: "@_prefix_.*:.+" }],
+                    rooms: [],
+                    aliases: [],
+                },
+            },
+        });
+        appservice.botIntent.ensureRegistered = () => {
+            return null;
+        };
+
+        await appservice.begin();
+
+        try {
+            // Should not be 200 OK
+            await requestPromise({
+                uri: `http://localhost:${port}/this/is/not/a/valid/api`,
+                method: "PUT",
+                json: { events: [] },
+                headers: {
+                    Authorization: `Bearer ${hsToken}`,
+                },
+            });
+
+            // noinspection ExceptionCaughtLocallyJS
+            throw new Error("Request passed when it shouldn't have");
+        } catch (e) {
+            expect(e.error).toMatchObject({
+                errcode: "M_UNRECOGNIZED",
+                error: "Endpoint not implemented",
+            });
+            expect(e.statusCode).toBe(404);
+        } finally {
+            appservice.stop();
+        }
+    });
+
     it('should 401 requests with bad auth', async () => {
         const port = await getPort();
         const hsToken = "s3cret_token";
@@ -861,55 +910,6 @@ describe('Appservice', () => {
                 errcode: "BAD_REQUEST",
                 error: "Invalid JSON: expected events",
             });
-        } finally {
-            appservice.stop();
-        }
-    });
-
-    it('should return 404 error codes for unknown endpoints', async () => {
-        const port = await getPort();
-        const hsToken = "s3cret_token";
-        const appservice = new Appservice({
-            port: port,
-            bindAddress: '',
-            homeserverName: 'example.org',
-            homeserverUrl: 'https://localhost',
-            registration: {
-                as_token: "",
-                hs_token: hsToken,
-                sender_localpart: "_bot_",
-                namespaces: {
-                    users: [{ exclusive: true, regex: "@_prefix_.*:.+" }],
-                    rooms: [],
-                    aliases: [],
-                },
-            },
-        });
-        appservice.botIntent.ensureRegistered = () => {
-            return null;
-        };
-
-        await appservice.begin();
-
-        try {
-            // Should not be 200 OK
-            await requestPromise({
-                uri: `http://localhost:${port}/this/is/not/a/valid/api`,
-                method: "PUT",
-                json: { events: [] },
-                headers: {
-                    Authorization: `Bearer ${hsToken}`,
-                },
-            });
-
-            // noinspection ExceptionCaughtLocallyJS
-            throw new Error("Request passed when it shouldn't have");
-        } catch (e) {
-            expect(e.error).toMatchObject({
-                errcode: "M_UNRECOGNIZED",
-                error: "Endpoint not implemented",
-            });
-            expect(e.statusCode).toBe(404);
         } finally {
             appservice.stop();
         }
