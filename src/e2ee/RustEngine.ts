@@ -34,7 +34,11 @@ export class RustEngine {
     public constructor(public readonly machine: OlmMachine, private client: MatrixClient) {
     }
 
-    public async run(...types: RequestType[]) {
+    public async run() {
+        await this.runOnly(); // run everything, but with syntactic sugar
+    }
+
+    private async runOnly(...types: RequestType[]) {
         // Note: we should not be running this until it runs out, so cache the value into a variable
         const requests = await this.machine.outgoingRequests();
         for (const request of requests) {
@@ -122,9 +126,10 @@ export class RustEngine {
         settings.rotationPeriod = BigInt(encEv.rotationPeriodMs);
         settings.rotationPeriodMessages = BigInt(encEv.rotationPeriodMessages);
 
-        await this.run(RequestType.KeysQuery);
         await this.lock.acquire(SYNC_LOCK_NAME, async () => {
-            const keysClaim = await this.machine.getMissingSessions(membersArray);
+            await this.machine.updateTrackedUsers(members); // just in case we missed some
+            await this.runOnly(RequestType.KeysQuery);
+            const keysClaim = await this.machine.getMissingSessions(members);
             if (keysClaim) {
                 await this.processKeysClaimRequest(keysClaim);
             }
@@ -144,7 +149,9 @@ export class RustEngine {
     }
 
     private async processKeysUploadRequest(request: KeysUploadRequest) {
-        const resp = await this.client.doRequest("POST", "/_matrix/client/v3/keys/upload", null, JSON.parse(request.body));
+        const body = JSON.parse(request.body);
+        // delete body["one_time_keys"]; // use this to test MSC3983
+        const resp = await this.client.doRequest("POST", "/_matrix/client/v3/keys/upload", null, body);
         await this.machine.markRequestAsSent(request.id, request.type, JSON.stringify(resp));
     }
 
@@ -155,7 +162,7 @@ export class RustEngine {
 
     private async processToDeviceRequest(request: ToDeviceRequest) {
         const req = JSON.parse(request.body);
-        await this.actuallyProcessToDeviceRequest(req.id, req.event_type, req.messages);
+        await this.actuallyProcessToDeviceRequest(req.txn_id, req.event_type, req.messages);
     }
 
     private async actuallyProcessToDeviceRequest(id: string, type: string, messages: Record<string, Record<string, unknown>>) {
