@@ -967,8 +967,6 @@ export class Appservice extends EventEmitter {
                     return;
                 }
 
-                // Implementation note: we could probably query the device keys from our storage if we wanted to.
-
                 res.status(200).json(result2);
             };
 
