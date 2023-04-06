@@ -970,14 +970,10 @@ export class Appservice extends EventEmitter {
                 res.status(200).json(result2);
             };
 
-            if ((result as Promise<MSC3983KeyClaimResponse>)?.then) {
-                (result as Promise<MSC3983KeyClaimResponse>).then(r => handleResult(r)).catch(e => {
-                    LogService.error("Appservice", "Error handling key claim API", e);
-                    res.status(500).json({ errcode: "M_UNKNOWN" });
-                });
-            } else {
-                handleResult(result as MSC3983KeyClaimResponse);
-            }
+            Promise.resolve(result).then(r => handleResult(r)).catch(e => {
+                LogService.error("Appservice", "Error handling key claim API", e);
+                res.status(500).json({ errcode: "M_UNKNOWN", error: "Error handling key claim API" });
+            });
         });
         if (!responded) {
             res.status(404).json({ errcode: "M_UNRECOGNIZED", error: "Endpoint not implemented" });
@@ -1010,14 +1006,10 @@ export class Appservice extends EventEmitter {
                 res.status(200).json(result2);
             };
 
-            if ((result as Promise<MSC3984KeyQueryResponse>)?.then) {
-                (result as Promise<MSC3984KeyQueryResponse>).then(r => handleResult(r)).catch(e => {
-                    LogService.error("Appservice", "Error handling key query API", e);
-                    res.status(500).json({ errcode: "M_UNKNOWN" });
-                });
-            } else {
-                handleResult(result as MSC3984KeyQueryResponse);
-            }
+            Promise.resolve(result).then(r => handleResult(r)).catch(e => {
+                LogService.error("Appservice", "Error handling key query API", e);
+                res.status(500).json({ errcode: "M_UNKNOWN", error: "Error handling key query API" });
+            });
         });
         if (!responded) {
             res.status(404).json({ errcode: "M_UNRECOGNIZED", error: "Endpoint not implemented" });
