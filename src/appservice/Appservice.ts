@@ -958,16 +958,22 @@ export class Appservice extends EventEmitter {
         }
 
         let responded = false;
-        this.emit("query.key_claim", req.body, async (result: MSC3983KeyClaimResponse | Promise<MSC3983KeyClaimResponse> | undefined | null) => {
-            if (result?.then) result = await result;
-            if (!result) {
-                res.status(404).json({ errcode: "M_UNRECOGNIZED", error: "Endpoint not implemented" });
-                responded = true;
-                return;
-            }
-
-            res.status(200).json(result);
+        this.emit("query.key_claim", req.body, (result: MSC3983KeyClaimResponse | Promise<MSC3983KeyClaimResponse> | undefined | null) => {
             responded = true;
+
+            const handleResult = (result2: MSC3983KeyClaimResponse) => {
+                if (!result2) {
+                    res.status(404).json({ errcode: "M_UNRECOGNIZED", error: "Endpoint not implemented" });
+                    return;
+                }
+
+                res.status(200).json(result2);
+            };
+
+            Promise.resolve(result).then(r => handleResult(r)).catch(e => {
+                LogService.error("Appservice", "Error handling key claim API", e);
+                res.status(500).json({ errcode: "M_UNKNOWN", error: "Error handling key claim API" });
+            });
         });
         if (!responded) {
             res.status(404).json({ errcode: "M_UNRECOGNIZED", error: "Endpoint not implemented" });
@@ -986,18 +992,24 @@ export class Appservice extends EventEmitter {
         }
 
         let responded = false;
-        this.emit("query.key", req.body, async (result: MSC3984KeyQueryResponse | Promise<MSC3984KeyQueryResponse> | undefined | null) => {
-            if ((result as any)?.then) result = await result;
-            if (!result) {
-                res.status(404).json({ errcode: "M_UNRECOGNIZED", error: "Endpoint not implemented" });
-                responded = true;
-                return;
-            }
-
-            // Implementation note: we could probably query the device keys from our storage if we wanted to.
-
-            res.status(200).json(result);
+        this.emit("query.key", req.body, (result: MSC3984KeyQueryResponse | Promise<MSC3984KeyQueryResponse> | undefined | null) => {
             responded = true;
+
+            const handleResult = (result2: MSC3984KeyQueryResponse) => {
+                if (!result2) {
+                    res.status(404).json({ errcode: "M_UNRECOGNIZED", error: "Endpoint not implemented" });
+                    return;
+                }
+
+                // Implementation note: we could probably query the device keys from our storage if we wanted to.
+
+                res.status(200).json(result2);
+            };
+
+            Promise.resolve(result).then(r => handleResult(r)).catch(e => {
+                LogService.error("Appservice", "Error handling key query API", e);
+                res.status(500).json({ errcode: "M_UNKNOWN", error: "Error handling key query API" });
+            });
         });
         if (!responded) {
             res.status(404).json({ errcode: "M_UNRECOGNIZED", error: "Endpoint not implemented" });
