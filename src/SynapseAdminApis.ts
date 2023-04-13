@@ -14,7 +14,7 @@ export interface SynapseUser {
     /**
      * External IDs for the user.
      */
-    external_ids: {
+    external_ids?: {
         auth_provider: string;
         external_id: string;
     }[];
