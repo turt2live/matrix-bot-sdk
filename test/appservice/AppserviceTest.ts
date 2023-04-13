@@ -738,6 +738,55 @@ describe('Appservice', () => {
         });
     });
 
+    it('should return 404 error codes for unknown endpoints', async () => {
+        const port = await getPort();
+        const hsToken = "s3cret_token";
+        const appservice = new Appservice({
+            port: port,
+            bindAddress: '',
+            homeserverName: 'example.org',
+            homeserverUrl: 'https://localhost',
+            registration: {
+                as_token: "",
+                hs_token: hsToken,
+                sender_localpart: "_bot_",
+                namespaces: {
+                    users: [{ exclusive: true, regex: "@_prefix_.*:.+" }],
+                    rooms: [],
+                    aliases: [],
+                },
+            },
+        });
+        appservice.botIntent.ensureRegistered = () => {
+            return null;
+        };
+
+        await appservice.begin();
+
+        try {
+            // Should not be 200 OK
+            await requestPromise({
+                uri: `http://localhost:${port}/this/is/not/a/valid/api`,
+                method: "PUT",
+                json: { events: [] },
+                headers: {
+                    Authorization: `Bearer ${hsToken}`,
+                },
+            });
+
+            // noinspection ExceptionCaughtLocallyJS
+            throw new Error("Request passed when it shouldn't have");
+        } catch (e) {
+            expect(e.error).toMatchObject({
+                errcode: "M_UNRECOGNIZED",
+                error: "Endpoint not implemented",
+            });
+            expect(e.statusCode).toBe(404);
+        } finally {
+            appservice.stop();
+        }
+    });
+
     it('should 401 requests with bad auth', async () => {
         const port = await getPort();
         const hsToken = "s3cret_token";
@@ -803,6 +852,69 @@ describe('Appservice', () => {
             await verifyAuth("GET", "/_matrix/app/v1/thirdparty/user");
             await verifyAuth("GET", "/_matrix/app/v1/thirdparty/location/protocolId");
             await verifyAuth("GET", "/_matrix/app/v1/thirdparty/location");
+            await verifyAuth("POST", "/_matrix/app/unstable/org.matrix.msc3983/keys/claim");
+            await verifyAuth("POST", "/_matrix/app/unstable/org.matrix.msc3984/keys/query");
+        } finally {
+            appservice.stop();
+        }
+    });
+
+    it('should support using the Authorization header for auth', async () => {
+        const port = await getPort();
+        const hsToken = "s3cret_token";
+        const appservice = new Appservice({
+            port: port,
+            bindAddress: '',
+            homeserverName: 'example.org',
+            homeserverUrl: 'https://localhost',
+            registration: {
+                as_token: "",
+                hs_token: hsToken,
+                sender_localpart: "_bot_",
+                namespaces: {
+                    users: [{ exclusive: true, regex: "@_prefix_.*:.+" }],
+                    rooms: [],
+                    aliases: [],
+                },
+            },
+        });
+        appservice.botIntent.ensureRegistered = () => {
+            return null;
+        };
+
+        await appservice.begin();
+
+        try {
+            // Should return 200 OK
+            await requestPromise({
+                uri: `http://localhost:${port}/_matrix/app/v1/transactions/1`,
+                method: "PUT",
+                json: { events: [] },
+                headers: {
+                    Authorization: `Bearer ${hsToken}`,
+                },
+            });
+
+            try {
+                // Should not be 200 OK
+                await requestPromise({
+                    uri: `http://localhost:${port}/_matrix/app/v1/transactions/1`,
+                    method: "PUT",
+                    json: { events: [] },
+                    headers: {
+                        Authorization: `IMPROPER_AUTH ${hsToken}`,
+                    },
+                });
+
+                // noinspection ExceptionCaughtLocallyJS
+                throw new Error("Authentication passed when it shouldn't have");
+            } catch (e) {
+                expect(e.error).toMatchObject({
+                    errcode: "AUTH_FAILED",
+                    error: "Authentication failed",
+                });
+                expect(e.statusCode).toBe(401);
+            }
         } finally {
             appservice.stop();
         }
@@ -993,6 +1105,216 @@ describe('Appservice', () => {
 
             await doCall("/transactions/1", { json: txnBody });
             await doCall("/_matrix/app/v1/transactions/2", { json: txnBody });
+        } finally {
+            appservice.stop();
+        }
+    });
+
+    it('should emit MSC3202 extensions from transactions', async () => {
+        const port = await getPort();
+        const hsToken = "s3cret_token";
+        const appservice = new Appservice({
+            port: port,
+            bindAddress: '',
+            homeserverName: 'example.org',
+            homeserverUrl: 'https://localhost',
+            registration: {
+                as_token: "",
+                hs_token: hsToken,
+                sender_localpart: "_bot_",
+                namespaces: {
+                    users: [{ exclusive: true, regex: "@_prefix_.*:.+" }],
+                    rooms: [],
+                    aliases: [],
+                },
+                // "de.sorunome.msc2409.push_ephemeral": true, // Shouldn't affect emission
+            },
+        });
+        appservice.botIntent.ensureRegistered = () => {
+            return null;
+        };
+
+        await appservice.begin();
+
+        try {
+            const sampleEncryptedEvent = {
+                type: "m.room.encrypted",
+                room_id: "!room:example.org",
+                // ... and other fields
+            };
+            let txnBody: any = {
+                "events": [],
+            };
+
+            const deviceListSpy = simple.stub().callFn((lists) => {
+                expect(lists).toMatchObject(txnBody["org.matrix.msc3202.device_lists"]);
+            });
+            const otkSpy = simple.stub().callFn((otks) => {
+                expect(otks).toStrictEqual(txnBody["org.matrix.msc3202.device_one_time_keys_count"]);
+            });
+            const fallbackKeySpy = simple.stub().callFn((fbKeys) => {
+                expect(fbKeys).toStrictEqual(txnBody["org.matrix.msc3202.device_unused_fallback_key_types"]);
+            });
+            const encryptedEventSpy = simple.stub().callFn((roomId, ev) => {
+                expect(roomId).toBe(sampleEncryptedEvent.room_id);
+                expect(ev).toStrictEqual(sampleEncryptedEvent);
+            });
+            appservice.on("device_lists", deviceListSpy);
+            appservice.on("otk.counts", otkSpy);
+            appservice.on("otk.unused_fallback_keys", fallbackKeySpy);
+            appservice.on("room.encrypted_event", encryptedEventSpy);
+
+            let txnId = 1;
+            // eslint-disable-next-line no-inner-declarations
+            async function doCall(route: string, spyCallback: () => void) {
+                const res = await requestPromise({
+                    uri: `http://localhost:${port}${route}${txnId++}`,
+                    method: "PUT",
+                    qs: { access_token: hsToken },
+                    json: txnBody,
+                });
+                expect(res).toMatchObject({});
+                spyCallback();
+
+                deviceListSpy.callCount = 0;
+                otkSpy.callCount = 0;
+                fallbackKeySpy.callCount = 0;
+                encryptedEventSpy.callCount = 0;
+            }
+
+            // eslint-disable-next-line no-inner-declarations
+            async function checkBothPaths(spyCallback: () => void) {
+                await doCall("/transactions/", spyCallback);
+                await doCall("/_matrix/app/v1/transactions/", spyCallback);
+            }
+
+            // Check 1: doesn't fire anything when nothing is happening
+            txnBody = {
+                "events": [],
+            };
+            await checkBothPaths(() => {
+                expect(deviceListSpy.callCount).toBe(0);
+                expect(otkSpy.callCount).toBe(0);
+                expect(fallbackKeySpy.callCount).toBe(0);
+                expect(encryptedEventSpy.callCount).toBe(0);
+            });
+
+            // Check 2: Device lists fire for changed lists
+            txnBody = {
+                "events": [],
+                "org.matrix.msc3202.device_lists": {
+                    "changed": ["@alice:example.org"],
+                },
+            };
+            await checkBothPaths(() => {
+                expect(deviceListSpy.callCount).toBe(1);
+                expect(otkSpy.callCount).toBe(0);
+                expect(fallbackKeySpy.callCount).toBe(0);
+                expect(encryptedEventSpy.callCount).toBe(0);
+            });
+
+            // Check 3: Device lists fire for removed lists
+            txnBody = {
+                "events": [],
+                "org.matrix.msc3202.device_lists": {
+                    "removed": ["@alice:example.org"],
+                },
+            };
+            await checkBothPaths(() => {
+                expect(deviceListSpy.callCount).toBe(1);
+                expect(otkSpy.callCount).toBe(0);
+                expect(fallbackKeySpy.callCount).toBe(0);
+                expect(encryptedEventSpy.callCount).toBe(0);
+            });
+
+            // Check 4: Device lists fire for changed and removed lists
+            txnBody = {
+                "events": [],
+                "org.matrix.msc3202.device_lists": {
+                    "changed": ["@alice:example.org"],
+                    "removed": ["@bob:example.org"],
+                },
+            };
+            await checkBothPaths(() => {
+                expect(deviceListSpy.callCount).toBe(1);
+                expect(otkSpy.callCount).toBe(0);
+                expect(fallbackKeySpy.callCount).toBe(0);
+                expect(encryptedEventSpy.callCount).toBe(0);
+            });
+
+            // Check 5: OTKs fire
+            txnBody = {
+                "events": [],
+                "org.matrix.msc3202.device_one_time_keys_count": {
+                    "@alice:example.org": {
+                        "DEVICEID": {
+                            "curve25519": 10,
+                            "signed_curve25519": 20,
+                        },
+                    },
+                },
+            };
+            await checkBothPaths(() => {
+                expect(deviceListSpy.callCount).toBe(0);
+                expect(otkSpy.callCount).toBe(1);
+                expect(fallbackKeySpy.callCount).toBe(0);
+                expect(encryptedEventSpy.callCount).toBe(0);
+            });
+
+            // Check 6: Fallback keys fire
+            txnBody = {
+                "events": [],
+                "org.matrix.msc3202.device_unused_fallback_key_types": {
+                    "@alice:example.org": {
+                        "DEVICEID": ["signed_curve25519"],
+                    },
+                },
+            };
+            await checkBothPaths(() => {
+                expect(deviceListSpy.callCount).toBe(0);
+                expect(otkSpy.callCount).toBe(0);
+                expect(fallbackKeySpy.callCount).toBe(1);
+                expect(encryptedEventSpy.callCount).toBe(0);
+            });
+
+            // Check 7: Encrypted event received fires
+            txnBody = {
+                "events": [sampleEncryptedEvent],
+            };
+            await checkBothPaths(() => {
+                expect(deviceListSpy.callCount).toBe(0);
+                expect(otkSpy.callCount).toBe(0);
+                expect(fallbackKeySpy.callCount).toBe(0);
+                expect(encryptedEventSpy.callCount).toBe(1);
+            });
+
+            // Check 8: It all fires
+            txnBody = {
+                "events": [sampleEncryptedEvent],
+                "org.matrix.msc3202.device_lists": {
+                    "changed": ["@alice:example.org"],
+                    "removed": ["@bob:example.org"],
+                },
+                "org.matrix.msc3202.device_one_time_keys_count": {
+                    "@alice:example.org": {
+                        "DEVICEID": {
+                            "curve25519": 10,
+                            "signed_curve25519": 20,
+                        },
+                    },
+                },
+                "org.matrix.msc3202.device_unused_fallback_key_types": {
+                    "@alice:example.org": {
+                        "DEVICEID": ["signed_curve25519"],
+                    },
+                },
+            };
+            await checkBothPaths(() => {
+                expect(deviceListSpy.callCount).toBe(1);
+                expect(otkSpy.callCount).toBe(1);
+                expect(fallbackKeySpy.callCount).toBe(1);
+                expect(encryptedEventSpy.callCount).toBe(1);
+            });
         } finally {
             appservice.stop();
         }
@@ -1741,6 +2063,224 @@ describe('Appservice', () => {
 
     it.skip('should prepare the bot intent with encryption at startup if enabled', async () => {
 
+    });
+
+    it('should emit during MSC3983 key claim requests', async () => {
+        const port = await getPort();
+        const hsToken = "s3cret_token";
+        const appservice = new Appservice({
+            port: port,
+            bindAddress: '',
+            homeserverName: 'example.org',
+            homeserverUrl: 'https://localhost',
+            registration: {
+                as_token: "",
+                hs_token: hsToken,
+                sender_localpart: "_bot_",
+                namespaces: {
+                    users: [{ exclusive: true, regex: "@_prefix_.*:.+" }],
+                    rooms: [],
+                    aliases: [],
+                },
+            },
+        });
+        appservice.botIntent.ensureRegistered = () => {
+            return null;
+        };
+
+        await appservice.begin();
+
+        try {
+            const query = {
+                "@alice:example.org": {
+                    "DEVICEID": ["signed_curve25519"],
+                },
+            };
+            const response = {
+                "@alice:example.org": {
+                    "DEVICEID": {
+                        "signed_curve25519:AAAAHg": {
+                            "key": "...",
+                            "signatures": {
+                                "@alice:example.org": {
+                                    "ed25519:DEVICEID": "...",
+                                },
+                            },
+                        },
+                    },
+                },
+            };
+
+            const claimSpy = simple.stub().callFn((q, fn) => {
+                expect(q).toStrictEqual(query);
+                fn(response);
+            });
+            appservice.on("query.key_claim", claimSpy);
+
+            const res = await requestPromise({
+                uri: `http://localhost:${port}/_matrix/app/unstable/org.matrix.msc3983/keys/claim`,
+                method: "POST",
+                qs: { access_token: hsToken },
+                json: query,
+            });
+            expect(res).toStrictEqual(response);
+            expect(claimSpy.callCount).toBe(1);
+        } finally {
+            appservice.stop();
+        }
+    });
+
+    it('should return a 404 for MSC3983 if not used by consumer', async () => {
+        const port = await getPort();
+        const hsToken = "s3cret_token";
+        const appservice = new Appservice({
+            port: port,
+            bindAddress: '',
+            homeserverName: 'example.org',
+            homeserverUrl: 'https://localhost',
+            registration: {
+                as_token: "",
+                hs_token: hsToken,
+                sender_localpart: "_bot_",
+                namespaces: {
+                    users: [{ exclusive: true, regex: "@_prefix_.*:.+" }],
+                    rooms: [],
+                    aliases: [],
+                },
+            },
+        });
+        appservice.botIntent.ensureRegistered = () => {
+            return null;
+        };
+
+        await appservice.begin();
+
+        try {
+            const query = {
+                "@alice:example.org": {
+                    "DEVICEID": ["signed_curve25519"],
+                },
+            };
+
+            // Note how we're not registering anything with the EventEmitter
+
+            const res = await requestPromise({
+                uri: `http://localhost:${port}/_matrix/app/unstable/org.matrix.msc3983/keys/claim`,
+                method: "POST",
+                qs: { access_token: hsToken },
+                json: query,
+            }).catch(e => ({ body: e.response.body, statusCode: e.statusCode }));
+            expect(res).toStrictEqual({ statusCode: 404, body: { errcode: "M_UNRECOGNIZED", error: "Endpoint not implemented" } });
+        } finally {
+            appservice.stop();
+        }
+    });
+
+    it('should emit during MSC3983 key claim requests', async () => {
+        const port = await getPort();
+        const hsToken = "s3cret_token";
+        const appservice = new Appservice({
+            port: port,
+            bindAddress: '',
+            homeserverName: 'example.org',
+            homeserverUrl: 'https://localhost',
+            registration: {
+                as_token: "",
+                hs_token: hsToken,
+                sender_localpart: "_bot_",
+                namespaces: {
+                    users: [{ exclusive: true, regex: "@_prefix_.*:.+" }],
+                    rooms: [],
+                    aliases: [],
+                },
+            },
+        });
+        appservice.botIntent.ensureRegistered = () => {
+            return null;
+        };
+
+        await appservice.begin();
+
+        try {
+            const query = {
+                "@alice:example.org": ["DEVICE_ID"],
+                "@bob:example.org": [],
+            };
+            const response = {
+                "@alice:example.org": {
+                    "DEVICE_ID": {
+                        "schema_not_used": true,
+                    },
+                },
+                "@bob:example.org": {
+                    "DEVICE_ID": {
+                        "schema_not_used": true,
+                    },
+                },
+            };
+
+            const querySpy = simple.stub().callFn((q, fn) => {
+                expect(q).toStrictEqual(query);
+                fn(response);
+            });
+            appservice.on("query.key", querySpy);
+
+            const res = await requestPromise({
+                uri: `http://localhost:${port}/_matrix/app/unstable/org.matrix.msc3984/keys/query`,
+                method: "POST",
+                qs: { access_token: hsToken },
+                json: query,
+            });
+            expect(res).toStrictEqual(response);
+            expect(querySpy.callCount).toBe(1);
+        } finally {
+            appservice.stop();
+        }
+    });
+
+    it('should return a 404 for MSC3984 if not used by consumer', async () => {
+        const port = await getPort();
+        const hsToken = "s3cret_token";
+        const appservice = new Appservice({
+            port: port,
+            bindAddress: '',
+            homeserverName: 'example.org',
+            homeserverUrl: 'https://localhost',
+            registration: {
+                as_token: "",
+                hs_token: hsToken,
+                sender_localpart: "_bot_",
+                namespaces: {
+                    users: [{ exclusive: true, regex: "@_prefix_.*:.+" }],
+                    rooms: [],
+                    aliases: [],
+                },
+            },
+        });
+        appservice.botIntent.ensureRegistered = () => {
+            return null;
+        };
+
+        await appservice.begin();
+
+        try {
+            const query = {
+                "@alice:example.org": ["DEVICE_ID"],
+                "@bob:example.org": [],
+            };
+
+            // Note how we're not registering anything with the EventEmitter
+
+            const res = await requestPromise({
+                uri: `http://localhost:${port}/_matrix/app/unstable/org.matrix.msc3984/keys/query`,
+                method: "POST",
+                qs: { access_token: hsToken },
+                json: query,
+            }).catch(e => ({ body: e.response.body, statusCode: e.statusCode }));
+            expect(res).toStrictEqual({ statusCode: 404, body: { errcode: "M_UNRECOGNIZED", error: "Endpoint not implemented" } });
+        } finally {
+            appservice.stop();
+        }
     });
 
     it('should emit while querying users', async () => {

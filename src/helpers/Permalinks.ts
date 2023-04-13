@@ -5,22 +5,22 @@
  */
 export interface PermalinkParts {
     /**
-     * The room ID or alias the permalink references. May be null.
+     * The room ID or alias the permalink references. May be undefined.
      */
     roomIdOrAlias: string;
 
     /**
-     * The user ID the permalink references. May be null.
+     * The user ID the permalink references. May be undefined.
      */
     userId: string;
 
     /**
-     * The event ID the permalink references. May be null.
+     * The event ID the permalink references. May be undefined.
      */
     eventId: string;
 
     /**
-     * The servers the permalink is routed through. May be null or empty.
+     * The servers the permalink is routed through. May be undefined or empty.
      */
     viaServers: string[];
 }
@@ -38,7 +38,7 @@ export class Permalinks {
     private static encodeViaArgs(servers: string[]): string {
         if (!servers || !servers.length) return "";
 
-        return `?via=${servers.join("via=")}`;
+        return `?via=${servers.join("&via=")}`;
     }
 
     /**
@@ -77,32 +77,25 @@ export class Permalinks {
      * @returns {PermalinkParts} The parts of the permalink.
      */
     public static parseUrl(matrixTo: string): PermalinkParts {
-        if (!matrixTo || !matrixTo.startsWith("https://matrix.to/#/")) {
+        const matrixToRegexp = /^https:\/\/matrix\.to\/#\/(?<entity>[^/?]+)\/?(?<eventId>[^?]+)?(?<query>\?[^]*)?$/;
+
+        const url = matrixToRegexp.exec(matrixTo)?.groups;
+        if (!url) {
             throw new Error("Not a valid matrix.to URL");
         }
 
-        const parts = matrixTo.substring("https://matrix.to/#/".length).split("/");
-
-        const entity = decodeURIComponent(parts[0]);
+        const entity = decodeURIComponent(url.entity);
         if (entity[0] === '@') {
             return { userId: entity, roomIdOrAlias: undefined, eventId: undefined, viaServers: undefined };
         } else if (entity[0] === '#' || entity[0] === '!') {
-            if (parts.length === 1) {
-                return { roomIdOrAlias: entity, userId: undefined, eventId: undefined, viaServers: [] };
-            }
-
-            // rejoin the rest because v3 room can have slashes
-            const eventIdAndQuery = decodeURIComponent(parts.length > 1 ? parts.slice(1).join('/') : "");
-            const secondaryParts = eventIdAndQuery.split('?');
-
-            const eventId = secondaryParts[0];
-            const query = secondaryParts.length > 1 ? secondaryParts[1] : "";
-
-            const via = query.split("via=").filter(p => !!p);
-
-            return { roomIdOrAlias: entity, eventId: eventId, viaServers: via, userId: undefined };
+            return {
+                userId: undefined,
+                roomIdOrAlias: entity,
+                eventId: url.eventId && decodeURIComponent(url.eventId),
+                viaServers: new URLSearchParams(url.query).getAll('via'),
+            };
+        } else {
+            throw new Error("Unexpected entity");
         }
-
-        throw new Error("Unexpected entity");
     }
 }
