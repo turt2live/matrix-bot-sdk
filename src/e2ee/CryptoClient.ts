@@ -86,7 +86,12 @@ export class CryptoClient {
 
         LogService.debug("CryptoClient", "Starting with device ID:", this.deviceId);
 
-        const machine = await OlmMachine.initialize(new UserId(await this.client.getUserId()), new DeviceId(this.deviceId), this.storage.storagePath);
+        const machine = await OlmMachine.initialize(
+            new UserId(await this.client.getUserId()),
+            new DeviceId(this.deviceId),
+            this.storage.storagePath, "",
+            this.storage.storageType,
+        );
         this.engine = new RustEngine(machine, this.client);
         await this.engine.run();
 
