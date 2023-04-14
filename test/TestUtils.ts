@@ -1,5 +1,6 @@
 import * as tmp from "tmp";
 import HttpBackend from "matrix-mock-request";
+import { StoreType } from "@matrix-org/matrix-sdk-crypto-nodejs";
 
 import { IStorageProvider, MatrixClient, RustSdkCryptoStorageProvider, setRequestFn } from "../src";
 
@@ -39,7 +40,7 @@ export function createTestClient(
     const http = new HttpBackend();
     const hsUrl = "https://localhost";
     const accessToken = "s3cret";
-    const client = new MatrixClient(hsUrl, accessToken, storage, crypto ? new RustSdkCryptoStorageProvider(tmp.dirSync().name) : null);
+    const client = new MatrixClient(hsUrl, accessToken, storage, crypto ? new RustSdkCryptoStorageProvider(tmp.dirSync().name, StoreType.Sled) : null);
     (<any>client).userId = userId; // private member access
     setRequestFn(http.requestFn);
 

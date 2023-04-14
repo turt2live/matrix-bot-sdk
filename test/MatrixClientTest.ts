@@ -1,5 +1,6 @@
 import * as tmp from "tmp";
 import * as simple from "simple-mock";
+import { StoreType } from "@matrix-org/matrix-sdk-crypto-nodejs";
 
 import {
     EventKind,
@@ -51,7 +52,7 @@ describe('MatrixClient', () => {
             const homeserverUrl = "https://example.org";
             const accessToken = "example_token";
 
-            const client = new MatrixClient(homeserverUrl, accessToken, null, new RustSdkCryptoStorageProvider(tmp.dirSync().name));
+            const client = new MatrixClient(homeserverUrl, accessToken, null, new RustSdkCryptoStorageProvider(tmp.dirSync().name, StoreType.Sled));
             expect(client.crypto).toBeDefined();
         });
 
