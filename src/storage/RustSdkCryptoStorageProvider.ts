@@ -17,7 +17,7 @@ export { RustSdkCryptoStoreType };
  * @category Storage providers
  */
 export class RustSdkCryptoStorageProvider implements ICryptoStorageProvider {
-    private db: any;
+    private db: lowdb.LowdbSync<any>;
 
     /**
      * Creates a new rust-sdk storage provider.
