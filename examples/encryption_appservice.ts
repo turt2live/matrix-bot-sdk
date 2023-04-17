@@ -15,6 +15,8 @@ import {
     SimpleRetryJoinStrategy,
 } from "../src";
 
+import { StoreType } from "@matrix-org/matrix-sdk-crypto-nodejs";
+
 LogService.setLogger(new RichConsoleLogger());
 LogService.setLevel(LogLevel.TRACE);
 LogService.muteModule("Metrics");
@@ -30,7 +32,7 @@ try {
 const dmTarget = creds?.['dmTarget'] ?? "@admin:localhost";
 const homeserverUrl = creds?.['homeserverUrl'] ?? "http://localhost:8008";
 const storage = new SimpleFsStorageProvider("./examples/storage/encryption_appservice.json");
-const crypto = new RustSdkAppserviceCryptoStorageProvider("./examples/storage/encryption_appservice_sled");
+const crypto = new RustSdkAppserviceCryptoStorageProvider("./examples/storage/encryption_appservice_sled", StoreType.Sled);
 const worksImage = fs.readFileSync("./examples/static/it-works.png");
 
 const registration: IAppserviceRegistration = {

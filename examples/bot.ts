@@ -9,6 +9,8 @@ import {
     SimpleFsStorageProvider,
 } from "../src";
 
+import { StoreType } from "@matrix-org/matrix-sdk-crypto-nodejs";
+
 LogService.setLogger(new RichConsoleLogger());
 LogService.setLevel(LogLevel.TRACE);
 LogService.muteModule("Metrics");
@@ -25,7 +27,7 @@ const dmTarget = creds?.['dmTarget'] ?? "@admin:localhost";
 const homeserverUrl = creds?.['homeserverUrl'] ?? "http://localhost:8008";
 const accessToken = creds?.['accessToken'] ?? 'YOUR_TOKEN';
 const storage = new SimpleFsStorageProvider("./examples/storage/bot.json");
-const crypto = new RustSdkCryptoStorageProvider("./examples/storage/bot_sled");
+const crypto = new RustSdkCryptoStorageProvider("./examples/storage/bot_sled", StoreType.Sled);
 
 const client = new MatrixClient(homeserverUrl, accessToken, storage, crypto);
 AutojoinRoomsMixin.setupOnClient(client);
