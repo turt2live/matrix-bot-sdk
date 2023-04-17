@@ -1,3 +1,5 @@
+import { StoreType } from "@matrix-org/matrix-sdk-crypto-nodejs";
+
 import {
     AutojoinRoomsMixin,
     LogLevel,
@@ -8,8 +10,6 @@ import {
     RustSdkCryptoStorageProvider,
     SimpleFsStorageProvider,
 } from "../src";
-
-import { StoreType } from "@matrix-org/matrix-sdk-crypto-nodejs";
 
 LogService.setLogger(new RichConsoleLogger());
 LogService.setLevel(LogLevel.TRACE);

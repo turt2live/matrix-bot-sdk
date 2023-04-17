@@ -1,4 +1,5 @@
 import * as fs from "fs";
+import { StoreType } from "@matrix-org/matrix-sdk-crypto-nodejs";
 
 import {
     Appservice,
@@ -14,8 +15,6 @@ import {
     SimpleFsStorageProvider,
     SimpleRetryJoinStrategy,
 } from "../src";
-
-import { StoreType } from "@matrix-org/matrix-sdk-crypto-nodejs";
 
 LogService.setLogger(new RichConsoleLogger());
 LogService.setLevel(LogLevel.TRACE);

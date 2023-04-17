@@ -1,4 +1,5 @@
 import * as fs from "fs";
+import { StoreType } from "@matrix-org/matrix-sdk-crypto-nodejs";
 
 import {
     EncryptionAlgorithm,
@@ -11,8 +12,6 @@ import {
     RustSdkCryptoStorageProvider,
     SimpleFsStorageProvider,
 } from "../src";
-
-import { StoreType } from "@matrix-org/matrix-sdk-crypto-nodejs";
 
 LogService.setLogger(new RichConsoleLogger());
 LogService.setLevel(LogLevel.TRACE);
