@@ -1,5 +1,4 @@
 import * as simple from "simple-mock";
-import { StoreType } from "@matrix-org/matrix-sdk-crypto-nodejs";
 
 import { EncryptionAlgorithm } from "../src";
 import { createTestClient, testCryptoStores, TEST_DEVICE_ID } from "./TestUtils";
@@ -412,6 +411,5 @@ describe('DMs', () => {
         expect(dms.isDm(dmRoomId)).toBe(true);
 
         await flush;
-
     }));
 });

@@ -1,5 +1,4 @@
 import * as simple from "simple-mock";
-import { StoreType } from "@matrix-org/matrix-sdk-crypto-nodejs";
 
 import { EncryptionEventContent, MatrixClient, RoomEncryptionAlgorithm, RoomTracker } from "../../src";
 import { createTestClient, testCryptoStores, TEST_DEVICE_ID } from "../TestUtils";
