@@ -47,7 +47,7 @@ export function createTestClient(
     return { http, hsUrl, accessToken, client };
 }
 
-const CRYPTO_STORE_TYPES = [StoreType.Sled, StoreType.Sqlite]
+const CRYPTO_STORE_TYPES = [StoreType.Sled, StoreType.Sqlite];
 
 export async function testCryptoStores(fn: (StoreType) => Promise<void>): Promise<void> {
     for (const st of CRYPTO_STORE_TYPES) {
