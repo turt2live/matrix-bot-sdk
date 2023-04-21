@@ -1,5 +1,6 @@
 import * as tmp from "tmp";
 import HttpBackend from "matrix-mock-request";
+import { StoreType } from "@matrix-org/matrix-sdk-crypto-nodejs";
 
 import { IStorageProvider, MatrixClient, RustSdkCryptoStorageProvider, setRequestFn } from "../src";
 
@@ -29,7 +30,7 @@ export function testDelay(ms: number): Promise<any> {
 export function createTestClient(
     storage: IStorageProvider = null,
     userId: string = null,
-    crypto = false,
+    cryptoStoreType?: StoreType,
 ): {
     client: MatrixClient;
     http: HttpBackend;
@@ -39,9 +40,17 @@ export function createTestClient(
     const http = new HttpBackend();
     const hsUrl = "https://localhost";
     const accessToken = "s3cret";
-    const client = new MatrixClient(hsUrl, accessToken, storage, crypto ? new RustSdkCryptoStorageProvider(tmp.dirSync().name) : null);
+    const client = new MatrixClient(hsUrl, accessToken, storage, cryptoStoreType !== undefined ? new RustSdkCryptoStorageProvider(tmp.dirSync().name, cryptoStoreType) : null);
     (<any>client).userId = userId; // private member access
     setRequestFn(http.requestFn);
 
     return { http, hsUrl, accessToken, client };
+}
+
+const CRYPTO_STORE_TYPES = [StoreType.Sled, StoreType.Sqlite];
+
+export async function testCryptoStores(fn: (StoreType) => Promise<void>): Promise<void> {
+    for (const st of CRYPTO_STORE_TYPES) {
+        await fn(st);
+    }
 }
