@@ -44,6 +44,7 @@ import { DMs } from "./DMs";
 import { ServerVersions } from "./models/ServerVersions";
 import { RoomCreateOptions } from "./models/CreateRoom";
 import { PresenceState } from './models/events/PresenceEvent';
+import { GetRoomMessagesResponse } from "./models/Messages";
 
 const SYNC_BACKOFF_MIN_MS = 5000;
 const SYNC_BACKOFF_MAX_MS = 15000;
@@ -1975,6 +1976,20 @@ export class MatrixClient extends EventEmitter {
             url += `/${eventType}`;
         }
         return this.doRequest("GET", url);
+    }
+
+    /**
+     * Get relations for a given event.
+     * @param {string} roomId The room ID to for the given event.
+     * @param {string} eventId The event ID to list relations for.
+     * @param {string?} relationType The type of relations (e.g. `m.room.member`) to filter for. Optional.
+     * @param {string?} eventType The type of event to look for (e.g. `m.room.member`). Optional.
+     * @returns {Promise<{chunk: any[]}>} Resolves to an object containing the chunk of relations
+     */
+    @timedMatrixClientFunctionCall()
+    public async getMessages(roomId: string, dir: "b"|"f", opts: Partial<{filter: string, from: string, limit: number, to: string}>): Promise<GetRoomMessagesResponse> {
+        const url = `/_matrix/client/v1/rooms/${encodeURIComponent(roomId)}/messages`;
+        return this.doRequest("GET", url, { dir, ...opts });
     }
 
     /**

@@ -6998,6 +6998,45 @@ describe('MatrixClient', () => {
         });
     });
 
+    describe('getMessages', () => {
+        it('should call the right endpoint', async () => {
+            const roomId = "!room_id:room.org";
+            const { client, http } = createTestClient();
+
+            const dir = "b";
+            const opts = {
+                filter: "my-filter",
+                from: "from-token",
+                limit: 50,
+                to: "to-token",
+            };
+            const expectedResponse = {
+                chunk: [{
+                    my: "event",
+                }],
+                start: "start-token",
+                end: "end-token",
+                state: [{
+                    state: "event",
+                }],
+            };
+
+            // noinspection TypeScriptValidateJSTypes
+            http.when("GET", `/_matrix/client/v1/rooms/${encodeURIComponent(roomId)}/messages`).respond(200, (_path, _content, req) => {
+                expect(req.queryParams["dir"]).toEqual("b");
+                expect(req.queryParams["filter"]).toEqual("my-filter");
+                expect(req.queryParams["from"]).toEqual("from-token");
+                expect(req.queryParams["limit"]).toEqual("50");
+                expect(req.queryParams["to"]).toEqual("to-token");
+                return expectedResponse;
+            });
+
+
+            const [messageResponse] = await Promise.all([client.getMessages(roomId, dir, opts), http.flushAllExpected()]);
+            expect(messageResponse).toEqual(expectedResponse);
+        });
+    });
+
     describe('redactObjectForLogging', () => {
         it('should redact multilevel objects', () => {
             const input = {
