@@ -7022,11 +7022,11 @@ describe('MatrixClient', () => {
             };
 
             // noinspection TypeScriptValidateJSTypes
-            http.when("GET", `/_matrix/client/v1/rooms/${encodeURIComponent(roomId)}/messages`).respond(200, (_path, _content, req) => {
+            http.when("GET", `/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/messages`).respond(200, (_path, _content, req) => {
                 expect(req.queryParams["dir"]).toEqual("b");
                 expect(req.queryParams["filter"]).toEqual("my-filter");
                 expect(req.queryParams["from"]).toEqual("from-token");
-                expect(req.queryParams["limit"]).toEqual("50");
+                expect(req.queryParams["limit"]).toEqual(50);
                 expect(req.queryParams["to"]).toEqual("to-token");
                 return expectedResponse;
             });

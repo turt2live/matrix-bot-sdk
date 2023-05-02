@@ -1988,7 +1988,7 @@ export class MatrixClient extends EventEmitter {
      */
     @timedMatrixClientFunctionCall()
     public async getMessages(roomId: string, dir: "b"|"f", opts: Partial<{filter: string, from: string, limit: number, to: string}>): Promise<GetRoomMessagesResponse> {
-        const url = `/_matrix/client/v1/rooms/${encodeURIComponent(roomId)}/messages`;
+        const url = `/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/messages`;
         return this.doRequest("GET", url, { dir, ...opts });
     }
 
