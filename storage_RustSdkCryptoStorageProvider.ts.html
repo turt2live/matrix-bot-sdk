@@ -119,23 +119,29 @@ import * as mkdirp from "mkdirp";
 import * as path from "path";
 import * as sha512 from "hash.js/lib/hash/sha/512";
 import * as sha256 from "hash.js/lib/hash/sha/256";
+import { StoreType as RustSdkCryptoStoreType } from "@matrix-org/matrix-sdk-crypto-nodejs";
 
 import { ICryptoStorageProvider } from "./ICryptoStorageProvider";
 import { IAppserviceCryptoStorageProvider } from "./IAppserviceStorageProvider";
 import { ICryptoRoomInformation } from "../e2ee/ICryptoRoomInformation";
 
+export { RustSdkCryptoStoreType };
+
 /**
- * A crypto storage provider for the default rust-sdk store (sled, file-based).
+ * A crypto storage provider for the file-based rust-sdk store.
  * @category Storage providers
  */
 export class RustSdkCryptoStorageProvider implements ICryptoStorageProvider {
-    private db: any;
+    private db: lowdb.LowdbSync&lt;any>;
 
     /**
      * Creates a new rust-sdk storage provider.
      * @param {string} storagePath The *directory* to persist database details to.
      */
-    public constructor(public readonly storagePath: string) {
+    public constructor(
+        public readonly storagePath: string,
+        public readonly storageType: RustSdkCryptoStoreType = RustSdkCryptoStoreType.Sled,
+    ) {
         this.storagePath = path.resolve(this.storagePath);
         mkdirp.sync(storagePath);
 
@@ -168,7 +174,7 @@ export class RustSdkCryptoStorageProvider implements ICryptoStorageProvider {
 }
 
 /**
- * An appservice crypto storage provider for the default rust-sdk store (sled, file-based).
+ * An appservice crypto storage provider for the file-based rust-sdk store.
  * @category Storage providers
  */
 export class RustSdkAppserviceCryptoStorageProvider extends RustSdkCryptoStorageProvider implements IAppserviceCryptoStorageProvider {
@@ -176,14 +182,14 @@ export class RustSdkAppserviceCryptoStorageProvider extends RustSdkCryptoStorage
      * Creates a new rust-sdk storage provider.
      * @param {string} baseStoragePath The *directory* to persist database details to.
      */
-    public constructor(private baseStoragePath: string) {
-        super(path.join(baseStoragePath, "_default"));
+    public constructor(private baseStoragePath: string, storageType: RustSdkCryptoStoreType = RustSdkCryptoStoreType.Sled) {
+        super(path.join(baseStoragePath, "_default"), storageType);
     }
 
     public storageForUser(userId: string): ICryptoStorageProvider {
         // sha256 because sha512 is a bit big for some operating systems
         const key = sha256().update(userId).digest('hex');
-        return new RustSdkCryptoStorageProvider(path.join(this.baseStoragePath, key));
+        return new RustSdkCryptoStorageProvider(path.join(this.baseStoragePath, key), this.storageType);
     }
 }
 </code></pre>
