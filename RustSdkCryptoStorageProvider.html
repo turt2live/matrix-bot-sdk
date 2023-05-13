@@ -113,7 +113,7 @@
 
 <header>
     
-        <h2><span class="attribs"><span class="type-signature"></span></span>RustSdkCryptoStorageProvider<span class="signature">(storagePath)</span><span class="type-signature"></span></h2>
+        <h2><span class="attribs"><span class="type-signature"></span></span>RustSdkCryptoStorageProvider<span class="signature">(storagePath, storageType)</span><span class="type-signature"></span></h2>
         
             <div class="class-description">A crypto storage provider for the file-based rust-sdk store.</div>
         
@@ -139,7 +139,7 @@
         
         <span class="code-name">
             
-                new RustSdkCryptoStorageProvider<span class="signature">(storagePath)</span><span class="type-signature"></span>
+                new RustSdkCryptoStorageProvider<span class="signature">(storagePath, storageType)</span><span class="type-signature"></span>
             
         </span>
     </h4>
@@ -191,11 +191,6 @@
 
   <td class="type">
   
-      
-<code class="param-type">string</code>
-
-
-  
   </td>
 
   
@@ -203,6 +198,26 @@
   
 
   <td class="description last">The *directory* to persist database details to.</td>
+</tr>
+
+
+        
+
+            
+<tr class="deep-level-0">
+  
+      <td class="name"><code>storageType</code></td>
+  
+
+  <td class="type">
+  
+  </td>
+
+  
+
+  
+
+  <td class="description last">The storage type to use. Must be supported by the rust-sdk.</td>
 </tr>
 
 

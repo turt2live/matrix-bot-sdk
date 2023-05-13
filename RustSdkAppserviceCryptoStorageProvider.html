@@ -113,7 +113,7 @@
 
 <header>
     
-        <h2><span class="attribs"><span class="type-signature"></span></span>RustSdkAppserviceCryptoStorageProvider<span class="signature">(baseStoragePath)</span><span class="type-signature"></span></h2>
+        <h2><span class="attribs"><span class="type-signature"></span></span>RustSdkAppserviceCryptoStorageProvider<span class="signature">(baseStoragePath, storageType)</span><span class="type-signature"></span></h2>
         
             <div class="class-description">An appservice crypto storage provider for the file-based rust-sdk store.</div>
         
@@ -139,7 +139,7 @@
         
         <span class="code-name">
             
-                new RustSdkAppserviceCryptoStorageProvider<span class="signature">(baseStoragePath)</span><span class="type-signature"></span>
+                new RustSdkAppserviceCryptoStorageProvider<span class="signature">(baseStoragePath, storageType)</span><span class="type-signature"></span>
             
         </span>
     </h4>
@@ -191,11 +191,6 @@
 
   <td class="type">
   
-      
-<code class="param-type">string</code>
-
-
-  
   </td>
 
   
@@ -203,6 +198,26 @@
   
 
   <td class="description last">The *directory* to persist database details to.</td>
+</tr>
+
+
+        
+
+            
+<tr class="deep-level-0">
+  
+      <td class="name"><code>storageType</code></td>
+  
+
+  <td class="type">
+  
+  </td>
+
+  
+
+  
+
+  <td class="description last">The storage type to use. Must be supported by the rust-sdk.</td>
 </tr>
 
 
@@ -250,7 +265,7 @@
         <p class="tag-source">
             <a href="storage_RustSdkCryptoStorageProvider.ts.html" class="button">View Source</a>
             <span>
-                <a href="storage_RustSdkCryptoStorageProvider.ts.html">storage/RustSdkCryptoStorageProvider.ts</a>, <a href="storage_RustSdkCryptoStorageProvider.ts.html#line53">line 53</a>
+                <a href="storage_RustSdkCryptoStorageProvider.ts.html">storage/RustSdkCryptoStorageProvider.ts</a>, <a href="storage_RustSdkCryptoStorageProvider.ts.html#line54">line 54</a>
             </span>
         </p>
     
