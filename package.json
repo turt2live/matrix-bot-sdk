@@ -1,6 +1,6 @@
 {
   "name": "matrix-bot-sdk",
-  "version": "develop",
+  "version": "0.6.6",
   "description": "TypeScript/JavaScript SDK for Matrix bots and appservices",
   "repository": {
     "type": "git",
