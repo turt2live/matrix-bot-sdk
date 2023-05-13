@@ -25,7 +25,7 @@ export class RustSdkCryptoStorageProvider implements ICryptoStorageProvider {
      */
     public constructor(
         public readonly storagePath: string,
-        public readonly storageType: RustSdkCryptoStoreType,
+        public readonly storageType: RustSdkCryptoStoreType = RustSdkCryptoStoreType.Sled,
     ) {
         this.storagePath = path.resolve(this.storagePath);
         mkdirp.sync(storagePath);
@@ -67,7 +67,7 @@ export class RustSdkAppserviceCryptoStorageProvider extends RustSdkCryptoStorage
      * Creates a new rust-sdk storage provider.
      * @param {string} baseStoragePath The *directory* to persist database details to.
      */
-    public constructor(private baseStoragePath: string, storageType: RustSdkCryptoStoreType) {
+    public constructor(private baseStoragePath: string, storageType: RustSdkCryptoStoreType = RustSdkCryptoStoreType.Sled) {
         super(path.join(baseStoragePath, "_default"), storageType);
     }
 
