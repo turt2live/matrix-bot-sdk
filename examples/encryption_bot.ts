@@ -1,4 +1,5 @@
 import * as fs from "fs";
+import { StoreType } from "@matrix-org/matrix-sdk-crypto-nodejs";
 
 import {
     EncryptionAlgorithm,
@@ -28,7 +29,7 @@ const dmTarget = creds?.['dmTarget'] ?? "@admin:localhost";
 const homeserverUrl = creds?.['homeserverUrl'] ?? "http://localhost:8008";
 const accessToken = creds?.['accessToken'] ?? 'YOUR_TOKEN';
 const storage = new SimpleFsStorageProvider("./examples/storage/encryption_bot.json");
-const crypto = new RustSdkCryptoStorageProvider("./examples/storage/encryption_bot_sled");
+const crypto = new RustSdkCryptoStorageProvider("./examples/storage/encryption_bot_sled", StoreType.Sled);
 const worksImage = fs.readFileSync("./examples/static/it-works.png");
 
 const client = new MatrixClient(homeserverUrl, accessToken, storage, crypto);
