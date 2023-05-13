@@ -2,7 +2,7 @@ import * as simple from "simple-mock";
 import HttpBackend from 'matrix-mock-request';
 
 import { EncryptedFile, MatrixClient, MembershipEvent, OTKAlgorithm, RoomEncryptionAlgorithm } from "../../src";
-import { createTestClient, TEST_DEVICE_ID } from "../TestUtils";
+import { createTestClient, testCryptoStores, TEST_DEVICE_ID } from "../TestUtils";
 
 export function bindNullEngine(http: HttpBackend) {
     http.when("POST", "/keys/upload").respond(200, (path, obj) => {
@@ -23,9 +23,9 @@ export function bindNullEngine(http: HttpBackend) {
 }
 
 describe('CryptoClient', () => {
-    it('should not have a device ID or be ready until prepared', async () => {
+    it('should not have a device ID or be ready until prepared', () => testCryptoStores(async (cryptoStoreType) => {
         const userId = "@alice:example.org";
-        const { client, http } = createTestClient(null, userId, true);
+        const { client, http } = createTestClient(null, userId, cryptoStoreType);
 
         client.getWhoAmI = () => Promise.resolve({ user_id: userId, device_id: TEST_DEVICE_ID });
 
@@ -41,13 +41,13 @@ describe('CryptoClient', () => {
 
         expect(client.crypto.clientDeviceId).toEqual(TEST_DEVICE_ID);
         expect(client.crypto.isReady).toEqual(true);
-    });
+    }));
 
     describe('prepare', () => {
-        it('should prepare the room tracker', async () => {
+        it('should prepare the room tracker', () => testCryptoStores(async (cryptoStoreType) => {
             const userId = "@alice:example.org";
             const roomIds = ["!a:example.org", "!b:example.org"];
-            const { client, http } = createTestClient(null, userId, true);
+            const { client, http } = createTestClient(null, userId, cryptoStoreType);
 
             client.getWhoAmI = () => Promise.resolve({ user_id: userId, device_id: TEST_DEVICE_ID });
 
@@ -64,11 +64,11 @@ describe('CryptoClient', () => {
                 http.flushAllExpected(),
             ]);
             expect(prepareSpy.callCount).toEqual(1);
-        });
+        }));
 
-        it('should use a stored device ID', async () => {
+        it('should use a stored device ID', () => testCryptoStores(async (cryptoStoreType) => {
             const userId = "@alice:example.org";
-            const { client, http } = createTestClient(null, userId, true);
+            const { client, http } = createTestClient(null, userId, cryptoStoreType);
 
             await client.cryptoStore.setDeviceId(TEST_DEVICE_ID);
 
@@ -82,13 +82,13 @@ describe('CryptoClient', () => {
             ]);
             expect(whoamiSpy.callCount).toEqual(0);
             expect(client.crypto.clientDeviceId).toEqual(TEST_DEVICE_ID);
-        });
+        }));
     });
 
     describe('isRoomEncrypted', () => {
-        it('should fail when the crypto has not been prepared', async () => {
+        it('should fail when the crypto has not been prepared', () => testCryptoStores(async (cryptoStoreType) => {
             const userId = "@alice:example.org";
-            const { client } = createTestClient(null, userId, true);
+            const { client } = createTestClient(null, userId, cryptoStoreType);
 
             await client.cryptoStore.setDeviceId(TEST_DEVICE_ID);
             // await client.crypto.prepare([]); // deliberately commented
@@ -101,11 +101,11 @@ describe('CryptoClient', () => {
             } catch (e) {
                 expect(e.message).toEqual("End-to-end encryption has not initialized");
             }
-        });
+        }));
 
-        it('should return false for unknown rooms', async () => {
+        it('should return false for unknown rooms', () => testCryptoStores(async (cryptoStoreType) => {
             const userId = "@alice:example.org";
-            const { client, http } = createTestClient(null, userId, true);
+            const { client, http } = createTestClient(null, userId, cryptoStoreType);
 
             await client.cryptoStore.setDeviceId(TEST_DEVICE_ID);
             client.getRoomStateEvent = () => Promise.reject(new Error("not used"));
@@ -118,11 +118,11 @@ describe('CryptoClient', () => {
 
             const result = await client.crypto.isRoomEncrypted("!new:example.org");
             expect(result).toEqual(false);
-        });
+        }));
 
-        it('should return false for unencrypted rooms', async () => {
+        it('should return false for unencrypted rooms', () => testCryptoStores(async (cryptoStoreType) => {
             const userId = "@alice:example.org";
-            const { client, http } = createTestClient(null, userId, true);
+            const { client, http } = createTestClient(null, userId, cryptoStoreType);
 
             await client.cryptoStore.setDeviceId(TEST_DEVICE_ID);
             client.getRoomStateEvent = () => Promise.reject(new Error("implied 404"));
@@ -135,11 +135,11 @@ describe('CryptoClient', () => {
 
             const result = await client.crypto.isRoomEncrypted("!new:example.org");
             expect(result).toEqual(false);
-        });
+        }));
 
-        it('should return true for encrypted rooms (redacted state)', async () => {
+        it('should return true for encrypted rooms (redacted state)', () => testCryptoStores(async (cryptoStoreType) => {
             const userId = "@alice:example.org";
-            const { client, http } = createTestClient(null, userId, true);
+            const { client, http } = createTestClient(null, userId, cryptoStoreType);
 
             await client.cryptoStore.setDeviceId(TEST_DEVICE_ID);
             client.getRoomStateEvent = () => Promise.resolve({});
@@ -152,11 +152,11 @@ describe('CryptoClient', () => {
 
             const result = await client.crypto.isRoomEncrypted("!new:example.org");
             expect(result).toEqual(true);
-        });
+        }));
 
-        it('should return true for encrypted rooms', async () => {
+        it('should return true for encrypted rooms', () => testCryptoStores(async (cryptoStoreType) => {
             const userId = "@alice:example.org";
-            const { client, http } = createTestClient(null, userId, true);
+            const { client, http } = createTestClient(null, userId, cryptoStoreType);
 
             await client.cryptoStore.setDeviceId(TEST_DEVICE_ID);
             client.getRoomStateEvent = () => Promise.resolve({ algorithm: RoomEncryptionAlgorithm.MegolmV1AesSha2 });
@@ -169,7 +169,7 @@ describe('CryptoClient', () => {
 
             const result = await client.crypto.isRoomEncrypted("!new:example.org");
             expect(result).toEqual(true);
-        });
+        }));
     });
 
     describe('sign', () => {
@@ -177,15 +177,15 @@ describe('CryptoClient', () => {
         let client: MatrixClient;
         let http: HttpBackend;
 
-        beforeEach(async () => {
-            const { client: mclient, http: mhttp } = createTestClient(null, userId, true);
+        beforeEach(() => testCryptoStores(async (cryptoStoreType) => {
+            const { client: mclient, http: mhttp } = createTestClient(null, userId, cryptoStoreType);
             client = mclient;
             http = mhttp;
 
             await client.cryptoStore.setDeviceId(TEST_DEVICE_ID);
 
             // client crypto not prepared for the one test which wants that state
-        });
+        }));
 
         it('should fail when the crypto has not been prepared', async () => {
             try {
@@ -234,15 +234,15 @@ describe('CryptoClient', () => {
         let client: MatrixClient;
         let http: HttpBackend;
 
-        beforeEach(async () => {
-            const { client: mclient, http: mhttp } = createTestClient(null, userId, true);
+        beforeEach(() => testCryptoStores(async (cryptoStoreType) => {
+            const { client: mclient, http: mhttp } = createTestClient(null, userId, cryptoStoreType);
             client = mclient;
             http = mhttp;
 
             await client.cryptoStore.setDeviceId(TEST_DEVICE_ID);
 
             // client crypto not prepared for the one test which wants that state
-        });
+        }));
 
         it('should fail when the crypto has not been prepared', async () => {
             try {
@@ -284,14 +284,14 @@ describe('CryptoClient', () => {
         const userId = "@alice:example.org";
         let client: MatrixClient;
 
-        beforeEach(async () => {
-            const { client: mclient } = createTestClient(null, userId, true);
+        beforeEach(() => testCryptoStores(async (cryptoStoreType) => {
+            const { client: mclient } = createTestClient(null, userId, cryptoStoreType);
             client = mclient;
 
             await client.cryptoStore.setDeviceId(TEST_DEVICE_ID);
 
             // client crypto not prepared for the one test which wants that state
-        });
+        }));
 
         it('should fail when the crypto has not been prepared', async () => {
             try {
@@ -310,15 +310,15 @@ describe('CryptoClient', () => {
         let client: MatrixClient;
         let http: HttpBackend;
 
-        beforeEach(async () => {
-            const { client: mclient, http: mhttp } = createTestClient(null, userId, true);
+        beforeEach(() => testCryptoStores(async (cryptoStoreType) => {
+            const { client: mclient, http: mhttp } = createTestClient(null, userId, cryptoStoreType);
             client = mclient;
             http = mhttp;
 
             await client.cryptoStore.setDeviceId(TEST_DEVICE_ID);
 
             // client crypto not prepared for the one test which wants that state
-        });
+        }));
 
         it('should fail when the crypto has not been prepared', async () => {
             try {
@@ -396,15 +396,15 @@ describe('CryptoClient', () => {
             return JSON.parse(JSON.stringify(testFile));
         }
 
-        beforeEach(async () => {
-            const { client: mclient, http: mhttp } = createTestClient(null, userId, true);
+        beforeEach(() => testCryptoStores(async (cryptoStoreType) => {
+            const { client: mclient, http: mhttp } = createTestClient(null, userId, cryptoStoreType);
             client = mclient;
             http = mhttp;
 
             await client.cryptoStore.setDeviceId(TEST_DEVICE_ID);
 
             // client crypto not prepared for the one test which wants that state
-        });
+        }));
 
         it('should fail when the crypto has not been prepared', async () => {
             try {
@@ -467,8 +467,8 @@ describe('CryptoClient', () => {
         let client: MatrixClient;
         let http: HttpBackend;
 
-        beforeEach(async () => {
-            const { client: mclient, http: mhttp } = createTestClient(null, userId, true);
+        beforeEach(() => testCryptoStores(async (cryptoStoreType) => {
+            const { client: mclient, http: mhttp } = createTestClient(null, userId, cryptoStoreType);
             client = mclient;
             http = mhttp;
 
@@ -478,7 +478,7 @@ describe('CryptoClient', () => {
                 client.crypto.prepare([]),
                 http.flushAllExpected(),
             ]);
-        });
+        }));
 
         it('should update tracked users on membership changes', async () => {
             const targetUserIds = ["@bob:example.org", "@charlie:example.org"];

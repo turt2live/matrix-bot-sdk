@@ -52,7 +52,7 @@ export class RustEngine {
                     await this.processKeysClaimRequest(request);
                     break;
                 case RequestType.ToDevice:
-                    await this.processToDeviceRequest(request);
+                    await this.processToDeviceRequest(request as ToDeviceRequest);
                     break;
                 case RequestType.RoomMessage:
                     throw new Error("Bindings error: Sending room messages is not supported");

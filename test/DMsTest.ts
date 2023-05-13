@@ -1,7 +1,7 @@
 import * as simple from "simple-mock";
 
 import { EncryptionAlgorithm } from "../src";
-import { createTestClient, TEST_DEVICE_ID } from "./TestUtils";
+import { createTestClient, testCryptoStores, TEST_DEVICE_ID } from "./TestUtils";
 
 describe('DMs', () => {
     it('should update the cache when an sync requests happen', async () => {
@@ -297,9 +297,9 @@ describe('DMs', () => {
         await flush;
     });
 
-    it('should create an encrypted DM if supported', async () => {
+    it('should create an encrypted DM if supported', () => testCryptoStores(async (cryptoStoreType) => {
         const selfUserId = "@self:example.org";
-        const { client, http } = createTestClient(null, selfUserId, true);
+        const { client, http } = createTestClient(null, selfUserId, cryptoStoreType);
         const dms = client.dms;
 
         const dmRoomId = "!dm:example.org";
@@ -359,11 +359,11 @@ describe('DMs', () => {
         expect(dms.isDm(dmRoomId)).toBe(true);
 
         await flush;
-    });
+    }));
 
-    it('should create an unencrypted DM when the target user has no devices', async () => {
+    it('should create an unencrypted DM when the target user has no devices', () => testCryptoStores(async (cryptoStoreType) => {
         const selfUserId = "@self:example.org";
-        const { client, http } = createTestClient(null, selfUserId, true);
+        const { client, http } = createTestClient(null, selfUserId, cryptoStoreType);
         const dms = client.dms;
 
         const dmRoomId = "!dm:example.org";
@@ -411,5 +411,5 @@ describe('DMs', () => {
         expect(dms.isDm(dmRoomId)).toBe(true);
 
         await flush;
-    });
+    }));
 });
