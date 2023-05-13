@@ -71,6 +71,7 @@ describe('SynchronousMatrixClient', () => {
                     type: "m.room.member",
                     state_key: userId,
                     unsigned: { age: 0 },
+                    content: { membership: "leave" },
                 },
             ];
 
@@ -138,16 +139,19 @@ describe('SynchronousMatrixClient', () => {
                     type: "m.room.member",
                     state_key: userId,
                     unsigned: { age: 2 },
+                    content: { membership: "leave" },
                 },
                 {
                     type: "m.room.member",
                     state_key: userId,
                     unsigned: { age: 1 },
+                    content: { membership: "leave" },
                 },
                 {
                     type: "m.room.member",
                     state_key: userId,
                     unsigned: { age: 3 },
+                    content: { membership: "leave" },
                 },
             ];
 
@@ -181,16 +185,19 @@ describe('SynchronousMatrixClient', () => {
                     type: "m.room.not_member",
                     state_key: userId,
                     unsigned: { age: 1 },
+                    content: { membership: "leave" },
                 },
                 {
                     type: "m.room.member",
                     state_key: userId,
                     unsigned: { age: 1 },
+                    content: { membership: "leave" },
                 },
                 {
                     type: "m.room.member",
                     state_key: userId + "_wrong_member",
                     unsigned: { age: 1 },
+                    content: { membership: "leave" },
                 },
             ];
 
@@ -230,6 +237,7 @@ describe('SynchronousMatrixClient', () => {
                 //     type: "m.room.member",
                 //     state_key: userId,
                 //     unsigned: {age: 1},
+                //     content: { membership: "leave" },
                 // },
                 {
                     type: "m.room.member",
@@ -267,6 +275,7 @@ describe('SynchronousMatrixClient', () => {
                 {
                     type: "m.room.member",
                     state_key: userId,
+                    content: { membership: "leave" },
                 },
             ];
 
@@ -507,10 +516,19 @@ describe('SynchronousMatrixClient', () => {
 
             const userId = "@syncing:example.org";
             const roomId = "!testing:example.org";
+            const events = [
+                {
+                    type: "m.room.member",
+                    state_key: userId,
+                    unsigned: { age: 0 },
+                    content: { membership: "join" },
+                },
+            ];
 
             client.userId = userId;
 
-            const spy = simple.stub().callFn((rid) => {
+            const spy = simple.stub().callFn((rid, ev) => {
+                expect(ev).toMatchObject(events[0]);
                 expect(rid).toEqual(roomId);
             });
             const syncSpy = simple.mock(realClient, 'onRoomJoin').callFn((rid) => {
@@ -519,7 +537,7 @@ describe('SynchronousMatrixClient', () => {
             realClient.on("room.join", spy);
 
             const roomsObj = {};
-            roomsObj[roomId] = {};
+            roomsObj[roomId] = { timeline: { events: events } };
             await realClient.doProcessSync({ rooms: { join: roomsObj } });
             expect(spy.callCount).toBe(1);
             expect(syncSpy.callCount).toBe(1);
@@ -565,10 +583,19 @@ describe('SynchronousMatrixClient', () => {
 
             const userId = "@syncing:example.org";
             const roomId = "!testing:example.org";
+            const events = [
+                {
+                    type: "m.room.member",
+                    state_key: userId,
+                    unsigned: { age: 0 },
+                    content: { membership: "join" },
+                },
+            ];
 
             client.userId = userId;
 
-            const spy = simple.stub().callFn((rid) => {
+            const spy = simple.stub().callFn((rid, ev) => {
+                expect(ev).toMatchObject(events[0]);
                 expect(rid).toEqual(roomId);
             });
             const syncSpy = simple.mock(realClient, 'onRoomJoin').callFn((rid) => {
@@ -577,7 +604,7 @@ describe('SynchronousMatrixClient', () => {
             realClient.on("room.join", spy);
 
             const roomsObj = {};
-            roomsObj[roomId] = {};
+            roomsObj[roomId] = { timeline: { events: events } };
             await realClient.doProcessSync({ rooms: { join: roomsObj } });
             expect(spy.callCount).toBe(1);
             expect(syncSpy.callCount).toBe(1);
@@ -593,6 +620,12 @@ describe('SynchronousMatrixClient', () => {
             const userId = "@syncing:example.org";
             const roomId = "!testing:example.org";
             const events = [
+                {
+                    type: "m.room.member",
+                    state_key: userId,
+                    unsigned: { age: 0 },
+                    content: { membership: "join" },
+                },
                 {
                     type: "m.room.not_message",
                     content: { body: "hello world 1" },
@@ -657,8 +690,8 @@ describe('SynchronousMatrixClient', () => {
             expect(syncLeaveSpy.callCount).toBe(0);
             expect(messageSpy.callCount).toBe(2);
             expect(syncMessageSpy.callCount).toBe(2);
-            expect(eventSpy.callCount).toBe(4);
-            expect(syncEventSpy.callCount).toBe(4);
+            expect(eventSpy.callCount).toBe(5);
+            expect(syncEventSpy.callCount).toBe(5);
         });
 
         it('should process tombstone events', async () => {
@@ -668,6 +701,12 @@ describe('SynchronousMatrixClient', () => {
             const userId = "@syncing:example.org";
             const roomId = "!testing:example.org";
             const events = [
+                {
+                    type: "m.room.member",
+                    state_key: userId,
+                    unsigned: { age: 0 },
+                    content: { membership: "join" },
+                },
                 {
                     type: "m.room.tombstone",
                     content: { body: "hello world 1" },
@@ -726,8 +765,8 @@ describe('SynchronousMatrixClient', () => {
             expect(syncLeaveSpy.callCount).toBe(0);
             expect(archiveSpy.callCount).toBe(1);
             expect(syncArchiveSpy.callCount).toBe(1);
-            expect(eventSpy.callCount).toBe(2);
-            expect(syncEventSpy.callCount).toBe(2);
+            expect(eventSpy.callCount).toBe(3);
+            expect(syncEventSpy.callCount).toBe(3);
         });
 
         it('should process create events with a predecessor', async () => {
@@ -737,6 +776,12 @@ describe('SynchronousMatrixClient', () => {
             const userId = "@syncing:example.org";
             const roomId = "!testing:example.org";
             const events = [
+                {
+                    type: "m.room.member",
+                    state_key: userId,
+                    unsigned: { age: 0 },
+                    content: { membership: "join" },
+                },
                 {
                     type: "m.room.tombstone",
                     content: { body: "hello world 1" },
@@ -795,8 +840,8 @@ describe('SynchronousMatrixClient', () => {
             expect(syncLeaveSpy.callCount).toBe(0);
             expect(upgradedSpy.callCount).toBe(1);
             expect(syncUpgradedSpy.callCount).toBe(1);
-            expect(eventSpy.callCount).toBe(2);
-            expect(syncEventSpy.callCount).toBe(2);
+            expect(eventSpy.callCount).toBe(3);
+            expect(syncEventSpy.callCount).toBe(3);
         });
     });
 });

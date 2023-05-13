@@ -808,6 +808,9 @@ export class MatrixClient extends EventEmitter {
                 if (event['type'] !== 'm.room.member') continue;
                 if (event['state_key'] !== await this.getUserId()) continue;
 
+                const membership = event["content"]?.["membership"];
+                if (membership !== "leave" && membership !== "ban") continue;
+
                 const oldAge = leaveEvent && leaveEvent['unsigned'] && leaveEvent['unsigned']['age'] ? leaveEvent['unsigned']['age'] : 0;
                 const newAge = event['unsigned'] && event['unsigned']['age'] ? event['unsigned']['age'] : 0;
                 if (leaveEvent && oldAge < newAge) continue;
@@ -855,11 +858,6 @@ export class MatrixClient extends EventEmitter {
 
         // Process rooms we've joined and their events
         for (const roomId in joinedRooms) {
-            if (this.lastJoinedRoomIds.indexOf(roomId) === -1) {
-                await emitFn("room.join", roomId);
-                this.lastJoinedRoomIds.push(roomId);
-            }
-
             const room = joinedRooms[roomId];
 
             if (room['account_data'] && room['account_data']['events']) {
@@ -871,6 +869,13 @@ export class MatrixClient extends EventEmitter {
             if (!room['timeline'] || !room['timeline']['events']) continue;
 
             for (let event of room['timeline']['events']) {
+                if (event['type'] === "m.room.member" && event['state_key'] === await this.getUserId()) {
+                    if (event['content']?.['membership'] === "join" && this.lastJoinedRoomIds.indexOf(roomId) === -1) {
+                        await emitFn("room.join", roomId, await this.processEvent(event));
+                        this.lastJoinedRoomIds.push(roomId);
+                    }
+                }
+
                 event = await this.processEvent(event);
                 if (event['type'] === 'm.room.encrypted' && await this.crypto?.isRoomEncrypted(roomId)) {
                     await emitFn("room.encrypted_event", roomId, event);
