@@ -12,6 +12,14 @@ export interface SynapseUser {
     displayname?: string;
 
     /**
+     * External IDs for the user.
+     */
+    external_ids?: {
+        auth_provider: string;
+        external_id: string;
+    }[];
+
+    /**
      * A set of 3PIDs for the user.
      */
     threepids?: {
