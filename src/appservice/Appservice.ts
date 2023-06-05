@@ -631,9 +631,7 @@ export class Appservice extends EventEmitter {
         const botDomain = new UserID(this.botUserId).domain;
         if (domain !== botDomain) return; // can't be impersonated, so don't try
 
-        // Update the target intent's joined rooms (fixes transition errors with the cache, like join->kick->join)
         const intent = this.getIntentForUserId(event['state_key']);
-        await intent.refreshJoinedRooms();
 
         const targetMembership = event["content"]["membership"];
         if (targetMembership === "join") {

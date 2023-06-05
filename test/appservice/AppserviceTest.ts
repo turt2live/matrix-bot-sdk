@@ -1752,7 +1752,7 @@ describe('Appservice', () => {
         };
 
         const intent = appservice.getIntentForSuffix("test");
-        intent.refreshJoinedRooms = () => Promise.resolve([]);
+        intent.getJoinedRooms = () => Promise.resolve([]);
 
         await appservice.begin();
 
@@ -1852,98 +1852,6 @@ describe('Appservice', () => {
 
             await doCall("/transactions/1", { json: txnBody });
             await doCall("/_matrix/app/v1/transactions/2", { json: txnBody });
-        } finally {
-            appservice.stop();
-        }
-    });
-
-    it('should refresh membership information of intents when actions are performed against them', async () => {
-        const port = await getPort();
-        const hsToken = "s3cret_token";
-        const appservice = new Appservice({
-            port: port,
-            bindAddress: '',
-            homeserverName: 'example.org',
-            homeserverUrl: 'https://localhost',
-            registration: {
-                as_token: "",
-                hs_token: hsToken,
-                sender_localpart: "_bot_",
-                namespaces: {
-                    users: [{ exclusive: true, regex: "@_prefix_.*:.+" }],
-                    rooms: [],
-                    aliases: [],
-                },
-            },
-        });
-        appservice.botIntent.ensureRegistered = () => {
-            return null;
-        };
-
-        await appservice.begin();
-
-        try {
-            const intent = appservice.getIntentForSuffix("test");
-            const refreshSpy = simple.stub().callFn(() => Promise.resolve([]));
-            intent.refreshJoinedRooms = refreshSpy;
-
-            // polyfill the dummy user too
-            const intent2 = appservice.getIntentForSuffix("test___WRONGUSER");
-            intent2.refreshJoinedRooms = () => Promise.resolve([]);
-
-            const joinTxn = {
-                events: [
-                    {
-                        type: "m.room.member",
-                        room_id: "!AAA:example.org",
-                        content: { membership: "join" },
-                        state_key: "@_prefix_test:example.org",
-                        sender: "@_prefix_test:example.org",
-                    },
-                    {
-                        type: "m.room.member",
-                        room_id: "!AAA:example.org",
-                        content: { membership: "join" },
-                        state_key: "@_prefix_test___WRONGUSER:example.org",
-                        sender: "@_prefix_test:example.org",
-                    },
-                ],
-            };
-            const kickTxn = {
-                events: [
-                    {
-                        type: "m.room.member",
-                        room_id: "!AAA:example.org",
-                        content: { membership: "leave" },
-                        state_key: "@_prefix_test:example.org",
-                        sender: "@someone_else:example.org",
-                    },
-                    {
-                        type: "m.room.member",
-                        room_id: "!AAA:example.org",
-                        content: { membership: "leave" },
-                        state_key: "@_prefix_test___WRONGUSER:example.org",
-                        sender: "@someone_else:example.org",
-                    },
-                ],
-            };
-
-            // eslint-disable-next-line no-inner-declarations
-            async function doCall(route: string, opts: any = {}) {
-                const res = await requestPromise({
-                    uri: `http://localhost:${port}${route}`,
-                    method: "PUT",
-                    qs: { access_token: hsToken },
-                    ...opts,
-                });
-                expect(res).toMatchObject({});
-
-                expect(refreshSpy.callCount).toBe(1);
-                refreshSpy.callCount = 0;
-            }
-
-            await doCall("/transactions/1", { json: joinTxn });
-            await doCall("/_matrix/app/v1/transactions/2", { json: kickTxn });
         } finally {
             appservice.stop();
         }
