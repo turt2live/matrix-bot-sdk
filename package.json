@@ -12,6 +12,9 @@
     "url": "https://github.com/vector-im/matrix-bot-sdk/issues"
   },
   "homepage": "https://github.com/vector-im/matrix-bot-sdk#readme",
+  "publishConfig": {
+      "access": "public"
+  },
   "scripts": {
     "prepublishOnly": "yarn build",
     "docs": "jsdoc -c jsdoc.json -P package.json -u docs/tutorials",
