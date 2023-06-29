@@ -17,4 +17,4 @@ jobs:
       uses: JamesIves/github-pages-deploy-action@v4
       with:
         branch: gh-pages
-        folder: .jsdoc/matrix-bot-sdk/develop
+        folder: .jsdoc/@vector-im/matrix-bot-sdk/develop
