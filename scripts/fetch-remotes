@@ -1,0 +1,33 @@
+#!/bin/bash
+set -e
+
+for REMOTE in $(git remote); do
+    URL=$(git remote get-url $REMOTE)
+    if [[ $URL =~ "turt2live" ]]; then
+        UPSTREAM_REPO=$REMOTE
+    elif [[ $URL =~ "vector-im" ]]; then
+        FORK_REPO=$REMOTE
+    fi
+done
+
+function echoAndDo {
+    echo "$*"
+    $*
+}
+
+if [[ -z $UPSTREAM_REPO ]]; then
+    echo -n 'Adding remote for upstream repo: '
+    UPSTREAM_REPO=turt2live
+    echoAndDo git remote add $UPSTREAM_REPO git@github.com:turt2live/matrix-bot-sdk.git
+fi
+
+if [[ -z $FORK_REPO ]]; then
+    echo -n 'Adding remote for fork repo: '
+    FORK_REPO=vector-im
+    echoAndDo git remote add $FORK_REPO git@github.com:vector-im/matrix-bot-sdk.git
+fi
+
+for REPO in $UPSTREAM_REPO $FORK_REPO; do
+    git fetch $REPO >/dev/null
+    git remote set-head $REPO -a >/dev/null
+done

@@ -6,9 +6,10 @@ if [[ -n $(git status --porcelain) ]]; then
     exit 1
 fi
 
-git fetch --all
+. $(dirname $0)/fetch-remotes
+
 git checkout element-release
-git reset --hard element-main
+git reset --hard $FORK_REPO
 
 PREID=element
 
@@ -20,7 +21,7 @@ PREV_UPST_TAG_HASH=$(git rev-parse ${PREV_UPST_TAG}~0)
 
 # The immediate child commit of the release commit,
 # to consider the 'Revert version back to "develop"' commits
-PREV_UPST_NXT_HASH=$(git rev-list ${PREV_UPST_TAG}..main | tail -n 1)
+PREV_UPST_NXT_HASH=$(git rev-list ${PREV_UPST_TAG}..${UPSTREAM_REPO} | tail -n 1)
 
 # Check if the current branch is a direct merge of the previous upstream release
 for MERGE_PARENT in $(git show -s | awk '/^Merge: / {print $2; print $3; exit}'); do
