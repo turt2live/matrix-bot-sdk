@@ -723,6 +723,7 @@ export class MatrixClient extends EventEmitter {
             } catch (e) {
                 // If we've requested to stop syncing, don't bother checking the error.
                 if (this.stopSyncing) {
+                    LogService.info("MatrixClientLite", "Client stop requested - cancelling sync");
                     return;
                 }
                 LogService.error("MatrixClientLite", "Error handling sync " + extractRequestError(e));
