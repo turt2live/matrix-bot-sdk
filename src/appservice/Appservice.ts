@@ -655,10 +655,14 @@ export class Appservice extends EventEmitter {
         return providedToken === this.registration.hs_token;
     }
 
-    private async handleTransaction(body: Record<string, unknown>) {
+    private async handleTransaction(txnId: string, body: Record<string, unknown>) {
         // Process all the crypto stuff first to ensure that future transactions (if not this one)
         // will decrypt successfully. We start with EDUs because we need structures to put counts
         // and such into in a later stage, and EDUs are independent of crypto.
+        if (await this.storage.isTransactionCompleted(txnId)) {
+            // Duplicate.
+            return;
+        }
 
         const byUserId: {
             [userId: string]: {
@@ -868,16 +872,7 @@ export class Appservice extends EventEmitter {
             return;
         }
 
-        const txnId = req.params["txnId"];
-
-        try {
-            if (await this.storage.isTransactionCompleted(txnId)) {
-                res.status(200).json({});
-            }
-        } catch (e) {
-            LogService.error("Appservice", e);
-            res.status(500).json({});
-        }
+        const { txnId } = req.params;
 
         if (this.pendingTransactions.has(txnId)) {
             // The homeserver has retried a transaction while we're still handling it.
@@ -892,12 +887,18 @@ export class Appservice extends EventEmitter {
         }
 
         LogService.info("Appservice", `Processing transaction ${txnId}`);
-        const txnHandler = this.handleTransaction(req.body);
+        const txnHandler = this.handleTransaction(txnId, req.body);
         this.pendingTransactions.set(txnId, txnHandler);
 
         try {
             await txnHandler;
-            await Promise.resolve(this.storage.setTransactionCompleted(txnId));
+            try {
+                await this.storage.setTransactionCompleted(txnId);
+            } catch (ex) {
+                // Not fatal for the transaction since we *did* process it, but we should
+                // warn loudly.
+                LogService.warn("Appservice", "Failed to store completed transaction", ex);
+            }
             res.status(200).json({});
         } catch (e) {
             LogService.error("Appservice", e);
