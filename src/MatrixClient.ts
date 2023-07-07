@@ -44,6 +44,8 @@ import { DMs } from "./DMs";
 import { ServerVersions } from "./models/ServerVersions";
 import { RoomCreateOptions } from "./models/CreateRoom";
 import { PresenceState } from './models/events/PresenceEvent';
+import { IKeyBackupInfo, IKeyBackupInfoRetrieved, IKeyBackupInfoUpdate, IKeyBackupVersion, KeyBackupVersion } from "./models/KeyBackup";
+import { MatrixError } from "./models/MatrixError";
 
 const SYNC_BACKOFF_MIN_MS = 5000;
 const SYNC_BACKOFF_MAX_MS = 15000;
@@ -1960,6 +1962,79 @@ export class MatrixClient extends EventEmitter {
         return this.doRequest("PUT", `/_matrix/client/v3/sendToDevice/${encodeURIComponent(type)}/${encodeURIComponent(txnId)}`, null, {
             messages: messages,
         });
+    }
+
+    /**
+     * Get information about the latest room key backup version.
+     * @returns {Promise<IKeyBackupInfoRetrieved|null>} Resolves to the retrieved key backup info,
+     * or null if there is no existing backup.
+     */
+    public async getKeyBackupVersion(): Promise<IKeyBackupInfoRetrieved|null> {
+        try {
+            return await this.doRequest("GET", "/_matrix/client/v3/room_keys/version");
+        } catch (e) {
+            if (e instanceof MatrixError && e.errcode === "M_NOT_FOUND") {
+                return null;
+            } else {
+                throw e;
+            }
+        }
+    }
+
+    /**
+     * Create a new room key backup.
+     * @param {IKeyBackupInfo} info The properties of the key backup to create.
+     * @returns {Promise<IKeyBackupVersion>} Resolves to the version id of the new backup.
+     */
+    public async createKeyBackupVersion(info: IKeyBackupInfo): Promise<IKeyBackupVersion> {
+        if (!this.crypto) {
+            throw new Error("End-to-end encryption disabled");
+        }
+
+        const data = {
+            ...info,
+            signatures: this.crypto.sign(info),
+        };
+        return await this.doRequest("POST", "/_matrix/client/v3/room_keys/version", null, data);
+    }
+
+    /**
+     * Update an existing room key backup.
+     * @param {KeyBackupVersion} version The key backup version to update.
+     * @param {IKeyBackupInfoUpdate} info The properties of the key backup to be applied.
+     * @returns {Promise<void>} Resolves when complete.
+     */
+    public async updateKeyBackupVersion(version: KeyBackupVersion, info: IKeyBackupInfoUpdate): Promise<void> {
+        if (!this.crypto) {
+            throw new Error("End-to-end encryption disabled");
+        }
+
+        const data = {
+            ...info,
+            signatures: this.crypto.sign(info),
+        };
+        await this.doRequest("PUT", `/_matrix/client/v3/room_keys/version/${version}`, null, data);
+    }
+
+    /**
+     * Enable backing up of room keys.
+     * @param {IKeyBackupInfoRetrieved} info The configuration for key backup behaviour,
+     * as returned by {@link getKeyBackupVersion}.
+     * @returns {Promise<void>} Resolves when complete.
+     */
+    public async enableKeyBackup(info: IKeyBackupInfoRetrieved): Promise<void> {
+        if (!this.crypto) {
+            throw new Error("End-to-end encryption disabled");
+        }
+
+        this.crypto.enableKeyBackup(info);
+    }
+
+    /**
+     * Disable backing up of room keys.
+     */
+    public disableKeyBackup(): void {
+        this.crypto?.disableKeyBackup();
     }
 
     /**

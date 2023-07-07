@@ -26,6 +26,7 @@ import { EncryptedFile } from "../models/events/MessageEvent";
 import { RustSdkCryptoStorageProvider } from "../storage/RustSdkCryptoStorageProvider";
 import { RustEngine, SYNC_LOCK_NAME } from "./RustEngine";
 import { MembershipEvent } from "../models/events/MembershipEvent";
+import { IKeyBackupInfoRetrieved } from "../models/KeyBackup";
 
 /**
  * Manages encryption for a MatrixClient. Get an instance from a MatrixClient directly
@@ -284,5 +285,22 @@ export class CryptoClient {
         );
         const decrypted = Attachment.decrypt(encrypted);
         return Buffer.from(decrypted);
+    }
+
+    /**
+     * Enable backing up of room keys.
+     * @param {IKeyBackupInfoRetrieved} info The configuration for key backup behaviour,
+     * as returned by {@link MatrixClient#getKeyBackupVersion}.
+     * @returns {Promise<void>} Resolves when complete.
+     */
+    public async enableKeyBackup(info: IKeyBackupInfoRetrieved): Promise<void> {
+        await this.engine.enableKeyBackup(info);
+    }
+
+    /**
+     * Disable backing up of room keys.
+     */
+    public disableKeyBackup(): void {
+        this.engine.disableKeyBackup();
     }
 }

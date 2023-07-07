@@ -10,6 +10,7 @@ import {
     KeysUploadRequest,
     KeysQueryRequest,
     ToDeviceRequest,
+    KeysBackupRequest,
 } from "@matrix-org/matrix-sdk-crypto-nodejs";
 import * as AsyncLock from "async-lock";
 
@@ -17,6 +18,7 @@ import { MatrixClient } from "../MatrixClient";
 import { ICryptoRoomInformation } from "./ICryptoRoomInformation";
 import { EncryptionAlgorithm } from "../models/Crypto";
 import { EncryptionEvent } from "../models/events/EncryptionEvent";
+import { ICurve25519AuthData, IKeyBackupInfoRetrieved, KeyBackupVersion } from "../models/KeyBackup";
 
 /**
  * @internal
@@ -28,6 +30,9 @@ export const SYNC_LOCK_NAME = "sync";
  */
 export class RustEngine {
     public readonly lock = new AsyncLock();
+
+    private keyBackupVersion: KeyBackupVersion|undefined;
+    // TODO: keyBackupPromise that can be awaited by others
 
     public constructor(public readonly machine: OlmMachine, private client: MatrixClient) {
     }
@@ -59,7 +64,8 @@ export class RustEngine {
                 case RequestType.SignatureUpload:
                     throw new Error("Bindings error: Backup feature not possible");
                 case RequestType.KeysBackup:
-                    throw new Error("Bindings error: Backup feature not possible");
+                    await this.processKeysBackupRequest(request);
+                    break;
                 default:
                     throw new Error("Bindings error: Unrecognized request type: " + request.type);
             }
@@ -128,6 +134,17 @@ export class RustEngine {
         });
     }
 
+    public async enableKeyBackup(info: IKeyBackupInfoRetrieved) {
+        this.keyBackupVersion = info.version;
+        // TODO Error with message if the key backup uses an unsupported auth_data type
+        await this.machine.enableBackupV1((info.auth_data as ICurve25519AuthData).public_key, info.version);
+    }
+
+    public async disableKeyBackup() {
+        this.keyBackupVersion = undefined;
+        await this.machine.disableBackup();
+    }
+
     private async processKeysClaimRequest(request: KeysClaimRequest) {
         const resp = await this.client.doRequest("POST", "/_matrix/client/v3/keys/claim", null, JSON.parse(request.body));
         await this.machine.markRequestAsSent(request.id, request.type, JSON.stringify(resp));
@@ -153,5 +170,16 @@ export class RustEngine {
     private async actuallyProcessToDeviceRequest(id: string, type: string, messages: Record<string, Record<string, unknown>>) {
         const resp = await this.client.sendToDevices(type, messages);
         await this.machine.markRequestAsSent(id, RequestType.ToDevice, JSON.stringify(resp));
+    }
+
+    private async processKeysBackupRequest(request: KeysBackupRequest) {
+        let resp: Awaited<ReturnType<MatrixClient["doRequest"]>>;
+        try {
+            resp = await this.client.doRequest("PUT", "/_matrix/client/v3/room_keys/keys", { version: this.keyBackupVersion }, JSON.parse(request.body));
+        } catch (e) {
+            this.client.emit("crypto.failed_backup", e);
+            return;
+        }
+        await this.machine.markRequestAsSent(request.id, request.type, JSON.stringify(resp));
     }
 }
