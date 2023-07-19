@@ -168,11 +168,13 @@ export class CryptoClient {
             leftDeviceLists.map(u => new UserId(u)));
 
         await this.engine.lock.acquire(SYNC_LOCK_NAME, async () => {
-            const syncResp = await this.engine.machine.receiveSyncChanges(deviceMessages, deviceLists, otkCounts, unusedFallbackKeyAlgs);
-            const decryptedToDeviceMessages = JSON.parse(syncResp);
-            if (Array.isArray(decryptedToDeviceMessages)) {
-                for (const msg of decryptedToDeviceMessages) {
-                    this.client.emit("to_device.decrypted", msg);
+            const syncResp = JSON.parse(await this.engine.machine.receiveSyncChanges(deviceMessages, deviceLists, otkCounts, unusedFallbackKeyAlgs));
+            if (Array.isArray(syncResp)) {
+                const decryptedToDeviceMessages = syncResp[0];
+                if (Array.isArray(decryptedToDeviceMessages)) {
+                    for (const msg of decryptedToDeviceMessages as IToDeviceMessage[]) {
+                        this.client.emit("to_device.decrypted", msg);
+                    }
                 }
             }
 
