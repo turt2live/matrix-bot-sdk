@@ -294,6 +294,7 @@ export class CryptoClient {
      * @returns {Promise<void>} Resolves when complete.
      */
     public async enableKeyBackup(info: IKeyBackupInfoRetrieved): Promise<void> {
+        this.client.on("to_device.decrypted", this.onToDeviceMessage);
         await this.engine.enableKeyBackup(info);
     }
 
@@ -302,5 +303,12 @@ export class CryptoClient {
      */
     public disableKeyBackup(): void {
         this.engine.disableKeyBackup();
+        this.client.removeListener("to_device.decrypted", this.onToDeviceMessage);
     }
+
+    private readonly onToDeviceMessage = (msg: IToDeviceMessage): void => {
+        if (msg.type === "m.room_key") {
+            this.engine.machine.backupRoomKeys();
+        }
+    };
 }

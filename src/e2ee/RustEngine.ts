@@ -123,6 +123,9 @@ export class RustEngine {
             const keysClaim = await this.machine.getMissingSessions(members);
             if (keysClaim) {
                 await this.processKeysClaimRequest(keysClaim);
+                if (this.keyBackupVersion !== undefined) {
+                    await this.machine.backupRoomKeys();
+                }
             }
         });
 
