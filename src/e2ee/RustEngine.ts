@@ -148,6 +148,13 @@ export class RustEngine {
         await this.machine.disableBackup();
     }
 
+    public async backupRoomKeys() {
+        const request = await this.machine.backupRoomKeys();
+        if (request) {
+            await this.processKeysBackupRequest(request);
+        }
+    }
+
     private async processKeysClaimRequest(request: KeysClaimRequest) {
         const resp = await this.client.doRequest("POST", "/_matrix/client/v3/keys/claim", null, JSON.parse(request.body));
         await this.machine.markRequestAsSent(request.id, request.type, JSON.stringify(resp));
