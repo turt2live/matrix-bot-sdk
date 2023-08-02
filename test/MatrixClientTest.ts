@@ -1400,8 +1400,7 @@ describe('MatrixClient', () => {
     describe('processSync', () => {
         interface ProcessSyncClient {
             userId: string;
-
-            processSync(raw: any): Promise<any>;
+            processSync(raw: any): MatrixClient["processSync"];
         }
 
         it('should process non-room account data', async () => {
