@@ -32,7 +32,8 @@ export class RustEngine {
     public readonly lock = new AsyncLock();
 
     private keyBackupVersion: KeyBackupVersion|undefined;
-    // TODO: keyBackupPromise that can be awaited by others
+    private keyBackupWaiter = Promise.resolve();
+    private isBackupEnabled = false;
 
     public constructor(public readonly machine: OlmMachine, private client: MatrixClient) {
     }
@@ -123,9 +124,7 @@ export class RustEngine {
             const keysClaim = await this.machine.getMissingSessions(members);
             if (keysClaim) {
                 await this.processKeysClaimRequest(keysClaim);
-                if (this.keyBackupVersion !== undefined) {
-                    await this.machine.backupRoomKeys();
-                }
+                this.backupRoomKeysIfEnabled();
             }
         });
 
@@ -137,23 +136,55 @@ export class RustEngine {
         });
     }
 
-    public async enableKeyBackup(info: IKeyBackupInfoRetrieved) {
-        this.keyBackupVersion = info.version;
-        // TODO Error with message if the key backup uses an unsupported auth_data type
-        await this.machine.enableBackupV1((info.auth_data as ICurve25519AuthData).public_key, info.version);
+    public enableKeyBackup(info: IKeyBackupInfoRetrieved) {
+        this.keyBackupWaiter = this.keyBackupWaiter.then(async () => {
+            if (this.isBackupEnabled) {
+                await this.actuallyDisableKeyBackup();
+            }
+            // TODO Error with message if the key backup uses an unsupported auth_data type
+            await this.machine.enableBackupV1((info.auth_data as ICurve25519AuthData).public_key, info.version);
+            this.keyBackupVersion = info.version;
+            this.isBackupEnabled = true;
+        });
+        return this.keyBackupWaiter;
     }
 
-    public async disableKeyBackup() {
-        this.keyBackupVersion = undefined;
-        await this.machine.disableBackup();
+    public disableKeyBackup() {
+        this.keyBackupWaiter = this.keyBackupWaiter.then(this.actuallyDisableKeyBackup);
+        return this.keyBackupWaiter;
     }
+
+    private readonly actuallyDisableKeyBackup = async () => {
+        await this.machine.disableBackup();
+        this.keyBackupVersion = undefined;
+        this.isBackupEnabled = false;
+    };
 
     public async backupRoomKeys() {
+        this.keyBackupWaiter = this.keyBackupWaiter.then(async () => {
+            if (!this.isBackupEnabled) {
+                throw new Error("Key backup error: attempted to create a backup before having enabled backups");
+            }
+            await this.actuallyBackupRoomKeys();
+        });
+        return this.keyBackupWaiter;
+    }
+
+    private async backupRoomKeysIfEnabled() {
+        this.keyBackupWaiter = this.keyBackupWaiter.then(async () => {
+            if (this.isBackupEnabled) {
+                await this.actuallyBackupRoomKeys();
+            }
+        });
+        return this.keyBackupWaiter;
+    }
+
+    private readonly actuallyBackupRoomKeys = async () => {
         const request = await this.machine.backupRoomKeys();
         if (request) {
             await this.processKeysBackupRequest(request);
         }
-    }
+    };
 
     private async processKeysClaimRequest(request: KeysClaimRequest) {
         const resp = await this.client.doRequest("POST", "/_matrix/client/v3/keys/claim", null, JSON.parse(request.body));
@@ -185,6 +216,9 @@ export class RustEngine {
     private async processKeysBackupRequest(request: KeysBackupRequest) {
         let resp: Awaited<ReturnType<MatrixClient["doRequest"]>>;
         try {
+            if (!this.keyBackupVersion) {
+                throw new Error("Key backup version missing");
+            }
             resp = await this.client.doRequest("PUT", "/_matrix/client/v3/room_keys/keys", { version: this.keyBackupVersion }, JSON.parse(request.body));
         } catch (e) {
             this.client.emit("crypto.failed_backup", e);
