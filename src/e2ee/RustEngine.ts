@@ -125,7 +125,7 @@ export class RustEngine {
             if (keysClaim) {
                 await this.processKeysClaimRequest(keysClaim);
                 // Back up keys asynchronously
-                this.backupRoomKeysIfEnabled();
+                void this.backupRoomKeysIfEnabled();
             }
         });
 
@@ -140,6 +140,7 @@ export class RustEngine {
     public enableKeyBackup(info: IKeyBackupInfoRetrieved): Promise<void> {
         this.keyBackupWaiter = this.keyBackupWaiter.then(async () => {
             if (this.isBackupEnabled) {
+                // Finish any pending backups before changing the backup version/pubkey
                 await this.actuallyDisableKeyBackup();
             }
             // TODO Error with message if the key backup uses an unsupported auth_data type
@@ -151,15 +152,17 @@ export class RustEngine {
     }
 
     public disableKeyBackup(): Promise<void> {
-        this.keyBackupWaiter = this.keyBackupWaiter.then(this.actuallyDisableKeyBackup);
+        this.keyBackupWaiter = this.keyBackupWaiter.then(async () => {
+            await this.actuallyDisableKeyBackup();
+        });
         return this.keyBackupWaiter;
     }
 
-    private readonly actuallyDisableKeyBackup = async () => {
+    private async actuallyDisableKeyBackup(): Promise<void> {
         await this.machine.disableBackup();
         this.keyBackupVersion = undefined;
         this.isBackupEnabled = false;
-    };
+    }
 
     public backupRoomKeys(): Promise<void> {
         this.keyBackupWaiter = this.keyBackupWaiter.then(async () => {
@@ -180,12 +183,12 @@ export class RustEngine {
         return this.keyBackupWaiter;
     }
 
-    private readonly actuallyBackupRoomKeys = async () => {
+    private async actuallyBackupRoomKeys(): Promise<void> {
         const request = await this.machine.backupRoomKeys();
         if (request) {
             await this.processKeysBackupRequest(request);
         }
-    };
+    }
 
     private async processKeysClaimRequest(request: KeysClaimRequest) {
         const resp = await this.client.doRequest("POST", "/_matrix/client/v3/keys/claim", null, JSON.parse(request.body));
