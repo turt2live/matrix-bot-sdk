@@ -44,7 +44,7 @@ import { DMs } from "./DMs";
 import { ServerVersions } from "./models/ServerVersions";
 import { RoomCreateOptions } from "./models/CreateRoom";
 import { PresenceState } from './models/events/PresenceEvent';
-import { IKeyBackupInfo, IKeyBackupInfoRetrieved, IKeyBackupInfoUpdate, IKeyBackupVersion, KeyBackupVersion } from "./models/KeyBackup";
+import { IKeyBackupInfo, IKeyBackupInfoRetrieved, IKeyBackupInfoUnsigned, IKeyBackupInfoUpdate, IKeyBackupVersion, KeyBackupVersion } from "./models/KeyBackup";
 import { MatrixError } from "./models/MatrixError";
 
 const SYNC_BACKOFF_MIN_MS = 5000;
@@ -1983,17 +1983,21 @@ export class MatrixClient extends EventEmitter {
 
     /**
      * Create a new room key backup.
-     * @param {IKeyBackupInfo} info The properties of the key backup to create.
+     * @param {IKeyBackupInfoUnsigned} info The properties of the key backup to create,
+     * with its auth_data left unsigned.
      * @returns {Promise<IKeyBackupVersion>} Resolves to the version id of the new backup.
      */
-    public createKeyBackupVersion(info: IKeyBackupInfo): Promise<IKeyBackupVersion> {
+    public async signAndCreateKeyBackupVersion(info: IKeyBackupInfoUnsigned): Promise<IKeyBackupVersion> {
         if (!this.crypto) {
             throw new Error("End-to-end encryption disabled");
         }
 
-        const data = {
+        const data: IKeyBackupInfo = {
             ...info,
-            signatures: this.crypto.sign(info),
+            auth_data: {
+                ...info.auth_data,
+                signatures: await this.crypto.sign(info),
+            }
         };
         return this.doRequest("POST", "/_matrix/client/v3/room_keys/version", null, data);
     }
