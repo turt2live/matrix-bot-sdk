@@ -302,8 +302,8 @@ export class CryptoClient {
     /**
      * Disable backing up of room keys.
      */
-    public disableKeyBackup(): void {
-        this.engine.disableKeyBackup();
+    public async disableKeyBackup(): Promise<void> {
+        await this.engine.disableKeyBackup();
         this.client.removeListener("to_device.decrypted", this.onToDeviceMessage);
     }
 

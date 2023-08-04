@@ -1986,7 +1986,7 @@ export class MatrixClient extends EventEmitter {
      * @param {IKeyBackupInfo} info The properties of the key backup to create.
      * @returns {Promise<IKeyBackupVersion>} Resolves to the version id of the new backup.
      */
-    public async createKeyBackupVersion(info: IKeyBackupInfo): Promise<IKeyBackupVersion> {
+    public createKeyBackupVersion(info: IKeyBackupInfo): Promise<IKeyBackupVersion> {
         if (!this.crypto) {
             throw new Error("End-to-end encryption disabled");
         }
@@ -1995,7 +1995,7 @@ export class MatrixClient extends EventEmitter {
             ...info,
             signatures: this.crypto.sign(info),
         };
-        return await this.doRequest("POST", "/_matrix/client/v3/room_keys/version", null, data);
+        return this.doRequest("POST", "/_matrix/client/v3/room_keys/version", null, data);
     }
 
     /**
@@ -2004,7 +2004,7 @@ export class MatrixClient extends EventEmitter {
      * @param {IKeyBackupInfoUpdate} info The properties of the key backup to be applied.
      * @returns {Promise<void>} Resolves when complete.
      */
-    public async updateKeyBackupVersion(version: KeyBackupVersion, info: IKeyBackupInfoUpdate): Promise<void> {
+    public updateKeyBackupVersion(version: KeyBackupVersion, info: IKeyBackupInfoUpdate): Promise<void> {
         if (!this.crypto) {
             throw new Error("End-to-end encryption disabled");
         }
@@ -2013,7 +2013,7 @@ export class MatrixClient extends EventEmitter {
             ...info,
             signatures: this.crypto.sign(info),
         };
-        await this.doRequest("PUT", `/_matrix/client/v3/room_keys/version/${version}`, null, data);
+        return this.doRequest("PUT", `/_matrix/client/v3/room_keys/version/${version}`, null, data);
     }
 
     /**
@@ -2022,19 +2022,19 @@ export class MatrixClient extends EventEmitter {
      * as returned by {@link getKeyBackupVersion}.
      * @returns {Promise<void>} Resolves when complete.
      */
-    public async enableKeyBackup(info: IKeyBackupInfoRetrieved): Promise<void> {
+    public enableKeyBackup(info: IKeyBackupInfoRetrieved): Promise<void> {
         if (!this.crypto) {
             throw new Error("End-to-end encryption disabled");
         }
 
-        this.crypto.enableKeyBackup(info);
+        return this.crypto.enableKeyBackup(info);
     }
 
     /**
      * Disable backing up of room keys.
      */
-    public disableKeyBackup(): void {
-        this.crypto?.disableKeyBackup();
+    public disableKeyBackup(): Promise<void> {
+        return this.crypto?.disableKeyBackup();
     }
 
     /**

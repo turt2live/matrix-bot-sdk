@@ -124,6 +124,7 @@ export class RustEngine {
             const keysClaim = await this.machine.getMissingSessions(members);
             if (keysClaim) {
                 await this.processKeysClaimRequest(keysClaim);
+                // Back up keys asynchronously
                 this.backupRoomKeysIfEnabled();
             }
         });
@@ -136,7 +137,7 @@ export class RustEngine {
         });
     }
 
-    public enableKeyBackup(info: IKeyBackupInfoRetrieved) {
+    public enableKeyBackup(info: IKeyBackupInfoRetrieved): Promise<void> {
         this.keyBackupWaiter = this.keyBackupWaiter.then(async () => {
             if (this.isBackupEnabled) {
                 await this.actuallyDisableKeyBackup();
@@ -149,7 +150,7 @@ export class RustEngine {
         return this.keyBackupWaiter;
     }
 
-    public disableKeyBackup() {
+    public disableKeyBackup(): Promise<void> {
         this.keyBackupWaiter = this.keyBackupWaiter.then(this.actuallyDisableKeyBackup);
         return this.keyBackupWaiter;
     }
@@ -160,7 +161,7 @@ export class RustEngine {
         this.isBackupEnabled = false;
     };
 
-    public async backupRoomKeys() {
+    public backupRoomKeys(): Promise<void> {
         this.keyBackupWaiter = this.keyBackupWaiter.then(async () => {
             if (!this.isBackupEnabled) {
                 throw new Error("Key backup error: attempted to create a backup before having enabled backups");
@@ -170,7 +171,7 @@ export class RustEngine {
         return this.keyBackupWaiter;
     }
 
-    private async backupRoomKeysIfEnabled() {
+    private backupRoomKeysIfEnabled(): Promise<void> {
         this.keyBackupWaiter = this.keyBackupWaiter.then(async () => {
             if (this.isBackupEnabled) {
                 await this.actuallyBackupRoomKeys();
