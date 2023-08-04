@@ -1,8 +1,7 @@
-import * as simple from "simple-mock";
 import HttpBackend from 'matrix-mock-request';
 
-import { ICurve25519AuthData, ICurve25519AuthDataUnsigned, IKeyBackupInfo, IKeyBackupInfoRetrieved, IKeyBackupInfoUnsigned, KeyBackupEncryptionAlgorithm } from "../../src/models/KeyBackup";
-import { MatrixClient, MatrixError, OTKAlgorithm, UnpaddedBase64 } from "../../src";
+import { ICurve25519AuthDataUnsigned, IKeyBackupInfo, IKeyBackupInfoRetrieved, IKeyBackupInfoUnsigned, KeyBackupEncryptionAlgorithm } from "../../src/models/KeyBackup";
+import { MatrixClient, UnpaddedBase64 } from "../../src";
 import { createTestClient, testCryptoStores, TEST_DEVICE_ID } from "../TestUtils";
 import { bindNullEngine } from "./CryptoClientTest";
 

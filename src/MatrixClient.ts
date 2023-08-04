@@ -1997,7 +1997,7 @@ export class MatrixClient extends EventEmitter {
             auth_data: {
                 ...info.auth_data,
                 signatures: await this.crypto.sign(info),
-            }
+            },
         };
         return this.doRequest("POST", "/_matrix/client/v3/room_keys/version", null, data);
     }
