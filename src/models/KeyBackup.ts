@@ -37,9 +37,11 @@ export interface IKeyBackupVersion {
     version: KeyBackupVersion;
 }
 
-export interface IKeyBackupInfoRetrieved extends IKeyBackupInfo, IKeyBackupVersion {
+export interface IKeyBackupUpdateResponse {
     count: number;
     etag: string;
 }
+
+export type IKeyBackupInfoRetrieved = IKeyBackupInfo & IKeyBackupVersion & IKeyBackupUpdateResponse;
 
 export type IKeyBackupInfoUpdate = IKeyBackupInfo & Partial<IKeyBackupVersion>;

@@ -124,8 +124,6 @@ export class RustEngine {
             const keysClaim = await this.machine.getMissingSessions(members);
             if (keysClaim) {
                 await this.processKeysClaimRequest(keysClaim);
-                // Back up keys asynchronously
-                void this.backupRoomKeysIfEnabled();
             }
         });
 
@@ -134,6 +132,8 @@ export class RustEngine {
             for (const req of requests) {
                 await this.actuallyProcessToDeviceRequest(req.txn_id, req.event_type, req.messages);
             }
+            // Back up keys asynchronously
+            void this.backupRoomKeysIfEnabled();
         });
     }
 

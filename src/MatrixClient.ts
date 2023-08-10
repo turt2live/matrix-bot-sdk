@@ -1987,11 +1987,8 @@ export class MatrixClient extends EventEmitter {
      * with its auth_data left unsigned.
      * @returns {Promise<IKeyBackupVersion>} Resolves to the version id of the new backup.
      */
+    @requiresCrypto()
     public async signAndCreateKeyBackupVersion(info: IKeyBackupInfoUnsigned): Promise<IKeyBackupVersion> {
-        if (!this.crypto) {
-            throw new Error("End-to-end encryption disabled");
-        }
-
         const data: IKeyBackupInfo = {
             ...info,
             auth_data: {
@@ -2008,11 +2005,8 @@ export class MatrixClient extends EventEmitter {
      * @param {IKeyBackupInfoUpdate} info The properties of the key backup to be applied.
      * @returns {Promise<void>} Resolves when complete.
      */
+    @requiresCrypto()
     public updateKeyBackupVersion(version: KeyBackupVersion, info: IKeyBackupInfoUpdate): Promise<void> {
-        if (!this.crypto) {
-            throw new Error("End-to-end encryption disabled");
-        }
-
         const data = {
             ...info,
             signatures: this.crypto.sign(info),
@@ -2026,11 +2020,8 @@ export class MatrixClient extends EventEmitter {
      * as returned by {@link getKeyBackupVersion}.
      * @returns {Promise<void>} Resolves when complete.
      */
+    @requiresCrypto()
     public enableKeyBackup(info: IKeyBackupInfoRetrieved): Promise<void> {
-        if (!this.crypto) {
-            throw new Error("End-to-end encryption disabled");
-        }
-
         return this.crypto.enableKeyBackup(info);
     }
 
@@ -2038,7 +2029,7 @@ export class MatrixClient extends EventEmitter {
      * Disable backing up of room keys.
      */
     public disableKeyBackup(): Promise<void> {
-        return this.crypto?.disableKeyBackup();
+        return this.crypto?.disableKeyBackup() ?? Promise.resolve();
     }
 
     /**

@@ -293,6 +293,7 @@ export class CryptoClient {
      * as returned by {@link MatrixClient#getKeyBackupVersion}.
      * @returns {Promise<void>} Resolves when complete.
      */
+    @requiresReady()
     public async enableKeyBackup(info: IKeyBackupInfoRetrieved): Promise<void> {
         this.client.on("to_device.decrypted", this.onToDeviceMessage);
         await this.engine.enableKeyBackup(info);
@@ -302,6 +303,7 @@ export class CryptoClient {
     /**
      * Disable backing up of room keys.
      */
+    @requiresReady()
     public async disableKeyBackup(): Promise<void> {
         await this.engine.disableKeyBackup();
         this.client.removeListener("to_device.decrypted", this.onToDeviceMessage);
