@@ -18,7 +18,7 @@ import { MatrixClient } from "../MatrixClient";
 import { ICryptoRoomInformation } from "./ICryptoRoomInformation";
 import { EncryptionAlgorithm } from "../models/Crypto";
 import { EncryptionEvent } from "../models/events/EncryptionEvent";
-import { ICurve25519AuthData, IKeyBackupInfoRetrieved, KeyBackupVersion } from "../models/KeyBackup";
+import { ICurve25519AuthData, IKeyBackupInfoRetrieved, KeyBackupEncryptionAlgorithm, KeyBackupVersion } from "../models/KeyBackup";
 
 /**
  * @internal
@@ -143,8 +143,15 @@ export class RustEngine {
                 // Finish any pending backups before changing the backup version/pubkey
                 await this.actuallyDisableKeyBackup();
             }
-            // TODO Error with message if the key backup uses an unsupported auth_data type
-            await this.machine.enableBackupV1((info.auth_data as ICurve25519AuthData).public_key, info.version);
+            let publicKey: string;
+            switch (info.algorithm) {
+                case KeyBackupEncryptionAlgorithm.MegolmBackupV1Curve25519AesSha2:
+                    publicKey = (info.auth_data as ICurve25519AuthData).public_key;
+                    break;
+                default:
+                    throw new Error("Key backup error: cannot enable backups with unsupported backup algorithm " + info.algorithm);
+            }
+            await this.machine.enableBackupV1(publicKey, info.version);
             this.keyBackupVersion = info.version;
             this.isBackupEnabled = true;
         });

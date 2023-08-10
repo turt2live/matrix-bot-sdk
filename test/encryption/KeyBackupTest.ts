@@ -73,7 +73,7 @@ describe('KeyBackups', () => {
             public_key: generateCurve25519PublicKey(),
         };
 
-        const keyBackupInfoToPost: IKeyBackupInfoUnsigned = {
+        const keyBackupInfo: IKeyBackupInfoUnsigned = {
             algorithm: KeyBackupEncryptionAlgorithm.MegolmBackupV1Curve25519AesSha2,
             auth_data: authDataUnsigned,
         };
@@ -101,7 +101,7 @@ describe('KeyBackups', () => {
 
         await Promise.all([
             (async () => {
-                const keyBackupVersion = await client.signAndCreateKeyBackupVersion(keyBackupInfoToPost);
+                const keyBackupVersion = await client.signAndCreateKeyBackupVersion(keyBackupInfo);
                 expect(keyBackupVersion).toStrictEqual(keyBackupInfoOnServer.version);
 
                 const keyBackupInfoRetrieved = await client.getKeyBackupVersion();
@@ -111,9 +111,9 @@ describe('KeyBackups', () => {
         ]);
     }));
 
-    it('should fail to back up keys when the crypto has not been prepared', () => testCryptoStores(async (cryptoStoreType) => {
+    it('should fail to enable backups when the crypto has not been prepared', () => testCryptoStores(async (cryptoStoreType) => {
         try {
-            await client.crypto.enableKeyBackup({
+            await client.enableKeyBackup({
                 algorithm: KeyBackupEncryptionAlgorithm.MegolmBackupV1Curve25519AesSha2,
                 auth_data: {
                     public_key: "fake_key",
@@ -128,6 +128,29 @@ describe('KeyBackups', () => {
             throw new Error("Failed to fail");
         } catch (e) {
             expect(e.message).toEqual("End-to-end encryption has not initialized");
+        }
+    }));
+
+    it('should fail to enable backups with an unsupported algorithm', () => testCryptoStores(async (cryptoStoreType) => {
+        await prepareCrypto();
+
+        const algorithm = "bogocrypt";
+
+        try {
+            await client.enableKeyBackup({
+                algorithm,
+                auth_data: {
+                    signatures: {},
+                },
+                version: "0",
+                count: 0,
+                etag: "zz",
+            });
+
+            // noinspection ExceptionCaughtLocallyJS
+            throw new Error("Failed to fail");
+        } catch (e) {
+            expect(e.message).toEqual("Key backup error: cannot enable backups with unsupported backup algorithm " + algorithm);
         }
     }));
 
