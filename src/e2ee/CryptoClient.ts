@@ -168,12 +168,13 @@ export class CryptoClient {
             leftDeviceLists.map(u => new UserId(u)));
 
         await this.engine.lock.acquire(SYNC_LOCK_NAME, async () => {
-            const syncResp = await this.engine.machine.receiveSyncChanges(deviceMessages, deviceLists, otkCounts, unusedFallbackKeyAlgs);
-            const decryptedToDeviceMessages = JSON.parse(syncResp);
-            if (Array.isArray(decryptedToDeviceMessages)) {
-                for (const msg of decryptedToDeviceMessages) {
+            const syncResp = JSON.parse(await this.engine.machine.receiveSyncChanges(deviceMessages, deviceLists, otkCounts, unusedFallbackKeyAlgs));
+            if (Array.isArray(syncResp) && syncResp.length === 2 && Array.isArray(syncResp[0])) {
+                for (const msg of syncResp[0] as IToDeviceMessage[]) {
                     this.client.emit("to_device.decrypted", msg);
                 }
+            } else {
+                LogService.error("CryptoClient", "OlmMachine.receiveSyncChanges did not return an expected value of [to-device events, room key changes]");
             }
 
             await this.engine.run();

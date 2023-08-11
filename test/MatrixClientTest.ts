@@ -1,6 +1,5 @@
 import * as tmp from "tmp";
 import * as simple from "simple-mock";
-import { StoreType } from "@matrix-org/matrix-sdk-crypto-nodejs";
 
 import {
     EventKind,
@@ -48,13 +47,13 @@ describe('MatrixClient', () => {
             expect(client.accessToken).toEqual(accessToken);
         });
 
-        it('should create a crypto client when requested', () => {
+        it('should create a crypto client when requested', () => testCryptoStores(async (cryptoStoreType) => {
             const homeserverUrl = "https://example.org";
             const accessToken = "example_token";
 
-            const client = new MatrixClient(homeserverUrl, accessToken, null, new RustSdkCryptoStorageProvider(tmp.dirSync().name, StoreType.Sled));
+            const client = new MatrixClient(homeserverUrl, accessToken, null, new RustSdkCryptoStorageProvider(tmp.dirSync().name, cryptoStoreType));
             expect(client.crypto).toBeDefined();
-        });
+        }));
 
         it('should NOT create a crypto client when requested', () => {
             const homeserverUrl = "https://example.org";
@@ -1401,8 +1400,7 @@ describe('MatrixClient', () => {
     describe('processSync', () => {
         interface ProcessSyncClient {
             userId: string;
-
-            processSync(raw: any): Promise<any>;
+            processSync(raw: any): MatrixClient["processSync"];
         }
 
         it('should process non-room account data', async () => {
