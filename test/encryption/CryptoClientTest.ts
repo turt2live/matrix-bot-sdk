@@ -1,7 +1,7 @@
 import * as simple from "simple-mock";
 import HttpBackend from 'matrix-mock-request';
 
-import { EncryptedFile, MatrixClient, MembershipEvent, OTKAlgorithm, RoomEncryptionAlgorithm } from "../../src";
+import { EncryptedFile, EncryptionAlgorithm, IOlmEncrypted, IToDeviceMessage, MatrixClient, MembershipEvent, OTKAlgorithm, RoomEncryptionAlgorithm } from "../../src";
 import { createTestClient, testCryptoStores, TEST_DEVICE_ID } from "../TestUtils";
 
 export function bindNullEngine(http: HttpBackend) {
@@ -82,6 +82,71 @@ describe('CryptoClient', () => {
             ]);
             expect(whoamiSpy.callCount).toEqual(0);
             expect(client.crypto.clientDeviceId).toEqual(TEST_DEVICE_ID);
+        }));
+    });
+
+    describe('processSync', () => {
+        /**
+         * Helper class to be able to call {@link MatrixClient#processSync}, which is otherwise private.
+         */
+        interface ProcessSyncClient {
+            processSync: MatrixClient["processSync"];
+        }
+
+        it('should process encrypted to-device messages', () => testCryptoStores(async (cryptoStoreType) => {
+            const userId = "@alice:example.org";
+            const { client, http } = createTestClient(null, userId, cryptoStoreType);
+            const psClient = <ProcessSyncClient>(<any>client);
+
+            await client.cryptoStore.setDeviceId(TEST_DEVICE_ID);
+
+            const toDeviceMessage: IToDeviceMessage<IOlmEncrypted> = {
+                type: "m.room.encrypted",
+                sender: userId,
+                content: {
+                    algorithm: EncryptionAlgorithm.OlmV1Curve25519AesSha2,
+                    sender_key: "sender_curve25519_key",
+                    ciphertext: {
+                        ["device_curve25519_key"]: {
+                            type: 0,
+                            body: "encrypted_payload_base_64",
+                        },
+                    },
+                },
+            };
+            const sync = {
+                to_device: { events: [toDeviceMessage] },
+                device_unused_fallback_key_types: [OTKAlgorithm.Signed],
+                device_one_time_keys_count: {
+                    [OTKAlgorithm.Signed]: 12,
+                    [OTKAlgorithm.Unsigned]: 14,
+                },
+                device_lists: {
+                    changed: ["@bob:example.org"],
+                    left: ["@charlie:example.org"],
+                },
+            };
+
+            const toDeviceSpy = simple.stub().callFn((ev) => {
+                for (const prop in toDeviceMessage) {
+                    expect(ev).toHaveProperty(prop);
+                }
+            });
+            client.on("to_device.decrypted", toDeviceSpy);
+
+            bindNullEngine(http);
+            await Promise.all([
+                client.crypto.prepare([]),
+                http.flushAllExpected(),
+            ]);
+
+            bindNullEngine(http);
+            await Promise.all([
+                psClient.processSync(sync),
+                http.flushAllExpected(),
+            ]);
+
+            expect(toDeviceSpy.callCount).toBe(1);
         }));
     });
 

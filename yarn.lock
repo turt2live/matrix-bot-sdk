@@ -584,10 +584,10 @@
     "@jridgewell/resolve-uri" "^3.0.3"
     "@jridgewell/sourcemap-codec" "^1.4.10"
 
-"@matrix-org/matrix-sdk-crypto-nodejs@0.1.0-beta.6":
-  version "0.1.0-beta.6"
-  resolved "https://registry.yarnpkg.com/@matrix-org/matrix-sdk-crypto-nodejs/-/matrix-sdk-crypto-nodejs-0.1.0-beta.6.tgz#0ecae51103ee3c107af0d6d0738f33eb7cc9857e"
-  integrity sha512-JXyrHuCVMydUGgSetWsfqbbvHj3aUMOX5TUghlMtLFromyEu7wIsNgYt7PjJ+k3WdF4GVABRy4P6GNjaEMy2uA==
+"@matrix-org/matrix-sdk-crypto-nodejs@0.1.0-beta.10":
+  version "0.1.0-beta.10"
+  resolved "https://registry.yarnpkg.com/@matrix-org/matrix-sdk-crypto-nodejs/-/matrix-sdk-crypto-nodejs-0.1.0-beta.10.tgz#52290c76ac997001b615c9fb78b70e36b6a4501f"
+  integrity sha512-AiSHgpHw75sJ1k9uqWk74Wps74XM+M7LsQZrLFlZh/nv9fhOk7JvRZlQczDK9qhD0Umt84PRcOumgT5bXbA/lw==
   dependencies:
     https-proxy-agent "^5.0.1"
     node-downloader-helper "^2.1.5"
