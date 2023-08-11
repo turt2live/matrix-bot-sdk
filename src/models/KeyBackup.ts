@@ -14,13 +14,15 @@ export interface ICurve25519AuthDataUnsigned {
 }
 export type ICurve25519AuthData = ICurve25519AuthDataUnsigned & Signed;
 
+export type IKeyBackupAuthData = IJsonType | ICurve25519AuthDataUnsigned;
+
 /**
  * Information about a server-side key backup,
  * with its auth_data left unsigned.
  */
 export interface IKeyBackupInfoUnsigned {
     algorithm: string | KeyBackupEncryptionAlgorithm;
-    auth_data: IJsonType | ICurve25519AuthDataUnsigned;
+    auth_data: IKeyBackupAuthData;
 }
 
 /**
@@ -28,7 +30,7 @@ export interface IKeyBackupInfoUnsigned {
  * with its auth_data signed by the entity that created it.
  */
 export type IKeyBackupInfo = IKeyBackupInfoUnsigned & {
-    auth_data: Signed & IKeyBackupInfoUnsigned["auth_data"];
+    auth_data: Signed & IKeyBackupAuthData;
 };
 
 export type KeyBackupVersion = string;
