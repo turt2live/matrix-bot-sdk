@@ -143,9 +143,9 @@ export class RustEngine {
         });
 
         await this.lock.acquire(roomId, async () => {
-            const requests = JSON.parse(await this.machine.shareRoomKey(new RoomId(roomId), membersArray, settings));
+            const requests = await this.machine.shareRoomKey(new RoomId(roomId), membersArray, settings);
             for (const req of requests) {
-                await this.actuallyProcessToDeviceRequest(req.txn_id, req.event_type, req.messages);
+                await this.processToDeviceRequest(req);
             }
             // Back up keys asynchronously
             void this.backupRoomKeysIfEnabled();
@@ -230,13 +230,8 @@ export class RustEngine {
     }
 
     private async processToDeviceRequest(request: ToDeviceRequest) {
-        const req = JSON.parse(request.body);
-        await this.actuallyProcessToDeviceRequest(req.txn_id, req.event_type, req.messages);
-    }
-
-    private async actuallyProcessToDeviceRequest(id: string, type: string, messages: Record<string, Record<string, unknown>>) {
-        const resp = await this.client.sendToDevices(type, messages);
-        await this.machine.markRequestAsSent(id, RequestType.ToDevice, JSON.stringify(resp));
+        const resp = await this.client.sendToDevices(request.eventType, JSON.parse(request.body).messages);
+        await this.machine.markRequestAsSent(request.txnId, RequestType.ToDevice, JSON.stringify(resp));
     }
 
     private async processKeysBackupRequest(request: KeysBackupRequest) {
