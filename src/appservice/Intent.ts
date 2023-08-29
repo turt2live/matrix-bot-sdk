@@ -3,7 +3,6 @@ import {
     extractRequestError,
     IAppserviceCryptoStorageProvider,
     IAppserviceStorageProvider,
-    ICryptoStorageProvider,
     LogService,
     MatrixClient,
     Metrics,
@@ -51,20 +50,24 @@ export class Intent {
     }
 
     private makeClient(withCrypto: boolean, accessToken?: string) {
-        let cryptoStore: ICryptoStorageProvider;
-        const storage = this.storage?.storageForUser?.(this.userId);
-        if (withCrypto) {
-            cryptoStore = this.cryptoStorage?.storageForUser(this.userId);
-            if (!cryptoStore) {
-                throw new Error("Tried to set up client with crypto when not available");
-            }
-            if (!storage) {
+        accessToken = accessToken ?? this.options.registration.as_token;
+        const cryptoStore = withCrypto && this.cryptoStorage?.storageForUser(this.userId);
+        if (!cryptoStore && withCrypto) {
+            throw new Error("Tried to set up client with crypto when not available");
+        }
+        if (!this.client) {
+            const storage = this.storage?.storageForUser?.(this.userId);
+            if (!storage && withCrypto) {
                 throw new Error("Tried to set up client with crypto, but no persistent storage");
             }
+            this.client = new MatrixClient(this.options.homeserverUrl, accessToken, storage, cryptoStore);
+            this.client.metrics = new Metrics(this.appservice.metrics); // Metrics only go up by one parent
+            this.unstableApisInstance = new UnstableAppserviceApis(this.client);
+        } else if (cryptoStore) {
+            this.client.enableCrypto(accessToken, cryptoStore);
+        } else if (accessToken != this.client.accessToken) {
+            throw new Error("Tried to change the access token of an existing client for a reason other than enabling crypto");
         }
-        this.client = new MatrixClient(this.options.homeserverUrl, accessToken ?? this.options.registration.as_token, storage, cryptoStore);
-        this.client.metrics = new Metrics(this.appservice.metrics); // Metrics only go up by one parent
-        this.unstableApisInstance = new UnstableAppserviceApis(this.client);
         if (this.impersonateUserId !== this.appservice.botUserId) {
             this.client.impersonateUserId(this.impersonateUserId);
         }
