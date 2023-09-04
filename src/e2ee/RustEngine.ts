@@ -19,7 +19,7 @@ import { extractRequestError, LogService } from "../logging/LogService";
 import { ICryptoRoomInformation } from "./ICryptoRoomInformation";
 import { EncryptionAlgorithm } from "../models/Crypto";
 import { EncryptionEvent } from "../models/events/EncryptionEvent";
-import { ICurve25519AuthData, IKeyBackupInfoRetrieved, KeyBackupEncryptionAlgorithm, KeyBackupVersion } from "../models/KeyBackup";
+import { ICurve25519AuthData, IKeyBackupInfoRetrieved, IOlmSessionExport, KeyBackupEncryptionAlgorithm, KeyBackupVersion } from "../models/KeyBackup";
 import { Membership } from "../models/events/MembershipEvent";
 
 /**
@@ -194,6 +194,10 @@ export class RustEngine {
             await this.actuallyBackupRoomKeys();
         });
         return this.keyBackupWaiter;
+    }
+
+    public async exportRoomKeysForSession(roomId: string, sessionId: string): Promise<IOlmSessionExport[]> {
+        return JSON.parse(await this.machine.exportRoomKeysForSession(roomId, sessionId)) as IOlmSessionExport[];
     }
 
     private backupRoomKeysIfEnabled(): Promise<void> {

@@ -136,6 +136,16 @@ export class CryptoClient {
     }
 
     /**
+     * Exports a set of keys for a given session.
+     * @param roomId The room ID for the session.
+     * @param sessionId The session ID. 
+     * @returns An array of session keys.
+     */
+    public async exportRoomKeysForSession(roomId: string, sessionId: string) {
+        return this.engine.exportRoomKeysForSession(roomId, sessionId);
+    }
+
+    /**
      * Checks if a room is encrypted.
      * @param {string} roomId The room ID to check.
      * @returns {Promise<boolean>} Resolves to true if encrypted, false otherwise.

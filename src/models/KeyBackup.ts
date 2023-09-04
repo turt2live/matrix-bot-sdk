@@ -47,3 +47,15 @@ export interface IKeyBackupUpdateResponse {
 export type IKeyBackupInfoRetrieved = IKeyBackupInfo & IKeyBackupVersion & IKeyBackupUpdateResponse;
 
 export type IKeyBackupInfoUpdate = IKeyBackupInfo & Partial<IKeyBackupVersion>;
+
+export interface IOlmSessionExport {
+    "algorithm": "m.megolm.v1.aes-sha2",
+    "room_id": string,
+    "sender_key": string,
+    "session_id": string,
+    "session_key": string,
+    "sender_claimed_keys":{
+        "ed25519": string
+    },
+    "forwarding_curve25519_key_chain": unknown[],
+}
