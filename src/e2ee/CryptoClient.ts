@@ -118,7 +118,7 @@ export class CryptoClient {
         } else if (event['type'] === 'm.room.encryption') {
             return this.client.getRoomMembers(roomId, null, ['join', 'invite']).then(
                 members => this.engine.addTrackedUsers(members.map(e => e.membershipFor)),
-                e => void LogService.error("CryptoClient", `Error getting members of room ${roomId}:`, e),
+                e => void LogService.warn("CryptoClient", `Error getting members of room ${roomId}:`, e),
             );
         }
     }
