@@ -2038,6 +2038,17 @@ export class MatrixClient extends EventEmitter {
     }
 
     /**
+     * Exports a set of keys for a given session.
+     * @param roomId The room ID for the session.
+     * @param sessionId The session ID.
+     * @returns An array of session keys.
+     */
+    @requiresCrypto()
+    public exportRoomKeysForSession(roomId: string, sessionId: string) {
+        return this.crypto.exportRoomKeysForSession(roomId, sessionId);
+    }
+
+    /**
      * Get relations for a given event.
      * @param {string} roomId The room ID to for the given event.
      * @param {string} eventId The event ID to list relations for.
