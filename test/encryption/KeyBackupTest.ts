@@ -1,3 +1,4 @@
+import * as simple from "simple-mock";
 import HttpBackend from 'matrix-mock-request';
 
 import {
@@ -8,7 +9,7 @@ import {
     IKeyBackupUpdateResponse,
     KeyBackupEncryptionAlgorithm,
 } from "../../src/models/KeyBackup";
-import { RoomEncryptionAlgorithm, ICryptoRoomInformation, MatrixClient, MembershipEvent, RoomTracker } from "../../src";
+import { ICryptoRoomInformation, IToDeviceMessage, MatrixClient, MembershipEvent, RoomEncryptionAlgorithm, RoomTracker } from "../../src";
 import { bindNullEngine, createTestClient, testCryptoStores, TEST_DEVICE_ID, generateCurve25519PublicKey, bindNullQuery } from "../TestUtils";
 
 const USER_ID = "@alice:example.org";
@@ -208,19 +209,22 @@ describe('KeyBackups', () => {
         };
 
         const knownSessions: Set<string> = new Set();
+        let expectedSessions = 0;
         let etagCount = 0;
 
-        const expectToPutRoomKey = () => {
-            http.when("PUT", "/room_keys/keys").respond(200, (path, obj: Record<string, unknown>): IKeyBackupUpdateResponse => {
-                const sessions = obj?.rooms[roomId]?.sessions;
-                expect(sessions).toBeDefined();
+        const onBackupRequest = (path, obj: Record<string, unknown>): IKeyBackupUpdateResponse => {
+            const sessions = obj?.rooms[roomId]?.sessions;
+            expect(sessions).toBeDefined();
 
-                Object.keys(sessions).forEach(session => { knownSessions.add(session); });
-                return {
-                    count: knownSessions.size,
-                    etag: `etag${++etagCount}`,
-                };
-            });
+            Object.keys(sessions).forEach(session => { knownSessions.add(session); });
+            return {
+                count: knownSessions.size,
+                etag: `etag${++etagCount}`,
+            };
+        };
+
+        const expectToPutRoomKey = () => {
+            http.when("PUT", "/room_keys/keys").respond(200, onBackupRequest);
         };
 
         expectToPutRoomKey();
@@ -228,16 +232,52 @@ describe('KeyBackups', () => {
             client.enableKeyBackup(keyBackupInfo),
             http.flushAllExpected(),
         ]);
-        expect(knownSessions.size).toStrictEqual(1);
+        expect(knownSessions.size).toBe(++expectedSessions);
+
+        // --- Test that it's safe to re-enable backups
+
+        // Re-enabling backups replays all existing keys, so expect another request to be made
+        expectToPutRoomKey();
+        await Promise.all([
+            client.enableKeyBackup(keyBackupInfo),
+            http.flushAllExpected(),
+        ]);
+        // No new session expected this time
+        expect(knownSessions.size).toBe(expectedSessions);
 
         // --- Back up a new room key by generating one while backups are enabled
 
         expectToPutRoomKey();
         await encryptRoomEvent();
-        expect(knownSessions.size).toStrictEqual(2);
+        expect(knownSessions.size).toBe(++expectedSessions);
 
         // --- Back up a room key received via a to-device message
-        // TODO: use updateSyncData to send an *encrypted* "m.room_key" event.
+
+        const onRoomKeySpy = simple.mock((client.crypto as any).engine, "backupRoomKeys");
+
+        // TODO: Encrypt this so that it will actually be included in the backup.
+        // Until then, no backup request or new session are expected.
+        const toDeviceMessage: IToDeviceMessage = {
+            type: "m.room_key",
+            sender: USER_ID,
+            content: {
+                algorithm: RoomEncryptionAlgorithm.MegolmV1AesSha2,
+                room_id: roomId,
+                session_id: "abc",
+                session_key: "def",
+            },
+        };
+
+        bindNullEngine(http);
+        await Promise.all([
+            client.crypto.updateSyncData(
+                [toDeviceMessage],
+                {}, [], [], [],
+            ),
+            http.flushAllExpected(),
+        ]);
+        expect(knownSessions.size).toBe(expectedSessions);
+        expect(onRoomKeySpy.callCount).toBe(1);
 
         // --- Export a room key
         // TODO: consider moving this to a test dedicated to key exports

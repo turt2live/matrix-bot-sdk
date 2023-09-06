@@ -35,7 +35,11 @@ export class RustEngine {
 
     private keyBackupVersion: KeyBackupVersion|undefined;
     private keyBackupWaiter = Promise.resolve();
-    private isBackupEnabled = false;
+
+    private backupEnabled = false;
+    public isBackupEnabled() {
+        return this.backupEnabled;
+    }
 
     public constructor(public readonly machine: OlmMachine, private client: MatrixClient) {
     }
@@ -154,7 +158,7 @@ export class RustEngine {
 
     public enableKeyBackup(info: IKeyBackupInfoRetrieved): Promise<void> {
         this.keyBackupWaiter = this.keyBackupWaiter.then(async () => {
-            if (this.isBackupEnabled) {
+            if (this.backupEnabled) {
                 // Finish any pending backups before changing the backup version/pubkey
                 await this.actuallyDisableKeyBackup();
             }
@@ -168,7 +172,7 @@ export class RustEngine {
             }
             await this.machine.enableBackupV1(publicKey, info.version);
             this.keyBackupVersion = info.version;
-            this.isBackupEnabled = true;
+            this.backupEnabled = true;
         });
         return this.keyBackupWaiter;
     }
@@ -183,12 +187,12 @@ export class RustEngine {
     private async actuallyDisableKeyBackup(): Promise<void> {
         await this.machine.disableBackup();
         this.keyBackupVersion = undefined;
-        this.isBackupEnabled = false;
+        this.backupEnabled = false;
     }
 
     public backupRoomKeys(): Promise<void> {
         this.keyBackupWaiter = this.keyBackupWaiter.then(async () => {
-            if (!this.isBackupEnabled) {
+            if (!this.backupEnabled) {
                 throw new Error("Key backup error: attempted to create a backup before having enabled backups");
             }
             await this.actuallyBackupRoomKeys();
@@ -202,7 +206,7 @@ export class RustEngine {
 
     private backupRoomKeysIfEnabled(): Promise<void> {
         this.keyBackupWaiter = this.keyBackupWaiter.then(async () => {
-            if (this.isBackupEnabled) {
+            if (this.backupEnabled) {
                 await this.actuallyBackupRoomKeys();
             }
         });

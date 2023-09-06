@@ -301,13 +301,17 @@ export class CryptoClient {
      * Enable backing up of room keys.
      * @param {IKeyBackupInfoRetrieved} info The configuration for key backup behaviour,
      * as returned by {@link MatrixClient#getKeyBackupVersion}.
-     * @returns {Promise<void>} Resolves when complete.
+     * @returns {Promise<void>} Resolves once backups have been enabled.
      */
     @requiresReady()
     public async enableKeyBackup(info: IKeyBackupInfoRetrieved): Promise<void> {
-        this.client.on("to_device.decrypted", this.onToDeviceMessage);
+        if (!this.engine.isBackupEnabled()) {
+            // Only add the listener if we didn't add it already
+            this.client.on("to_device.decrypted", this.onToDeviceMessage);
+        }
         await this.engine.enableKeyBackup(info);
-        this.engine.backupRoomKeys();
+        // Back up any pending keys now, but asynchronously
+        void this.engine.backupRoomKeys();
     }
 
     /**
