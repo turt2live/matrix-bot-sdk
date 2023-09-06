@@ -13,7 +13,7 @@
   },
   "homepage": "https://github.com/vector-im/matrix-bot-sdk#readme",
   "publishConfig": {
-      "access": "public"
+    "access": "public"
   },
   "scripts": {
     "prepublishOnly": "yarn build",
