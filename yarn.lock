@@ -662,10 +662,10 @@
     "@jridgewell/resolve-uri" "^3.0.3"
     "@jridgewell/sourcemap-codec" "^1.4.10"
 
-"@matrix-org/matrix-sdk-crypto-nodejs@0.1.0-beta.10":
-  version "0.1.0-beta.10"
-  resolved "https://registry.yarnpkg.com/@matrix-org/matrix-sdk-crypto-nodejs/-/matrix-sdk-crypto-nodejs-0.1.0-beta.10.tgz#52290c76ac997001b615c9fb78b70e36b6a4501f"
-  integrity sha512-AiSHgpHw75sJ1k9uqWk74Wps74XM+M7LsQZrLFlZh/nv9fhOk7JvRZlQczDK9qhD0Umt84PRcOumgT5bXbA/lw==
+"@matrix-org/matrix-sdk-crypto-nodejs@0.1.0-beta.11":
+  version "0.1.0-beta.11"
+  resolved "https://registry.yarnpkg.com/@matrix-org/matrix-sdk-crypto-nodejs/-/matrix-sdk-crypto-nodejs-0.1.0-beta.11.tgz#537cd7a7bbce1d9745b812a5a7ffa9a5944e146c"
+  integrity sha512-z5adcQo4o0UAry4zs6JHGxbTDlYTUMKUfpOpigmso65ETBDumbeTSQCWRw8UeUV7aCAyVoHARqDTol9SrauEFA==
   dependencies:
     https-proxy-agent "^5.0.1"
     node-downloader-helper "^2.1.5"
@@ -1081,13 +1081,6 @@ acorn@^8.8.0:
   version "8.8.2"
   resolved "https://registry.yarnpkg.com/acorn/-/acorn-8.8.2.tgz#1b2f25db02af965399b9776b0c2c391276d37c4a"
   integrity sha512-xjIYgE8HBrkpd/sJqOGNspf8uHG+NOHGOw6a/Urj8taM2EXfdNAH2oFcPeIFfsv3+kz/mJrS5VuMqbNLjCa2vw==
-
-agent-base@6:
-  version "6.0.2"
-  resolved "https://registry.yarnpkg.com/agent-base/-/agent-base-6.0.2.tgz#49fff58577cfee3f37176feab4c22e00f86d7f77"
-  integrity sha512-RZNwNclF7+MS/8bDg70amg32dyeZGZxiDuQmZxKLAlQjr3jGyLx+4Kkk58UO7D2QdgFIQCovuSuZESne6RG6XQ==
-  dependencies:
-    debug "4"
 
 agent-base@6:
   version "6.0.2"
