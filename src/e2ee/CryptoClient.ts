@@ -138,7 +138,7 @@ export class CryptoClient {
     /**
      * Exports a set of keys for a given session.
      * @param roomId The room ID for the session.
-     * @param sessionId The session ID. 
+     * @param sessionId The session ID.
      * @returns An array of session keys.
      */
     public async exportRoomKeysForSession(roomId: string, sessionId: string) {

@@ -1,5 +1,6 @@
 import { IJsonType } from "../helpers/Types";
 import { Signed } from "./Crypto";
+import { RoomEncryptionAlgorithm } from "./events/EncryptionEvent";
 
 /**
  * The kinds of key backup encryption algorithms allowed by the spec.
@@ -48,14 +49,14 @@ export type IKeyBackupInfoRetrieved = IKeyBackupInfo & IKeyBackupVersion & IKeyB
 
 export type IKeyBackupInfoUpdate = IKeyBackupInfo & Partial<IKeyBackupVersion>;
 
-export interface IOlmSessionExport {
-    "algorithm": "m.megolm.v1.aes-sha2",
-    "room_id": string,
-    "sender_key": string,
-    "session_id": string,
-    "session_key": string,
-    "sender_claimed_keys":{
-        "ed25519": string
-    },
-    "forwarding_curve25519_key_chain": unknown[],
+export interface IMegolmSessionDataExport {
+    algorithm: RoomEncryptionAlgorithm.MegolmV1AesSha2;
+    room_id: string;
+    sender_key: string;
+    session_id: string;
+    session_key: string;
+    sender_claimed_keys: {
+        [algorithm: string]: string;
+    };
+    forwarding_curve25519_key_chain: string[];
 }
