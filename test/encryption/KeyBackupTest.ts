@@ -8,7 +8,7 @@ import {
     IKeyBackupUpdateResponse,
     KeyBackupEncryptionAlgorithm,
 } from "../../src/models/KeyBackup";
-import { EncryptionAlgorithm, ICryptoRoomInformation, MatrixClient, MembershipEvent, RoomTracker } from "../../src";
+import { RoomEncryptionAlgorithm, ICryptoRoomInformation, MatrixClient, MembershipEvent, RoomTracker } from "../../src";
 import { bindNullEngine, createTestClient, testCryptoStores, TEST_DEVICE_ID, generateCurve25519PublicKey, bindNullQuery } from "../TestUtils";
 
 const USER_ID = "@alice:example.org";
@@ -171,7 +171,7 @@ describe('KeyBackups', () => {
         client.crypto.isRoomEncrypted = async () => true;
 
         const roomCryptoConfig: ICryptoRoomInformation = {
-            algorithm: EncryptionAlgorithm.MegolmV1AesSha2,
+            algorithm: RoomEncryptionAlgorithm.MegolmV1AesSha2,
             rotation_period_msgs: 1,
         };
         ((client.crypto as any).roomTracker as RoomTracker).getRoomCryptoConfig = async () => roomCryptoConfig;
@@ -238,6 +238,23 @@ describe('KeyBackups', () => {
 
         // --- Back up a room key received via a to-device message
         // TODO: use updateSyncData to send an *encrypted* "m.room_key" event.
+
+        // --- Export a room key
+        // TODO: consider moving this to a test dedicated to key exports
+
+        for (const session of knownSessions) {
+            const roomKeys = await client.exportRoomKeysForSession(roomId, session);
+            expect(roomKeys).toHaveLength(roomCryptoConfig.rotation_period_msgs);
+            for (const roomKey of roomKeys) {
+                expect(roomKey.algorithm).toStrictEqual(RoomEncryptionAlgorithm.MegolmV1AesSha2);
+                expect(roomKey.room_id).toStrictEqual(roomId);
+                expect(roomKey.sender_key).toBeTruthy();
+                expect(roomKey.session_id).toStrictEqual(session);
+                expect(roomKey.session_key).toBeTruthy();
+                expect(roomKey.sender_claimed_keys).toBeTruthy();
+                expect(roomKey.forwarding_curve25519_key_chain).toBeTruthy();
+            }
+        }
 
         // --- Should not time out due to a mistake in the promise queue
         await client.disableKeyBackup();
