@@ -451,6 +451,7 @@ export class Appservice extends EventEmitter {
         let intent: Intent = this.intentsCache.get(userId);
         if (!intent) {
             intent = new Intent(this.options, userId, this);
+            this.emit("intent.new", intent);
             this.intentsCache.set(userId, intent);
             if (this.options.intentOptions.encryption) {
                 intent.enableEncryption().catch(e => {
