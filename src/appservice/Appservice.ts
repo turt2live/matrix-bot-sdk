@@ -451,8 +451,8 @@ export class Appservice extends EventEmitter {
         let intent: Intent = this.intentsCache.get(userId);
         if (!intent) {
             intent = new Intent(this.options, userId, this);
-            this.emit("intent.new", intent);
             this.intentsCache.set(userId, intent);
+            this.emit("intent.new", intent);
             if (this.options.intentOptions.encryption) {
                 intent.enableEncryption().catch(e => {
                     LogService.error("Appservice", `Failed to set up crypto on intent ${userId}`, e);
