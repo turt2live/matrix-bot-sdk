@@ -385,6 +385,47 @@ describe('Appservice', () => {
         expect(intent.userId).toEqual(userId);
     });
 
+    it('should emit an event for a created intent', async () => {
+        const appservice = new Appservice({
+            port: 0,
+            bindAddress: '',
+            homeserverName: 'example.org',
+            homeserverUrl: 'https://localhost',
+            registration: {
+                as_token: "",
+                hs_token: "",
+                sender_localpart: "_bot_",
+                namespaces: {
+                    users: [{ exclusive: true, regex: "@_prefix_.*:.+" }],
+                    rooms: [],
+                    aliases: [],
+                },
+            },
+        });
+
+        let newIntent: Intent | undefined;
+        const intentSpy = simple.stub().callFn(intent => {
+            expect(intent).toBeInstanceOf(Intent);
+            newIntent = intent;
+            const sameIntent = appservice.getIntentForUserId(newIntent.userId);
+            expect(newIntent).toBe(sameIntent);
+        });
+        appservice.on("intent.new", intentSpy);
+
+        [
+            "@alice:example.org",
+            "@_prefix_testing:example.org",
+            "@_bot_:example.org",
+            "@test_prefix_:example.org",
+        ].forEach((userId, index) => {
+            const intent = appservice.getIntentForUserId(userId);
+            expect(intentSpy.callCount).toBe(index+1);
+            expect(intent).toBeDefined();
+            expect(intent.userId).toEqual(userId);
+            expect(intent).toBe(newIntent);
+        });
+    });
+
     it('should return a user ID for any namespaced localpart', async () => {
         const appservice = new Appservice({
             port: 0,
