@@ -23,7 +23,7 @@ jobs:
   build:
     strategy:
       matrix:
-        node: [ 16, 18, 20 ]
+        node: [ 18, 20 ]
     name: 'Build Node ${{ matrix.node }}'
     runs-on: ubuntu-latest
     steps:
@@ -38,7 +38,7 @@ jobs:
   build-docs:
     strategy:
       matrix:
-        node: [ 16, 18, 20 ]
+        node: [ 18, 20 ]
     name: 'Build Docs Node ${{ matrix.node }}'
     runs-on: ubuntu-latest
     steps:
@@ -52,7 +52,7 @@ jobs:
   tests:
     strategy:
       matrix:
-        node: [ 16, 18, 20 ]
+        node: [ 18, 20 ]
     name: 'Tests Node ${{ matrix.node }}'
     runs-on: ubuntu-latest
     steps:
