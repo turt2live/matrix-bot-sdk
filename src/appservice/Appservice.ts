@@ -234,7 +234,7 @@ export class Appservice extends EventEmitter {
 
     private app = express();
     private appServer: any;
-    private intentsCache: LRU<string, Intent>;
+    private intentsCache: LRU.LRUCache<string, Intent>;
     private eventProcessors: { [eventType: string]: IPreprocessor[] } = {};
     private pendingTransactions: { [txnId: string]: Promise<any> } = {};
 
@@ -251,7 +251,7 @@ export class Appservice extends EventEmitter {
         if (!options.intentOptions.maxAgeMs) options.intentOptions.maxAgeMs = 60 * 60 * 1000;
         if (!options.intentOptions.maxCached) options.intentOptions.maxCached = 10000;
 
-        this.intentsCache = new LRU({
+        this.intentsCache = new LRU.LRUCache({
             max: options.intentOptions.maxCached,
             ttl: options.intentOptions.maxAgeMs,
         });
