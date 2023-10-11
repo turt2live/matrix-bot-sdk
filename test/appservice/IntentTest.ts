@@ -1133,6 +1133,7 @@ describe('Intent', () => {
         let storage: IAppserviceStorageProvider;
         let cryptoStorage: IAppserviceCryptoStorageProvider;
         let options: IAppserviceOptions;
+        let intent: Intent; // eslint-disable-line @typescript-eslint/no-unused-vars
 
         beforeEach(() => {
             storage = new MemoryStorageProvider();
