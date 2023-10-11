@@ -92,6 +92,7 @@
     "jsdoc": "^4.0.2",
     "matrix-mock-request": "^2.6.0",
     "simple-mock": "^0.8.0",
+    "taffydb": "^2.7.3",
     "tmp": "^0.2.1",
     "ts-jest": "^29.1.1",
     "typescript": "^5.2.2"
