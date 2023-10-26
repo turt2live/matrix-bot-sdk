@@ -13,7 +13,7 @@ type CacheKey = `${string}@${string | '<none>'}`;
  * @category Utilities
  */
 export class ProfileCache {
-    private cache: LRU<CacheKey, MatrixProfile>;
+    private cache: LRU.LRUCache<CacheKey, MatrixProfile>;
 
     /**
      * Creates a new profile cache.
@@ -22,7 +22,7 @@ export class ProfileCache {
      * @param {MatrixClient} client The client to use to get profile updates.
      */
     constructor(maxEntries: number, maxAgeMs: number, private client: MatrixClient) {
-        this.cache = new LRU({
+        this.cache = new LRU.LRUCache({
             max: maxEntries,
             ttl: maxAgeMs,
         });
