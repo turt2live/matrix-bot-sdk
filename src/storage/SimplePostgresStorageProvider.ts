@@ -22,21 +22,27 @@ export class SimplePostgresStorageProvider implements IStorageProvider, IAppserv
     constructor(connectionString: string, private trackTransactionsInMemory = true, private maxInMemoryTransactions = 20) {
         this.db = postgres(connectionString);
 
-        this.waitPromise = new Promise<void>((resolve, reject) => {
+        this.waitPromise = Promise.all([
             this.db`
                 CREATE TABLE IF NOT EXISTS bot_metadata (key TEXT NOT NULL PRIMARY KEY, value TEXT NOT NULL);
+            `,
+            this.db`
                 CREATE TABLE IF NOT EXISTS bot_kv (key TEXT NOT NULL PRIMARY KEY, value TEXT NOT NULL);
+            `,
+            this.db`
                 CREATE TABLE IF NOT EXISTS appservice_users (user_id TEXT NOT NULL PRIMARY KEY, registered BOOLEAN NOT NULL);
+            `,
+            this.db`
                 CREATE TABLE IF NOT EXISTS appservice_transactions (txn_id TEXT NOT NULL PRIMARY KEY, completed BOOLEAN NOT NULL);
-            `.then(() => resolve).catch(reject);
-        });
+            `,
+        ]).then();
     }
 
     public async setSyncToken(token: string | null): Promise<any> {
         await this.waitPromise;
         return this.db`
             INSERT INTO bot_metadata (key, value) VALUES ('syncToken', ${token}) 
-            ON CONFLICT (key) DO UPDATE SET value = ${token} WHERE key = 'syncToken';
+            ON CONFLICT (key) DO UPDATE SET value = ${token};
         `;
     }
 
@@ -51,7 +57,7 @@ export class SimplePostgresStorageProvider implements IStorageProvider, IAppserv
         await this.waitPromise;
         return this.db`
             INSERT INTO bot_metadata (key, value) VALUES ('filter', ${JSON.stringify(filter)}) 
-            ON CONFLICT (key) DO UPDATE SET value = ${JSON.stringify(filter)} WHERE key = 'filter';
+            ON CONFLICT (key) DO UPDATE SET value = ${JSON.stringify(filter)};
         `;
     }
 
@@ -70,7 +76,7 @@ export class SimplePostgresStorageProvider implements IStorageProvider, IAppserv
         await this.waitPromise;
         return this.db`
             INSERT INTO appservice_users (user_id, registered) VALUES (${userId}, TRUE) 
-            ON CONFLICT (user_id) DO UPDATE SET registered = TRUE WHERE user_id = ${userId};
+            ON CONFLICT (user_id) DO UPDATE SET registered = TRUE;
         `;
     }
 
@@ -95,7 +101,7 @@ export class SimplePostgresStorageProvider implements IStorageProvider, IAppserv
 
         return this.db`
             INSERT INTO appservice_transactions (txn_id, completed) VALUES (${transactionId}, TRUE) 
-            ON CONFLICT (txn_id) DO UPDATE SET completed = TRUE WHERE txn_id = ${transactionId};
+            ON CONFLICT (txn_id) DO UPDATE SET completed = TRUE;
         `;
     }
 
@@ -121,7 +127,7 @@ export class SimplePostgresStorageProvider implements IStorageProvider, IAppserv
         await this.waitPromise;
         return this.db`
             INSERT INTO bot_kv (key, value) VALUES (${key}, ${value}) 
-            ON CONFLICT (key) DO UPDATE SET value = ${value} WHERE key = ${key};            
+            ON CONFLICT (key) DO UPDATE SET value = ${value};            
         `.then();
     }
 
