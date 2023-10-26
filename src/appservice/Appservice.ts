@@ -302,12 +302,7 @@ export class Appservice extends EventEmitter {
         this.app.post("/_matrix/app/v1/unstable/org.matrix.msc3984/keys/query", this.onKeysQuery.bind(this));
         this.app.post("/unstable/org.matrix.msc3984/keys/query", this.onKeysQuery.bind(this));
 
-        // Everything else should 404
-        // Technically, according to https://spec.matrix.org/v1.6/application-service-api/#unknown-routes we should
-        // be returning 405 for *known* endpoints with the wrong method.
-        this.app.all("*", (req: express.Request, res: express.Response) => {
-            res.status(404).json({ errcode: "M_UNRECOGNIZED", error: "Endpoint not implemented" });
-        });
+        // We register the 404 handler in the `begin()` function to allow consumers to add their own endpoints.
 
         if (!this.registration.namespaces || !this.registration.namespaces.users || this.registration.namespaces.users.length === 0) {
             throw new Error("No user namespaces in registration");
@@ -381,6 +376,13 @@ export class Appservice extends EventEmitter {
      */
     public begin(): Promise<void> {
         return new Promise<void>((resolve, reject) => {
+            // Per constructor, all other endpoints should 404.
+            // Technically, according to https://spec.matrix.org/v1.6/application-service-api/#unknown-routes we should
+            // be returning 405 for *known* endpoints with the wrong method.
+            this.app.all("*", (req: express.Request, res: express.Response) => {
+                res.status(404).json({ errcode: "M_UNRECOGNIZED", error: "Endpoint not implemented" });
+            });
+
             this.appServer = this.app.listen(this.options.port, this.options.bindAddress, () => resolve());
         }).then(async () => {
             if (this.options.intentOptions?.encryption) {
