@@ -93,6 +93,7 @@ export * from "./storage/MemoryStorageProvider";
 export * from "./storage/SimpleFsStorageProvider";
 export * from "./storage/ICryptoStorageProvider";
 export * from "./storage/RustSdkCryptoStorageProvider";
+export * from "./storage/SimplePostgresStorageProvider";
 
 // Strategies
 export * from "./strategies/AppserviceJoinRoomStrategy";
