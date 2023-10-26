@@ -721,6 +721,12 @@ export class MatrixClient extends EventEmitter {
                     await Promise.resolve(this.storage.setSyncToken(token));
                 }
             } catch (e) {
+                // If we've requested to stop syncing, don't bother checking the error.
+                if (this.stopSyncing) {
+                    LogService.info("MatrixClientLite", "Client stop requested - cancelling sync");
+                    return;
+                }
+
                 LogService.error("MatrixClientLite", "Error handling sync " + extractRequestError(e));
                 const backoffTime = SYNC_BACKOFF_MIN_MS + Math.random() * (SYNC_BACKOFF_MAX_MS - SYNC_BACKOFF_MIN_MS);
                 LogService.info("MatrixClientLite", `Backing off for ${backoffTime}ms`);
