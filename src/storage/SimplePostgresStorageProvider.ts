@@ -24,10 +24,10 @@ export class SimplePostgresStorageProvider implements IStorageProvider, IAppserv
 
         this.waitPromise = Promise.all([
             this.db`
-                CREATE TABLE IF NOT EXISTS bot_metadata (key TEXT NOT NULL PRIMARY KEY, value TEXT NOT NULL);
+                CREATE TABLE IF NOT EXISTS bot_metadata (key TEXT NOT NULL PRIMARY KEY, value TEXT);
             `,
             this.db`
-                CREATE TABLE IF NOT EXISTS bot_kv (key TEXT NOT NULL PRIMARY KEY, value TEXT NOT NULL);
+                CREATE TABLE IF NOT EXISTS bot_kv (key TEXT NOT NULL PRIMARY KEY, value TEXT);
             `,
             this.db`
                 CREATE TABLE IF NOT EXISTS appservice_users (user_id TEXT NOT NULL PRIMARY KEY, registered BOOLEAN NOT NULL);
@@ -55,21 +55,19 @@ export class SimplePostgresStorageProvider implements IStorageProvider, IAppserv
 
     public async setFilter(filter: IFilterInfo): Promise<any> {
         await this.waitPromise;
+        const filterStr = filter ? JSON.stringify(filter) : null;
         return this.db`
-            INSERT INTO bot_metadata (key, value) VALUES ('filter', ${JSON.stringify(filter)}) 
-            ON CONFLICT (key) DO UPDATE SET value = ${JSON.stringify(filter)};
+            INSERT INTO bot_metadata (key, value) VALUES ('filter', ${filterStr}) 
+            ON CONFLICT (key) DO UPDATE SET value = ${filterStr};
         `;
     }
 
     public async getFilter(): Promise<IFilterInfo> {
         await this.waitPromise;
-        const val = (await this.db`
+        const value = (await this.db`
             SELECT value FROM bot_metadata WHERE key = 'filter';
         `)[0]?.value;
-        if (!!val) {
-            return JSON.parse(val);
-        }
-        return null;
+        return typeof value === "string" ? JSON.parse(value) : value;
     }
 
     public async addRegisteredUser(userId: string): Promise<any> {
@@ -82,7 +80,7 @@ export class SimplePostgresStorageProvider implements IStorageProvider, IAppserv
 
     public async isUserRegistered(userId: string): Promise<boolean> {
         await this.waitPromise;
-        return (await this.db`
+        return !!(await this.db`
             SELECT registered FROM appservice_users WHERE user_id = ${userId};
         `)[0]?.registered;
     }
