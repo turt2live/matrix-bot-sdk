@@ -14,11 +14,11 @@ describe('SimplePostgresStorageProvider', () => {
 
     beforeAll(async () => {
         postgresContainer = await new PostgreSqlContainer()
-            // .withLogConsumer(async s => {
-            //     for await (const chunk of s) {
-            //         console.log("[PSQL] " + Buffer.from(chunk).toString("utf-8"));
-            //     }
-            // })
+            .withLogConsumer(async s => {
+                for await (const chunk of s) {
+                    console.log("[PSQL] " + Buffer.from(chunk).toString("utf-8")); // eslint-disable-line no-console
+                }
+            })
             .withCommand(["postgres", "-c", "max_connections=1000"])
             .start();
     }, 60000);
