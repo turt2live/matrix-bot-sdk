@@ -12,7 +12,7 @@ function createSimplePostgresStorageProvider(connectionString: string, inMemory 
 describe('SimplePostgresStorageProvider', () => {
     let postgresContainer: StartedPostgreSqlContainer;
 
-    beforeEach(async () => {
+    beforeAll(async () => {
         postgresContainer = await new PostgreSqlContainer()
             // .withLogConsumer(async s => {
             //     for await (const chunk of s) {
@@ -23,7 +23,7 @@ describe('SimplePostgresStorageProvider', () => {
             .start();
     }, 60000);
 
-    afterEach(async () => {
+    afterAll(async () => {
         await postgresContainer.stop();
     }, 60000);
 
