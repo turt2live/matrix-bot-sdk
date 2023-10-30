@@ -17,6 +17,7 @@
     "docs": "jsdoc -c jsdoc.json -P package.json -u docs/tutorials",
     "build": "tsc --listEmittedFiles -p tsconfig-release.json",
     "lint": "eslint \"{src,test,examples}/**/*.ts\"",
+    "lint:fix": "eslint \"{src,test,examples}/**/*.ts\" --fix",
     "test": "jest",
     "build:examples": "tsc -p tsconfig-examples.json",
     "example:bot": "yarn build:examples && node lib/examples/bot.js",
@@ -65,6 +66,7 @@
     "lru-cache": "^10.0.1",
     "mkdirp": "^3.0.1",
     "morgan": "^1.10.0",
+    "postgres": "^3.4.1",
     "request": "^2.88.2",
     "request-promise": "^4.2.6",
     "sanitize-html": "^2.11.0"
@@ -73,6 +75,7 @@
     "@babel/core": "^7.23.2",
     "@babel/eslint-parser": "^7.22.15",
     "@babel/eslint-plugin": "^7.22.10",
+    "@testcontainers/postgresql": "^10.2.2",
     "@types/async-lock": "^1.4.1",
     "@types/jest": "^29.5.6",
     "@types/lowdb": "^1.0.14",
@@ -93,6 +96,7 @@
     "matrix-mock-request": "^2.6.0",
     "simple-mock": "^0.8.0",
     "taffydb": "^2.7.3",
+    "testcontainers": "^10.2.2",
     "tmp": "^0.2.1",
     "ts-jest": "^29.1.1",
     "typescript": "^5.2.2"
