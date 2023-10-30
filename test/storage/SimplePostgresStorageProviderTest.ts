@@ -21,11 +21,11 @@ describe('SimplePostgresStorageProvider', () => {
             })
             .withCommand(["postgres", "-c", "max_connections=1000"])
             .start();
-    }, 2 * 60 * 1000);
+    }, 5 * 60 * 1000);
 
     afterAll(async () => {
         await postgresContainer.stop();
-    }, 2 * 60 * 1000);
+    }, 5 * 60 * 1000);
 
     it('should return the right sync token', async () => {
         const { writeProvider, readProviderFn } = createSimplePostgresStorageProvider(postgresContainer.getConnectionUri());
