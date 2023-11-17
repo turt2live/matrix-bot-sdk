@@ -1988,6 +1988,44 @@ describe('Appservice', () => {
         }
     });
 
+    it('should allow custom endpoints to be added to the express instance', async () => {
+        const port = await getPort();
+        const hsToken = "s3cret_token";
+        const appservice = new Appservice({
+            port: port,
+            bindAddress: '',
+            homeserverName: 'example.org',
+            homeserverUrl: 'https://localhost',
+            registration: {
+                as_token: "",
+                hs_token: hsToken,
+                sender_localpart: "_bot_",
+                namespaces: {
+                    users: [{ exclusive: true, regex: "@_prefix_.*:.+" }],
+                    rooms: [],
+                    aliases: [],
+                },
+            },
+        });
+        appservice.botIntent.ensureRegistered = () => {
+            return null;
+        };
+
+        appservice.expressAppInstance.get("/test", (_, res) => res.sendStatus(200));
+
+        await appservice.begin();
+
+        try {
+            const res = await requestPromise({
+                uri: `http://localhost:${port}/test`,
+                method: "GET",
+            });
+            expect(res).toEqual("OK");
+        } finally {
+            appservice.stop();
+        }
+    });
+
     // TODO: Populate once intent tests are stable
 
     it.skip('should not try decryption if crypto is not possible', async () => {
