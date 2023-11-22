@@ -997,6 +997,18 @@ export class MatrixClient extends EventEmitter {
     }
 
     /**
+     * Get the nearest event to a given timestamp, either forwards or backwards.
+     * @param roomId The room ID to get the context in.
+     * @param ts The event ID to get the context of.
+     * @param dir The maximum number of events to return on either side of the event.
+     * @returns The ID and origin server timestamp of the event.
+     */
+    @timedMatrixClientFunctionCall()
+    public async getEventNearestToTimestamp(roomId: string, ts: number, dir: "f"|"b"): Promise<{event_id: string, origin_server_ts: number}> {
+        return await this.doRequest("GET", "/_matrix/client/v3/rooms/" + encodeURIComponent(roomId) + "/timestamp_to_event", { ts, dir });
+    }
+
+    /**
      * Gets the profile for a given user
      * @param {string} userId the user ID to lookup
      * @returns {Promise<any>} the profile of the user
