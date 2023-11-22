@@ -1005,7 +1005,7 @@ export class MatrixClient extends EventEmitter {
      */
     @timedMatrixClientFunctionCall()
     public async getEventNearestToTimestamp(roomId: string, ts: number, dir: "f"|"b"): Promise<{event_id: string, origin_server_ts: number}> {
-        return await this.doRequest("GET", "/_matrix/client/v3/rooms/" + encodeURIComponent(roomId) + "/timestamp_to_event", { ts, dir });
+        return await this.doRequest("GET", "/_matrix/client/v1/rooms/" + encodeURIComponent(roomId) + "/timestamp_to_event", { ts, dir });
     }
 
     /**
