@@ -2769,7 +2769,7 @@ describe('MatrixClient', () => {
             const eventId = "$def456:example.org";
             const originServerTs = 4567;
 
-            http.when("GET", "/_matrix/client/v3/rooms").respond(200, (path, _content, req) => {
+            http.when("GET", "/_matrix/client/v1/rooms").respond(200, (path, _content, req) => {
                 expect(path).toEqual(`${hsUrl}/_matrix/client/v1/rooms/${encodeURIComponent(roomId)}/timestamp_to_event`);
                 expect(req.queryParams['dir']).toEqual(dir);
                 expect(req.queryParams['ts']).toEqual(timestamp);
@@ -2783,7 +2783,7 @@ describe('MatrixClient', () => {
             const [result] = await Promise.all([client.getEventNearestToTimestamp(roomId, timestamp, dir), http.flushAllExpected()]);
             expect(result).toBeDefined();
             expect(result.event_id).toEqual(eventId);
-            expect(result.origin_server_ts).toMatchObject(originServerTs);
+            expect(result.origin_server_ts).toEqual(originServerTs);
         });
     });
 

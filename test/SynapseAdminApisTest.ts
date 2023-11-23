@@ -545,7 +545,7 @@ describe('SynapseAdminApis', () => {
                 http.when("GET", "/_synapse/admin/v1/rooms").respond(200, (path, _content, req) => {
                     expect(path).toEqual(`${hsUrl}/_synapse/admin/v1/rooms/${encodeURIComponent(roomId)}/timestamp_to_event`);
                     expect(req.queryParams['dir']).toEqual(dir);
-                    expect(req.queryParams['ts']).toEqual(timestamp.toString());
+                    expect(req.queryParams['ts']).toEqual(timestamp);
 
                     return {
                         event_id: eventId,
@@ -556,7 +556,7 @@ describe('SynapseAdminApis', () => {
                 const [result] = await Promise.all([client.getEventNearestToTimestamp(roomId, timestamp, dir), http.flushAllExpected()]);
                 expect(result).toBeDefined();
                 expect(result.event_id).toEqual(eventId);
-                expect(result.origin_server_ts).toMatchObject(originServerTs);
+                expect(result.origin_server_ts).toEqual(originServerTs);
             });
         });
     });
