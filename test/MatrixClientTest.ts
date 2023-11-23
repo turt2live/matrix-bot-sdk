@@ -2772,7 +2772,7 @@ describe('MatrixClient', () => {
             http.when("GET", "/_matrix/client/v3/rooms").respond(200, (path, _content, req) => {
                 expect(path).toEqual(`${hsUrl}/_matrix/client/v1/rooms/${encodeURIComponent(roomId)}/timestamp_to_event`);
                 expect(req.queryParams['dir']).toEqual(dir);
-                expect(req.queryParams['ts']).toEqual(timestamp.toString());
+                expect(req.queryParams['ts']).toEqual(timestamp);
 
                 return {
                     event_id: eventId,
