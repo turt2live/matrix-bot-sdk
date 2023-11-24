@@ -33,6 +33,9 @@ export const SYNC_LOCK_NAME = "sync";
 export class RustEngine {
     public readonly lock = new AsyncLock();
 
+    public readonly trackedUsersToAdd = new Set<string>();
+    public addTrackedUsersPromise: Promise<void>|undefined;
+
     private keyBackupVersion: KeyBackupVersion|undefined;
     private keyBackupWaiter = Promise.resolve();
 
@@ -80,8 +83,18 @@ export class RustEngine {
     }
 
     public async addTrackedUsers(userIds: string[]) {
-        await this.lock.acquire(SYNC_LOCK_NAME, async () => {
-            const uids = userIds.map(u => new UserId(u));
+        // Add the new set of users to the pool
+        userIds.forEach(uId => this.trackedUsersToAdd.add(uId));
+        if (this.addTrackedUsersPromise) {
+            // If we have a pending promise, don't create another lock requirement.
+            return;
+        }
+        return this.addTrackedUsersPromise = this.lock.acquire(SYNC_LOCK_NAME, async () => {
+            // Immediately clear this promise so that a new promise is queued up.
+            this.addTrackedUsersPromise = undefined;
+            const uids = [...this.trackedUsersToAdd].map(u => new UserId(u));
+            // Clear the existing pool
+            this.trackedUsersToAdd.clear();
             await this.machine.updateTrackedUsers(uids);
 
             const keysClaim = await this.machine.getMissingSessions(uids);
