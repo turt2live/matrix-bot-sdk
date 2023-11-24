@@ -656,7 +656,7 @@ export class MatrixClient extends EventEmitter {
 
         if (this.crypto) {
             LogService.debug("MatrixClientLite", "Preparing end-to-end encryption");
-            await this.crypto.prepare(this.lastJoinedRoomIds);
+            await this.crypto.prepare();
             LogService.info("MatrixClientLite", "End-to-end encryption enabled");
         }
 

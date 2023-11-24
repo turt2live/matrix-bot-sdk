@@ -168,7 +168,7 @@ export class Intent {
                     }
 
                     // Now set up crypto
-                    await this.client.crypto.prepare(await this.getJoinedRooms());
+                    await this.client.crypto.prepare();
 
                     this.appservice.on("room.event", (roomId, event) => {
                         this.client.crypto.onRoomEvent(roomId, event);
