@@ -1,4 +1,5 @@
 import { MatrixClient } from "../MatrixClient";
+import { MatrixError } from "../models/MatrixError";
 import { EncryptionEventContent } from "../models/events/EncryptionEvent";
 import { ICryptoRoomInformation } from "./ICryptoRoomInformation";
 
@@ -61,7 +62,13 @@ export class RoomTracker {
             encEvent = await this.client.getRoomStateEvent(roomId, "m.room.encryption", "");
             encEvent.algorithm = encEvent.algorithm ?? 'UNKNOWN';
         } catch (e) {
-            return; // failure == no encryption
+            if (e instanceof MatrixError && e.errcode === "M_NOT_FOUND") {
+                // No encryption
+                encEvent = {};
+            } else {
+                // Unexpected failure, do not store.
+                return;
+            }
         }
 
         // Pick out the history visibility setting too
