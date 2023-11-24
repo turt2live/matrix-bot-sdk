@@ -117,6 +117,8 @@ export class CryptoClient {
             if (membership.effectiveMembership !== 'join' && membership.effectiveMembership !== 'invite') return;
             await this.engine.addTrackedUsers([membership.membershipFor]);
         } else if (event['type'] === 'm.room.encryption') {
+            // Update encryption status of room.
+            await this.roomTracker.queueRoomCheck(roomId);
             return this.client.getRoomMembers(roomId, null, ['join', 'invite']).then(
                 members => this.engine.addTrackedUsers(members.map(e => e.membershipFor)),
                 e => void LogService.warn("CryptoClient", `Unable to get members of room ${roomId}`),
