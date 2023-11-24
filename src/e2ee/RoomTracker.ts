@@ -63,12 +63,9 @@ export class RoomTracker {
             encEvent.algorithm = encEvent.algorithm ?? 'UNKNOWN';
         } catch (e) {
             if (e instanceof MatrixError && e.errcode === "M_NOT_FOUND") {
-                // No encryption
                 encEvent = {};
-            } else {
-                // Unexpected failure, do not store.
-                return;
             }
+            return; // Other failures should not be cached.
         }
 
         // Pick out the history visibility setting too
