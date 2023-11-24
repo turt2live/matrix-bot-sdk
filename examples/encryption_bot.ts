@@ -35,9 +35,9 @@ const worksImage = fs.readFileSync("./examples/static/it-works.png");
 const client = new MatrixClient(homeserverUrl, accessToken, storage, crypto);
 
 (async function() {
-    let encryptedRoomId: string;
+    let encryptedRoomId: string|undefined = undefined;
     const joinedRooms = await client.getJoinedRooms();
-    await client.crypto.prepare(joinedRooms); // init crypto because we're doing things before the client is started
+    await client.crypto.prepare(); // init crypto because we're doing things before the client is started
     for (const roomId of joinedRooms) {
         if (await client.crypto.isRoomEncrypted(roomId)) {
             encryptedRoomId = roomId;
