@@ -34,7 +34,7 @@ describe('CryptoClient', () => {
 
             bindNullEngine(http);
             // Prepare first
-            await Promise.all([,
+            await Promise.all([
                 client.crypto.prepare(),
                 http.flushAllExpected(),
             ]);
