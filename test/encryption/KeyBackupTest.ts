@@ -21,7 +21,7 @@ describe('KeyBackups', () => {
     const prepareCrypto = async () => {
         bindNullEngine(http);
         await Promise.all([
-            client.crypto.prepare([]),
+            client.crypto.prepare(),
             http.flushAllExpected(),
         ]);
     };
