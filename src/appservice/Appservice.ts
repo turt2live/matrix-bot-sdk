@@ -239,6 +239,11 @@ export class Appservice extends EventEmitter {
     private pendingTransactions = new Map<string, Promise<void>>();
 
     /**
+     * A cache of intents for the purposes of decrypting rooms
+     */
+    private cryptoClientForRoomId: LRU.LRUCache<string, MatrixClient>;
+
+    /**
      * Creates a new application service.
      * @param {IAppserviceOptions} options The options for the application service.
      */
@@ -252,6 +257,11 @@ export class Appservice extends EventEmitter {
         if (options.intentOptions.maxCached === undefined) options.intentOptions.maxCached = 10000;
 
         this.intentsCache = new LRU.LRUCache({
+            max: options.intentOptions.maxCached,
+            ttl: options.intentOptions.maxAgeMs,
+        });
+
+        this.cryptoClientForRoomId = new LRU.LRUCache({
             max: options.intentOptions.maxCached,
             ttl: options.intentOptions.maxAgeMs,
         });
@@ -658,6 +668,63 @@ export class Appservice extends EventEmitter {
         return providedToken === this.registration.hs_token;
     }
 
+    private async decryptAppserivceEvent(roomId: string, encrypted: EncryptedRoomEvent): ReturnType<Appservice["processEvent"]> {
+        const existingClient = this.cryptoClientForRoomId.get(roomId);
+        const decryptFn = async (client) => {
+            let event = (await client.crypto.decryptRoomEvent(encrypted, roomId)).raw;
+            event = await this.processEvent(event);
+            this.cryptoClientForRoomId.set(roomId, client);
+            // For logging purposes: show that the event was decrypted
+            LogService.info("Appservice", `Processing decrypted event of type ${event["type"]}`);
+            return event;
+        };
+        // 1. Try cached client
+        if (existingClient) {
+            try {
+                return await decryptFn(existingClient);
+            } catch (existingClientError) {
+                LogService.warn("Appservice", `Cached client was not able to decrypt ${roomId} ${encrypted.eventId} - trying other intents`);
+            }
+        }
+        this.cryptoClientForRoomId.delete(roomId);
+        // 2. Try the bot client
+        if (this.botClient.crypto?.isReady) {
+            try {
+                return await decryptFn(existingClient);
+            } catch (ex) {
+                LogService.warn("Appservice", `Bot client was not able to decrypt ${roomId} ${encrypted.eventId} - trying other intents`);
+            }
+        }
+
+        const userIdsInRoom = (await this.botClient.getJoinedRoomMembers(roomId)).filter(u => this.isNamespacedUser(u));
+        // 3. Try existing clients with crypto enabled.
+        for (const intentCacheEntry of this.intentsCache.entries()) {
+            const [userId, intent] = intentCacheEntry as [string, Intent];
+            if (!userIdsInRoom.includes(userId)) {
+                // Not in this room.
+                continue;
+            }
+            // Is this client crypto enabled?
+            if (!intent.underlyingClient.crypto?.isReady) {
+                continue;
+            }
+            try {
+                return await decryptFn(existingClient);
+            } catch (existingClientError) {
+                LogService.warn("Appservice", `Existing encrypted client was not able to decrypt ${roomId} ${encrypted.eventId} - trying other intents`);
+            }
+        }
+
+        // 4. Try to enable crypto on any client to decrypt it.
+        const userInRoom = this.intentsCache.find((_intent, userId) => userIdsInRoom.includes(userId));
+        await userInRoom.enableEncryption();
+        try {
+            return await decryptFn(existingClient);
+        } catch (existingClientError) {
+            throw new Error("Unable to decrypt event", { cause: existingClient });
+        }
+    }
+
     private async handleTransaction(txnId: string, body: Record<string, unknown>) {
         // Process all the crypto stuff first to ensure that future transactions (if not this one)
         // will decrypt successfully. We start with EDUs because we need structures to put counts
@@ -804,39 +871,11 @@ export class Appservice extends EventEmitter {
                     try {
                         const encrypted = new EncryptedRoomEvent(event);
                         const roomId = event['room_id'];
-                        try {
-                            event = (await this.botClient.crypto.decryptRoomEvent(encrypted, roomId)).raw;
-                            event = await this.processEvent(event);
-                            this.emit("room.decrypted_event", roomId, event);
+                        event = await this.decryptAppserivceEvent(roomId, encrypted);
+                        this.emit("room.decrypted_event", roomId, event);
 
-                            // For logging purposes: show that the event was decrypted
-                            LogService.info("Appservice", `Processing decrypted event of type ${event["type"]}`);
-                        } catch (e1) {
-                            LogService.warn("Appservice", `Bot client was not able to decrypt ${roomId} ${event['event_id']} - trying other intents`);
-
-                            let tryUserId: string;
-                            try {
-                                // TODO: This could be more efficient
-                                const userIdsInRoom = await this.botClient.getJoinedRoomMembers(roomId);
-                                tryUserId = userIdsInRoom.find(u => this.isNamespacedUser(u));
-                            } catch (e) {
-                                LogService.error("Appservice", "Failed to get members of room - cannot decrypt message");
-                            }
-
-                            if (tryUserId) {
-                                const intent = this.getIntentForUserId(tryUserId);
-
-                                event = (await intent.underlyingClient.crypto.decryptRoomEvent(encrypted, roomId)).raw;
-                                event = await this.processEvent(event);
-                                this.emit("room.decrypted_event", roomId, event);
-
-                                // For logging purposes: show that the event was decrypted
-                                LogService.info("Appservice", `Processing decrypted event of type ${event["type"]}`);
-                            } else {
-                                // noinspection ExceptionCaughtLocallyJS
-                                throw e1;
-                            }
-                        }
+                        // For logging purposes: show that the event was decrypted
+                        LogService.info("Appservice", `Processing decrypted event of type ${event["type"]}`);
                     } catch (e) {
                         LogService.error("Appservice", `Decryption error on ${event['room_id']} ${event['event_id']}`, e);
                         this.emit("room.failed_decryption", event['room_id'], event, e);
