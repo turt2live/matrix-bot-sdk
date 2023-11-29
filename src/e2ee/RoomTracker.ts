@@ -54,8 +54,9 @@ export class RoomTracker {
         } catch (e) {
             if (e instanceof MatrixError && e.errcode === "M_NOT_FOUND") {
                 encEvent = {};
+            } else {
+                return; // Other failures should not be cached.
             }
-            return; // Other failures should not be cached.
         }
 
         // Pick out the history visibility setting too
