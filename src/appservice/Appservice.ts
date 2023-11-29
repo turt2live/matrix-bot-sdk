@@ -670,7 +670,7 @@ export class Appservice extends EventEmitter {
 
     private async decryptAppserivceEvent(roomId: string, encrypted: EncryptedRoomEvent): ReturnType<Appservice["processEvent"]> {
         const existingClient = this.cryptoClientForRoomId.get(roomId);
-        const decryptFn = async (client) => {
+        const decryptFn = async (client: MatrixClient) => {
             let event = (await client.crypto.decryptRoomEvent(encrypted, roomId)).raw;
             event = await this.processEvent(event);
             this.cryptoClientForRoomId.set(roomId, client);
@@ -682,7 +682,8 @@ export class Appservice extends EventEmitter {
         if (existingClient) {
             try {
                 return await decryptFn(existingClient);
-            } catch (existingClientError) {
+            } catch (error) {
+                LogService.debug("Appservice", `Failed to decrypt via cached client ${await existingClient.getUserId()}`, error);
                 LogService.warn("Appservice", `Cached client was not able to decrypt ${roomId} ${encrypted.eventId} - trying other intents`);
             }
         }
@@ -690,8 +691,9 @@ export class Appservice extends EventEmitter {
         // 2. Try the bot client
         if (this.botClient.crypto?.isReady) {
             try {
-                return await decryptFn(existingClient);
-            } catch (ex) {
+                return await decryptFn(this.botClient);
+            } catch (error) {
+                LogService.debug("Appservice", `Failed to decrypt via bot client`, error);
                 LogService.warn("Appservice", `Bot client was not able to decrypt ${roomId} ${encrypted.eventId} - trying other intents`);
             }
         }
@@ -709,19 +711,24 @@ export class Appservice extends EventEmitter {
                 continue;
             }
             try {
-                return await decryptFn(existingClient);
-            } catch (existingClientError) {
+                return await decryptFn(intent.underlyingClient);
+            } catch (error) {
+                LogService.debug("Appservice", `Failed to decrypt via ${userId}`, error);
                 LogService.warn("Appservice", `Existing encrypted client was not able to decrypt ${roomId} ${encrypted.eventId} - trying other intents`);
             }
         }
 
         // 4. Try to enable crypto on any client to decrypt it.
         const userInRoom = this.intentsCache.find((_intent, userId) => userIdsInRoom.includes(userId));
+        if (!userInRoom) {
+            throw Error('No users in room, cannot decrypt');
+        }
         await userInRoom.enableEncryption();
         try {
-            return await decryptFn(existingClient);
-        } catch (existingClientError) {
-            throw new Error("Unable to decrypt event", { cause: existingClient });
+            return await decryptFn(userInRoom.underlyingClient);
+        } catch (error) {
+            LogService.debug("Appservice", `Failed to decrypt via random user ${userInRoom.userId}`, error);
+            throw new Error("Unable to decrypt event", { cause: error });
         }
     }
 
