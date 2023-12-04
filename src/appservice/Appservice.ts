@@ -668,7 +668,7 @@ export class Appservice extends EventEmitter {
         return providedToken === this.registration.hs_token;
     }
 
-    private async decryptAppserivceEvent(roomId: string, encrypted: EncryptedRoomEvent): ReturnType<Appservice["processEvent"]> {
+    private async decryptAppserviceEvent(roomId: string, encrypted: EncryptedRoomEvent): ReturnType<Appservice["processEvent"]> {
         const existingClient = this.cryptoClientForRoomId.get(roomId);
         const decryptFn = async (client: MatrixClient) => {
             // Also fetches state in order to decrypt room. We should throw if the client is confused.
@@ -723,12 +723,13 @@ export class Appservice extends EventEmitter {
         }
 
         // 4. Try to enable crypto on any client to decrypt it.
-        const userInRoom = this.intentsCache.find((_intent, userId) => userIdsInRoom.includes(userId));
+        // We deliberately do not enable crypto on every client for performance reasons.
+        const userInRoom = this.intentsCache.find((intent, userId) => !intent.underlyingClient.crypto?.isReady && userIdsInRoom.includes(userId));
         if (!userInRoom) {
             throw Error('No users in room, cannot decrypt');
         }
-        await userInRoom.enableEncryption();
         try {
+            await userInRoom.enableEncryption();
             return await decryptFn(userInRoom.underlyingClient);
         } catch (error) {
             LogService.debug("Appservice", `Failed to decrypt via random user ${userInRoom.userId}`, error);
@@ -882,7 +883,7 @@ export class Appservice extends EventEmitter {
                     try {
                         const encrypted = new EncryptedRoomEvent(event);
                         const roomId = event['room_id'];
-                        event = await this.decryptAppserivceEvent(roomId, encrypted);
+                        event = await this.decryptAppserviceEvent(roomId, encrypted);
                         this.emit("room.decrypted_event", roomId, event);
 
                         // For logging purposes: show that the event was decrypted
