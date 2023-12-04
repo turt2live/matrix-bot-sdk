@@ -17,7 +17,7 @@ describe('CryptoClient', () => {
 
         bindNullEngine(http);
         await Promise.all([
-            client.crypto.prepare([]),
+            client.crypto.prepare(),
             http.flushAllExpected(),
         ]);
 
@@ -28,24 +28,17 @@ describe('CryptoClient', () => {
     describe('prepare', () => {
         it('should prepare the room tracker', () => testCryptoStores(async (cryptoStoreType) => {
             const userId = "@alice:example.org";
-            const roomIds = ["!a:example.org", "!b:example.org"];
             const { client, http } = createTestClient(null, userId, cryptoStoreType);
 
             client.getWhoAmI = () => Promise.resolve({ user_id: userId, device_id: TEST_DEVICE_ID });
 
-            const prepareSpy = simple.stub().callFn((rids: string[]) => {
-                expect(rids).toBe(roomIds);
-                return Promise.resolve();
-            });
-
-            (<any>client.crypto).roomTracker.prepare = prepareSpy; // private member access
-
             bindNullEngine(http);
+            // Prepare first
             await Promise.all([
-                client.crypto.prepare(roomIds),
+                client.crypto.prepare(),
                 http.flushAllExpected(),
             ]);
-            expect(prepareSpy.callCount).toEqual(1);
+            expect(client.crypto.isReady).toBe(true);
         }));
 
         it('should use a stored device ID', () => testCryptoStores(async (cryptoStoreType) => {
@@ -59,7 +52,7 @@ describe('CryptoClient', () => {
 
             bindNullEngine(http);
             await Promise.all([
-                client.crypto.prepare([]),
+                client.crypto.prepare(),
                 http.flushAllExpected(),
             ]);
             expect(whoamiSpy.callCount).toEqual(0);
@@ -118,7 +111,7 @@ describe('CryptoClient', () => {
 
             bindNullEngine(http);
             await Promise.all([
-                client.crypto.prepare([]),
+                client.crypto.prepare(),
                 http.flushAllExpected(),
             ]);
 
@@ -138,7 +131,7 @@ describe('CryptoClient', () => {
             const { client } = createTestClient(null, userId, cryptoStoreType);
 
             await client.cryptoStore.setDeviceId(TEST_DEVICE_ID);
-            // await client.crypto.prepare([]); // deliberately commented
+            // await client.crypto.prepare(); // deliberately commented
 
             try {
                 await client.crypto.isRoomEncrypted("!new:example.org");
@@ -159,7 +152,7 @@ describe('CryptoClient', () => {
 
             bindNullEngine(http);
             await Promise.all([
-                client.crypto.prepare([]),
+                client.crypto.prepare(),
                 http.flushAllExpected(),
             ]);
 
@@ -176,7 +169,7 @@ describe('CryptoClient', () => {
 
             bindNullEngine(http);
             await Promise.all([
-                client.crypto.prepare([]),
+                client.crypto.prepare(),
                 http.flushAllExpected(),
             ]);
 
@@ -193,7 +186,7 @@ describe('CryptoClient', () => {
 
             bindNullEngine(http);
             await Promise.all([
-                client.crypto.prepare([]),
+                client.crypto.prepare(),
                 http.flushAllExpected(),
             ]);
 
@@ -210,7 +203,7 @@ describe('CryptoClient', () => {
 
             bindNullEngine(http);
             await Promise.all([
-                client.crypto.prepare([]),
+                client.crypto.prepare(),
                 http.flushAllExpected(),
             ]);
 
@@ -248,7 +241,7 @@ describe('CryptoClient', () => {
         it('should sign the object while retaining signatures without mutation', async () => {
             bindNullEngine(http);
             await Promise.all([
-                client.crypto.prepare([]),
+                client.crypto.prepare(),
                 http.flushAllExpected(),
             ]);
 
@@ -305,7 +298,7 @@ describe('CryptoClient', () => {
         it('should fail in unencrypted rooms', async () => {
             bindNullEngine(http);
             await Promise.all([
-                client.crypto.prepare([]),
+                client.crypto.prepare(),
                 http.flushAllExpected(),
             ]);
 
@@ -381,7 +374,7 @@ describe('CryptoClient', () => {
         it('should encrypt media', async () => {
             bindNullEngine(http);
             await Promise.all([
-                client.crypto.prepare([]),
+                client.crypto.prepare(),
                 http.flushAllExpected(),
             ]);
 
@@ -467,7 +460,7 @@ describe('CryptoClient', () => {
         it('should be symmetrical', async () => {
             bindNullEngine(http);
             await Promise.all([
-                client.crypto.prepare([]),
+                client.crypto.prepare(),
                 http.flushAllExpected(),
             ]);
 
@@ -492,7 +485,7 @@ describe('CryptoClient', () => {
         it('should decrypt', async () => {
             bindNullEngine(http);
             await Promise.all([
-                client.crypto.prepare([]),
+                client.crypto.prepare(),
                 http.flushAllExpected(),
             ]);
 
@@ -522,7 +515,7 @@ describe('CryptoClient', () => {
             await client.cryptoStore.setDeviceId(TEST_DEVICE_ID);
             bindNullEngine(http);
             await Promise.all([
-                client.crypto.prepare([]),
+                client.crypto.prepare(),
                 http.flushAllExpected(),
             ]);
         }));

@@ -1,4 +1,5 @@
 import { MatrixClient } from "../MatrixClient";
+import { MatrixError } from "../models/MatrixError";
 import { EncryptionEventContent } from "../models/events/EncryptionEvent";
 import { ICryptoRoomInformation } from "./ICryptoRoomInformation";
 
@@ -34,16 +35,6 @@ export class RoomTracker {
     }
 
     /**
-     * Prepares the room tracker to track the given rooms.
-     * @param {string[]} roomIds The room IDs to track. This should be the joined rooms set.
-     */
-    public async prepare(roomIds: string[]) {
-        for (const roomId of roomIds) {
-            await this.queueRoomCheck(roomId);
-        }
-    }
-
-    /**
      * Queues a room check for the tracker. If the room needs an update to the store, an
      * update will be made.
      * @param {string} roomId The room ID to check.
@@ -61,7 +52,11 @@ export class RoomTracker {
             encEvent = await this.client.getRoomStateEvent(roomId, "m.room.encryption", "");
             encEvent.algorithm = encEvent.algorithm ?? 'UNKNOWN';
         } catch (e) {
-            return; // failure == no encryption
+            if (e instanceof MatrixError && e.errcode === "M_NOT_FOUND") {
+                encEvent = {};
+            } else {
+                return; // Other failures should not be cached.
+            }
         }
 
         // Pick out the history visibility setting too

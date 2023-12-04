@@ -68,9 +68,7 @@ export class CryptoClient {
      * Prepares the crypto client for usage.
      * @param {string[]} roomIds The room IDs the MatrixClient is joined to.
      */
-    public async prepare(roomIds: string[]) {
-        await this.roomTracker.prepare(roomIds);
-
+    public async prepare() {
         if (this.ready) return; // stop re-preparing here
 
         const storedDeviceId = await this.client.cryptoStore.getDeviceId();
