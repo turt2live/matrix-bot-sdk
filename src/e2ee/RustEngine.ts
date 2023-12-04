@@ -92,7 +92,11 @@ export class RustEngine {
         return this.addTrackedUsersPromise = this.lock.acquire(SYNC_LOCK_NAME, async () => {
             // Immediately clear this promise so that a new promise is queued up.
             this.addTrackedUsersPromise = undefined;
-            const uids = [...this.trackedUsersToAdd].map(u => new UserId(u));
+            const uids = Array<UserId>(this.trackedUsersToAdd.size);
+            let idx = 0;
+            for (const u of this.trackedUsersToAdd.values()) {
+                uids[idx++] = new UserId(u);
+            }
             // Clear the existing pool
             this.trackedUsersToAdd.clear();
             await this.machine.updateTrackedUsers(uids);
