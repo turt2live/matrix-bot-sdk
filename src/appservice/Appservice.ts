@@ -671,6 +671,10 @@ export class Appservice extends EventEmitter {
     private async decryptAppserivceEvent(roomId: string, encrypted: EncryptedRoomEvent): ReturnType<Appservice["processEvent"]> {
         const existingClient = this.cryptoClientForRoomId.get(roomId);
         const decryptFn = async (client: MatrixClient) => {
+            // Also fetches state in order to decrypt room. We should throw if the client is confused.
+            if (!await client.crypto.isRoomEncrypted(roomId)) {
+                throw new Error("Client detected that the room is not encrypted.")
+            }
             let event = (await client.crypto.decryptRoomEvent(encrypted, roomId)).raw;
             event = await this.processEvent(event);
             this.cryptoClientForRoomId.set(roomId, client);
