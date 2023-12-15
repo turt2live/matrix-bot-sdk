@@ -645,6 +645,7 @@ export class Appservice extends EventEmitter {
         if (domain !== botDomain) return; // can't be impersonated, so don't try
 
         const intent = this.getIntentForUserId(event['state_key']);
+        await intent.ensureRegistered();
 
         const targetMembership = event["content"]["membership"];
         if (targetMembership === "join") {
