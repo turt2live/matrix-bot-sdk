@@ -28,6 +28,7 @@ import { RustSdkCryptoStorageProvider } from "../storage/RustSdkCryptoStoragePro
 import { RustEngine, SYNC_LOCK_NAME } from "./RustEngine";
 import { MembershipEvent } from "../models/events/MembershipEvent";
 import { IKeyBackupInfoRetrieved } from "../models/KeyBackup";
+import path = require("path");
 
 /**
  * Manages encryption for a MatrixClient. Get an instance from a MatrixClient directly
@@ -82,11 +83,20 @@ export class CryptoClient {
         if (storedDeviceId && storedDeviceId !== deviceId) {
             LogService.warn("CryptoClient", `Device ID for ${userId} has changed from ${storedDeviceId} to ${deviceId}`);
             // Clear storage for old device.
-            await rm(this.storage.storagePath, { recursive: true });
+            try {
+                await rm(path.join(this.storage.storagePath, "matrix-sdk-crypto.sqlite3"));
+            } catch (ex) {
+                if (ex.code !== 'ENOENT') {
+                    throw ex;
+                }
+            }
         }
 
+        if (storedDeviceId !== deviceId) {
+            this.client.cryptoStore.setDeviceId(deviceId);
+        }
         this.deviceId = deviceId;
-        await this.client.cryptoStore.setDeviceId(this.deviceId);
+
 
         LogService.debug("CryptoClient", `Starting ${userId} with device ID:`, this.deviceId);
 
