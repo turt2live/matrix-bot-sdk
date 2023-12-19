@@ -24,7 +24,7 @@ export function createTestSynapseAdminClient(
     hsUrl: string;
     accessToken: string;
 } {
-    const result = createTestClient(storage);
+    const result = createTestClient(storage, undefined, undefined, { handleWhoAmI: false });
     const mxClient = result.client;
     const client = new SynapseAdminApis(mxClient);
 
