@@ -74,21 +74,21 @@ export class CryptoClient {
 
         const storedDeviceId = await this.client.cryptoStore.getDeviceId();
         const { user_id: userId, device_id: deviceId} = (await this.client.getWhoAmI());
-        if (storedDeviceId === deviceId) {
-            this.deviceId = storedDeviceId;
-        } else if (storedDeviceId && storedDeviceId !== deviceId) {
+
+        if (!deviceId) {
+            throw new Error("Encryption not possible: server not revealing device ID");
+        }
+
+        if (storedDeviceId && storedDeviceId !== deviceId) {
             LogService.warn("CryptoClient", `Device ID for ${userId} has changed from ${storedDeviceId} to ${deviceId}`);
             // Clear storage for old device.
             await rm(this.storage.storagePath, { recursive: true });
-        } else {
-            if (!deviceId) {
-                throw new Error("Encryption not possible: server not revealing device ID");
-            }
-            this.deviceId = deviceId;
-            await this.client.cryptoStore.setDeviceId(this.deviceId);
         }
 
-        LogService.debug("CryptoClient", "Starting with device ID:", this.deviceId);
+        this.deviceId = deviceId;
+        await this.client.cryptoStore.setDeviceId(this.deviceId);
+
+        LogService.debug("CryptoClient", `Starting ${userId} with device ID:`, this.deviceId);
 
         const machine = await OlmMachine.initialize(
             new UserId(userId),
