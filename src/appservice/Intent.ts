@@ -145,6 +145,11 @@ export class Intent {
                     let prepared = false;
 
                     if (deviceId) {
+                        const cryptoStore = this.cryptoStorage?.storageForUser(this.userId);
+                        const existingDeviceId = await cryptoStore.getDeviceId();
+                        if (existingDeviceId && existingDeviceId !== deviceId) {
+                            LogService.warn("Intent", `Device ID has changed for user ${this.userId} from ${existingDeviceId} to ${deviceId}`);
+                        }
                         this.makeClient(true);
                         this.client.impersonateUserId(this.userId, deviceId);
 
