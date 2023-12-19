@@ -7,6 +7,7 @@ import {
     Attachment,
     EncryptedAttachment,
 } from "@matrix-org/matrix-sdk-crypto-nodejs";
+import { rm } from "fs/promises";
 
 import { MatrixClient } from "../MatrixClient";
 import { LogService } from "../logging/LogService";
@@ -27,7 +28,6 @@ import { RustSdkCryptoStorageProvider } from "../storage/RustSdkCryptoStoragePro
 import { RustEngine, SYNC_LOCK_NAME } from "./RustEngine";
 import { MembershipEvent } from "../models/events/MembershipEvent";
 import { IKeyBackupInfoRetrieved } from "../models/KeyBackup";
-import { rm } from "fs/promises";
 
 /**
  * Manages encryption for a MatrixClient. Get an instance from a MatrixClient directly
@@ -73,7 +73,7 @@ export class CryptoClient {
         if (this.ready) return; // stop re-preparing here
 
         const storedDeviceId = await this.client.cryptoStore.getDeviceId();
-        const { user_id: userId, device_id: deviceId} = (await this.client.getWhoAmI());
+        const { user_id: userId, device_id: deviceId } = (await this.client.getWhoAmI());
 
         if (!deviceId) {
             throw new Error("Encryption not possible: server not revealing device ID");
