@@ -1043,7 +1043,7 @@ describe('MatrixClient', () => {
         });
 
         it('should request the user ID if it is not known', async () => {
-            const { client, http } = createTestClient();
+            const { client, http } = createTestClient(undefined, undefined, undefined, { handleWhoAmI: false });
 
             const userId = "@example:example.org";
             const response = {
@@ -1061,7 +1061,7 @@ describe('MatrixClient', () => {
 
     describe('getWhoAmI', () => {
         it('should call the right endpoint', async () => {
-            const { client, http } = createTestClient();
+            const { client, http } = createTestClient(undefined, undefined, undefined, { handleWhoAmI: false });
 
             const response = {
                 user_id: "@user:example.org",

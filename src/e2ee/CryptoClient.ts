@@ -8,6 +8,7 @@ import {
     EncryptedAttachment,
 } from "@matrix-org/matrix-sdk-crypto-nodejs";
 import { rm } from "fs/promises";
+import * as path from 'path';
 
 import { MatrixClient } from "../MatrixClient";
 import { LogService } from "../logging/LogService";
@@ -28,7 +29,6 @@ import { RustSdkCryptoStorageProvider } from "../storage/RustSdkCryptoStoragePro
 import { RustEngine, SYNC_LOCK_NAME } from "./RustEngine";
 import { MembershipEvent } from "../models/events/MembershipEvent";
 import { IKeyBackupInfoRetrieved } from "../models/KeyBackup";
-import path = require("path");
 
 /**
  * Manages encryption for a MatrixClient. Get an instance from a MatrixClient directly
@@ -96,7 +96,6 @@ export class CryptoClient {
             this.client.cryptoStore.setDeviceId(deviceId);
         }
         this.deviceId = deviceId;
-
 
         LogService.debug("CryptoClient", `Starting ${userId} with device ID:`, this.deviceId);
 

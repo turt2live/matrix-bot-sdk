@@ -1,7 +1,7 @@
 import * as tmp from "tmp";
 import HttpBackend from "matrix-mock-request";
 import { StoreType } from "@matrix-org/matrix-sdk-crypto-nodejs";
-import * as simple from "simple-mock";
+
 import { IStorageProvider, MatrixClient, OTKAlgorithm, RustSdkCryptoStorageProvider, UnpaddedBase64, setRequestFn } from "../src";
 
 export const TEST_DEVICE_ID = "TEST_DEVICE";
@@ -31,6 +31,7 @@ export function createTestClient(
     storage: IStorageProvider = null,
     userId: string = null,
     cryptoStoreType?: StoreType,
+    opts = { handleWhoAmI: true },
 ): {
     client: MatrixClient;
     http: HttpBackend;
@@ -44,8 +45,10 @@ export function createTestClient(
     (<any>client).userId = userId; // private member access
     setRequestFn(http.requestFn);
 
-    // Ensure we always respond to a well-known
-    client.getWhoAmI = () => Promise.resolve({ user_id: userId, device_id: TEST_DEVICE_ID });
+    if (opts.handleWhoAmI) {
+        // Ensure we always respond to a whoami
+        client.getWhoAmI = () => Promise.resolve({ user_id: userId, device_id: TEST_DEVICE_ID });
+    }
 
     return { http, hsUrl, accessToken, client };
 }
