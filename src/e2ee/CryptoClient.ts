@@ -27,6 +27,7 @@ import { RustSdkCryptoStorageProvider } from "../storage/RustSdkCryptoStoragePro
 import { RustEngine, SYNC_LOCK_NAME } from "./RustEngine";
 import { MembershipEvent } from "../models/events/MembershipEvent";
 import { IKeyBackupInfoRetrieved } from "../models/KeyBackup";
+import { rm } from "fs/promises";
 
 /**
  * Manages encryption for a MatrixClient. Get an instance from a MatrixClient directly
@@ -72,10 +73,14 @@ export class CryptoClient {
         if (this.ready) return; // stop re-preparing here
 
         const storedDeviceId = await this.client.cryptoStore.getDeviceId();
-        if (storedDeviceId) {
+        const { user_id: userId, device_id: deviceId} = (await this.client.getWhoAmI());
+        if (storedDeviceId === deviceId) {
             this.deviceId = storedDeviceId;
+        } else if (storedDeviceId && storedDeviceId !== deviceId) {
+            LogService.warn("CryptoClient", `Device ID for ${userId} has changed from ${storedDeviceId} to ${deviceId}`);
+            // Clear storage for old device.
+            await rm(this.storage.storagePath, { recursive: true });
         } else {
-            const deviceId = (await this.client.getWhoAmI())['device_id'];
             if (!deviceId) {
                 throw new Error("Encryption not possible: server not revealing device ID");
             }
@@ -86,7 +91,7 @@ export class CryptoClient {
         LogService.debug("CryptoClient", "Starting with device ID:", this.deviceId);
 
         const machine = await OlmMachine.initialize(
-            new UserId(await this.client.getUserId()),
+            new UserId(userId),
             new DeviceId(this.deviceId),
             this.storage.storagePath, "",
             this.storage.storageType,
