@@ -2,6 +2,8 @@ import * as lowdb from "lowdb";
 import * as FileSync from "lowdb/adapters/FileSync";
 import * as mkdirp from "mkdirp";
 import * as path from "path";
+import { stat, rename, mkdir } from "fs/promises";
+import { PathLike } from "fs";
 import * as sha512 from "hash.js/lib/hash/sha/512";
 import * as sha256 from "hash.js/lib/hash/sha/256";
 import { StoreType as RustSdkCryptoStoreType } from "@matrix-org/matrix-sdk-crypto-nodejs";
@@ -9,8 +11,13 @@ import { StoreType as RustSdkCryptoStoreType } from "@matrix-org/matrix-sdk-cryp
 import { ICryptoStorageProvider } from "./ICryptoStorageProvider";
 import { IAppserviceCryptoStorageProvider } from "./IAppserviceStorageProvider";
 import { ICryptoRoomInformation } from "../e2ee/ICryptoRoomInformation";
+import { LogService } from "../logging/LogService";
 
 export { RustSdkCryptoStoreType };
+
+async function doesFileExist(path: PathLike) {
+    return stat(path).then(() => true).catch(() => false);
+}
 
 /**
  * A crypto storage provider for the file-based rust-sdk store.
@@ -38,6 +45,37 @@ export class RustSdkCryptoStorageProvider implements ICryptoStorageProvider {
             deviceId: null,
             rooms: {},
         });
+    }
+
+    public async getMachineStoragePath(deviceId: string): Promise<string> {
+        const newPath = path.join(this.storagePath, sha256().update(deviceId).digest('hex'));
+        if (await doesFileExist(newPath)) {
+            // Already exists, short circuit.
+            return newPath;
+        } // else: If the path does NOT exist we might need to perform a migration.
+
+        const legacyFilePath = path.join(this.storagePath, 'matrix-sdk-crypto.sqlite3');
+        // XXX: Slightly gross cross-dependency file name expectations.
+        if (await doesFileExist(legacyFilePath) === false) {
+            // No machine files at all, we can skip.
+            return newPath;
+        }
+        const legacyDeviceId = await this.getDeviceId();
+        // We need to move the file.
+        const previousDevicePath = path.join(this.storagePath, sha256().update(legacyDeviceId).digest('hex'));
+        LogService.warn("RustSdkCryptoStorageProvider", `Migrating path for SDK database for legacy device ${legacyDeviceId}`);
+        await mkdir(previousDevicePath);
+        await rename(legacyFilePath, path.join(previousDevicePath, 'matrix-sdk-crypto.sqlite3')).catch((ex) =>
+            LogService.warn("RustSdkCryptoStorageProvider", `Could not migrate matrix-sdk-crypto.sqlite3`, ex),
+        );
+        await rename(legacyFilePath, path.join(previousDevicePath, 'matrix-sdk-crypto.sqlite3-shm')).catch((ex) =>
+            LogService.warn("RustSdkCryptoStorageProvider", `Could not migrate matrix-sdk-crypto.sqlite3-shm`, ex),
+        );
+        await rename(legacyFilePath, path.join(previousDevicePath, 'matrix-sdk-crypto.sqlite3-wal')).catch((ex) =>
+            LogService.warn("RustSdkCryptoStorageProvider", `Could not migrate matrix-sdk-crypto.sqlite3-wal`, ex),
+        );
+
+        return newPath;
     }
 
     public async getDeviceId(): Promise<string> {
@@ -75,7 +113,7 @@ export class RustSdkAppserviceCryptoStorageProvider extends RustSdkCryptoStorage
 
     public storageForUser(userId: string): ICryptoStorageProvider {
         // sha256 because sha512 is a bit big for some operating systems
-        const key = sha256().update(userId).digest('hex');
-        return new RustSdkCryptoStorageProvider(path.join(this.baseStoragePath, key), this.storageType);
+        const storagePath = path.join(this.baseStoragePath, sha256().update(userId).digest('hex'));
+        return new RustSdkCryptoStorageProvider(storagePath, this.storageType);
     }
 }

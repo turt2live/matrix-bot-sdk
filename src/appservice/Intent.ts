@@ -97,10 +97,12 @@ export class Intent {
 
     /**
      * Sets up crypto on the client if it hasn't already been set up.
+     * @param providedDeviceId Optional device ID. If given, this will used instead of trying to
+     * masquerade as the first non-key enabled device.
      * @returns {Promise<void>} Resolves when complete.
      */
     @timedIntentFunctionCall()
-    public async enableEncryption(): Promise<void> {
+    public async enableEncryption(providedDeviceId?: string): Promise<void> {
         if (!this.cryptoSetupPromise) {
             // eslint-disable-next-line no-async-promise-executor
             this.cryptoSetupPromise = new Promise(async (resolve, reject) => {
@@ -116,24 +118,38 @@ export class Intent {
                         throw new Error("Failed to create crypto store");
                     }
 
-                    // Try to impersonate a device ID
-                    const ownDevices = await this.client.getOwnDevices();
                     let deviceId = await cryptoStore.getDeviceId();
-                    if (!deviceId || !ownDevices.some(d => d.device_id === deviceId)) {
-                        const deviceKeys = await this.client.getUserDevices([this.userId]);
-                        const userDeviceKeys = deviceKeys.device_keys[this.userId];
-                        if (userDeviceKeys) {
-                            // We really should be validating signatures here, but we're actively looking
-                            // for devices without keys to impersonate, so it should be fine. In theory,
-                            // those devices won't even be present but we're cautious.
-                            const devicesWithKeys = Array.from(Object.entries(userDeviceKeys))
-                                .filter(d => d[0] === d[1].device_id && !!d[1].keys?.[`${DeviceKeyAlgorithm.Curve25519}:${d[1].device_id}`])
-                                .map(t => t[0]); // grab device ID from tuple
-                            deviceId = ownDevices.find(d => !devicesWithKeys.includes(d.device_id))?.device_id;
+                    if (!providedDeviceId) {
+                        // Try to impersonate a device ID
+                        const ownDevices = await this.client.getOwnDevices();
+                        let deviceId = await cryptoStore.getDeviceId();
+                        if (!deviceId || !ownDevices.some(d => d.device_id === deviceId)) {
+                            const deviceKeys = await this.client.getUserDevices([this.userId]);
+                            const userDeviceKeys = deviceKeys.device_keys[this.userId];
+                            if (userDeviceKeys) {
+                                // We really should be validating signatures here, but we're actively looking
+                                // for devices without keys to impersonate, so it should be fine. In theory,
+                                // those devices won't even be present but we're cautious.
+                                const devicesWithKeys = Array.from(Object.entries(userDeviceKeys))
+                                    .filter(d => d[0] === d[1].device_id && !!d[1].keys?.[`${DeviceKeyAlgorithm.Curve25519}:${d[1].device_id}`])
+                                    .map(t => t[0]); // grab device ID from tuple
+                                deviceId = ownDevices.find(d => !devicesWithKeys.includes(d.device_id))?.device_id;
+                            }
                         }
+                    } else {
+                        if (deviceId && deviceId !== providedDeviceId) {
+                            LogService.warn(`Storage already configured with an existing device ${deviceId}. Old storage will be cleared.`);
+                        }
+                        deviceId = providedDeviceId;
                     }
                     let prepared = false;
+
                     if (deviceId) {
+                        const cryptoStore = this.cryptoStorage?.storageForUser(this.userId);
+                        const existingDeviceId = await cryptoStore.getDeviceId();
+                        if (existingDeviceId && existingDeviceId !== deviceId) {
+                            LogService.warn("Intent", `Device ID has changed for user ${this.userId} from ${existingDeviceId} to ${deviceId}`);
+                        }
                         this.makeClient(true);
                         this.client.impersonateUserId(this.userId, deviceId);
 

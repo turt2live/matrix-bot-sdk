@@ -31,6 +31,7 @@ export function createTestClient(
     storage: IStorageProvider = null,
     userId: string = null,
     cryptoStoreType?: StoreType,
+    opts = { handleWhoAmI: true },
 ): {
     client: MatrixClient;
     http: HttpBackend;
@@ -43,6 +44,11 @@ export function createTestClient(
     const client = new MatrixClient(hsUrl, accessToken, storage, (cryptoStoreType !== undefined) ? new RustSdkCryptoStorageProvider(tmp.dirSync().name, cryptoStoreType) : null);
     (<any>client).userId = userId; // private member access
     setRequestFn(http.requestFn);
+
+    if (opts.handleWhoAmI) {
+        // Ensure we always respond to a whoami
+        client.getWhoAmI = () => Promise.resolve({ user_id: userId, device_id: TEST_DEVICE_ID });
+    }
 
     return { http, hsUrl, accessToken, client };
 }

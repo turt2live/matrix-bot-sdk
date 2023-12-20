@@ -72,23 +72,25 @@ export class CryptoClient {
         if (this.ready) return; // stop re-preparing here
 
         const storedDeviceId = await this.client.cryptoStore.getDeviceId();
-        if (storedDeviceId) {
-            this.deviceId = storedDeviceId;
-        } else {
-            const deviceId = (await this.client.getWhoAmI())['device_id'];
-            if (!deviceId) {
-                throw new Error("Encryption not possible: server not revealing device ID");
-            }
-            this.deviceId = deviceId;
-            await this.client.cryptoStore.setDeviceId(this.deviceId);
+        const { user_id: userId, device_id: deviceId } = (await this.client.getWhoAmI());
+
+        if (!deviceId) {
+            throw new Error("Encryption not possible: server not revealing device ID");
         }
 
-        LogService.debug("CryptoClient", "Starting with device ID:", this.deviceId);
+        const storagePath = await this.storage.getMachineStoragePath(deviceId);
+
+        if (storedDeviceId !== deviceId) {
+            this.client.cryptoStore.setDeviceId(deviceId);
+        }
+        this.deviceId = deviceId;
+
+        LogService.debug("CryptoClient", `Starting ${userId} with device ID:`, this.deviceId);
 
         const machine = await OlmMachine.initialize(
-            new UserId(await this.client.getUserId()),
+            new UserId(userId),
             new DeviceId(this.deviceId),
-            this.storage.storagePath, "",
+            storagePath, "",
             this.storage.storageType,
         );
         this.engine = new RustEngine(machine, this.client);

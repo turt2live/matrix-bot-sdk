@@ -8,7 +8,6 @@ describe('CryptoClient', () => {
     it('should not have a device ID or be ready until prepared', () => testCryptoStores(async (cryptoStoreType) => {
         const userId = "@alice:example.org";
         const { client, http } = createTestClient(null, userId, cryptoStoreType);
-
         client.getWhoAmI = () => Promise.resolve({ user_id: userId, device_id: TEST_DEVICE_ID });
 
         expect(client.crypto).toBeDefined();
@@ -46,8 +45,9 @@ describe('CryptoClient', () => {
             const { client, http } = createTestClient(null, userId, cryptoStoreType);
 
             await client.cryptoStore.setDeviceId(TEST_DEVICE_ID);
+            const CORRECT_DEVICE = "new_device";
 
-            const whoamiSpy = simple.stub().callFn(() => Promise.resolve({ user_id: userId, device_id: "wrong" }));
+            const whoamiSpy = simple.stub().callFn(() => Promise.resolve({ user_id: userId, device_id: CORRECT_DEVICE }));
             client.getWhoAmI = whoamiSpy;
 
             bindNullEngine(http);
@@ -55,8 +55,10 @@ describe('CryptoClient', () => {
                 client.crypto.prepare(),
                 http.flushAllExpected(),
             ]);
-            expect(whoamiSpy.callCount).toEqual(0);
-            expect(client.crypto.clientDeviceId).toEqual(TEST_DEVICE_ID);
+            // This should be called to check
+            expect(whoamiSpy.callCount).toEqual(1);
+            expect(client.crypto.clientDeviceId).toEqual(CORRECT_DEVICE);
+            expect(await client.cryptoStore.getDeviceId()).toEqual(CORRECT_DEVICE);
         }));
     });
 
