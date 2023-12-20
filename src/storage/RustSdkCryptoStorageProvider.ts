@@ -11,6 +11,7 @@ import { StoreType as RustSdkCryptoStoreType } from "@matrix-org/matrix-sdk-cryp
 import { ICryptoStorageProvider } from "./ICryptoStorageProvider";
 import { IAppserviceCryptoStorageProvider } from "./IAppserviceStorageProvider";
 import { ICryptoRoomInformation } from "../e2ee/ICryptoRoomInformation";
+import { LogService } from "../logging/LogService";
 
 export { RustSdkCryptoStoreType };
 
@@ -59,10 +60,12 @@ export class RustSdkCryptoStorageProvider implements ICryptoStorageProvider {
             // No machine files at all, we can skip.
             return newPath;
         }
-
+        const legacyDeviceId = await this.getDeviceId();
         // We need to move the file.
-        await mkdir(newPath);
-        await rename(legacyFilePath, path.join(newPath, 'matrix-sdk-crypto.sqlite3'));
+        const previousDevicePath = path.join(this.storagePath, sha256().update(legacyDeviceId).digest('hex'));
+        LogService.warn("RustSdkCryptoStorageProvider", `Migrating path for SDK database for legacy device ${legacyDeviceId}`);
+        await mkdir(previousDevicePath);
+        await rename(legacyFilePath, path.join(previousDevicePath, 'matrix-sdk-crypto.sqlite3'));
         return newPath;
     }
 
