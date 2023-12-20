@@ -65,7 +65,16 @@ export class RustSdkCryptoStorageProvider implements ICryptoStorageProvider {
         const previousDevicePath = path.join(this.storagePath, sha256().update(legacyDeviceId).digest('hex'));
         LogService.warn("RustSdkCryptoStorageProvider", `Migrating path for SDK database for legacy device ${legacyDeviceId}`);
         await mkdir(previousDevicePath);
-        await rename(legacyFilePath, path.join(previousDevicePath, 'matrix-sdk-crypto.sqlite3'));
+        await rename(legacyFilePath, path.join(previousDevicePath, 'matrix-sdk-crypto.sqlite3')).catch((ex) =>
+            LogService.warn("RustSdkCryptoStorageProvider", `Could not migrate matrix-sdk-crypto.sqlite3`, ex)
+        );
+        await rename(legacyFilePath, path.join(previousDevicePath, 'matrix-sdk-crypto.sqlite3-shm')).catch((ex) =>
+            LogService.warn("RustSdkCryptoStorageProvider", `Could not migrate matrix-sdk-crypto.sqlite3-shm`, ex)
+        );
+        await rename(legacyFilePath, path.join(previousDevicePath, 'matrix-sdk-crypto.sqlite3-wal')).catch((ex) =>
+            LogService.warn("RustSdkCryptoStorageProvider", `Could not migrate matrix-sdk-crypto.sqlite3-wal`, ex)
+        );
+
         return newPath;
     }
 
