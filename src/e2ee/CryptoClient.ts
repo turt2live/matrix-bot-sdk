@@ -7,8 +7,6 @@ import {
     Attachment,
     EncryptedAttachment,
 } from "@matrix-org/matrix-sdk-crypto-nodejs";
-import { rm } from "fs/promises";
-import * as path from 'path';
 
 import { MatrixClient } from "../MatrixClient";
 import { LogService } from "../logging/LogService";
@@ -80,17 +78,7 @@ export class CryptoClient {
             throw new Error("Encryption not possible: server not revealing device ID");
         }
 
-        if (storedDeviceId && storedDeviceId !== deviceId) {
-            LogService.warn("CryptoClient", `Device ID for ${userId} has changed from ${storedDeviceId} to ${deviceId}`);
-            // Clear storage for old device.
-            try {
-                await rm(path.join(this.storage.storagePath, "matrix-sdk-crypto.sqlite3"));
-            } catch (ex) {
-                if (ex.code !== 'ENOENT') {
-                    throw ex;
-                }
-            }
-        }
+        const storagePath = await this.storage.getMachineStoragePath(deviceId);
 
         if (storedDeviceId !== deviceId) {
             this.client.cryptoStore.setDeviceId(deviceId);
@@ -102,7 +90,7 @@ export class CryptoClient {
         const machine = await OlmMachine.initialize(
             new UserId(userId),
             new DeviceId(this.deviceId),
-            this.storage.storagePath, "",
+            storagePath, "",
             this.storage.storageType,
         );
         this.engine = new RustEngine(machine, this.client);

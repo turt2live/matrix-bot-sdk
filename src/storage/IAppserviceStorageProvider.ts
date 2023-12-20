@@ -47,8 +47,8 @@ export interface IAppserviceStorageProvider {
 export interface IAppserviceCryptoStorageProvider {
     /**
      * Gets a storage provider to use for the given user ID.
-     * @param {string} userId The user ID.
-     * @returns {ICryptoStorageProvider} The storage provider.
+     * @param userId The user ID.
+     * @returns The storage provider.
      */
     storageForUser(userId: string): ICryptoStorageProvider;
 }
