@@ -37,6 +37,7 @@ export * from "./metrics/Metrics";
 // Mixins
 export * from "./mixins/AutojoinRoomsMixin";
 export * from "./mixins/AutojoinUpgradedRoomsMixin";
+export * from "./mixins/AutoleaveRoomsMixin";
 
 // Models
 export * from "./models/Presence";
