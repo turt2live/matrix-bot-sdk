@@ -209,7 +209,7 @@ describe('Intent', () => {
 
             http.when("POST", "/_matrix/client/v3/register").respond(200, (path, content) => {
                 expect(content).toMatchObject({ type: "m.login.application_service", username: "someone", device_id: deviceId });
-                return {device_id: deviceId};
+                return { device_id: deviceId };
             });
 
             const intent = new Intent(options, userId, appservice);
@@ -257,7 +257,7 @@ describe('Intent', () => {
 
             http.when("POST", "/_matrix/client/v3/register").respond(200, (path, content) => {
                 expect(content).toMatchObject({ type: "m.login.application_service", username: "someone" });
-                return {device_id: deviceId};
+                return { device_id: deviceId };
             });
 
             const intent = new Intent(options, userId, appservice);
