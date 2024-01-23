@@ -138,7 +138,7 @@ export class Intent {
                         }
                     } else {
                         if (deviceId && deviceId !== providedDeviceId) {
-                            LogService.warn(`Storage already configured with an existing device ${deviceId}. Old storage will be cleared.`);
+                            LogService.warn("Intent", `Storage already configured with an existing device ${deviceId}. Old storage will be cleared.`);
                         }
                         deviceId = providedDeviceId;
                     }
