@@ -29,7 +29,7 @@ const dmTarget = creds?.['dmTarget'] ?? "@admin:localhost";
 const homeserverUrl = creds?.['homeserverUrl'] ?? "http://localhost:8008";
 const accessToken = creds?.['accessToken'] ?? 'YOUR_TOKEN';
 const storage = new SimpleFsStorageProvider("./examples/storage/encryption_bot.json");
-const crypto = new RustSdkCryptoStorageProvider("./examples/storage/encryption_bot_sled", StoreType.Sled);
+const crypto = new RustSdkCryptoStorageProvider("./examples/storage/encryption_bot_sqlite", StoreType.Sqlite);
 const worksImage = fs.readFileSync("./examples/static/it-works.png");
 
 const client = new MatrixClient(homeserverUrl, accessToken, storage, crypto);
