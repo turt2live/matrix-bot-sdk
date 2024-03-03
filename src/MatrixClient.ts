@@ -44,6 +44,8 @@ import { DMs } from "./DMs";
 import { ServerVersions } from "./models/ServerVersions";
 import { RoomCreateOptions } from "./models/CreateRoom";
 import { PresenceState } from './models/events/PresenceEvent';
+import { IKeyBackupInfo, IKeyBackupInfoRetrieved, IKeyBackupInfoUnsigned, IKeyBackupInfoUpdate, IKeyBackupVersion, KeyBackupVersion } from "./models/KeyBackup";
+import { MatrixError } from "./models/MatrixError";
 
 const SYNC_BACKOFF_MIN_MS = 5000;
 const SYNC_BACKOFF_MAX_MS = 15000;
@@ -994,6 +996,18 @@ export class MatrixClient extends EventEmitter {
             after: res['events_after'].map(e => new RoomEvent<RoomEventContent>(e)),
             state: res['state'].map(e => new StateEvent<RoomEventContent>(e)),
         };
+    }
+
+    /**
+     * Get the nearest event to a given timestamp, either forwards or backwards.
+     * @param roomId The room ID to get the context in.
+     * @param ts The event ID to get the context of.
+     * @param dir The maximum number of events to return on either side of the event.
+     * @returns The ID and origin server timestamp of the event.
+     */
+    @timedMatrixClientFunctionCall()
+    public async getEventNearestToTimestamp(roomId: string, ts: number, dir: "f"|"b"): Promise<{event_id: string, origin_server_ts: number}> {
+        return await this.doRequest("GET", "/_matrix/client/v1/rooms/" + encodeURIComponent(roomId) + "/timestamp_to_event", { ts, dir });
     }
 
     /**
@@ -1966,6 +1980,85 @@ export class MatrixClient extends EventEmitter {
         return this.doRequest("PUT", `/_matrix/client/v3/sendToDevice/${encodeURIComponent(type)}/${encodeURIComponent(txnId)}`, null, {
             messages: messages,
         });
+    }
+
+    /**
+     * Get information about the latest room key backup version.
+     * @returns {Promise<IKeyBackupInfoRetrieved|null>} Resolves to the retrieved key backup info,
+     * or null if there is no existing backup.
+     */
+    public async getKeyBackupVersion(): Promise<IKeyBackupInfoRetrieved|null> {
+        try {
+            return await this.doRequest("GET", "/_matrix/client/v3/room_keys/version");
+        } catch (e) {
+            if (e instanceof MatrixError && e.errcode === "M_NOT_FOUND") {
+                return null;
+            } else {
+                throw e;
+            }
+        }
+    }
+
+    /**
+     * Create a new room key backup.
+     * @param {IKeyBackupInfoUnsigned} info The properties of the key backup to create,
+     * with its auth_data left unsigned.
+     * @returns {Promise<IKeyBackupVersion>} Resolves to the version id of the new backup.
+     */
+    @requiresCrypto()
+    public async signAndCreateKeyBackupVersion(info: IKeyBackupInfoUnsigned): Promise<IKeyBackupVersion> {
+        const data: IKeyBackupInfo = {
+            ...info,
+            auth_data: {
+                ...info.auth_data,
+                signatures: await this.crypto.sign(info),
+            },
+        };
+        return this.doRequest("POST", "/_matrix/client/v3/room_keys/version", null, data);
+    }
+
+    /**
+     * Update an existing room key backup.
+     * @param {KeyBackupVersion} version The key backup version to update.
+     * @param {IKeyBackupInfoUpdate} info The properties of the key backup to be applied.
+     * @returns {Promise<void>} Resolves when complete.
+     */
+    @requiresCrypto()
+    public updateKeyBackupVersion(version: KeyBackupVersion, info: IKeyBackupInfoUpdate): Promise<void> {
+        const data = {
+            ...info,
+            signatures: this.crypto.sign(info),
+        };
+        return this.doRequest("PUT", `/_matrix/client/v3/room_keys/version/${version}`, null, data);
+    }
+
+    /**
+     * Enable backing up of room keys.
+     * @param {IKeyBackupInfoRetrieved} info The configuration for key backup behaviour,
+     * as returned by {@link getKeyBackupVersion}.
+     * @returns {Promise<void>} Resolves when complete.
+     */
+    @requiresCrypto()
+    public enableKeyBackup(info: IKeyBackupInfoRetrieved): Promise<void> {
+        return this.crypto.enableKeyBackup(info);
+    }
+
+    /**
+     * Disable backing up of room keys.
+     */
+    public disableKeyBackup(): Promise<void> {
+        return this.crypto?.disableKeyBackup() ?? Promise.resolve();
+    }
+
+    /**
+     * Exports a set of keys for a given session.
+     * @param roomId The room ID for the session.
+     * @param sessionId The session ID.
+     * @returns An array of session keys.
+     */
+    @requiresCrypto()
+    public exportRoomKeysForSession(roomId: string, sessionId: string) {
+        return this.crypto.exportRoomKeysForSession(roomId, sessionId);
     }
 
     /**
