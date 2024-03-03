@@ -532,7 +532,7 @@ describe('SynapseAdminApis', () => {
             });
         });
 
-        describe('addUserToRoom', () => {
+        describe('joinUserToRoom', () => {
             it('should call the right endpoint', async () => {
                 const { client, http, hsUrl } = createTestSynapseAdminClient();
 
