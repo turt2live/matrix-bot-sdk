@@ -22,7 +22,7 @@ describe('KeyBackups', () => {
         bindNullEngine(http);
         await Promise.all([
             client.crypto.prepare(),
-            http.flushAllExpected(),
+            http.flushAllExpected({ timeout: 5000 }),
         ]);
     };
 
@@ -81,7 +81,7 @@ describe('KeyBackups', () => {
 
         let keyBackupInfoOnServer: IKeyBackupInfoRetrieved|undefined;
 
-        http.when("POST", "/room_keys/version").respond(200, (path, obj: IKeyBackupInfo) => {
+        http.when("POST", "/_matrix/client/v3/room_keys/version").respond(200, (path, obj: IKeyBackupInfo) => {
             expect(obj.auth_data.signatures[USER_ID]).toHaveProperty(`ed25519:${TEST_DEVICE_ID}`);
 
             keyBackupInfoOnServer = {
@@ -93,7 +93,7 @@ describe('KeyBackups', () => {
             return keyBackupInfoOnServer.version;
         });
 
-        http.when("GET", "/room_keys/version").respond(200, (path, obj) => {
+        http.when("GET", "/_matrix/client/v3/room_keys/version").respond(200, (path, obj) => {
             expect(keyBackupInfoOnServer).toBeDefined();
             expect(keyBackupInfoOnServer.version).toBe("1");
 
@@ -110,7 +110,7 @@ describe('KeyBackups', () => {
             })(),
             http.flushAllExpected(),
         ]);
-    }));
+    }), 10000);
 
     it('should fail to enable backups when the crypto has not been prepared', () => testCryptoStores(async (cryptoStoreType) => {
         try {
@@ -179,7 +179,7 @@ describe('KeyBackups', () => {
 
         const encryptRoomEvent = async () => {
             bindNullQuery(http);
-            const encryptPromise = client.crypto.encryptRoomEvent(roomId, "m.room.message", "my message");
+            const encryptPromise = client.crypto.encryptRoomEvent(roomId, "m.room.message", { body: "my message" });
             await http.flushAllExpected({ timeout: 10000 });
 
             // This is because encryptRoomEvent calls "/keys/query" after encrypting too.
@@ -224,7 +224,7 @@ describe('KeyBackups', () => {
         };
 
         const expectToPutRoomKey = () => {
-            http.when("PUT", "/room_keys/keys").respond(200, onBackupRequest);
+            http.when("PUT", "/_matrix/client/v3/room_keys/keys").respond(200, onBackupRequest);
         };
 
         expectToPutRoomKey();

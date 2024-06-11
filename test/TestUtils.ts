@@ -62,7 +62,7 @@ export async function testCryptoStores(fn: (StoreType) => Promise<void>): Promis
 }
 
 export function bindNullEngine(http: HttpBackend) {
-    http.when("POST", "/keys/upload").respond(200, (path, obj) => {
+    http.when("POST", "/_matrix/client/v3/keys/upload").respond(200, (path, obj) => {
         expect(obj).toMatchObject({
 
         });
@@ -78,7 +78,7 @@ export function bindNullEngine(http: HttpBackend) {
 }
 
 export function bindNullQuery(http: HttpBackend) {
-    http.when("POST", "/keys/query").respond(200, (path, obj) => {
+    http.when("POST", "/_matrix/client/v3/keys/query").respond(200, (path, obj) => {
         return {};
     });
 }
