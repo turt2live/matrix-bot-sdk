@@ -654,10 +654,10 @@
   dependencies:
     lodash "^4.17.21"
 
-"@matrix-org/matrix-sdk-crypto-nodejs@0.1.0-beta.11":
-  version "0.1.0-beta.11"
-  resolved "https://registry.yarnpkg.com/@matrix-org/matrix-sdk-crypto-nodejs/-/matrix-sdk-crypto-nodejs-0.1.0-beta.11.tgz#537cd7a7bbce1d9745b812a5a7ffa9a5944e146c"
-  integrity sha512-z5adcQo4o0UAry4zs6JHGxbTDlYTUMKUfpOpigmso65ETBDumbeTSQCWRw8UeUV7aCAyVoHARqDTol9SrauEFA==
+"@matrix-org/matrix-sdk-crypto-nodejs@0.2.0-beta.1":
+  version "0.2.0-beta.1"
+  resolved "https://registry.yarnpkg.com/@matrix-org/matrix-sdk-crypto-nodejs/-/matrix-sdk-crypto-nodejs-0.2.0-beta.1.tgz#b696707ccfa944cfed3c96cf7e54799b0f1e3329"
+  integrity sha512-CgbOKORfD6dvYgQTPhfN73H1RbQknrFkMnRRwCIJMt15iL2AF1gEowgbrlGhkbG6gNng4CgPnKs1iHKCRrhvmA==
   dependencies:
     https-proxy-agent "^5.0.1"
     node-downloader-helper "^2.1.5"
