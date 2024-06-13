@@ -110,5 +110,6 @@
     "testMatch": [
       "<rootDir>/test/**/*Test.ts"
     ]
-  }
+  },
+  "packageManager": "yarn@1.22.19"
 }
