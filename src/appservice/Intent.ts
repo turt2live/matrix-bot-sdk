@@ -293,15 +293,17 @@ export class Intent {
 
     /**
      * Ensures the user is registered
+     * @param deviceId An optional device ID to register with.
      * @returns {Promise<any>} Resolves when complete
      */
     @timedIntentFunctionCall()
-    public async ensureRegistered() {
+    public async ensureRegistered(deviceId?: string) {
         if (!(await Promise.resolve(this.storage.isUserRegistered(this.userId)))) {
             try {
                 const result = await this.client.doRequest("POST", "/_matrix/client/v3/register", null, {
                     type: "m.login.application_service",
                     username: this.userId.substring(1).split(":")[0],
+                    device_id: deviceId,
                 });
 
                 // HACK: Workaround for unit tests
@@ -309,6 +311,8 @@ export class Intent {
                     // noinspection ExceptionCaughtLocallyJS
                     throw { body: result }; // eslint-disable-line no-throw-literal
                 }
+
+                this.client.impersonateUserId(this.userId, result["device_id"]);
             } catch (err) {
                 if (err instanceof MatrixError && err.errcode === "M_USER_IN_USE") {
                     await Promise.resolve(this.storage.addRegisteredUser(this.userId));

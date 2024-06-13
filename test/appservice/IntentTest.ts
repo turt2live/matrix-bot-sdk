@@ -177,6 +177,102 @@ describe('Intent', () => {
             expect(addRegisteredSpy.callCount).toBe(1);
         });
 
+        it('should use the provided device ID', async () => {
+            const http = new HttpBackend();
+            setRequestFn(http.requestFn);
+
+            const userId = "@someone:example.org";
+            const botUserId = "@bot:example.org";
+            const asToken = "s3cret";
+            const hsUrl = "https://localhost";
+            const deviceId = "DEVICE_TEST";
+            const appservice = <Appservice>{ botUserId: botUserId };
+
+            const storage = new MemoryStorageProvider();
+            const isRegisteredSpy = simple.mock(storage, "isUserRegistered").callFn((uid) => {
+                expect(uid).toEqual(userId);
+                return false;
+            });
+            const addRegisteredSpy = simple.mock(storage, "addRegisteredUser").callFn((uid) => {
+                expect(uid).toEqual(userId);
+                return true;
+            });
+
+            const options = <IAppserviceOptions>{
+                homeserverUrl: hsUrl,
+                storage: <IAppserviceStorageProvider>storage,
+                registration: {
+                    as_token: asToken,
+                },
+            };
+
+            http.when("POST", "/_matrix/client/v3/register").respond(200, (path, content) => {
+                expect(content).toMatchObject({ type: "m.login.application_service", username: "someone", device_id: deviceId });
+                return { device_id: deviceId };
+            });
+
+            const intent = new Intent(options, userId, appservice);
+            await Promise.all([intent.ensureRegistered(deviceId), http.flushAllExpected()]); // ensureRegistered(deviceId)
+            expect(isRegisteredSpy.callCount).toBe(1);
+            expect(addRegisteredSpy.callCount).toBe(1);
+
+            // noinspection TypeScriptValidateJSTypes
+            http.when("GET", "/test").respond(200, (path, content, req) => {
+                expect(req.queryParams["user_id"]).toBe(userId);
+                expect(req.queryParams["org.matrix.msc3202.device_id"]).toBe(deviceId);
+            });
+
+            await Promise.all([intent.underlyingClient.doRequest("GET", "/test"), http.flushAllExpected()]);
+        });
+
+        it('should impersonate the returned device ID on register', async () => {
+            const http = new HttpBackend();
+            setRequestFn(http.requestFn);
+
+            const userId = "@someone:example.org";
+            const botUserId = "@bot:example.org";
+            const asToken = "s3cret";
+            const hsUrl = "https://localhost";
+            const deviceId = "DEVICE_TEST";
+            const appservice = <Appservice>{ botUserId: botUserId };
+
+            const storage = new MemoryStorageProvider();
+            const isRegisteredSpy = simple.mock(storage, "isUserRegistered").callFn((uid) => {
+                expect(uid).toEqual(userId);
+                return false;
+            });
+            const addRegisteredSpy = simple.mock(storage, "addRegisteredUser").callFn((uid) => {
+                expect(uid).toEqual(userId);
+                return true;
+            });
+
+            const options = <IAppserviceOptions>{
+                homeserverUrl: hsUrl,
+                storage: <IAppserviceStorageProvider>storage,
+                registration: {
+                    as_token: asToken,
+                },
+            };
+
+            http.when("POST", "/_matrix/client/v3/register").respond(200, (path, content) => {
+                expect(content).toMatchObject({ type: "m.login.application_service", username: "someone" });
+                return { device_id: deviceId };
+            });
+
+            const intent = new Intent(options, userId, appservice);
+            await Promise.all([intent.ensureRegistered(), http.flushAllExpected()]);
+            expect(isRegisteredSpy.callCount).toBe(1);
+            expect(addRegisteredSpy.callCount).toBe(1);
+
+            // noinspection TypeScriptValidateJSTypes
+            http.when("GET", "/test").respond(200, (path, content, req) => {
+                expect(req.queryParams["user_id"]).toBe(userId);
+                expect(req.queryParams["org.matrix.msc3202.device_id"]).toBe(deviceId);
+            });
+
+            await Promise.all([intent.underlyingClient.doRequest("GET", "/test"), http.flushAllExpected()]);
+        });
+
         it('should gracefully handle M_USER_IN_USE', async () => {
             const http = new HttpBackend();
             setRequestFn(http.requestFn);
