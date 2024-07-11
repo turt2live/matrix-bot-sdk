@@ -4,6 +4,15 @@ import { MatrixError } from "./models/MatrixError";
 
 let lastRequestId = 0;
 
+const defaultErrorHandler = (response, errBody) => {
+    return typeof (errBody) === "object" && 'errcode' in errBody ?
+        new MatrixError(errBody, response.statusCode, response.headers) : undefined;
+};
+
+export interface DoHttpRequestOpts {
+    errorHandler?: (response, body) => Error|undefined;
+}
+
 /**
  * Performs a web request to a server.
  * @category Unit testing
@@ -30,6 +39,9 @@ export async function doHttpRequest(
     raw = false,
     contentType = "application/json",
     noEncoding = false,
+    opts: DoHttpRequestOpts = {
+        errorHandler: defaultErrorHandler,
+    },
 ): Promise<any> {
     if (!endpoint.startsWith('/')) {
         endpoint = '/' + endpoint;
@@ -104,10 +116,11 @@ export async function doHttpRequest(
 
     // Check for errors.
     const errBody = response.body || resBody;
-    if (typeof (errBody) === "object" && 'errcode' in errBody) {
+    const handledError = opts.errorHandler(response, errBody);
+    if (handledError) {
         const redactedBody = respIsBuffer ? '<Buffer>' : redactObjectForLogging(errBody);
         LogService.error("MatrixHttpClient", "(REQ-" + requestId + ")", redactedBody);
-        throw new MatrixError(errBody, response.statusCode, response.headers);
+        throw handledError;
     }
 
     // Don't log the body unless we're in debug mode. They can be large.

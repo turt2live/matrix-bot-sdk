@@ -290,7 +290,9 @@ export class CryptoClient {
      */
     @requiresReady()
     public async decryptMedia(file: EncryptedFile): Promise<Buffer> {
-        const contents = (await this.client.downloadContent(file.url)).data;
+        const contents = this.client.contentScannerInstance ?
+            await this.client.contentScannerInstance.downloadEncryptedContent(file) :
+            (await this.client.downloadContent(file.url)).data;
         const encrypted = new EncryptedAttachment(
             contents,
             JSON.stringify(file),

@@ -21,7 +21,7 @@ import { PowerLevelBounds } from "./models/PowerLevelBounds";
 import { EventKind } from "./models/events/EventKind";
 import { IdentityClient } from "./identity/IdentityClient";
 import { OpenIDConnectToken } from "./models/OpenIDConnect";
-import { doHttpRequest } from "./http";
+import { doHttpRequest, DoHttpRequestOpts } from "./http";
 import { Space, SpaceCreateOptions } from "./models/Spaces";
 import { PowerLevelAction } from "./models/PowerLevelAction";
 import { CryptoClient } from "./e2ee/CryptoClient";
@@ -46,6 +46,8 @@ import { RoomCreateOptions } from "./models/CreateRoom";
 import { PresenceState } from './models/events/PresenceEvent';
 import { IKeyBackupInfo, IKeyBackupInfoRetrieved, IKeyBackupInfoUnsigned, IKeyBackupInfoUpdate, IKeyBackupVersion, KeyBackupVersion } from "./models/KeyBackup";
 import { MatrixError } from "./models/MatrixError";
+import { MXCUrl } from "./models/MXCUrl";
+import { MatrixContentScannerClient } from "./MatrixContentScannerClient";
 
 const SYNC_BACKOFF_MIN_MS = 5000;
 const SYNC_BACKOFF_MAX_MS = 15000;
@@ -80,6 +82,13 @@ export class MatrixClient extends EventEmitter {
     public readonly crypto: CryptoClient;
 
     /**
+     * The Content Scanner API instance for this client. This is set if `opts.enableContentScanner`
+     * is true. The `downloadContent` and `crypto.decryptMedia` methods automatically go via
+     * the content scanner when this is set.
+     */
+    public readonly contentScannerInstance?: MatrixContentScannerClient;
+
+    /**
      * The DM manager instance for this client.
      */
     public readonly dms: DMs;
@@ -94,7 +103,7 @@ export class MatrixClient extends EventEmitter {
     private filterId = 0;
     private stopSyncing = false;
     private metricsInstance: Metrics = new Metrics();
-    private unstableApisInstance = new UnstableApis(this);
+    private readonly unstableApisInstance = new UnstableApis(this);
     private cachedVersions: ServerVersions;
     private versionsLastFetched = 0;
 
@@ -118,6 +127,7 @@ export class MatrixClient extends EventEmitter {
         public readonly accessToken: string,
         private storage: IStorageProvider = null,
         public readonly cryptoStore: ICryptoStorageProvider = null,
+        opts: { enableContentScanner?: boolean } = {},
     ) {
         super();
 
@@ -149,6 +159,10 @@ export class MatrixClient extends EventEmitter {
         if (!this.storage) this.storage = new MemoryStorageProvider();
 
         this.dms = new DMs(this);
+
+        if (opts.enableContentScanner) {
+            this.contentScannerInstance = new MatrixContentScannerClient(this);
+        }
     }
 
     /**
@@ -1587,11 +1601,8 @@ export class MatrixClient extends EventEmitter {
      * @returns {string} The HTTP URL for the content.
      */
     public mxcToHttp(mxc: string): string {
-        if (!mxc.startsWith("mxc://")) throw new Error("Not a MXC URI");
-        const parts = mxc.substring("mxc://".length).split('/');
-        const originHomeserver = parts[0];
-        const mediaId = parts.slice(1, parts.length).join('/');
-        return `${this.homeserverUrl}/_matrix/media/v3/download/${encodeURIComponent(originHomeserver)}/${encodeURIComponent(mediaId)}`;
+        const { domain, mediaId } = MXCUrl.parse(mxc);
+        return `${this.homeserverUrl}/_matrix/media/v3/download/${encodeURIComponent(domain)}/${encodeURIComponent(mediaId)}`;
     }
 
     /**
@@ -1633,13 +1644,11 @@ export class MatrixClient extends EventEmitter {
      * @returns {Promise<{data: Buffer, contentType: string}>} Resolves to the downloaded content.
      */
     public async downloadContent(mxcUrl: string, allowRemote = true): Promise<{ data: Buffer, contentType: string }> {
-        if (!mxcUrl.toLowerCase().startsWith("mxc://")) {
-            throw Error("'mxcUrl' does not begin with mxc://");
+        if (this.contentScannerInstance) {
+            return this.contentScannerInstance.downloadContent(mxcUrl, allowRemote);
         }
-        const urlParts = mxcUrl.substr("mxc://".length).split("/");
-        const domain = encodeURIComponent(urlParts[0]);
-        const mediaId = encodeURIComponent(urlParts[1].split("/")[0]);
-        const path = `/_matrix/media/v3/download/${domain}/${mediaId}`;
+        const { domain, mediaId } = MXCUrl.parse(mxcUrl);
+        const path = `/_matrix/media/v3/download/${encodeURIComponent(domain)}/${encodeURIComponent(mediaId)}`;
         const res = await this.doRequest("GET", path, { allow_remote: allowRemote }, null, null, true, null, true);
         return {
             data: res.body,
@@ -2095,7 +2104,8 @@ export class MatrixClient extends EventEmitter {
      * @returns {Promise<any>} Resolves to the response (body), rejected if a non-2xx status code was returned.
      */
     @timedMatrixClientFunctionCall()
-    public doRequest(method, endpoint, qs = null, body = null, timeout = 60000, raw = false, contentType = "application/json", noEncoding = false): Promise<any> {
+    public doRequest(method, endpoint, qs = null, body = null, timeout = 60000, raw = false,
+        contentType = "application/json", noEncoding = false, opts?: DoHttpRequestOpts): Promise<any> {
         if (this.impersonatedUserId) {
             if (!qs) qs = { "user_id": this.impersonatedUserId };
             else qs["user_id"] = this.impersonatedUserId;
@@ -2108,7 +2118,10 @@ export class MatrixClient extends EventEmitter {
         if (this.accessToken) {
             headers["Authorization"] = `Bearer ${this.accessToken}`;
         }
-        return doHttpRequest(this.homeserverUrl, method, endpoint, qs, body, headers, timeout, raw, contentType, noEncoding);
+        return doHttpRequest(
+            this.homeserverUrl, method, endpoint, qs, body, headers,
+            timeout, raw, contentType, noEncoding, opts,
+        );
     }
 }
 

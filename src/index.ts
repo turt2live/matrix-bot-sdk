@@ -55,6 +55,7 @@ export * from "./models/PowerLevelAction";
 export * from "./models/ServerVersions";
 export * from "./models/MatrixError";
 export * from "./models/CreateRoom";
+export * from "./models/MXCUrl";
 
 // Unstable models
 export * from "./models/unstable/MediaInfo";
@@ -112,6 +113,7 @@ export * from "./request";
 export * from "./PantalaimonClient";
 export * from "./SynchronousMatrixClient";
 export * from "./SynapseAdminApis";
+export * from "./MatrixContentScannerClient";
 export * from "./simple-validation";
 export * from "./b64";
 export * from "./http";
