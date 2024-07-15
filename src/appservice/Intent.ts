@@ -61,7 +61,10 @@ export class Intent {
                 throw new Error("Tried to set up client with crypto, but no persistent storage");
             }
         }
-        this.client = new MatrixClient(this.options.homeserverUrl, accessToken ?? this.options.registration.as_token, storage, cryptoStore);
+
+        this.client = new MatrixClient(this.options.homeserverUrl, accessToken ?? this.options.registration.as_token, storage, cryptoStore, {
+            enableContentScanner: this.options.intentOptions?.enableContentScanner,
+        });
         this.client.metrics = new Metrics(this.appservice.metrics); // Metrics only go up by one parent
         this.unstableApisInstance = new UnstableAppserviceApis(this.client);
         if (this.impersonateUserId !== this.appservice.botUserId) {

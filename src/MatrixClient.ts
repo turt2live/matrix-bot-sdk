@@ -152,8 +152,6 @@ export class MatrixClient extends EventEmitter {
                 this.crypto.onRoomJoin(roomId);
             });
             LogService.debug("MatrixClientLite", "End-to-end encryption client created");
-        } else {
-            // LogService.trace("MatrixClientLite", "Not setting up encryption");
         }
 
         if (!this.storage) this.storage = new MemoryStorageProvider();
@@ -1641,11 +1639,12 @@ export class MatrixClient extends EventEmitter {
      * @param {string} allowRemote Indicates to the server that it should not attempt to fetch the
      * media if it is deemed remote. This is to prevent routing loops where the server contacts itself.
      * Defaults to true if not provided.
+     * This is IGNORED if the content scanner is configured, as the API has no compatible option.
      * @returns {Promise<{data: Buffer, contentType: string}>} Resolves to the downloaded content.
      */
     public async downloadContent(mxcUrl: string, allowRemote = true): Promise<{ data: Buffer, contentType: string }> {
         if (this.contentScannerInstance) {
-            return this.contentScannerInstance.downloadContent(mxcUrl, allowRemote);
+            return this.contentScannerInstance.downloadContent(mxcUrl);
         }
         const { domain, mediaId } = MXCUrl.parse(mxcUrl);
         const path = `/_matrix/media/v3/download/${encodeURIComponent(domain)}/${encodeURIComponent(mediaId)}`;

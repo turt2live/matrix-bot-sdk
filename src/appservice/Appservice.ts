@@ -209,6 +209,12 @@ export interface IAppserviceOptions {
          * Note that the appservice bot account is considered an intent.
          */
         encryption?: boolean;
+
+        /**
+         * Enable the content scanner API when creating new intents. This means
+         * that all media requests will be proxied through the scanner.
+         */
+        enableContentScanner?: boolean;
     };
 }
 

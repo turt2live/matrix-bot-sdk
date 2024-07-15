@@ -44,7 +44,7 @@ export class MatrixContentScannerClient {
         return res;
     }
 
-    public async downloadContent(mxcUrl: string, allowRemote = true): ReturnType<MatrixClient["downloadContent"]> {
+    public async downloadContent(mxcUrl: string): ReturnType<MatrixClient["downloadContent"]> {
         const { domain, mediaId } = MXCUrl.parse(mxcUrl);
         const path = `/_matrix/media_proxy/unstable/download/${encodeURIComponent(domain)}/${encodeURIComponent(mediaId)}`;
         const res = await this.client.doRequest("GET", path, null, null, null, true, null, true, { errorHandler });
