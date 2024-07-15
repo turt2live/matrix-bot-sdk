@@ -1,6 +1,6 @@
 {
   "name": "@vector-im/matrix-bot-sdk",
-  "version": "0.7.1-element.2",
+  "version": "0.7.1-element.3",
   "description": "TypeScript/JavaScript SDK for Matrix bots and appservices",
   "repository": {
     "type": "git",
