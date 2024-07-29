@@ -41,6 +41,11 @@ export interface SynapseUser {
      * Whether or not the user is deactivated.
      */
     deactivated?: boolean;
+
+    /**
+     * Whether or not the user can log in. Available since Synapse v1.93.0
+     */
+    locked?: boolean;
 }
 
 /**
