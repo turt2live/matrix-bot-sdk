@@ -1593,14 +1593,22 @@ export class MatrixClient extends EventEmitter {
         await this.sendStateEvent(roomId, "m.room.power_levels", "", currentLevels);
     }
 
+    private async getMediaEndpointPrefix() {
+        if (await this.doesServerSupportVersion('v1.11')) {
+            return `${this.homeserverUrl}/_matrix/client/v1/media`;
+        }
+        return `${this.homeserverUrl}/_matrix/media/v3`;
+    }
+
     /**
      * Converts a MXC URI to an HTTP URL.
      * @param {string} mxc The MXC URI to convert
      * @returns {string} The HTTP URL for the content.
      */
-    public mxcToHttp(mxc: string): string {
+    public async mxcToHttp(mxc: string): Promise<string> {
         const { domain, mediaId } = MXCUrl.parse(mxc);
-        return `${this.homeserverUrl}/_matrix/media/v3/download/${encodeURIComponent(domain)}/${encodeURIComponent(mediaId)}`;
+        const endpoint = await this.getMediaEndpointPrefix();
+        return `${endpoint}/download/${encodeURIComponent(domain)}/${encodeURIComponent(mediaId)}`;
     }
 
     /**
@@ -1611,9 +1619,9 @@ export class MatrixClient extends EventEmitter {
      * @param {"crop"|"scale"} method Whether to crop or scale (preserve aspect ratio) the content.
      * @returns {string} The HTTP URL for the downsized content.
      */
-    public mxcToHttpThumbnail(mxc: string, width: number, height: number, method: "crop" | "scale"): string {
-        const downloadUri = this.mxcToHttp(mxc);
-        return downloadUri.replace("/_matrix/media/v3/download", "/_matrix/media/v3/thumbnail")
+    public async mxcToHttpThumbnail(mxc: string, width: number, height: number, method: "crop" | "scale"): Promise<string> {
+        const downloadUri = await this.mxcToHttp(mxc);
+        return downloadUri.replace("/download", "/thumbnail")
             + `?width=${width}&height=${height}&method=${encodeURIComponent(method)}`;
     }
 
@@ -1626,9 +1634,10 @@ export class MatrixClient extends EventEmitter {
      * @returns {Promise<string>} resolves to the MXC URI of the content
      */
     @timedMatrixClientFunctionCall()
-    public uploadContent(data: Buffer, contentType = "application/octet-stream", filename: string = null): Promise<string> {
+    public async uploadContent(data: Buffer, contentType = "application/octet-stream", filename: string = null): Promise<string> {
         // TODO: Make doRequest take an object for options
-        return this.doRequest("POST", "/_matrix/media/v3/upload", { filename: filename }, data, 60000, false, contentType)
+        const endpoint = await this.getMediaEndpointPrefix();
+        return this.doRequest("POST", `${endpoint}/upload`, { filename: filename }, data, 60000, false, contentType)
             .then(response => response["content_uri"]);
     }
 
@@ -1646,8 +1655,9 @@ export class MatrixClient extends EventEmitter {
         if (this.contentScannerInstance) {
             return this.contentScannerInstance.downloadContent(mxcUrl);
         }
+        const endpoint = await this.getMediaEndpointPrefix();
         const { domain, mediaId } = MXCUrl.parse(mxcUrl);
-        const path = `/_matrix/media/v3/download/${encodeURIComponent(domain)}/${encodeURIComponent(mediaId)}`;
+        const path = `${endpoint}/download/${encodeURIComponent(domain)}/${encodeURIComponent(mediaId)}`;
         const res = await this.doRequest("GET", path, { allow_remote: allowRemote }, null, null, true, null, true);
         return {
             data: res.body,

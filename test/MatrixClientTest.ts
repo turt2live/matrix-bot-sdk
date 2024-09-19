@@ -305,7 +305,7 @@ describe('MatrixClient', () => {
 
     describe('getServerVersions', () => {
         it('should call the right endpoint', async () => {
-            const { client, http } = createTestClient();
+            const { client, http } = createTestClient(undefined, undefined, undefined, { handleWhoAmI: true, precacheVersions: false });
 
             const versionsResponse: ServerVersions = {
                 unstable_features: {
@@ -322,7 +322,7 @@ describe('MatrixClient', () => {
         });
 
         it('should cache the response', async () => {
-            const { client, http } = createTestClient();
+            const { client, http } = createTestClient(undefined, undefined, undefined, { handleWhoAmI: true, precacheVersions: false });
 
             const versionsResponse: ServerVersions = {
                 unstable_features: {
@@ -358,7 +358,7 @@ describe('MatrixClient', () => {
             [{ "org.example.wrong": true }, "org.example.feature", false],
             [{ "org.example.wrong": false }, "org.example.feature", false],
         ])("should find that %p has %p as %p", async (versions, flag, target) => {
-            const { client, http } = createTestClient();
+            const { client, http } = createTestClient(undefined, undefined, undefined, { handleWhoAmI: true, precacheVersions: false });
 
             const versionsResponse: ServerVersions = {
                 versions: ["v1.1"],
@@ -378,7 +378,7 @@ describe('MatrixClient', () => {
             [["v1.2"], "v1.1", false],
             [["v1.1", "v1.2", "v1.3"], "v1.2", true],
         ])("should find that %p has %p as %p", async (versions, version, target) => {
-            const { client, http } = createTestClient();
+            const { client, http } = createTestClient(undefined, undefined, undefined, { handleWhoAmI: true, precacheVersions: false });
 
             const versionsResponse: ServerVersions = {
                 versions: versions,
@@ -397,7 +397,7 @@ describe('MatrixClient', () => {
             [["v1.3"], ["v1.1", "v1.2"], false],
             [["v1.1", "v1.2", "v1.3"], ["v1.2", "v1.3"], true],
         ])("should find that %p has %p as %p", async (versions, searchVersions, target) => {
-            const { client, http } = createTestClient();
+            const { client, http } = createTestClient(undefined, undefined, undefined, { handleWhoAmI: true, precacheVersions: false });
 
             const versionsResponse: ServerVersions = {
                 versions: versions,
@@ -5646,8 +5646,8 @@ describe('MatrixClient', () => {
             const mediaId = "testing/val";
             const mxc = `mxc://${domain}/${mediaId}`;
 
-            const http = client.mxcToHttp(mxc);
-            expect(http).toBe(`${hsUrl}/_matrix/media/v3/download/${encodeURIComponent(domain)}/${encodeURIComponent(mediaId)}`);
+            const http = await client.mxcToHttp(mxc);
+            expect(http).toBe(`${hsUrl}/_matrix/client/v1/media/download/${encodeURIComponent(domain)}/${encodeURIComponent(mediaId)}`);
         });
 
         it('should error for non-MXC URIs', async () => {
@@ -5658,7 +5658,7 @@ describe('MatrixClient', () => {
             const mxc = `https://${domain}/${mediaId}`;
 
             try {
-                client.mxcToHttp(mxc);
+                await client.mxcToHttp(mxc);
 
                 // noinspection ExceptionCaughtLocallyJS
                 throw new Error("Expected an error and didn't get one");
@@ -5679,9 +5679,9 @@ describe('MatrixClient', () => {
             const method = "scale";
             const mxc = `mxc://${domain}/${mediaId}`;
 
-            const http = client.mxcToHttpThumbnail(mxc, width, height, method);
+            const http = await client.mxcToHttpThumbnail(mxc, width, height, method);
             // eslint-disable-next-line max-len
-            expect(http).toBe(`${hsUrl}/_matrix/media/v3/thumbnail/${encodeURIComponent(domain)}/${encodeURIComponent(mediaId)}?width=${width}&height=${height}&method=${encodeURIComponent(method)}`);
+            expect(http).toBe(`${hsUrl}/_matrix/client/v1/media/thumbnail/${encodeURIComponent(domain)}/${encodeURIComponent(mediaId)}?width=${width}&height=${height}&method=${encodeURIComponent(method)}`);
         });
 
         it('should error for non-MXC URIs', async () => {
@@ -5695,7 +5695,7 @@ describe('MatrixClient', () => {
             const mxc = `https://${domain}/${mediaId}`;
 
             try {
-                client.mxcToHttpThumbnail(mxc, width, height, method);
+                await client.mxcToHttpThumbnail(mxc, width, height, method);
 
                 // noinspection ExceptionCaughtLocallyJS
                 throw new Error("Expected an error and didn't get one");
@@ -5717,7 +5717,7 @@ describe('MatrixClient', () => {
             Buffer.isBuffer = <any>(i => i === data);
 
             // noinspection TypeScriptValidateJSTypes
-            http.when("POST", "/_matrix/media/v3/upload").respond(200, (path, content, req) => {
+            http.when("POST", "/_matrix/client/v1/media/upload").respond(200, (path, content, req) => {
                 expect(content).toBeDefined();
                 expect(req.queryParams.filename).toEqual(filename);
                 expect(req.headers["Content-Type"]).toEqual(contentType);
@@ -5740,7 +5740,7 @@ describe('MatrixClient', () => {
             Buffer.isBuffer = <any>(i => i === data);
 
             // noinspection TypeScriptValidateJSTypes
-            http.when("POST", "/_matrix/media/v3/upload").respond(200, (path, content, req) => {
+            http.when("POST", "/_matrix/client/v1/media/upload").respond(200, (path, content, req) => {
                 expect(content).toBeDefined();
                 expect(req.queryParams.filename).toEqual(filename);
                 expect(req.headers["Content-Type"]).toEqual(contentType);
@@ -5761,8 +5761,8 @@ describe('MatrixClient', () => {
             // const fileContents = Buffer.from("12345");
 
             // noinspection TypeScriptValidateJSTypes
-            http.when("GET", "/_matrix/media/v3/download/").respond(200, (path, _, req) => {
-                expect(path).toContain("/_matrix/media/v3/download/" + urlPart);
+            http.when("GET", "/_matrix/client/v1/media/download/").respond(200, (path, _, req) => {
+                expect(path).toContain("/_matrix/client/v1/media/download/" + urlPart);
                 expect((req as any).opts.encoding).toEqual(null);
                 // TODO: Honestly, I have no idea how to coerce the mock library to return headers or buffers,
                 // so this is left as a fun activity.
@@ -5798,7 +5798,7 @@ describe('MatrixClient', () => {
             });
 
             // noinspection TypeScriptValidateJSTypes
-            http.when("POST", "/_matrix/media/v3/upload").respond(200, (path, content, req) => {
+            http.when("POST", "/_matrix/client/v1/media/upload").respond(200, (path, content, req) => {
                 expect(content).toBeDefined();
                 // HACK: We know the mock library will return JSON
                 expect(req.headers["Content-Type"]).toEqual("application/json");

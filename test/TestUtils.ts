@@ -2,7 +2,7 @@ import * as tmp from "tmp";
 import HttpBackend from "matrix-mock-request";
 import { StoreType } from "@matrix-org/matrix-sdk-crypto-nodejs";
 
-import { IStorageProvider, MatrixClient, OTKAlgorithm, RustSdkCryptoStorageProvider, UnpaddedBase64, setRequestFn } from "../src";
+import { IStorageProvider, MatrixClient, OTKAlgorithm, RustSdkCryptoStorageProvider, ServerVersions, UnpaddedBase64, setRequestFn } from "../src";
 
 export const TEST_DEVICE_ID = "TEST_DEVICE";
 
@@ -31,19 +31,33 @@ export function createTestClient(
     storage: IStorageProvider = null,
     userId: string = null,
     cryptoStoreType?: StoreType,
-    opts = { handleWhoAmI: true },
+    opts?: Partial<{ handleWhoAmI: boolean, precacheVersions: boolean }>,
 ): {
     client: MatrixClient;
     http: HttpBackend;
     hsUrl: string;
     accessToken: string;
 } {
+    opts = {
+        handleWhoAmI: true,
+        precacheVersions: true,
+        ...opts,
+    };
     const http = new HttpBackend();
     const hsUrl = "https://localhost";
     const accessToken = "s3cret";
     const client = new MatrixClient(hsUrl, accessToken, storage, (cryptoStoreType !== undefined) ? new RustSdkCryptoStorageProvider(tmp.dirSync().name, cryptoStoreType) : null);
     (<any>client).userId = userId; // private member access
     setRequestFn(http.requestFn);
+
+    // Force versions
+    if (opts.precacheVersions) {
+        (<any>client).cachedVersions = {
+            unstable_features: { },
+            versions: ["v1.11"],
+        } as ServerVersions;
+        (<any>client).versionsLastFetched = Date.now();
+    }
 
     if (opts.handleWhoAmI) {
         // Ensure we always respond to a whoami
