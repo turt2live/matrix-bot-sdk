@@ -67,8 +67,8 @@
     "mkdirp": "^3.0.1",
     "morgan": "^1.10.0",
     "postgres": "^3.4.1",
-    "request": "^2.88.2",
-    "request-promise": "^4.2.6",
+    "@cypress/request": "^3.0.7",
+    "@cypress/request-promise": "^5.0.0",
     "sanitize-html": "^2.11.0"
   },
   "devDependencies": {
