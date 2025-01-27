@@ -88,6 +88,7 @@ describe('CryptoClient', () => {
             const userId = "@alice:example.org";
             const { client, http } = createTestClient(null, userId, cryptoStoreType);
 
+            await client.cryptoStore.setDeviceId(TEST_DEVICE_ID);
             bindNullEngine(http);
             await Promise.all([
                 client.crypto.prepare([]),
