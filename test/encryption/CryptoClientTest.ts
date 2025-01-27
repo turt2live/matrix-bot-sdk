@@ -88,7 +88,7 @@ describe('CryptoClient', () => {
             const userId = "@alice:example.org";
             const { client } = createTestClient(null, userId, cryptoStoreType);
             expect(client.crypto.clientDeviceEd25519).toBeTruthy();
-        }))
+        }));
     });
 
     describe('isRoomEncrypted', () => {
