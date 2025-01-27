@@ -86,7 +86,13 @@ describe('CryptoClient', () => {
 
         it('should expose the device Ed25519 identity', () => testCryptoStores(async (cryptoStoreType) => {
             const userId = "@alice:example.org";
-            const { client } = createTestClient(null, userId, cryptoStoreType);
+            const { client, http } = createTestClient(null, userId, cryptoStoreType);
+
+            bindNullEngine(http);
+            await Promise.all([
+                client.crypto.prepare([]),
+                http.flushAllExpected(),
+            ]);
             expect(client.crypto.clientDeviceEd25519).toBeTruthy();
         }));
     });
