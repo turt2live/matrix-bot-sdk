@@ -83,6 +83,19 @@ describe('CryptoClient', () => {
             expect(whoamiSpy.callCount).toEqual(0);
             expect(client.crypto.clientDeviceId).toEqual(TEST_DEVICE_ID);
         }));
+
+        it('should expose the device Ed25519 identity', () => testCryptoStores(async (cryptoStoreType) => {
+            const userId = "@alice:example.org";
+            const { client, http } = createTestClient(null, userId, cryptoStoreType);
+
+            await client.cryptoStore.setDeviceId(TEST_DEVICE_ID);
+            bindNullEngine(http);
+            await Promise.all([
+                client.crypto.prepare([]),
+                http.flushAllExpected(),
+            ]);
+            expect(client.crypto.clientDeviceEd25519).toBeTruthy();
+        }));
     });
 
     describe('isRoomEncrypted', () => {
