@@ -1,8 +1,7 @@
 import * as simple from "simple-mock";
 
 import { EncryptionEventContent, MatrixClient, RoomEncryptionAlgorithm, RoomTracker } from "../../src";
-import { createTestClient, testCryptoStores, TEST_DEVICE_ID } from "../TestUtils";
-import { bindNullEngine } from "./CryptoClientTest";
+import { bindNullEngine, createTestClient, testCryptoStores, TEST_DEVICE_ID } from "../TestUtils";
 
 function prepareQueueSpies(
     client: MatrixClient,

@@ -236,7 +236,12 @@ export class Appservice extends EventEmitter {
     private appServer: any;
     private intentsCache: LRU.LRUCache<string, Intent>;
     private eventProcessors: { [eventType: string]: IPreprocessor[] } = {};
-    private pendingTransactions: { [txnId: string]: Promise<any> } = {};
+    private pendingTransactions = new Map<string, Promise<void>>();
+
+    /**
+     * A cache of intents for the purposes of decrypting rooms
+     */
+    private cryptoClientForRoomId: LRU.LRUCache<string, MatrixClient>;
 
     /**
      * Creates a new application service.
@@ -248,10 +253,15 @@ export class Appservice extends EventEmitter {
         options.joinStrategy = new AppserviceJoinRoomStrategy(options.joinStrategy, this);
 
         if (!options.intentOptions) options.intentOptions = {};
-        if (!options.intentOptions.maxAgeMs) options.intentOptions.maxAgeMs = 60 * 60 * 1000;
-        if (!options.intentOptions.maxCached) options.intentOptions.maxCached = 10000;
+        if (options.intentOptions.maxAgeMs === undefined) options.intentOptions.maxAgeMs = 60 * 60 * 1000;
+        if (options.intentOptions.maxCached === undefined) options.intentOptions.maxCached = 10000;
 
         this.intentsCache = new LRU.LRUCache({
+            max: options.intentOptions.maxCached,
+            ttl: options.intentOptions.maxAgeMs,
+        });
+
+        this.cryptoClientForRoomId = new LRU.LRUCache({
             max: options.intentOptions.maxCached,
             ttl: options.intentOptions.maxAgeMs,
         });
@@ -454,6 +464,7 @@ export class Appservice extends EventEmitter {
         if (!intent) {
             intent = new Intent(this.options, userId, this);
             this.intentsCache.set(userId, intent);
+            this.emit("intent.new", intent);
             if (this.options.intentOptions.encryption) {
                 intent.enableEncryption().catch(e => {
                     LogService.error("Appservice", `Failed to set up crypto on intent ${userId}`, e);
@@ -633,9 +644,7 @@ export class Appservice extends EventEmitter {
         const botDomain = new UserID(this.botUserId).domain;
         if (domain !== botDomain) return; // can't be impersonated, so don't try
 
-        // Update the target intent's joined rooms (fixes transition errors with the cache, like join->kick->join)
         const intent = this.getIntentForUserId(event['state_key']);
-        await intent.refreshJoinedRooms();
 
         const targetMembership = event["content"]["membership"];
         if (targetMembership === "join") {
@@ -659,6 +668,248 @@ export class Appservice extends EventEmitter {
         return providedToken === this.registration.hs_token;
     }
 
+    private async decryptAppserviceEvent(roomId: string, encrypted: EncryptedRoomEvent): ReturnType<Appservice["processEvent"]> {
+        const existingClient = this.cryptoClientForRoomId.get(roomId);
+        const decryptFn = async (client: MatrixClient) => {
+            // Also fetches state in order to decrypt room. We should throw if the client is confused.
+            if (!await client.crypto.isRoomEncrypted(roomId)) {
+                throw new Error("Client detected that the room is not encrypted.");
+            }
+            let event = (await client.crypto.decryptRoomEvent(encrypted, roomId)).raw;
+            event = await this.processEvent(event);
+            this.cryptoClientForRoomId.set(roomId, client);
+            // For logging purposes: show that the event was decrypted
+            LogService.info("Appservice", `Processing decrypted event of type ${event["type"]}`);
+            return event;
+        };
+        // 1. Try cached client
+        if (existingClient) {
+            try {
+                return await decryptFn(existingClient);
+            } catch (error) {
+                LogService.debug("Appservice", `Failed to decrypt via cached client ${await existingClient.getUserId()}`, error);
+                LogService.warn("Appservice", `Cached client was not able to decrypt ${roomId} ${encrypted.eventId} - trying other intents`);
+            }
+        }
+        this.cryptoClientForRoomId.delete(roomId);
+        // 2. Try the bot client
+        if (this.botClient.crypto?.isReady) {
+            try {
+                return await decryptFn(this.botClient);
+            } catch (error) {
+                LogService.debug("Appservice", `Failed to decrypt via bot client`, error);
+                LogService.warn("Appservice", `Bot client was not able to decrypt ${roomId} ${encrypted.eventId} - trying other intents`);
+            }
+        }
+
+        const userIdsInRoom = (await this.botClient.getJoinedRoomMembers(roomId)).filter(u => this.isNamespacedUser(u));
+        // 3. Try existing clients with crypto enabled.
+        for (const intentCacheEntry of this.intentsCache.entries()) {
+            const [userId, intent] = intentCacheEntry as [string, Intent];
+            if (!userIdsInRoom.includes(userId)) {
+                // Not in this room.
+                continue;
+            }
+            // Is this client crypto enabled?
+            if (!intent.underlyingClient.crypto?.isReady) {
+                continue;
+            }
+            try {
+                return await decryptFn(intent.underlyingClient);
+            } catch (error) {
+                LogService.debug("Appservice", `Failed to decrypt via ${userId}`, error);
+                LogService.warn("Appservice", `Existing encrypted client was not able to decrypt ${roomId} ${encrypted.eventId} - trying other intents`);
+            }
+        }
+
+        // 4. Try to enable crypto on any client to decrypt it.
+        // We deliberately do not enable crypto on every client for performance reasons.
+        const userInRoom = this.intentsCache.find((intent, userId) => !intent.underlyingClient.crypto?.isReady && userIdsInRoom.includes(userId));
+        if (!userInRoom) {
+            throw Error('No users in room, cannot decrypt');
+        }
+        try {
+            await userInRoom.enableEncryption();
+            return await decryptFn(userInRoom.underlyingClient);
+        } catch (error) {
+            LogService.debug("Appservice", `Failed to decrypt via random user ${userInRoom.userId}`, error);
+            throw new Error("Unable to decrypt event", { cause: error });
+        }
+    }
+
+    private async handleTransaction(txnId: string, body: Record<string, unknown>) {
+        // Process all the crypto stuff first to ensure that future transactions (if not this one)
+        // will decrypt successfully. We start with EDUs because we need structures to put counts
+        // and such into in a later stage, and EDUs are independent of crypto.
+        if (await this.storage.isTransactionCompleted(txnId)) {
+            // Duplicate.
+            return;
+        }
+
+        const byUserId: {
+            [userId: string]: {
+                counts: Record<string, Number>;
+                toDevice: any[];
+                unusedFallbacks: OTKAlgorithm[];
+            };
+        } = {};
+
+        const orderedEdus = [];
+        if (Array.isArray(body["de.sorunome.msc2409.to_device"])) {
+            orderedEdus.push(...body["de.sorunome.msc2409.to_device"].map(e => ({
+                ...e,
+                unsigned: {
+                    ...e['unsigned'],
+                    [EDU_ANNOTATION_KEY]: EduAnnotation.ToDevice,
+                },
+            })));
+        }
+        if (Array.isArray(body["de.sorunome.msc2409.ephemeral"])) {
+            orderedEdus.push(...body["de.sorunome.msc2409.ephemeral"].map(e => ({
+                ...e,
+                unsigned: {
+                    ...e['unsigned'],
+                    [EDU_ANNOTATION_KEY]: EduAnnotation.Ephemeral,
+                },
+            })));
+        }
+        for (let event of orderedEdus) {
+            if (event['edu_type']) event['type'] = event['edu_type']; // handle property change during MSC2409's course
+
+            LogService.info("Appservice", `Processing ${event['unsigned'][EDU_ANNOTATION_KEY]} event of type ${event["type"]}`);
+            event = await this.processEphemeralEvent(event);
+
+            // These events aren't tied to rooms, so just emit them generically
+            this.emit("ephemeral.event", event);
+
+            if (this.cryptoStorage && (event["type"] === "m.room.encrypted" || event.unsigned?.[EDU_ANNOTATION_KEY] === EduAnnotation.ToDevice)) {
+                const toUser = event["to_user_id"];
+                const intent = this.getIntentForUserId(toUser);
+                await intent.enableEncryption();
+
+                if (!byUserId[toUser]) byUserId[toUser] = { counts: null, toDevice: null, unusedFallbacks: null };
+                if (!byUserId[toUser].toDevice) byUserId[toUser].toDevice = [];
+                byUserId[toUser].toDevice.push(event);
+            }
+        }
+
+        const deviceLists = body["org.matrix.msc3202.device_lists"] as { changed: string[], removed: string[] } ?? {
+            changed: [],
+            removed: [],
+        };
+
+        if (!deviceLists.changed) deviceLists.changed = [];
+        if (!deviceLists.removed) deviceLists.removed = [];
+
+        if (deviceLists.changed.length || deviceLists.removed.length) {
+            this.emit("device_lists", deviceLists);
+        }
+
+        let otks = body["org.matrix.msc3202.device_one_time_keys_count"];
+        const otks2 = body["org.matrix.msc3202.device_one_time_key_counts"];
+        if (otks2 && !otks) {
+            LogService.warn(
+                "Appservice",
+                "Your homeserver is using an outdated field (device_one_time_key_counts) to talk to this appservice. " +
+                "If you're using Synapse, please upgrade to 1.73.0 or higher.",
+            );
+            otks = otks2;
+        }
+        if (otks) {
+            this.emit("otk.counts", otks);
+        }
+        if (otks && this.cryptoStorage) {
+            for (const userId of Object.keys(otks)) {
+                const intent = this.getIntentForUserId(userId);
+                await intent.enableEncryption();
+                const otksForUser = otks[userId][intent.underlyingClient.crypto.clientDeviceId];
+                if (otksForUser) {
+                    if (!byUserId[userId]) {
+                        byUserId[userId] = {
+                            counts: null,
+                            toDevice: null,
+                            unusedFallbacks: null,
+                        };
+                    }
+                    byUserId[userId].counts = otksForUser;
+                }
+            }
+        }
+
+        const fallbacks = body["org.matrix.msc3202.device_unused_fallback_key_types"];
+        if (fallbacks) {
+            this.emit("otk.unused_fallback_keys", fallbacks);
+        }
+        if (fallbacks && this.cryptoStorage) {
+            for (const userId of Object.keys(fallbacks)) {
+                const intent = this.getIntentForUserId(userId);
+                await intent.enableEncryption();
+                const fallbacksForUser = fallbacks[userId][intent.underlyingClient.crypto.clientDeviceId];
+                if (Array.isArray(fallbacksForUser) && !fallbacksForUser.includes(OTKAlgorithm.Signed)) {
+                    if (!byUserId[userId]) {
+                        byUserId[userId] = {
+                            counts: null,
+                            toDevice: null,
+                            unusedFallbacks: null,
+                        };
+                    }
+                    byUserId[userId].unusedFallbacks = fallbacksForUser;
+                }
+            }
+        }
+
+        if (this.cryptoStorage) {
+            for (const userId of Object.keys(byUserId)) {
+                const intent = this.getIntentForUserId(userId);
+                await intent.enableEncryption();
+                const info = byUserId[userId];
+                const userStorage = this.storage.storageForUser(userId);
+
+                if (!info.toDevice) info.toDevice = [];
+                if (!info.unusedFallbacks) info.unusedFallbacks = JSON.parse(await userStorage.readValue("last_unused_fallbacks") || "[]");
+                if (!info.counts) info.counts = JSON.parse(await userStorage.readValue("last_counts") || "{}");
+
+                LogService.info("Appservice", `Updating crypto state for ${userId}`);
+                await intent.underlyingClient.crypto.updateSyncData(info.toDevice, info.counts, info.unusedFallbacks, deviceLists.changed, deviceLists.removed);
+            }
+        }
+
+        for (let event of body.events as any[]) {
+            LogService.info("Appservice", `Processing event of type ${event["type"]}`);
+            event = await this.processEvent(event);
+            if (event['type'] === 'm.room.encrypted') {
+                this.emit("room.encrypted_event", event["room_id"], event);
+                if (this.cryptoStorage) {
+                    try {
+                        const encrypted = new EncryptedRoomEvent(event);
+                        const roomId = event['room_id'];
+                        event = await this.decryptAppserviceEvent(roomId, encrypted);
+                        this.emit("room.decrypted_event", roomId, event);
+
+                        // For logging purposes: show that the event was decrypted
+                        LogService.info("Appservice", `Processing decrypted event of type ${event["type"]}`);
+                    } catch (e) {
+                        LogService.error("Appservice", `Decryption error on ${event['room_id']} ${event['event_id']}`, e);
+                        this.emit("room.failed_decryption", event['room_id'], event, e);
+                    }
+                }
+            }
+            this.emit("room.event", event["room_id"], event);
+            if (event['type'] === 'm.room.message') {
+                this.emit("room.message", event["room_id"], event);
+            }
+            if (event['type'] === 'm.room.member' && this.isNamespacedUser(event['state_key'])) {
+                await this.processMembershipEvent(event);
+            }
+            if (event['type'] === 'm.room.tombstone' && event['state_key'] === '') {
+                this.emit("room.archived", event['room_id'], event);
+            }
+            if (event['type'] === 'm.room.create' && event['state_key'] === '' && event['content'] && event['content']['predecessor']) {
+                this.emit("room.upgraded", event['room_id'], event);
+            }
+        }
+    }
+
     private async onTransaction(req: express.Request, res: express.Response): Promise<any> {
         if (!this.isAuthed(req)) {
             res.status(401).json({ errcode: "AUTH_FAILED", error: "Authentication failed" });
@@ -675,16 +926,12 @@ export class Appservice extends EventEmitter {
             return;
         }
 
-        const txnId = req.params["txnId"];
+        const { txnId } = req.params;
 
-        if (await Promise.resolve(this.storage.isTransactionCompleted(txnId))) {
-            res.status(200).json({});
-            return;
-        }
-
-        if (this.pendingTransactions[txnId]) {
+        if (this.pendingTransactions.has(txnId)) {
+            // The homeserver has retried a transaction while we're still handling it.
             try {
-                await this.pendingTransactions[txnId];
+                await this.pendingTransactions.get(txnId);
                 res.status(200).json({});
             } catch (e) {
                 LogService.error("Appservice", e);
@@ -693,214 +940,25 @@ export class Appservice extends EventEmitter {
             return;
         }
 
-        LogService.info("Appservice", "Processing transaction " + txnId);
-        // eslint-disable-next-line no-async-promise-executor
-        this.pendingTransactions[txnId] = new Promise<void>(async (resolve) => {
-            // Process all the crypto stuff first to ensure that future transactions (if not this one)
-            // will decrypt successfully. We start with EDUs because we need structures to put counts
-            // and such into in a later stage, and EDUs are independent of crypto.
-
-            const byUserId: {
-                [userId: string]: {
-                    counts: Record<string, Number>;
-                    toDevice: any[];
-                    unusedFallbacks: OTKAlgorithm[];
-                };
-            } = {};
-
-            const orderedEdus = [];
-            if (Array.isArray(req.body["de.sorunome.msc2409.to_device"])) {
-                orderedEdus.push(...req.body["de.sorunome.msc2409.to_device"].map(e => ({
-                    ...e,
-                    unsigned: {
-                        ...e['unsigned'],
-                        [EDU_ANNOTATION_KEY]: EduAnnotation.ToDevice,
-                    },
-                })));
-            }
-            if (Array.isArray(req.body["de.sorunome.msc2409.ephemeral"])) {
-                orderedEdus.push(...req.body["de.sorunome.msc2409.ephemeral"].map(e => ({
-                    ...e,
-                    unsigned: {
-                        ...e['unsigned'],
-                        [EDU_ANNOTATION_KEY]: EduAnnotation.Ephemeral,
-                    },
-                })));
-            }
-            for (let event of orderedEdus) {
-                if (event['edu_type']) event['type'] = event['edu_type']; // handle property change during MSC2409's course
-
-                LogService.info("Appservice", `Processing ${event['unsigned'][EDU_ANNOTATION_KEY]} event of type ${event["type"]}`);
-                event = await this.processEphemeralEvent(event);
-
-                // These events aren't tied to rooms, so just emit them generically
-                this.emit("ephemeral.event", event);
-
-                if (this.cryptoStorage && (event["type"] === "m.room.encrypted" || event.unsigned?.[EDU_ANNOTATION_KEY] === EduAnnotation.ToDevice)) {
-                    const toUser = event["to_user_id"];
-                    const intent = this.getIntentForUserId(toUser);
-                    await intent.enableEncryption();
-
-                    if (!byUserId[toUser]) byUserId[toUser] = { counts: null, toDevice: null, unusedFallbacks: null };
-                    if (!byUserId[toUser].toDevice) byUserId[toUser].toDevice = [];
-                    byUserId[toUser].toDevice.push(event);
-                }
-            }
-
-            const deviceLists: { changed: string[], removed: string[] } = req.body["org.matrix.msc3202.device_lists"] ?? {
-                changed: [],
-                removed: [],
-            };
-
-            if (!deviceLists.changed) deviceLists.changed = [];
-            if (!deviceLists.removed) deviceLists.removed = [];
-
-            if (deviceLists.changed.length || deviceLists.removed.length) {
-                this.emit("device_lists", deviceLists);
-            }
-
-            let otks = req.body["org.matrix.msc3202.device_one_time_keys_count"];
-            const otks2 = req.body["org.matrix.msc3202.device_one_time_key_counts"];
-            if (otks2 && !otks) {
-                LogService.warn(
-                    "Appservice",
-                    "Your homeserver is using an outdated field (device_one_time_key_counts) to talk to this appservice. " +
-                    "If you're using Synapse, please upgrade to 1.73.0 or higher.",
-                );
-                otks = otks2;
-            }
-            if (otks) {
-                this.emit("otk.counts", otks);
-            }
-            if (otks && this.cryptoStorage) {
-                for (const userId of Object.keys(otks)) {
-                    const intent = this.getIntentForUserId(userId);
-                    await intent.enableEncryption();
-                    const otksForUser = otks[userId][intent.underlyingClient.crypto.clientDeviceId];
-                    if (otksForUser) {
-                        if (!byUserId[userId]) {
-                            byUserId[userId] = {
-                                counts: null,
-                                toDevice: null,
-                                unusedFallbacks: null,
-                            };
-                        }
-                        byUserId[userId].counts = otksForUser;
-                    }
-                }
-            }
-
-            const fallbacks = req.body["org.matrix.msc3202.device_unused_fallback_key_types"];
-            if (fallbacks) {
-                this.emit("otk.unused_fallback_keys", fallbacks);
-            }
-            if (fallbacks && this.cryptoStorage) {
-                for (const userId of Object.keys(fallbacks)) {
-                    const intent = this.getIntentForUserId(userId);
-                    await intent.enableEncryption();
-                    const fallbacksForUser = fallbacks[userId][intent.underlyingClient.crypto.clientDeviceId];
-                    if (Array.isArray(fallbacksForUser) && !fallbacksForUser.includes(OTKAlgorithm.Signed)) {
-                        if (!byUserId[userId]) {
-                            byUserId[userId] = {
-                                counts: null,
-                                toDevice: null,
-                                unusedFallbacks: null,
-                            };
-                        }
-                        byUserId[userId].unusedFallbacks = fallbacksForUser;
-                    }
-                }
-            }
-
-            if (this.cryptoStorage) {
-                for (const userId of Object.keys(byUserId)) {
-                    const intent = this.getIntentForUserId(userId);
-                    await intent.enableEncryption();
-                    const info = byUserId[userId];
-                    const userStorage = this.storage.storageForUser(userId);
-
-                    if (!info.toDevice) info.toDevice = [];
-                    if (!info.unusedFallbacks) info.unusedFallbacks = JSON.parse(await userStorage.readValue("last_unused_fallbacks") || "[]");
-                    if (!info.counts) info.counts = JSON.parse(await userStorage.readValue("last_counts") || "{}");
-
-                    LogService.info("Appservice", `Updating crypto state for ${userId}`);
-                    await intent.underlyingClient.crypto.updateSyncData(info.toDevice, info.counts, info.unusedFallbacks, deviceLists.changed, deviceLists.removed);
-                }
-            }
-
-            for (let event of req.body["events"]) {
-                LogService.info("Appservice", `Processing event of type ${event["type"]}`);
-                event = await this.processEvent(event);
-                if (event['type'] === 'm.room.encrypted') {
-                    this.emit("room.encrypted_event", event["room_id"], event);
-                    if (this.cryptoStorage) {
-                        try {
-                            const encrypted = new EncryptedRoomEvent(event);
-                            const roomId = event['room_id'];
-                            try {
-                                event = (await this.botClient.crypto.decryptRoomEvent(encrypted, roomId)).raw;
-                                event = await this.processEvent(event);
-                                this.emit("room.decrypted_event", roomId, event);
-
-                                // For logging purposes: show that the event was decrypted
-                                LogService.info("Appservice", `Processing decrypted event of type ${event["type"]}`);
-                            } catch (e1) {
-                                LogService.warn("Appservice", `Bot client was not able to decrypt ${roomId} ${event['event_id']} - trying other intents`);
-
-                                let tryUserId: string;
-                                try {
-                                    // TODO: This could be more efficient
-                                    const userIdsInRoom = await this.botClient.getJoinedRoomMembers(roomId);
-                                    tryUserId = userIdsInRoom.find(u => this.isNamespacedUser(u));
-                                } catch (e) {
-                                    LogService.error("Appservice", "Failed to get members of room - cannot decrypt message");
-                                }
-
-                                if (tryUserId) {
-                                    const intent = this.getIntentForUserId(tryUserId);
-
-                                    event = (await intent.underlyingClient.crypto.decryptRoomEvent(encrypted, roomId)).raw;
-                                    event = await this.processEvent(event);
-                                    this.emit("room.decrypted_event", roomId, event);
-
-                                    // For logging purposes: show that the event was decrypted
-                                    LogService.info("Appservice", `Processing decrypted event of type ${event["type"]}`);
-                                } else {
-                                    // noinspection ExceptionCaughtLocallyJS
-                                    throw e1;
-                                }
-                            }
-                        } catch (e) {
-                            LogService.error("Appservice", `Decryption error on ${event['room_id']} ${event['event_id']}`, e);
-                            this.emit("room.failed_decryption", event['room_id'], event, e);
-                        }
-                    }
-                }
-                this.emit("room.event", event["room_id"], event);
-                if (event['type'] === 'm.room.message') {
-                    this.emit("room.message", event["room_id"], event);
-                }
-                if (event['type'] === 'm.room.member' && this.isNamespacedUser(event['state_key'])) {
-                    await this.processMembershipEvent(event);
-                }
-                if (event['type'] === 'm.room.tombstone' && event['state_key'] === '') {
-                    this.emit("room.archived", event['room_id'], event);
-                }
-                if (event['type'] === 'm.room.create' && event['state_key'] === '' && event['content'] && event['content']['predecessor']) {
-                    this.emit("room.upgraded", event['room_id'], event);
-                }
-            }
-
-            resolve();
-        });
+        LogService.info("Appservice", `Processing transaction ${txnId}`);
+        const txnHandler = this.handleTransaction(txnId, req.body);
+        this.pendingTransactions.set(txnId, txnHandler);
 
         try {
-            await this.pendingTransactions[txnId];
-            await Promise.resolve(this.storage.setTransactionCompleted(txnId));
+            await txnHandler;
+            try {
+                await this.storage.setTransactionCompleted(txnId);
+            } catch (ex) {
+                // Not fatal for the transaction since we *did* process it, but we should
+                // warn loudly.
+                LogService.warn("Appservice", "Failed to store completed transaction", ex);
+            }
             res.status(200).json({});
         } catch (e) {
             LogService.error("Appservice", e);
             res.status(500).json({});
+        } finally {
+            this.pendingTransactions.delete(txnId);
         }
     }
 

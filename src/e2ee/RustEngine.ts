@@ -10,13 +10,17 @@ import {
     KeysUploadRequest,
     KeysQueryRequest,
     ToDeviceRequest,
+    KeysBackupRequest,
 } from "@matrix-org/matrix-sdk-crypto-nodejs";
 import * as AsyncLock from "async-lock";
 
 import { MatrixClient } from "../MatrixClient";
+import { extractRequestError, LogService } from "../logging/LogService";
 import { ICryptoRoomInformation } from "./ICryptoRoomInformation";
 import { EncryptionAlgorithm } from "../models/Crypto";
 import { EncryptionEvent } from "../models/events/EncryptionEvent";
+import { ICurve25519AuthData, IKeyBackupInfoRetrieved, IMegolmSessionDataExport, KeyBackupEncryptionAlgorithm, KeyBackupVersion } from "../models/KeyBackup";
+import { Membership } from "../models/events/MembershipEvent";
 
 /**
  * @internal
@@ -28,6 +32,14 @@ export const SYNC_LOCK_NAME = "sync";
  */
 export class RustEngine {
     public readonly lock = new AsyncLock();
+
+    private keyBackupVersion: KeyBackupVersion|undefined;
+    private keyBackupWaiter = Promise.resolve();
+
+    private backupEnabled = false;
+    public isBackupEnabled() {
+        return this.backupEnabled;
+    }
 
     public constructor(public readonly machine: OlmMachine, private client: MatrixClient) {
     }
@@ -59,7 +71,8 @@ export class RustEngine {
                 case RequestType.SignatureUpload:
                     throw new Error("Bindings error: Backup feature not possible");
                 case RequestType.KeysBackup:
-                    throw new Error("Bindings error: Backup feature not possible");
+                    await this.processKeysBackupRequest(request);
+                    break;
                 default:
                     throw new Error("Bindings error: Unrecognized request type: " + request.type);
             }
@@ -79,9 +92,7 @@ export class RustEngine {
     }
 
     public async prepareEncrypt(roomId: string, roomInfo: ICryptoRoomInformation) {
-        // TODO: Handle pre-shared invite keys too
-        const members = (await this.client.getJoinedRoomMembers(roomId)).map(u => new UserId(u));
-
+        let memberships: Membership[] = ["join", "invite"];
         let historyVis = HistoryVisibility.Joined;
         switch (roomInfo.historyVisibility) {
             case "world_readable":
@@ -95,8 +106,23 @@ export class RustEngine {
                 break;
             case "joined":
             default:
-            // Default and other cases handled by assignment before switch
+                memberships = ["join"];
         }
+
+        const members = new Set<UserId>();
+        for (const membership of memberships) {
+            try {
+                (await this.client.getRoomMembersByMembership(roomId, membership))
+                    .map(u => new UserId(u.membershipFor))
+                    .forEach(u => void members.add(u));
+            } catch (err) {
+                LogService.warn("RustEngine", `Failed to get room members for membership type "${membership}" in ${roomId}`, extractRequestError(err));
+            }
+        }
+        if (members.size === 0) {
+            return;
+        }
+        const membersArray = Array.from(members);
 
         const encEv = new EncryptionEvent({
             type: "m.room.encryption",
@@ -112,20 +138,86 @@ export class RustEngine {
         settings.rotationPeriodMessages = BigInt(encEv.rotationPeriodMessages);
 
         await this.lock.acquire(SYNC_LOCK_NAME, async () => {
-            await this.machine.updateTrackedUsers(members); // just in case we missed some
+            await this.machine.updateTrackedUsers(membersArray); // just in case we missed some
             await this.runOnly(RequestType.KeysQuery);
-            const keysClaim = await this.machine.getMissingSessions(members);
+            const keysClaim = await this.machine.getMissingSessions(membersArray);
             if (keysClaim) {
                 await this.processKeysClaimRequest(keysClaim);
             }
         });
 
         await this.lock.acquire(roomId, async () => {
-            const requests = JSON.parse(await this.machine.shareRoomKey(new RoomId(roomId), members, settings));
+            const requests = await this.machine.shareRoomKey(new RoomId(roomId), membersArray, settings);
             for (const req of requests) {
-                await this.actuallyProcessToDeviceRequest(req.txn_id, req.event_type, req.messages);
+                await this.processToDeviceRequest(req);
+            }
+            // Back up keys asynchronously
+            void this.backupRoomKeysIfEnabled();
+        });
+    }
+
+    public enableKeyBackup(info: IKeyBackupInfoRetrieved): Promise<void> {
+        this.keyBackupWaiter = this.keyBackupWaiter.then(async () => {
+            if (this.backupEnabled) {
+                // Finish any pending backups before changing the backup version/pubkey
+                await this.actuallyDisableKeyBackup();
+            }
+            let publicKey: string;
+            switch (info.algorithm) {
+                case KeyBackupEncryptionAlgorithm.MegolmBackupV1Curve25519AesSha2:
+                    publicKey = (info.auth_data as ICurve25519AuthData).public_key;
+                    break;
+                default:
+                    throw new Error("Key backup error: cannot enable backups with unsupported backup algorithm " + info.algorithm);
+            }
+            await this.machine.enableBackupV1(publicKey, info.version);
+            this.keyBackupVersion = info.version;
+            this.backupEnabled = true;
+        });
+        return this.keyBackupWaiter;
+    }
+
+    public disableKeyBackup(): Promise<void> {
+        this.keyBackupWaiter = this.keyBackupWaiter.then(async () => {
+            await this.actuallyDisableKeyBackup();
+        });
+        return this.keyBackupWaiter;
+    }
+
+    private async actuallyDisableKeyBackup(): Promise<void> {
+        await this.machine.disableBackup();
+        this.keyBackupVersion = undefined;
+        this.backupEnabled = false;
+    }
+
+    public backupRoomKeys(): Promise<void> {
+        this.keyBackupWaiter = this.keyBackupWaiter.then(async () => {
+            if (!this.backupEnabled) {
+                throw new Error("Key backup error: attempted to create a backup before having enabled backups");
+            }
+            await this.actuallyBackupRoomKeys();
+        });
+        return this.keyBackupWaiter;
+    }
+
+    public async exportRoomKeysForSession(roomId: string, sessionId: string): Promise<IMegolmSessionDataExport[]> {
+        return JSON.parse(await this.machine.exportRoomKeysForSession(roomId, sessionId)) as IMegolmSessionDataExport[];
+    }
+
+    private backupRoomKeysIfEnabled(): Promise<void> {
+        this.keyBackupWaiter = this.keyBackupWaiter.then(async () => {
+            if (this.backupEnabled) {
+                await this.actuallyBackupRoomKeys();
             }
         });
+        return this.keyBackupWaiter;
+    }
+
+    private async actuallyBackupRoomKeys(): Promise<void> {
+        const request = await this.machine.backupRoomKeys();
+        if (request) {
+            await this.processKeysBackupRequest(request);
+        }
     }
 
     private async processKeysClaimRequest(request: KeysClaimRequest) {
@@ -146,12 +238,21 @@ export class RustEngine {
     }
 
     private async processToDeviceRequest(request: ToDeviceRequest) {
-        const req = JSON.parse(request.body);
-        await this.actuallyProcessToDeviceRequest(req.txn_id, req.event_type, req.messages);
+        const resp = await this.client.sendToDevices(request.eventType, JSON.parse(request.body).messages);
+        await this.machine.markRequestAsSent(request.txnId, RequestType.ToDevice, JSON.stringify(resp));
     }
 
-    private async actuallyProcessToDeviceRequest(id: string, type: string, messages: Record<string, Record<string, unknown>>) {
-        const resp = await this.client.sendToDevices(type, messages);
-        await this.machine.markRequestAsSent(id, RequestType.ToDevice, JSON.stringify(resp));
+    private async processKeysBackupRequest(request: KeysBackupRequest) {
+        let resp: Awaited<ReturnType<MatrixClient["doRequest"]>>;
+        try {
+            if (!this.keyBackupVersion) {
+                throw new Error("Key backup version missing");
+            }
+            resp = await this.client.doRequest("PUT", "/_matrix/client/v3/room_keys/keys", { version: this.keyBackupVersion }, JSON.parse(request.body));
+        } catch (e) {
+            this.client.emit("crypto.failed_backup", e);
+            return;
+        }
+        await this.machine.markRequestAsSent(request.id, request.type, JSON.stringify(resp));
     }
 }

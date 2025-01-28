@@ -1,0 +1,50 @@
+#!/bin/bash
+set -e
+
+if [[ -n $(git status --porcelain) ]]; then
+    echo 'Working dir is dirty, aborting' >&2
+    exit 1
+fi
+
+. $(dirname $0)/fetch-remotes
+
+git checkout element-release
+git reset --hard $FORK_REPO
+
+PREID=element
+
+# The latest upstream release tag reachable from the current commit
+PREV_UPST_TAG=$(git log --decorate=short --decorate-refs=refs/tags/ --simplify-by-decoration --oneline | awk '/ \(tag: / && !/beta|element/ {sub(/)$/, "", $3); print $3; exit}')
+
+# The commit hash of the retrieved tag (not of the tag itself)
+PREV_UPST_TAG_HASH=$(git rev-parse ${PREV_UPST_TAG}~0)
+
+# The immediate child commit of the release commit,
+# to consider the 'Revert version back to "develop"' commits
+PREV_UPST_NXT_HASH=$(git rev-list ${PREV_UPST_TAG}..${UPSTREAM_REPO} | tail -n 1)
+
+# Check if the current branch is a direct merge of the previous upstream release
+for MERGE_PARENT in $(git show -s | awk '/^Merge: / {print $2; print $3; exit}'); do
+    if [[ $PREV_UPST_TAG_HASH =~ ^$MERGE_PARENT || $PREV_UPST_NXT_HASH =~ ^$MERGE_PARENT ]]; then
+        RELEASE_MERGE=1
+        break
+    fi
+done
+
+if [[ $RELEASE_MERGE -eq 1 ]]; then
+    THIS_TAG="${PREV_UPST_TAG}-${PREID}"
+    THIS_VER=${THIS_TAG#v}
+else
+    THIS_VER=$(npx semver --preid ${PREID} -i prerelease ${PREV_UPST_TAG#v})
+    while [[ -n $(git tag -l "v${THIS_VER}") ]]; do
+        THIS_VER=$(npx semver --preid ${PREID} -i prerelease $THIS_VER)
+    done
+    THIS_TAG="v${THIS_VER}"
+fi
+
+sed -i 's/\("version": "\).*\("\)/\1'$THIS_VER'\2/' package.json
+git add package.json
+git commit -m $THIS_TAG
+git tag -sm $THIS_TAG{,}
+
+echo "Tag '$THIS_TAG' is now ready and may be pushed"

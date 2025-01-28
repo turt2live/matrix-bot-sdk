@@ -1,6 +1,5 @@
 import * as tmp from "tmp";
 import * as simple from "simple-mock";
-import { StoreType } from "@matrix-org/matrix-sdk-crypto-nodejs";
 
 import {
     EventKind,
@@ -48,13 +47,13 @@ describe('MatrixClient', () => {
             expect(client.accessToken).toEqual(accessToken);
         });
 
-        it('should create a crypto client when requested', () => {
+        it('should create a crypto client when requested', () => testCryptoStores(async (cryptoStoreType) => {
             const homeserverUrl = "https://example.org";
             const accessToken = "example_token";
 
-            const client = new MatrixClient(homeserverUrl, accessToken, null, new RustSdkCryptoStorageProvider(tmp.dirSync().name, StoreType.Sled));
+            const client = new MatrixClient(homeserverUrl, accessToken, null, new RustSdkCryptoStorageProvider(tmp.dirSync().name, cryptoStoreType));
             expect(client.crypto).toBeDefined();
-        });
+        }));
 
         it('should NOT create a crypto client when requested', () => {
             const homeserverUrl = "https://example.org";
@@ -1401,8 +1400,7 @@ describe('MatrixClient', () => {
     describe('processSync', () => {
         interface ProcessSyncClient {
             userId: string;
-
-            processSync(raw: any): Promise<any>;
+            processSync(raw: any): MatrixClient["processSync"];
         }
 
         it('should process non-room account data', async () => {
@@ -2756,6 +2754,34 @@ describe('MatrixClient', () => {
             expect(result.state[0].raw).toMatchObject(state[0]);
             expect(result.state[1]).toBeDefined();
             expect(result.state[1].raw).toMatchObject(state[1]);
+        });
+    });
+
+    describe('getEventNearestToTimestamp', () => {
+        it('should use the right endpoint', async () => {
+            const { client, http, hsUrl } = createTestClient();
+            const roomId = "!abc123:example.org";
+            const dir = "f";
+            const timestamp = 1234;
+
+            const eventId = "$def456:example.org";
+            const originServerTs = 4567;
+
+            http.when("GET", "/_matrix/client/v1/rooms").respond(200, (path, _content, req) => {
+                expect(path).toEqual(`${hsUrl}/_matrix/client/v1/rooms/${encodeURIComponent(roomId)}/timestamp_to_event`);
+                expect(req.queryParams['dir']).toEqual(dir);
+                expect(req.queryParams['ts']).toEqual(timestamp);
+
+                return {
+                    event_id: eventId,
+                    origin_server_ts: originServerTs,
+                };
+            });
+
+            const [result] = await Promise.all([client.getEventNearestToTimestamp(roomId, timestamp, dir), http.flushAllExpected()]);
+            expect(result).toBeDefined();
+            expect(result.event_id).toEqual(eventId);
+            expect(result.origin_server_ts).toEqual(originServerTs);
         });
     });
 

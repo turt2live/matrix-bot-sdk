@@ -24,12 +24,19 @@ export interface Signatures {
 }
 
 /**
+ * Interface that can be extended by
+ * any object that needs a signature.
+ */
+export interface Signed {
+    signatures: Signatures;
+}
+
+/**
  * A signed_curve25519 one time key.
  * @category Models
  */
-export interface SignedCurve25519OTK {
+export interface SignedCurve25519OTK extends Signed {
     key: string;
-    signatures: Signatures;
     fallback?: boolean;
 }
 
@@ -89,12 +96,11 @@ export type DeviceKeyLabel<Algorithm extends DeviceKeyAlgorithm, ID extends stri
  * Represents a user's device.
  * @category Models
  */
-export interface UserDevice {
+export interface UserDevice extends Signed {
     user_id: string;
     device_id: string;
     algorithms: (EncryptionAlgorithm | string)[];
     keys: Record<DeviceKeyLabel<DeviceKeyAlgorithm, string>, string>;
-    signatures: Signatures;
     unsigned?: {
         [k: string]: any;
         device_display_name?: string;
