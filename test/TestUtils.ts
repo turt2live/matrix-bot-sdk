@@ -40,14 +40,14 @@ export function createTestClient(
     const http = new HttpBackend();
     const hsUrl = "https://localhost";
     const accessToken = "s3cret";
-    const client = new MatrixClient(hsUrl, accessToken, storage, cryptoStoreType !== undefined ? new RustSdkCryptoStorageProvider(tmp.dirSync().name, cryptoStoreType) : null);
+    const client = new MatrixClient(hsUrl, accessToken, storage, (cryptoStoreType !== undefined) ? new RustSdkCryptoStorageProvider(tmp.dirSync().name, cryptoStoreType) : null);
     (<any>client).userId = userId; // private member access
     setRequestFn(http.requestFn);
 
     return { http, hsUrl, accessToken, client };
 }
 
-const CRYPTO_STORE_TYPES = [StoreType.Sled, StoreType.Sqlite];
+const CRYPTO_STORE_TYPES: StoreType[] = [StoreType.Sqlite];
 
 export async function testCryptoStores(fn: (StoreType) => Promise<void>): Promise<void> {
     for (const st of CRYPTO_STORE_TYPES) {

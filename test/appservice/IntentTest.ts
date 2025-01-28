@@ -1233,7 +1233,7 @@ describe('Intent', () => {
 
         beforeEach(() => {
             storage = new MemoryStorageProvider();
-            cryptoStorage = new RustSdkAppserviceCryptoStorageProvider(tmp.dirSync().name, StoreType.Sled);
+            cryptoStorage = new RustSdkAppserviceCryptoStorageProvider(tmp.dirSync().name, StoreType.Sqlite);
             options = {
                 homeserverUrl: hsUrl,
                 storage: storage,
