@@ -1610,6 +1610,29 @@ export class MatrixClient extends EventEmitter {
     }
 
     /**
+     * Download Authenticated content from the homeserver's media repository. Note that this will <b>not</b> automatically
+     * decrypt media as it cannot determine if the media is encrypted.
+     * @param {string} mxcUrl The MXC URI for the content.
+     * @param {number} timeoutMs The maximum number of milliseconds that the client is willing to wait to start receiving data,
+     * in the case that the content has not yet been uploaded. The default value is 20000 (20 seconds). 
+     * @returns {Promise<{data: Buffer, contentType: string}>} Resolves to the downloaded content.
+     */
+    public async downloadAuthenticatedContent(mxcUrl: string, timeoutMs = 20000): Promise<{ data: Buffer, contentType: string }> {
+        if (!mxcUrl.toLowerCase().startsWith("mxc://")) {
+            throw Error("'mxcUrl' does not begin with mxc://");
+        }
+        const urlParts = mxcUrl.substr("mxc://".length).split("/");
+        const domain = encodeURIComponent(urlParts[0]);
+        const mediaId = encodeURIComponent(urlParts[1].split("/")[0]);
+        const path = `/_matrix/client/v1/media/download/${domain}/${mediaId}`;
+        const res = await this.doRequest("GET", path, { timeout_ms: timeoutMs }, null, null, true, null, true);
+        return {
+            data: res.body,
+            contentType: res.headers["content-type"],
+        };
+    }
+
+    /**
      * Download content from the homeserver's media repository. Note that this will <b>not</b> automatically decrypt
      * media as it cannot determine if the media is encrypted.
      * @param {string} mxcUrl The MXC URI for the content.

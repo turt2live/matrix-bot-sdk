@@ -5727,6 +5727,35 @@ describe('MatrixClient', () => {
         });
     });
 
+    describe('downloadAuthenticatedContent', () => {
+        it('should call the right endpoint', async () => {
+            const { client, http } = createTestClient();
+            const urlPart = "example.org/testing";
+            const mxcUrl = "mxc://" + urlPart;
+            // const fileContents = Buffer.from("12345");
+
+            // noinspection TypeScriptValidateJSTypes
+            http.when("GET", "/_matrix/client/v1/media/download/").respond(200, (path, _, req) => {
+                expect(path).toContain("/_matrix/client/v1/media/download/" + urlPart);
+                expect((req as any).opts.encoding).toEqual(null);
+                // TODO: Honestly, I have no idea how to coerce the mock library to return headers or buffers,
+                // so this is left as a fun activity.
+                // return {
+                //     body: fileContents,
+                //     headers: {
+                //         "content-type": "test/test",
+                //     },
+                // };
+                return {};
+            });
+
+            // Due to the above problem, the output of this won't be correct, so we cannot verify it.
+            const [res] = await Promise.all([client.downloadAuthenticatedContent(mxcUrl), http.flushAllExpected()]);
+            expect(Object.keys(res)).toContain("data");
+            expect(Object.keys(res)).toContain("contentType");
+        });
+    });
+
     describe('downloadContent', () => {
         it('should call the right endpoint', async () => {
             const { client, http } = createTestClient();
