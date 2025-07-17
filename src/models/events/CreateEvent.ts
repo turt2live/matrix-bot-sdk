@@ -14,7 +14,7 @@ export interface PreviousRoomInfo {
     /**
      * The last known event ID in the old room.
      */
-    event_id: string;
+    event_id?: string;
 }
 
 /**
