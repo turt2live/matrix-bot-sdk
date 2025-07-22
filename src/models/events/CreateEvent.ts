@@ -13,6 +13,7 @@ export interface PreviousRoomInfo {
 
     /**
      * The last known event ID in the old room.
+     * Optional only for room versions >=12.
      */
     event_id?: string;
 }
