@@ -1,6 +1,10 @@
+import * as AsyncLock from "async-lock";
+
 import { MatrixClient } from "./MatrixClient";
 import { EncryptionAlgorithm } from "./models/Crypto";
 import { LogService } from "./logging/LogService";
+
+const PERSIST_LOCK_NAME = "persist";
 
 /**
  * Handles DM (direct messages) matching between users. Note that bots which
@@ -16,6 +20,7 @@ import { LogService } from "./logging/LogService";
 export class DMs {
     private cached = new Map<string, string[]>();
     private ready: Promise<void>;
+    private readonly updateLock = new AsyncLock();
 
     /**
      * Creates a new DM map.
@@ -50,20 +55,27 @@ export class DMs {
     }
 
     private async handleInvite(roomId: string, ev: any) {
-        if (ev['content']?.['is_direct'] === true) {
-            const userId = ev['sender'];
-            if (!this.cached.has(userId)) this.cached.set(userId, []);
-            this.cached.set(userId, [roomId, ...this.cached.get(userId)]);
-            await this.persistCache();
+        try {
+            if (ev['content']?.['is_direct'] === true) {
+                const userId = ev['sender'];
+                if (!this.cached.has(userId)) this.cached.set(userId, []);
+                this.cached.set(userId, [roomId, ...this.cached.get(userId)]);
+                await this.persistCache();
+            }
+        } catch (e) {
+            LogService.debug("DMs", e);
+            LogService.warn("DMs", `Unable to process ${roomId} as a possible DM. This is typically a persistence issue, and may be retried at the next DM update.`);
         }
     }
 
     private async persistCache() {
-        const obj: Record<string, string[]> = {};
-        for (const [uid, rids] of this.cached.entries()) {
-            obj[uid] = rids;
-        }
-        await this.client.setAccountData("m.direct", obj);
+        await this.updateLock.acquire(PERSIST_LOCK_NAME, async () => {
+            const obj: Record<string, string[]> = {};
+            for (const [uid, rids] of this.cached.entries()) {
+                obj[uid] = rids;
+            }
+            await this.client.setAccountData("m.direct", obj);
+        });
     }
 
     private async fixDms(userId: string) {
@@ -79,6 +91,7 @@ export class DMs {
                     toKeep.push(roomId);
                 }
             } catch (e) {
+                LogService.debug("DMs", e);
                 LogService.warn("DMs", `Unable to check ${roomId} for room members - assuming invalid DM`);
             }
         }
