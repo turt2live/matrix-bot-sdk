@@ -10,11 +10,11 @@ jobs:
     - uses: actions/checkout@v3
     - uses: actions/setup-node@v3
       with:
-        node-version: '18'
+        node-version-file: .node-version
     - run: yarn install
     - run: yarn docs
     - name: Build and deploy docs
       uses: JamesIves/github-pages-deploy-action@v4
       with:
         branch: gh-pages
-        folder: .jsdoc/matrix-bot-sdk/develop
+        folder: .jsdoc/@vector-im/matrix-bot-sdk/develop

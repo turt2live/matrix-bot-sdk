@@ -1,0 +1,14 @@
+#!/bin/bash
+set -e
+
+if [[ $# -lt 1 ]]; then
+    echo 'Please provide a title for your patch branch' >&2
+    exit 1
+fi
+PATCH_TITLE=$1
+
+. $(dirname $0)/fetch-remotes
+
+git checkout -b $PATCH_TITLE $(git merge-base $UPSTREAM_REPO $FORK_REPO)
+
+echo "Branch '$PATCH_TITLE' is now ready. Push changes to this branch when preparing a PR, and aim to merge it to both upstream and the fork."
