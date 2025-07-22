@@ -696,6 +696,10 @@ export class MatrixClient extends EventEmitter {
         return this.startSync();
     }
 
+    protected emitAsync(e: string, ...p: any[]): Promise<any> {
+        return Promise.resolve<any>(this.emit(e, ...p));
+    }
+
     protected async startSync(emitFn: (emitEventType: string, ...payload: any[]) => Promise<any> = null) {
         // noinspection ES6RedundantAwait
         let token = await Promise.resolve(this.storage.getSyncToken());
@@ -728,6 +732,8 @@ export class MatrixClient extends EventEmitter {
                 }
 
                 LogService.error("MatrixClientLite", "Error handling sync " + extractRequestError(e));
+                await this.emitAsync("sync.error", e);
+
                 const backoffTime = SYNC_BACKOFF_MIN_MS + Math.random() * (SYNC_BACKOFF_MAX_MS - SYNC_BACKOFF_MIN_MS);
                 LogService.info("MatrixClientLite", `Backing off for ${backoffTime}ms`);
                 await new Promise((r) => setTimeout(r, backoffTime));
@@ -757,7 +763,7 @@ export class MatrixClient extends EventEmitter {
 
     @timedMatrixClientFunctionCall()
     protected async processSync(raw: any, emitFn: (emitEventType: string, ...payload: any[]) => Promise<any> = null): Promise<any> {
-        if (!emitFn) emitFn = (e, ...p) => Promise.resolve<any>(this.emit(e, ...p));
+        if (!emitFn) emitFn = (e, ...p) => this.emitAsync(e, ...p);
 
         if (!raw) return; // nothing to process
 
