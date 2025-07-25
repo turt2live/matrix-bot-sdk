@@ -1,4 +1,4 @@
-import * as origRequestFn from "request";
+import * as origRequestFn from "@cypress/request";
 
 let requestFn = origRequestFn;
 
