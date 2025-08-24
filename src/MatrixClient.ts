@@ -2015,7 +2015,11 @@ export class MatrixClient extends EventEmitter {
         if (this.accessToken) {
             headers["Authorization"] = `Bearer ${this.accessToken}`;
         }
-        return doHttpRequest(this.homeserverUrl, method, endpoint, qs, body, headers, timeout, raw, contentType, noEncoding);
+        const requestFn = () => doHttpRequest(this.homeserverUrl, method, endpoint, qs, body, headers, timeout, raw, contentType, noEncoding);
+        return requestFn().catch((e) => {
+            e.retryRequest = requestFn;
+            throw e;
+        });
     }
 }
 
