@@ -1737,10 +1737,10 @@ export class MatrixClient extends EventEmitter {
         if (!mxcUrl.toLowerCase().startsWith("mxc://")) {
             throw Error("'mxcUrl' does not begin with mxc://");
         }
-        const urlParts = mxcUrl.substr("mxc://".length).split("/");
+        const urlParts = mxcUrl.substring("mxc://".length).split("/");
         const domain = encodeURIComponent(urlParts[0]);
         const mediaId = encodeURIComponent(urlParts[1].split("/")[0]);
-        const path = `/_matrix/media/v3/download/${domain}/${mediaId}`;
+        const path = `/_matrix/client/v1/media/download/${domain}/${mediaId}`;
         const res = await this.doRequest("GET", path, { allow_remote: allowRemote }, null, null, true, null, true);
         return {
             data: res.body,
