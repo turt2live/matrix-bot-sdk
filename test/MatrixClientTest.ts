@@ -5735,8 +5735,8 @@ describe('MatrixClient', () => {
             // const fileContents = Buffer.from("12345");
 
             // noinspection TypeScriptValidateJSTypes
-            http.when("GET", "/_matrix/media/v3/download/").respond(200, (path, _, req) => {
-                expect(path).toContain("/_matrix/media/v3/download/" + urlPart);
+            http.when("GET", "/_matrix/client/v1/media/download/").respond(200, (path, _, req) => {
+                expect(path).toContain("/_matrix/client/v1/media/download/" + urlPart);
                 expect((req as any).opts.encoding).toEqual(null);
                 // TODO: Honestly, I have no idea how to coerce the mock library to return headers or buffers,
                 // so this is left as a fun activity.
