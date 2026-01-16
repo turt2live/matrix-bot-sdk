@@ -52,7 +52,7 @@ describe('MatrixClient', () => {
             const homeserverUrl = "https://example.org";
             const accessToken = "example_token";
 
-            const client = new MatrixClient(homeserverUrl, accessToken, null, new RustSdkCryptoStorageProvider(tmp.dirSync().name, StoreType.Sled));
+            const client = new MatrixClient(homeserverUrl, accessToken, null, new RustSdkCryptoStorageProvider(tmp.dirSync().name, StoreType.Sqlite));
             expect(client.crypto).toBeDefined();
         });
 

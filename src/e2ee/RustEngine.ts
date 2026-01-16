@@ -121,9 +121,9 @@ export class RustEngine {
         });
 
         await this.lock.acquire(roomId, async () => {
-            const requests = JSON.parse(await this.machine.shareRoomKey(new RoomId(roomId), members, settings));
+            const requests = await this.machine.shareRoomKey(new RoomId(roomId), members, settings);
             for (const req of requests) {
-                await this.actuallyProcessToDeviceRequest(req.txn_id, req.event_type, req.messages);
+                await this.actuallyProcessToDeviceRequest(req.txnId, req.eventType, JSON.parse(req.body)["messages"]);
             }
         });
     }
