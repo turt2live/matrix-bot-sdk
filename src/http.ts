@@ -48,7 +48,7 @@ export async function doHttpRequest(
         if (body && Buffer.isBuffer(body)) LogService.trace("MatrixHttpClient", "(REQ-" + requestId + ")", "body = <Buffer>");
     }
 
-    const params: { [k: string]: any } = {
+    const params: { uri: string, [k: string]: any } = {
         uri: url,
         method: method,
         qs: qs,

@@ -16,6 +16,6 @@ export function setRequestFn(fn) {
  * @returns The request function.
  * @category Unit testing
  */
-export function getRequestFn() {
+export function getRequestFn(): typeof origRequestFn {
     return requestFn;
 }

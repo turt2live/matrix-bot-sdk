@@ -1229,7 +1229,7 @@ describe('Intent', () => {
         let storage: IAppserviceStorageProvider;
         let cryptoStorage: IAppserviceCryptoStorageProvider;
         let options: IAppserviceOptions;
-        let intent: Intent; // eslint-disable-line @typescript-eslint/no-unused-vars
+        let intent: Intent;  
 
         beforeEach(() => {
             storage = new MemoryStorageProvider();
@@ -1256,7 +1256,7 @@ describe('Intent', () => {
                     },
                 },
             };
-            intent = new Intent(options, userId, appservice); // eslint-disable-line @typescript-eslint/no-unused-vars
+            intent = new Intent(options, userId, appservice);  
         });
 
         // TODO: Test once device_id impersonation set up
