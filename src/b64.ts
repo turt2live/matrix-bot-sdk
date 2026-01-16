@@ -5,7 +5,11 @@
  * @returns {string} The Base64 string.
  */
 export function encodeBase64(b: ArrayBuffer | Uint8Array): string {
-    return Buffer.from(b).toString('base64');
+    if (b instanceof ArrayBuffer) {
+        return Buffer.from(b).toString('base64');
+    } else {
+        return Buffer.from(b.buffer, b.byteOffset, b.byteLength).toString('base64');
+    }
 }
 
 /**
