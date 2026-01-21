@@ -117,7 +117,7 @@ export class CryptoClient {
      * @param roomId The room ID.
      * @param event The event.
      */
-    public async onRoomEvent(roomId: string, event: any) {
+    public async onRoomEvent(roomId: string, event: any): Promise<void> {
         await this.roomTracker.onRoomEvent(roomId, event);
         if (typeof event['state_key'] !== 'string') return;
         if (event['type'] === 'm.room.member') {
@@ -125,7 +125,13 @@ export class CryptoClient {
             if (membership.effectiveMembership !== 'join' && membership.effectiveMembership !== 'invite') return;
             await this.engine.addTrackedUsers([membership.membershipFor]);
         } else if (event['type'] === 'm.room.encryption') {
-            const members = await this.client.getRoomMembers(roomId, null, ['join', 'invite']);
+            let members: MembershipEvent[] | undefined;
+            try {
+                members = await this.client.getRoomMembers(roomId, null, ['join', 'invite']);
+            } catch (e) {
+                LogService.warn("CryptoClient", `Unable to get members of room ${roomId}`);
+                return;
+            }
             await this.engine.addTrackedUsers(members.map(e => e.membershipFor));
         }
     }
