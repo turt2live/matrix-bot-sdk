@@ -479,4 +479,14 @@ export class SynapseAdminApis {
     public async makeRoomAdmin(roomId: string, userId?: string): Promise<void> {
         return this.client.doRequest("POST", `/_synapse/admin/v1/rooms/${encodeURIComponent(roomId)}/make_room_admin`, {}, { user_id: userId });
     }
+
+    /**
+     * Joins a local user account to a room.
+     * @param roomId The room to make the user join.
+     * @param UserId The user to join into the room.
+     * @returns Resolves when complete.
+     */
+    public async joinUserToRoom(roomId: string, userId: string): Promise<void> {
+        return this.client.doRequest("POST", `/_synapse/admin/v1/join/${encodeURIComponent(roomId)}`, {}, { user_id: userId });
+    }
 }
