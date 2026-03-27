@@ -6,6 +6,7 @@ import {
     EventKind,
     IJoinRoomStrategy,
     IPreprocessor,
+    IToDeviceMessage,
     MatrixClient,
     Membership,
     MemoryStorageProvider,
@@ -2323,6 +2324,23 @@ describe('MatrixClient', () => {
             await client.processSync(sync);
             expect(spy.callCount).toBe(1);
         }));
+
+        it('should process to-device messages regardless of crypto', async () => {
+            const { client: realClient } = createTestClient();
+            const client = <ProcessSyncClient>(<any>realClient);
+
+            const sync = {
+                to_device: { events: [{ type: "org.example", content: { hello: "world" } }] },
+            };
+
+            const spy = simple.stub().callFn((toDeviceMsg: IToDeviceMessage) => {
+                expect(toDeviceMsg).toMatchObject(sync.to_device.events[0]);
+            });
+            realClient.on("to-device", spy);
+
+            await client.processSync(sync);
+            expect(spy.callCount).toBe(1);
+        });
     });
 
     describe('getEvent', () => {
