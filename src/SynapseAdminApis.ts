@@ -479,4 +479,16 @@ export class SynapseAdminApis {
     public async makeRoomAdmin(roomId: string, userId?: string): Promise<void> {
         return this.client.doRequest("POST", `/_synapse/admin/v1/rooms/${encodeURIComponent(roomId)}/make_room_admin`, {}, { user_id: userId });
     }
+
+    /**
+    * Get the nearest event to a given timestamp, either forwards or backwards. You do not
+    * need to be joined to the room to retrieve this information.
+    * @param roomId The room ID to get the context in.
+    * @param ts The event ID to get the context of.
+    * @param dir The maximum number of events to return on either side of the event.
+    * @returns The ID and origin server timestamp of the event.
+    */
+    public async getEventNearestToTimestamp(roomId: string, ts: number, dir: "f"|"b"): Promise<{event_id: string, origin_server_ts: number}> {
+        return await this.client.doRequest("GET", "/_synapse/admin/v1/rooms/" + encodeURIComponent(roomId) + "/timestamp_to_event", { ts, dir });
+    }
 }

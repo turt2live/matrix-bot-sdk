@@ -531,5 +531,33 @@ describe('SynapseAdminApis', () => {
                 await Promise.all([client.makeRoomAdmin(roomId, userId), http.flushAllExpected()]);
             });
         });
+
+        describe('getEventNearestToTimestamp', () => {
+            it('should use the right endpoint', async () => {
+                const { client, http, hsUrl } = createTestSynapseAdminClient();
+                const roomId = "!abc123:example.org";
+                const dir = "f";
+                const timestamp = 1234;
+
+                const eventId = "$def456:example.org";
+                const originServerTs = 4567;
+
+                http.when("GET", "/_synapse/admin/v1/rooms").respond(200, (path, _content, req) => {
+                    expect(path).toEqual(`${hsUrl}/_synapse/admin/v1/rooms/${encodeURIComponent(roomId)}/timestamp_to_event`);
+                    expect(req.queryParams['dir']).toEqual(dir);
+                    expect(req.queryParams['ts']).toEqual(timestamp);
+
+                    return {
+                        event_id: eventId,
+                        origin_server_ts: originServerTs,
+                    };
+                });
+
+                const [result] = await Promise.all([client.getEventNearestToTimestamp(roomId, timestamp, dir), http.flushAllExpected()]);
+                expect(result).toBeDefined();
+                expect(result.event_id).toEqual(eventId);
+                expect(result.origin_server_ts).toEqual(originServerTs);
+            });
+        });
     });
 });
