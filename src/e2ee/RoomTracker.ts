@@ -60,7 +60,7 @@ export class RoomTracker {
         try {
             encEvent = await this.client.getRoomStateEvent(roomId, "m.room.encryption", "");
             encEvent.algorithm = encEvent.algorithm ?? 'UNKNOWN';
-        } catch (e) {
+        } catch {
             return; // failure == no encryption
         }
 
@@ -69,7 +69,7 @@ export class RoomTracker {
         try {
             const ev = await this.client.getRoomStateEvent(roomId, "m.room.history_visibility", "");
             historyVisibility = ev.history_visibility;
-        } catch (e) {
+        } catch {
             // ignore - we'll just treat history visibility as normal
         }
 

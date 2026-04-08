@@ -24,7 +24,7 @@ LogService.trace = LogService.debug;
 let creds = null;
 try {
     creds = require("../../examples/storage/encryption_appservice.creds.json");
-} catch (e) {
+} catch {
     // ignore
 }
 

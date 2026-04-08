@@ -1,9 +1,4 @@
-const {
-    defineConfig,
-} = require("eslint/config");
-
 const matrixOrg = require("eslint-plugin-matrix-org");
-const globals = require("globals");
 const js = require("@eslint/js");
 
 const {
@@ -11,29 +6,22 @@ const {
 } = require("@eslint/eslintrc");
 
 const compat = new FlatCompat({
-    baseDirectory: __dirname,
     recommendedConfig: js.configs.recommended,
-    allConfig: js.configs.all
 });
 
-module.exports = defineConfig([{
+module.exports = [
+    ...compat.config(matrixOrg.configs.typescript), {
     plugins: {
         "matrix-org": matrixOrg,
     },
 
-    extends: compat.extends("plugin:matrix-org/babel"),
-
     languageOptions: {
-        globals: {
-            ...globals.browser,
-            ...globals.node,
+        parserOptions: {
+            projectService: true,
         },
     },
 
     rules: {
-        "valid-jsdoc": ["off"],
-        "require-jsdoc": ["off"],
-        "unicorn/no-instanceof-array": "off",
         "no-var": ["warn"],
         "prefer-rest-params": ["warn"],
         "prefer-spread": ["warn"],
@@ -58,38 +46,41 @@ module.exports = defineConfig([{
         "indent": "off",
         "no-constant-condition": "off",
         "no-async-promise-executor": "off",
+        // We use a `LogService` intermediary module
         "no-console": "error",
-    },
-}, {
-    files: ["**/*.ts"],
-    extends: compat.extends("plugin:matrix-org/typescript"),
 
-    rules: {
-        "valid-jsdoc": ["off"],
-        "require-jsdoc": ["off"],
-        "unicorn/no-instanceof-array": "off",
-        "@babel/no-invalid-this": "off",
-        "@typescript-eslint/explicit-function-return-type": "off",
-        "@typescript-eslint/consistent-type-exports": "off",
-        "@typescript-eslint/consistent-type-imports": "off",
-        "@typescript-eslint/explicit-member-accessibility": "off",
-        "@typescript-eslint/no-wrapper-object-types": "off",
-        "@typescript-eslint/no-unused-vars": "off",
-        "@typescript-eslint/no-empty-object-type": "off",
-        "@typescript-eslint/no-require-imports": "off",
-        "@typescript-eslint/no-base-to-string": "off",
+        // We're okay being explicit at the moment
         "@typescript-eslint/no-empty-interface": "off",
+        // We disable this while we're transitioning
         "@typescript-eslint/no-explicit-any": "off",
+        // We'd rather not do this but we do
         "@typescript-eslint/ban-ts-comment": "off",
+        // We're okay with assertion errors when we ask for them
         "@typescript-eslint/no-non-null-assertion": "off",
-        "@stylistic/member-delimiter-style": "off",
         "quotes": "off",
-        "no-console": "error",
 
         "max-len": ["error", {
             "code": 180,
         }],
 
         "no-extra-boolean-cast": "off",
+
+        // Disable rules added by eslint-plugin-matrix-org since v0.8.0
+
+        "@typescript-eslint/explicit-function-return-type": "off",
+        "@typescript-eslint/explicit-member-accessibility": "off",
+        "@typescript-eslint/consistent-type-exports": "off",
+        "@typescript-eslint/consistent-type-imports": "off",
+
+        "@stylistic/member-delimiter-style": ["error", {
+            "singleline": {
+                "delimiter": "comma",
+                "requireLast": false,
+            }
+        }],
+
+        "@typescript-eslint/no-wrapper-object-types": "off",
+        "@typescript-eslint/no-empty-object-type": "off",
+        "@typescript-eslint/no-require-imports": "off",
     },
-}]);
+}];

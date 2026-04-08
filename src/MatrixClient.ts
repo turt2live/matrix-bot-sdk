@@ -458,7 +458,7 @@ export class MatrixClient extends EventEmitter {
             const alt = event['alt_aliases'] || [];
 
             return canonical || alt[0];
-        } catch (e) {
+        } catch {
             // Assume none
             return null;
         }
@@ -1720,7 +1720,7 @@ export class MatrixClient extends EventEmitter {
                             if (!create['content']) create['content'] = {};
                             prevVersion = create['content']['room_version'] || "1";
                         }
-                    } catch (e) {
+                    } catch {
                         // state not available
                     }
 
@@ -1732,7 +1732,7 @@ export class MatrixClient extends EventEmitter {
 
                     return chaseCreates(prevRoomId);
                 }
-            } catch (e) {
+            } catch {
                 // no create event - that's fine
             }
         };
@@ -1764,7 +1764,7 @@ export class MatrixClient extends EventEmitter {
 
                         newRoomVersion = create['content']['room_version'] || "1";
                     }
-                } catch (e) {
+                } catch {
                     // state not available
                 }
 
@@ -1775,7 +1775,7 @@ export class MatrixClient extends EventEmitter {
                 });
 
                 return await chaseTombstones(newRoomId);
-            } catch (e) {
+            } catch {
                 // no tombstone - that's fine
             }
         };

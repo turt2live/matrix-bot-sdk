@@ -19,7 +19,7 @@ LogService.trace = LogService.debug;
 let creds = null;
 try {
     creds = require("../../examples/storage/bot.creds.json");
-} catch (e) {
+} catch {
     // ignore
 }
 

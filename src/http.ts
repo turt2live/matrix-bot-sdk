@@ -85,14 +85,14 @@ export async function doHttpRequest(
             if (typeof (rBody) === 'string') {
                 try {
                     rBody = JSON.parse(rBody);
-                } catch (e) {
+                } catch {
                 }
             }
 
             if (typeof (res.body) === 'string') {
                 try {
                     res.body = JSON.parse(res.body);
-                } catch (e) {
+                } catch {
                 }
             }
 

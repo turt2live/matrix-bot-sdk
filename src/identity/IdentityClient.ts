@@ -158,7 +158,7 @@ export class IdentityClient {
         const tryFetch = async (eventType: string, stateKey: string): Promise<any> => {
             try {
                 return await this.matrixClient.getRoomStateEvent(roomId, eventType, stateKey);
-            } catch (e) {
+            } catch {
                 return null;
             }
         };
@@ -174,7 +174,7 @@ export class IdentityClient {
         let profileInfo: MatrixProfileInfo;
         try {
             profileInfo = await this.matrixClient.getUserProfile(await this.matrixClient.getUserId());
-        } catch (e) {
+        } catch {
             // ignore
         }
         const senderProfile = new MatrixProfile(await this.matrixClient.getUserId(), profileInfo);

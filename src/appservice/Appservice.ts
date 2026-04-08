@@ -852,7 +852,7 @@ export class Appservice extends EventEmitter {
                                     // TODO: This could be more efficient
                                     const userIdsInRoom = await this.botClient.getJoinedRoomMembers(roomId);
                                     tryUserId = userIdsInRoom.find(u => this.isNamespacedUser(u));
-                                } catch (e) {
+                                } catch {
                                     LogService.error("Appservice", "Failed to get members of room - cannot decrypt message");
                                 }
 

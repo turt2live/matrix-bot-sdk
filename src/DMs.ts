@@ -78,7 +78,7 @@ export class DMs {
                 if (joined.some(m => m.membershipFor === userId)) {
                     toKeep.push(roomId);
                 }
-            } catch (e) {
+            } catch {
                 LogService.warn("DMs", `Unable to check ${roomId} for room members - assuming invalid DM`);
             }
         }
