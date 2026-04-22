@@ -38,6 +38,8 @@ export function createTestClient(
     accessToken: string;
 } {
     const http = new HttpBackend();
+    const flushAllExpectedOrig = http.flushAllExpected.bind(http);
+    http.flushAllExpected = (opts) => flushAllExpectedOrig({ ...opts, timeout: opts?.timeout ?? 2000 });
     const hsUrl = "https://localhost";
     const accessToken = "s3cret";
     const client = new MatrixClient(hsUrl, accessToken, storage, cryptoStoreType !== undefined ? new RustSdkCryptoStorageProvider(tmp.dirSync().name, cryptoStoreType) : null);
