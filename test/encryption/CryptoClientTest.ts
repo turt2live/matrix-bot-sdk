@@ -3,24 +3,7 @@ import HttpBackend from 'matrix-mock-request';
 
 import { EncryptedFile, MatrixClient, MembershipEvent, OTKAlgorithm, RoomEncryptionAlgorithm } from "../../src";
 import { createTestClient, testCryptoStores, TEST_DEVICE_ID } from "../TestUtils";
-
-export function bindNullEngine(http: HttpBackend) {
-    http.when("POST", "/keys/upload").respond(200, (path, obj) => {
-        expect(obj).toMatchObject({
-
-        });
-        return {
-            one_time_key_counts: {
-                // Enough to trick the OlmMachine into thinking it has enough keys
-                [OTKAlgorithm.Signed]: 1000,
-            },
-        };
-    });
-    // Some oddity with the rust-sdk bindings during setup
-    http.when("POST", "/keys/query").respond(200, (path, obj) => {
-        return {};
-    });
-}
+import { bindNullEngine } from "./CryptoTestUtils";
 
 describe('CryptoClient', () => {
     it('should not have a device ID or be ready until prepared', () => testCryptoStores(async (cryptoStoreType) => {
