@@ -761,13 +761,15 @@ export class MatrixClient extends EventEmitter {
 
         if (!raw) return; // nothing to process
 
-        if (this.crypto) {
-            const inbox: IToDeviceMessage[] = [];
-            if (raw['to_device']?.['events']) {
-                inbox.push(...raw['to_device']['events']);
-                // TODO: Emit or do something with unknown messages?
-            }
+        const inbox: IToDeviceMessage[] = [];
+        if (raw['to_device']?.['events']) {
+            inbox.push(...raw['to_device']['events']);
+        }
+        for (const message of inbox) {
+            this.emit("to-device", message);
+        }
 
+        if (this.crypto) {
             let unusedFallbacks: OTKAlgorithm[] = [];
             if (raw['org.matrix.msc2732.device_unused_fallback_key_types']) {
                 unusedFallbacks = raw['org.matrix.msc2732.device_unused_fallback_key_types'];
