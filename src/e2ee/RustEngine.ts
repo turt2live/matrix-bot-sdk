@@ -10,6 +10,7 @@ import {
     KeysUploadRequest,
     KeysQueryRequest,
     ToDeviceRequest,
+    SignatureUploadRequest,
 } from "@matrix-org/matrix-sdk-crypto-nodejs";
 import * as AsyncLock from "async-lock";
 
@@ -39,8 +40,14 @@ export class RustEngine {
     private async runOnly(...types: RequestType[]) {
         // Note: we should not be running this until it runs out, so cache the value into a variable
         const requests = await this.machine.outgoingRequests();
+        const filteredRequests = types.length ?
+            requests.filter((request) => types.includes(request.type)) :
+            requests;
+        await this.processOutgoingRequests(filteredRequests);
+    }
+
+    public async processOutgoingRequests(requests: Awaited<ReturnType<typeof OlmMachine.prototype.outgoingRequests>>) {
         for (const request of requests) {
-            if (types.length && !types.includes(request.type)) continue;
             switch (request.type) {
                 case RequestType.KeysUpload:
                     await this.processKeysUploadRequest(request);
@@ -57,7 +64,8 @@ export class RustEngine {
                 case RequestType.RoomMessage:
                     throw new Error("Bindings error: Sending room messages is not supported");
                 case RequestType.SignatureUpload:
-                    throw new Error("Bindings error: Backup feature not possible");
+                    await this.processSignatureUploadRequest(request as SignatureUploadRequest);
+                    break;
                 case RequestType.KeysBackup:
                     throw new Error("Bindings error: Backup feature not possible");
                 default:
@@ -153,5 +161,11 @@ export class RustEngine {
     private async actuallyProcessToDeviceRequest(id: string, type: string, messages: Record<string, Record<string, unknown>>) {
         const resp = await this.client.sendToDevices(type, messages);
         await this.machine.markRequestAsSent(id, RequestType.ToDevice, JSON.stringify(resp));
+    }
+
+    private async processSignatureUploadRequest(request: SignatureUploadRequest) {
+        const req = JSON.parse(request.body);
+        const resp = await this.client.doRequest("POST", "/_matrix/client/v3/keys/signatures/upload", null, req.signed_keys);
+        await this.machine.markRequestAsSent(request.id, request.type, JSON.stringify(resp));
     }
 }
