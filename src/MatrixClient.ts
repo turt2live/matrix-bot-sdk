@@ -1,5 +1,4 @@
 import { EventEmitter } from "events";
-import { htmlEncode } from "htmlencode";
 import { htmlToText } from "html-to-text";
 
 import { IStorageProvider } from "./storage/IStorageProvider";
@@ -1226,13 +1225,11 @@ export class MatrixClient extends EventEmitter {
      * @param {string} roomId the room ID to reply in
      * @param {any} event the event to reply to
      * @param {string} text the text to reply with
-     * @param {string} html the HTML to reply with, or falsey to use the `text`
+     * @param {string} html the HTML to reply with. Optional.
      * @returns {Promise<string>} resolves to the event ID which was sent
      */
     @timedMatrixClientFunctionCall()
     public replyText(roomId: string, event: any, text: string, html: string = null): Promise<string> {
-        if (!html) html = htmlEncode(text);
-
         const reply = RichReply.createFor(roomId, event, text, html);
         return this.sendMessage(roomId, reply);
     }
@@ -1258,13 +1255,11 @@ export class MatrixClient extends EventEmitter {
      * @param {string} roomId the room ID to reply in
      * @param {any} event the event to reply to
      * @param {string} text the text to reply with
-     * @param {string} html the HTML to reply with, or falsey to use the `text`
+     * @param {string} html the HTML to reply with. Optional.
      * @returns {Promise<string>} resolves to the event ID which was sent
      */
     @timedMatrixClientFunctionCall()
     public replyNotice(roomId: string, event: any, text: string, html: string = null): Promise<string> {
-        if (!html) html = htmlEncode(text);
-
         const reply = RichReply.createFor(roomId, event, text, html);
         reply['msgtype'] = 'm.notice';
         return this.sendMessage(roomId, reply);

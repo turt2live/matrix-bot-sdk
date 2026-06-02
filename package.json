@@ -61,7 +61,6 @@
     "glob-to-regexp": "^0.4.1",
     "hash.js": "^1.1.7",
     "html-to-text": "^9.0.5",
-    "htmlencode": "^0.0.4",
     "lowdb": "1",
     "lru-cache": "^10.0.1",
     "mkdirp": "^3.0.1",

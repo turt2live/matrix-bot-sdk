@@ -14,23 +14,10 @@ export class RichReply {
      * @param {string} roomId the room ID the event being replied to resides in
      * @param {any} event the event to reply to
      * @param {string} withText the plain text to reply with
-     * @param {string} withHtml the HTML to reply with
+     * @param {string} withHtml the HTML to reply with. Optional.
      * @returns {any} the content of the event representing the reply
      */
-    public static createFor(roomId: string, event: any, withText: string, withHtml: string): any {
-        const originalBody = (event["content"] ? event["content"]["body"] : "") || "";
-        let originalHtml = (event["content"] ? event["content"]["formatted_body"] : "") || null;
-        if (originalHtml === null) {
-            originalHtml = sanitizeHtml(originalBody);
-        }
-
-        const fallbackText = "> <" + event["sender"] + "> " + originalBody.split("\n").join("\n> ");
-        const fallbackHtml = "<mx-reply><blockquote>"
-            + `<a href="https://matrix.to/#/${roomId}/${event["event_id"]}">In reply to</a> `
-            + `<a href="https://matrix.to/#/${event["sender"]}">${event["sender"]}</a>`
-            + "<br />" + originalHtml
-            + "</blockquote></mx-reply>";
-
+    public static createFor(roomId: string, event: any, withText: string, withHtml: string = null): any {
         return {
             "m.relates_to": {
                 "m.in_reply_to": {
@@ -38,9 +25,11 @@ export class RichReply {
                 },
             },
             "msgtype": "m.text", // for those who just want to send the reply as-is
-            "body": fallbackText + "\n\n" + withText,
-            "format": "org.matrix.custom.html",
-            "formatted_body": fallbackHtml + withHtml,
+            "body": withText,
+            ...(withHtml && {
+                "format": "org.matrix.custom.html",
+                "formatted_body": withHtml,
+            }),
         };
     }
 }
