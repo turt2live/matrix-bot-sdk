@@ -432,9 +432,9 @@ export class RustEngine {
         //    private keys into the local OlmMachine, and returns a SignatureUpload
         //    request to re-sign the current device with the self-signing key.
         const items = new SecretStorageItems({
-            "m.cross_signing.master":    JSON.stringify(masterRaw),
-            "m.cross_signing.self_signing": JSON.stringify(selfSigningRaw),
-            "m.cross_signing.user_signing": JSON.stringify(userSigningRaw),
+            masterKey:      JSON.stringify(masterRaw),
+            selfSigningKey: JSON.stringify(selfSigningRaw),
+            userSigningKey: JSON.stringify(userSigningRaw),
         });
         const sigReq = await machine4s.importSecretsFromSecretStorage(ssssKey, items);
         await this.processSignatureUploadRequest(sigReq);
@@ -494,7 +494,30 @@ export class RustEngine {
         reset: boolean,
     ): Promise<void> {
         const existingVersion = await this.activeKeyBackupVersion();
-        if (existingVersion && !reset) return;
+        if (existingVersion && !reset) {
+            // Server has a backup. Check whether the local OlmMachine already knows about it.
+            const localKeys = await this.machine.getBackupKeys();
+            if (localKeys.backupVersion === existingVersion) return; // In sync — nothing to do.
+
+            // Local store is out of sync (e.g. crypto-store wiped and bootstrap retried with
+            // a new SSSS key, or interrupted before saveBackupDecryptionKey). Try to reconnect
+            // by decrypting the existing backup key from account data using the current SSSS key.
+            try {
+                const backupKeyRaw = await this.client.getAccountData<object>("m.megolm_backup.v1");
+                if (backupKeyRaw) {
+                    const decryptedBase64 = ssssKey.decrypt(JSON.stringify(backupKeyRaw), "m.megolm_backup.v1");
+                    const decryptionKey = BackupDecryptionKey.fromBase64(decryptedBase64);
+                    await this.machine.enableBackupV1(decryptionKey.megolmV1PublicKey.publicKeyBase64, existingVersion);
+                    await this.machine.saveBackupDecryptionKey(decryptionKey, existingVersion);
+                    return;
+                }
+            } catch {
+                // Account data is missing, encrypted with a different SSSS key, or corrupted.
+                // Fall through to create a new backup version under the current SSSS key.
+            }
+            // Could not reuse the existing backup — delete it and create a fresh one.
+            await this.client.doRequest("DELETE", `/_matrix/client/v3/room_keys/version/${existingVersion}`);
+        }
         if (existingVersion && reset) {
             await this.client.doRequest("DELETE", `/_matrix/client/v3/room_keys/version/${existingVersion}`);
         }
