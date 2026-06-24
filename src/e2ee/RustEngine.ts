@@ -12,7 +12,21 @@ import {
     ToDeviceRequest,
     SignatureUploadRequest,
     KeysBackupRequest,
+    SecretStorageKey,
+    SecretStorageItems,
+    BackupDecryptionKey,
 } from "@matrix-org/matrix-sdk-crypto-nodejs";
+
+/**
+ * The subset of OlmMachine APIs available in @matrix-org/matrix-sdk-crypto-nodejs >= 0.6.0
+ * for 4S/SSSS secret storage export and import. Typed separately to provide a clear
+ * error when older bindings are used.
+ * @internal
+ */
+interface OlmMachineWith4S extends OlmMachine {
+    exportSecretsForSecretStorage(key: SecretStorageKey): Promise<SecretStorageItems>;
+    importSecretsFromSecretStorage(key: SecretStorageKey, items: SecretStorageItems): Promise<SignatureUploadRequest>;
+}
 import * as AsyncLock from "async-lock";
 
 import { MatrixClient } from "../MatrixClient";
@@ -355,6 +369,157 @@ export class RustEngine {
             "POST", "/_matrix/client/v3/room_keys/version", null, { algorithm, auth_data: authData },
         );
         return resp.version;
+    }
+
+    /**
+     * Restore cross-signing private keys (and optionally the megolm backup decryption
+     * key) from Secure Secret Storage (4S/SSSS) into the local crypto store.
+     *
+     * This is the recovery path when the local crypto store has been lost: the
+     * cross-signing keys were previously uploaded encrypted to account data by
+     * `bootstrapSecretStorage*`, and this method fetches and decrypts them using
+     * the same passphrase. After a successful restore:
+     *
+     * - The OlmMachine has the master / self-signing / user-signing private keys.
+     * - The device re-signs itself, so it continues to appear verified without
+     *   needing UIA or a fresh cross-signing bootstrap.
+     * - If the megolm backup decryption key is in account data, it is also
+     *   restored so room-key backup requests work with the existing backup version.
+     *
+     * Requires `@matrix-org/matrix-sdk-crypto-nodejs >= 0.6.0` (for
+     * `importSecretsFromSecretStorage`). Throws if the passphrase does not match
+     * the SSSS key on the server, or if account data is missing.
+     *
+     * @param passphrase The same passphrase that was used to bootstrap 4S.
+     */
+    public async restoreSecretsFromSecretStorage(passphrase: string): Promise<void> {
+        const machine4s = this.machine as OlmMachineWith4S;
+        if (typeof machine4s.importSecretsFromSecretStorage !== "function") {
+            throw new Error(
+                "Bindings error: OlmMachine.importSecretsFromSecretStorage() is not available. " +
+                "Secret Storage restore requires @matrix-org/matrix-sdk-crypto-nodejs >= 0.6.0.",
+            );
+        }
+
+        // 1. Resolve the default SSSS key from account data.
+        const defaultKey = await this.client.getAccountData<{ key: string }>("m.secret_storage.default_key");
+        if (!defaultKey?.key) {
+            throw new Error("No default SSSS key found in account data (m.secret_storage.default_key missing or empty).");
+        }
+        const keyEventType = `m.secret_storage.key.${defaultKey.key}`;
+        const keyContent = await this.client.getAccountData<object>(keyEventType);
+        if (!keyContent) {
+            throw new Error(`SSSS key descriptor not found in account data (${keyEventType} missing).`);
+        }
+
+        // 2. Reconstruct the SecretStorageKey from the passphrase + server metadata.
+        //    fromAccountData verifies the passphrase against the stored MAC; it throws
+        //    if the passphrase is wrong.
+        const ssssKey = SecretStorageKey.fromAccountData(passphrase, keyEventType, JSON.stringify(keyContent));
+
+        // 3. Fetch the three encrypted cross-signing key blobs from account data.
+        const [masterRaw, selfSigningRaw, userSigningRaw] = await Promise.all([
+            this.client.getAccountData<object>("m.cross_signing.master"),
+            this.client.getAccountData<object>("m.cross_signing.self_signing"),
+            this.client.getAccountData<object>("m.cross_signing.user_signing"),
+        ]);
+        if (!masterRaw || !selfSigningRaw || !userSigningRaw) {
+            throw new Error("One or more cross-signing key blobs are missing from account data. " +
+                "4S may not have been bootstrapped yet — run bootstrapSecretStorage first.");
+        }
+
+        // 4. Import: the binding decrypts each blob using ssssKey, imports the
+        //    private keys into the local OlmMachine, and returns a SignatureUpload
+        //    request to re-sign the current device with the self-signing key.
+        const items = new SecretStorageItems({
+            "m.cross_signing.master":    JSON.stringify(masterRaw),
+            "m.cross_signing.self_signing": JSON.stringify(selfSigningRaw),
+            "m.cross_signing.user_signing": JSON.stringify(userSigningRaw),
+        });
+        const sigReq = await machine4s.importSecretsFromSecretStorage(ssssKey, items);
+        await this.processSignatureUploadRequest(sigReq);
+
+        // 5. Restore the megolm backup decryption key if present, so room-key
+        //    backup requests are directed to the existing backup version.
+        try {
+            const backupKeyRaw = await this.client.getAccountData<object>("m.megolm_backup.v1");
+            if (backupKeyRaw) {
+                const decryptedBase64 = ssssKey.decrypt(JSON.stringify(backupKeyRaw), "m.megolm_backup.v1");
+                    const decryptionKey = BackupDecryptionKey.fromBase64(decryptedBase64);
+                const backupInfo = await this.activeKeyBackupVersion();
+                if (backupInfo) {
+                    await this.machine.enableBackupV1(decryptionKey.megolmV1PublicKey.publicKeyBase64, backupInfo);
+                    await this.machine.saveBackupDecryptionKey(decryptionKey, backupInfo);
+                }
+            }
+        } catch (e) {
+            // Non-fatal: cross-signing keys are restored; only room-key backup is affected.
+        }
+    }
+
+    private async bootstrapSecretStorage(ssssKey: import("@matrix-org/matrix-sdk-crypto-nodejs").SecretStorageKey, opts: { withKeyBackup?: boolean; reset?: boolean } = {}): Promise<void> {
+        const machine4s = this.machine as OlmMachineWith4S;
+        if (typeof machine4s.exportSecretsForSecretStorage !== "function") {
+            throw new Error("Bindings error: OlmMachine.exportSecretsForSecretStorage() is not available. " +
+                "Secret Storage (4S) requires @matrix-org/matrix-sdk-crypto-nodejs >= 0.6.0.");
+        }
+
+        const { withKeyBackup = true, reset = false } = opts;
+        const userId = this.machine.userId.toString();
+        await this.putAccountData(userId, ssssKey.eventType(), JSON.parse(ssssKey.accountDataContent()));
+        await this.putAccountData(userId, "m.secret_storage.default_key", { key: ssssKey.keyId() });
+
+        const items = await machine4s.exportSecretsForSecretStorage(ssssKey);
+        await this.putAccountData(userId, "m.cross_signing.master",    JSON.parse(items.masterKey));
+        await this.putAccountData(userId, "m.cross_signing.self_signing", JSON.parse(items.selfSigningKey));
+        await this.putAccountData(userId, "m.cross_signing.user_signing", JSON.parse(items.userSigningKey));
+
+        if (withKeyBackup) {
+            await this.bootstrapKeyBackupIntoSecretStorage(ssssKey, userId, reset);
+        }
+    }
+
+    public async bootstrapSecretStorageFromPassphrase(passphrase: string, opts: { withKeyBackup?: boolean; reset?: boolean } = {}): Promise<void> {
+        const ssssKey = SecretStorageKey.createFromPassphrase(passphrase);
+        await this.bootstrapSecretStorage(ssssKey, opts);
+    }
+
+    public async bootstrapSecretStorageFromKey(ssssKey: import("@matrix-org/matrix-sdk-crypto-nodejs").SecretStorageKey, opts: { withKeyBackup?: boolean; reset?: boolean } = {}): Promise<void> {
+        await this.bootstrapSecretStorage(ssssKey, opts);
+    }
+
+    private async bootstrapKeyBackupIntoSecretStorage(
+        ssssKey: import("@matrix-org/matrix-sdk-crypto-nodejs").SecretStorageKey,
+        userId: string,
+        reset: boolean,
+    ): Promise<void> {
+        const existingVersion = await this.activeKeyBackupVersion();
+        if (existingVersion && !reset) return;
+        if (existingVersion && reset) {
+            await this.client.doRequest("DELETE", `/_matrix/client/v3/room_keys/version/${existingVersion}`);
+        }
+
+        const decryptionKey = BackupDecryptionKey.createRandomKey();
+        const publicKey = decryptionKey.megolmV1PublicKey;
+        const authDataBase = { public_key: publicKey.publicKeyBase64 };
+        const canonicalBase = JSON.stringify(authDataBase, Object.keys(authDataBase).sort());
+        const sigs = await this.machine.sign(canonicalBase);
+        const authData = { ...authDataBase, signatures: JSON.parse(sigs.asJSON()) };
+
+        const version = await this.enableKeyBackup(authData, publicKey.algorithm);
+        await this.machine.enableBackupV1(publicKey.publicKeyBase64, version);
+        await this.machine.saveBackupDecryptionKey(decryptionKey, version);
+
+        const encryptedKey = ssssKey.encrypt(decryptionKey.toBase64(), "m.megolm_backup.v1");
+        await this.putAccountData(userId, "m.megolm_backup.v1", JSON.parse(encryptedKey));
+    }
+
+    private async putAccountData(userId: string, eventType: string, content: Record<string, unknown>): Promise<void> {
+        await this.client.doRequest(
+            "PUT",
+            `/_matrix/client/v3/user/${encodeURIComponent(userId)}/account_data/${encodeURIComponent(eventType)}`,
+            null, content,
+        );
     }
 }
 
