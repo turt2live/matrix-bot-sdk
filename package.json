@@ -67,8 +67,6 @@
     "mkdirp": "^3.0.1",
     "morgan": "^1.10.0",
     "postgres": "^3.4.1",
-    "request": "^2.88.2",
-    "request-promise": "^4.2.6",
     "sanitize-html": "^2.11.0"
   },
   "devDependencies": {
@@ -84,7 +82,6 @@
     "@types/lowdb": "^1.0.14",
     "@types/mocha": "^10.0.3",
     "@types/node": "22",
-    "@types/request-promise": "^4.1.51",
     "@types/sanitize-html": "^2.9.3",
     "@types/simple-mock": "^0.8.4",
     "@typescript-eslint/eslint-plugin": "^8.53.0",

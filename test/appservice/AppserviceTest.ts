@@ -1,9 +1,41 @@
 import * as getPort from "get-port";
-import * as requestPromise from "request-promise";
+import * as querystring from "querystring";
 import * as simple from "simple-mock";
 import HttpBackend from 'matrix-mock-request';
 
 import { Appservice, EventKind, Intent, IPreprocessor, setRequestFn } from "../../src";
+
+/**
+ * Minimal stand-in for `request-promise`, covering the options these tests use.
+ * `json: true` parses the response; `json: <object>` also sends that object as the body.
+ * Non-2xx responses reject with `{ statusCode, error, response: { body } }`, like its StatusCodeError.
+ */
+async function requestPromise(opts: { uri: string, method?: string, qs?: any, headers?: Record<string, string>, json?: any }): Promise<any> {
+    const url = opts.qs ? `${opts.uri}?${querystring.stringify(opts.qs)}` : opts.uri;
+    const headers = { ...opts.headers };
+    let body: string | undefined;
+    if (opts.json !== undefined && typeof opts.json !== "boolean") {
+        headers["Content-Type"] = "application/json";
+        body = JSON.stringify(opts.json);
+    }
+    const res = await fetch(url, { method: opts.method ?? "GET", headers, body });
+    let resBody: any = await res.text();
+    if (opts.json) {
+        try {
+            resBody = JSON.parse(resBody);
+        } catch (e) {
+            // request-promise returns the raw string when the body isn't JSON
+        }
+    }
+    if (res.status < 200 || res.status >= 300) {
+        const err: any = new Error(`${res.status} - ${JSON.stringify(resBody)}`);
+        err.statusCode = res.status;
+        err.error = resBody;
+        err.response = { statusCode: res.status, body: resBody };
+        throw err;
+    }
+    return resBody;
+}
 
 async function beginAppserviceWithProtocols(protocols: string[]) {
     const port = await getPort();

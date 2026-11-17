@@ -1,6 +1,8 @@
-import * as origRequestFn from "request";
+import { fetchRequest, RequestFn } from "./fetchRequest";
 
-let requestFn = origRequestFn;
+export type { RequestCallback, RequestFn, RequestParams, RequestResponse } from "./fetchRequest";
+
+let requestFn: RequestFn = fetchRequest;
 
 /**
  * Sets the function to use for performing HTTP requests. Must be compatible with `request`.
@@ -16,6 +18,6 @@ export function setRequestFn(fn) {
  * @returns The request function.
  * @category Unit testing
  */
-export function getRequestFn(): typeof origRequestFn {
+export function getRequestFn(): RequestFn {
     return requestFn;
 }
